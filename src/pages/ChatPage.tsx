@@ -3,13 +3,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LayerBadge } from "@/components/ui/layer-badge";
-import { chatThreads } from "@/data/mockData";
-import { MessageSquare, Send, Bookmark, Plus, User, Sparkles } from "lucide-react";
+import { api } from "@/lib/api";
+import type { MindQueryResult } from "@/lib/api";
+import { MessageSquare, Send, Plus, User, Sparkles, Loader2 } from "lucide-react";
 import type { AtheonLayer } from "@/types";
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  layer?: AtheonLayer;
+  citations?: { id: string; source: string; confidence: number }[];
+}
 
 export function ChatPage() {
   const [input, setInput] = useState('');
-  const [activeThread] = useState(chatThreads[0]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sending, setSending] = useState(false);
 
   const suggestedQueries = [
     { text: 'Why is OTIF declining?', layer: 'pulse' as AtheonLayer },
@@ -19,6 +29,27 @@ export function ChatPage() {
     { text: 'Show process bottlenecks in P2P', layer: 'pulse' as AtheonLayer },
     { text: 'Deploy a new finance catalyst', layer: 'catalysts' as AtheonLayer },
   ];
+
+  const handleSend = async () => {
+    if (!input.trim() || sending) return;
+    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setSending(true);
+    try {
+      const result: MindQueryResult = await api.mind.query(userMsg.content, 'tier-1');
+      const assistantMsg: ChatMessage = {
+        id: result.id,
+        role: 'assistant',
+        content: result.response,
+        citations: result.citations.map((c, i) => ({ id: `c-${i}`, source: c, confidence: 0.9 })),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+    } catch {
+      setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: 'Sorry, I could not process that query. Please try again.' }]);
+    }
+    setSending(false);
+  };
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -35,19 +66,15 @@ export function ChatPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar - Thread List */}
         <div className="space-y-3">
-          <Button variant="primary" size="sm" className="w-full"><Plus size={14} /> New Thread</Button>
-          {chatThreads.map((thread) => (
-            <Card key={thread.id} hover className={thread.id === activeThread?.id ? 'border-indigo-500/30' : ''}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-white">{thread.title}</h3>
-                  <span className="text-[10px] text-neutral-500">{new Date(thread.updatedAt).toLocaleString()}</span>
-                </div>
-                {thread.bookmarked && <Bookmark size={12} className="text-amber-400 fill-amber-400" />}
+          <Button variant="primary" size="sm" className="w-full" onClick={() => setMessages([])}><Plus size={14} /> New Thread</Button>
+          <Card hover className="border-indigo-500/30">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-white">Current Thread</h3>
+                <span className="text-[10px] text-neutral-500">{messages.length} messages</span>
               </div>
-              {thread.layer && <LayerBadge layer={thread.layer} className="mt-1.5" />}
-            </Card>
-          ))}
+            </div>
+          </Card>
         </div>
 
         {/* Chat Area */}
@@ -55,7 +82,10 @@ export function ChatPage() {
           <Card className="flex flex-col" style={{ minHeight: '600px' }}>
             {/* Messages */}
             <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
-              {activeThread?.messages.map((msg) => (
+              {messages.length === 0 && (
+                <div className="flex items-center justify-center h-40 text-neutral-500 text-sm">Ask Atheon anything to get started</div>
+              )}
+              {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                   {msg.role === 'assistant' && (
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
@@ -101,6 +131,16 @@ export function ChatPage() {
                   )}
                 </div>
               ))}
+              {sending && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  </div>
+                  <div className="rounded-xl p-4 bg-neutral-800/40 border border-neutral-800/50">
+                    <span className="text-sm text-neutral-400">Thinking...</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Suggested Queries */}
@@ -126,11 +166,12 @@ export function ChatPage() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask Atheon anything across your enterprise..."
                   className="w-full px-4 py-3 rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40 transition-all"
                 />
               </div>
-              <Button variant="primary" size="md" className="px-4">
+              <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending}>
                 <Send size={16} />
               </Button>
             </div>

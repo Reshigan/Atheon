@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { agentDeployments, tenants } from "@/data/tenantData";
+import { api } from "@/lib/api";
+import type { ControlPlaneHealth, DeploymentItem } from "@/lib/api";
 import {
   Bot, Play, Square, RefreshCw, Plus, Server, Cloud, GitBranch,
   CheckCircle, XCircle, Activity, ChevronDown, ChevronUp,
-  Settings, Shield, Cpu
+  Settings, Shield, Cpu, Loader2
 } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
@@ -17,17 +18,64 @@ const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; la
   pending: { icon: Activity, color: 'text-amber-400', label: 'Pending' },
 };
 
-const healthColor = (status: string) => {
-  if (status === 'healthy') return 'success';
-  if (status === 'degraded') return 'warning';
+interface DeploymentConfig {
+  replicas?: number;
+  maxConcurrentTasks?: number;
+  confidenceThreshold?: number;
+  escalationPolicy?: string;
+  resourceLimits?: { cpuMillicores?: number; memoryMb?: number };
+  allowedActions?: string[];
+  blockedActions?: string[];
+}
+
+function healthVariant(score: number): 'success' | 'warning' | 'danger' {
+  if (score >= 80) return 'success';
+  if (score >= 60) return 'warning';
   return 'danger';
-};
+}
 
 export function ControlPlanePage() {
   const [expandedDep, setExpandedDep] = useState<string | null>(null);
+  const [deployments, setDeployments] = useState<DeploymentItem[]>([]);
+  const [_health, setHealth] = useState<ControlPlaneHealth | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const running = agentDeployments.filter(d => d.status === 'running').length;
-  const totalAgents = agentDeployments.reduce((s, d) => s + d.config.replicas, 0);
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [d, h] = await Promise.allSettled([
+        api.controlplane.deployments(),
+        api.controlplane.health(),
+      ]);
+      if (d.status === 'fulfilled') setDeployments(d.value.deployments);
+      if (h.status === 'fulfilled') setHealth(h.value);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const computed = useMemo(() => {
+    const running = deployments.filter(d => d.status === 'running').length;
+    const totalReplicas = deployments.reduce((s, d) => {
+      const cfg = d.config as DeploymentConfig;
+      return s + (typeof cfg.replicas === 'number' ? cfg.replicas : 1);
+    }, 0);
+    const avgUptime = deployments.length
+      ? deployments.reduce((s, d) => s + (d.uptime || 0), 0) / deployments.length
+      : 0;
+    const avgHealth = deployments.length
+      ? deployments.reduce((s, d) => s + (d.healthScore || 0), 0) / deployments.length
+      : 0;
+    return { running, totalReplicas, avgUptime, avgHealth };
+  }, [deployments]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -48,33 +96,34 @@ export function ControlPlanePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-neutral-500">Total Deployments</span>
-          <p className="text-2xl font-bold text-white mt-1">{agentDeployments.length}</p>
-          <span className="text-xs text-emerald-400">{running} running</span>
+          <p className="text-2xl font-bold text-white mt-1">{deployments.length}</p>
+          <span className="text-xs text-emerald-400">{computed.running} running</span>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Total Replicas</span>
-          <p className="text-2xl font-bold text-white mt-1">{totalAgents}</p>
+          <p className="text-2xl font-bold text-white mt-1">{computed.totalReplicas}</p>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Avg Uptime</span>
           <p className="text-2xl font-bold text-emerald-400 mt-1">
-            {(agentDeployments.filter(d => d.status === 'running').reduce((s, d) => s + d.healthCheck.uptime, 0) / running).toFixed(2)}%
+            {computed.avgUptime.toFixed(2)}%
           </p>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">Avg Throughput</span>
+          <span className="text-xs text-neutral-500">Avg Health</span>
           <p className="text-2xl font-bold text-white mt-1">
-            {Math.round(agentDeployments.filter(d => d.status === 'running').reduce((s, d) => s + d.healthCheck.tasksPerMinute, 0) / running)} tasks/min
+            {Math.round(computed.avgHealth)}%
           </p>
         </Card>
       </div>
 
       {/* Deployments List */}
       <div className="space-y-4">
-        {agentDeployments.map((dep) => {
-          const tenant = tenants.find(t => t.id === dep.tenantId);
-          const sConfig = statusConfig[dep.status];
+        {deployments.map((dep) => {
+          const sConfig = statusConfig[dep.status] || statusConfig.pending;
           const StatusIcon = sConfig.icon;
+          const cfg = dep.config as DeploymentConfig;
+          const replicas = typeof cfg.replicas === 'number' ? cfg.replicas : 1;
           return (
             <Card
               key={dep.id}
@@ -87,16 +136,16 @@ export function ControlPlanePage() {
                     <Bot className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-white">{dep.clusterName}</h3>
+                    <h3 className="text-base font-semibold text-white">{dep.name || dep.clusterName || dep.id}</h3>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-neutral-400">{tenant?.name || dep.tenantId}</span>
+                      <span className="text-xs text-neutral-400">{dep.tenantName || dep.tenantId}</span>
                       <Badge variant={dep.deploymentModel === 'saas' ? 'info' : dep.deploymentModel === 'on-premise' ? 'warning' : 'default'} size="sm">
                         {dep.deploymentModel === 'saas' && <Cloud size={10} className="mr-1" />}
                         {dep.deploymentModel === 'on-premise' && <Server size={10} className="mr-1" />}
                         {dep.deploymentModel === 'hybrid' && <GitBranch size={10} className="mr-1" />}
                         {dep.deploymentModel}
                       </Badge>
-                      <Badge variant="outline" size="sm">{dep.autonomyTier}</Badge>
+                      <Badge variant="outline" size="sm">{dep.agentType}</Badge>
                     </div>
                   </div>
                 </div>
@@ -105,9 +154,7 @@ export function ControlPlanePage() {
                     <StatusIcon size={14} className={sConfig.color} />
                     <span className={`text-sm font-medium ${sConfig.color}`}>{sConfig.label}</span>
                   </div>
-                  <Badge variant={healthColor(dep.healthCheck.status) as 'success' | 'warning' | 'danger'} size="sm">
-                    {dep.healthCheck.status}
-                  </Badge>
+                  <Badge variant={healthVariant(dep.healthScore)} size="sm">{dep.healthScore}%</Badge>
                   {expandedDep === dep.id ? <ChevronUp size={14} className="text-neutral-500" /> : <ChevronDown size={14} className="text-neutral-500" />}
                 </div>
               </div>
@@ -116,23 +163,23 @@ export function ControlPlanePage() {
               <div className="grid grid-cols-5 gap-3 mt-4">
                 <div className="text-center p-2 rounded bg-neutral-800/40">
                   <span className="text-[10px] text-neutral-600">Replicas</span>
-                  <p className="text-sm font-bold text-white">{dep.config.replicas}</p>
+                  <p className="text-sm font-bold text-white">{replicas}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-neutral-800/40">
                   <span className="text-[10px] text-neutral-600">Uptime</span>
-                  <p className="text-sm font-bold text-emerald-400">{dep.healthCheck.uptime}%</p>
+                  <p className="text-sm font-bold text-emerald-400">{dep.uptime.toFixed(1)}%</p>
                 </div>
                 <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">P95 Latency</span>
-                  <p className="text-sm font-bold text-white">{dep.healthCheck.latencyP95}ms</p>
+                  <span className="text-[10px] text-neutral-600">Version</span>
+                  <p className="text-sm font-bold text-white">{dep.version}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Error Rate</span>
-                  <p className={`text-sm font-bold ${dep.healthCheck.errorRate < 0.1 ? 'text-emerald-400' : 'text-amber-400'}`}>{dep.healthCheck.errorRate}%</p>
+                  <span className="text-[10px] text-neutral-600">Tasks</span>
+                  <p className="text-sm font-bold text-white">{dep.tasksExecuted.toLocaleString()}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Tasks/min</span>
-                  <p className="text-sm font-bold text-white">{dep.healthCheck.tasksPerMinute}</p>
+                  <span className="text-[10px] text-neutral-600">Heartbeat</span>
+                  <p className="text-sm font-bold text-white">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
                 </div>
               </div>
 
@@ -145,11 +192,11 @@ export function ControlPlanePage() {
                         <Settings size={14} className="text-cyan-400" /> Configuration
                       </h4>
                       <div className="space-y-2 text-xs">
-                        <div className="flex justify-between"><span className="text-neutral-500">Max Concurrent Tasks</span><span className="text-neutral-200">{dep.config.maxConcurrentTasks}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Confidence Threshold</span><span className="text-neutral-200">{dep.config.confidenceThreshold * 100}%</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Escalation Policy</span><Badge variant="outline" size="sm">{dep.config.escalationPolicy}</Badge></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">CPU / Memory</span><span className="text-neutral-200">{dep.config.resourceLimits.cpuMillicores}m / {dep.config.resourceLimits.memoryMb}MB</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Deployed By</span><span className="text-neutral-200">{dep.deployedBy}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Replicas</span><span className="text-neutral-200">{replicas}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Max Concurrent Tasks</span><span className="text-neutral-200">{cfg.maxConcurrentTasks ?? 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Confidence Threshold</span><span className="text-neutral-200">{typeof cfg.confidenceThreshold === 'number' ? `${Math.round(cfg.confidenceThreshold * 100)}%` : 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Escalation Policy</span><Badge variant="outline" size="sm">{cfg.escalationPolicy ?? 'N/A'}</Badge></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">CPU / Memory</span><span className="text-neutral-200">{cfg.resourceLimits?.cpuMillicores ?? '?'}m / {cfg.resourceLimits?.memoryMb ?? '?'}MB</span></div>
                       </div>
                     </div>
 
@@ -162,17 +209,23 @@ export function ControlPlanePage() {
                         <div>
                           <span className="text-[10px] text-neutral-600">Allowed Actions</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {dep.config.allowedActions.map(a => (
+                            {(Array.isArray(cfg.allowedActions) ? cfg.allowedActions : []).map((a: string) => (
                               <Badge key={a} variant="success" size="sm">{a}</Badge>
                             ))}
+                            {(!cfg.allowedActions || (Array.isArray(cfg.allowedActions) && cfg.allowedActions.length === 0)) && (
+                              <span className="text-xs text-neutral-500">None</span>
+                            )}
                           </div>
                         </div>
                         <div>
                           <span className="text-[10px] text-neutral-600">Blocked Actions</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {dep.config.blockedActions.map(a => (
+                            {(Array.isArray(cfg.blockedActions) ? cfg.blockedActions : []).map((a: string) => (
                               <Badge key={a} variant="danger" size="sm">{a}</Badge>
                             ))}
+                            {(!cfg.blockedActions || (Array.isArray(cfg.blockedActions) && cfg.blockedActions.length === 0)) && (
+                              <span className="text-xs text-neutral-500">None</span>
+                            )}
                           </div>
                         </div>
                       </div>

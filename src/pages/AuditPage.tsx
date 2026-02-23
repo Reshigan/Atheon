@@ -1,10 +1,35 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { LayerBadge } from "@/components/ui/layer-badge";
-import { auditEntries } from "@/data/mockData";
-import { Shield, CheckCircle, XCircle, Clock, Filter } from "lucide-react";
+import { api } from "@/lib/api";
+import type { AuditEntry } from "@/lib/api";
+import { Shield, CheckCircle, XCircle, Clock, Filter, Loader2 } from "lucide-react";
 import type { AtheonLayer } from "@/types";
 
 export function AuditPage() {
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await api.audit.log();
+        setEntries(data.entries);
+      } catch { /* ignore */ }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
@@ -26,19 +51,19 @@ export function AuditPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-neutral-500">Total Events (Today)</span>
-          <p className="text-2xl font-bold text-white mt-1">{auditEntries.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{entries.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Success</span>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{auditEntries.filter(a => a.outcome === 'success').length}</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{entries.filter(a => a.outcome === 'success').length}</p>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Pending</span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{auditEntries.filter(a => a.outcome === 'pending').length}</p>
+          <p className="text-2xl font-bold text-amber-400 mt-1">{entries.filter(a => a.outcome === 'pending').length}</p>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Failed</span>
-          <p className="text-2xl font-bold text-red-400 mt-1">{auditEntries.filter(a => a.outcome === 'failure').length}</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{entries.filter(a => a.outcome === 'failure').length}</p>
         </Card>
       </div>
 
@@ -56,17 +81,17 @@ export function AuditPage() {
               </tr>
             </thead>
             <tbody>
-              {auditEntries.map((entry) => (
+              {entries.map((entry) => (
                 <tr key={entry.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors">
                   <td className="py-3 px-4 text-xs text-neutral-400 font-mono whitespace-nowrap">
-                    {new Date(entry.timestamp).toLocaleString()}
+                    {new Date(entry.createdAt).toLocaleString()}
                   </td>
                   <td className="py-3 px-4 text-sm text-neutral-200">{entry.action}</td>
                   <td className="py-3 px-4">
                     <LayerBadge layer={entry.layer as AtheonLayer} />
                   </td>
                   <td className="py-3 px-4 text-xs text-neutral-500 max-w-xs truncate">
-                    {Object.entries(entry.details).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                    {entry.details ? Object.entries(entry.details).map(([k, v]) => `${k}: ${v}`).join(', ') : '-'}
                   </td>
                   <td className="py-3 px-4">
                     {entry.outcome === 'success' && (

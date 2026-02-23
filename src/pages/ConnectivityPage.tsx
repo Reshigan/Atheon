@@ -1,11 +1,58 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { mcpServers } from "@/data/mockData";
-import { Link2, Radio, Bot, CheckCircle, XCircle, Wifi, WifiOff, ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
+import type { ERPConnection } from "@/lib/api";
+import { Link2, Radio, Bot, CheckCircle, XCircle, Wifi, WifiOff, ArrowRight, Loader2 } from "lucide-react";
+
+interface MCPServer {
+  id: string;
+  name: string;
+  system: string;
+  status: string;
+  lastHeartbeat: string;
+  tools: { name: string; description: string; permissions: string[] }[];
+}
 
 export function ConnectivityPage() {
   const { activeTab, setActiveTab } = useTabState('mcp');
+  const [connections, setConnections] = useState<ERPConnection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await api.erp.connections();
+        setConnections(data.connections);
+      } catch { /* ignore */ }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  // Transform connections into MCP-like server view
+  const mcpServers: MCPServer[] = connections.map(c => ({
+    id: c.id,
+    name: `${c.adapterName} - ${c.name}`,
+    system: c.adapterSystem,
+    status: c.status === 'connected' ? 'connected' : 'disconnected',
+    lastHeartbeat: c.lastSync || c.connectedAt || new Date().toISOString(),
+    tools: [
+      { name: `${c.adapterSystem.toLowerCase()}.read`, description: `Read data from ${c.adapterName}`, permissions: ['read'] },
+      { name: `${c.adapterSystem.toLowerCase()}.write`, description: `Write data to ${c.adapterName}`, permissions: ['read', 'write'] },
+      { name: `${c.adapterSystem.toLowerCase()}.sync`, description: `Sync ${c.name}`, permissions: ['read', 'execute'] },
+    ],
+  }));
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'mcp', label: 'MCP Servers', icon: <Radio size={14} />, count: mcpServers.length },

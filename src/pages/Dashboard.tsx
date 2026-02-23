@@ -1,11 +1,13 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { Sparkline } from "@/components/ui/sparkline";
 import { LayerBadge } from "@/components/ui/layer-badge";
 import { Progress } from "@/components/ui/progress";
-import { businessHealthScore, processMetrics, catalystClusters, riskAlerts, anomalies, catalystActions } from "@/data/mockData";
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, Crown, Shield } from "lucide-react";
+import { api } from "@/lib/api";
+import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem } from "@/lib/api";
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, Crown, Shield, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -21,9 +23,62 @@ const revenueData = [
 ];
 
 export function Dashboard() {
-  const activeCatalysts = catalystClusters.filter(c => c.status === 'active').length;
-  const totalTasks = catalystClusters.reduce((sum, c) => sum + c.tasksInProgress, 0);
-  const criticalRisks = riskAlerts.filter(r => r.severity === 'critical').length;
+  const [health, setHealth] = useState<HealthScore | null>(null);
+  const [risks, setRisks] = useState<Risk[]>([]);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
+  const [clusters, setClusters] = useState<ClusterItem[]>([]);
+  const [actions, setActions] = useState<ActionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const [h, r, m, a, c, act] = await Promise.allSettled([
+          api.apex.health(),
+          api.apex.risks(),
+          api.pulse.metrics(),
+          api.pulse.anomalies(),
+          api.catalysts.clusters(),
+          api.catalysts.actions(),
+        ]);
+        if (h.status === 'fulfilled') setHealth(h.value);
+        if (r.status === 'fulfilled') setRisks(r.value.risks);
+        if (m.status === 'fulfilled') setMetrics(m.value.metrics);
+        if (a.status === 'fulfilled') setAnomalies(a.value.anomalies);
+        if (c.status === 'fulfilled') setClusters(c.value.clusters);
+        if (act.status === 'fulfilled') setActions(act.value.actions);
+      } catch { /* silently handle */ }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const overallScore = health?.overall ?? 78;
+  const healthTrend = 'up';
+  const dimensions = health?.dimensions
+    ? Object.entries(health.dimensions).map(([key, val]) => ({
+        key,
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        score: val.score,
+        trend: val.trend as 'up' | 'down' | 'stable',
+        change: val.delta,
+        sparkline: [val.score - 6, val.score - 4, val.score - 3, val.score - 2, val.score - 1, val.score],
+      }))
+    : [];
+  const activeCatalysts = clusters.filter(c => c.status === 'active').length;
+  const totalTasks = clusters.reduce((sum, c) => sum + (c.tasksInProgress || 0), 0);
+  const criticalRisks = risks.filter(r => r.severity === 'critical').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Page Header */}
@@ -40,13 +95,13 @@ export function Dashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wider">Business Health</p>
-                <p className="text-3xl font-bold text-white mt-1">{businessHealthScore.overall}</p>
+                <p className="text-3xl font-bold text-white mt-1">{overallScore}</p>
                 <div className="flex items-center gap-1.5 mt-1">
-                  {trendIcon(businessHealthScore.trend)}
+                  {trendIcon(healthTrend)}
                   <span className="text-xs text-emerald-400">+2.3 pts</span>
                 </div>
               </div>
-              <ScoreRing score={businessHealthScore.overall} size="sm" />
+              <ScoreRing score={overallScore} size="sm" />
             </div>
           </CardContent>
         </Card>
@@ -57,7 +112,7 @@ export function Dashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wider">Active Risks</p>
-                <p className="text-3xl font-bold text-white mt-1">{riskAlerts.length}</p>
+                <p className="text-3xl font-bold text-white mt-1">{risks.length}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                   <span className="text-xs text-red-400">{criticalRisks} critical</span>
@@ -146,7 +201,7 @@ export function Dashboard() {
             <Link to="/apex" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
           </div>
           <div className="space-y-3">
-            {businessHealthScore.dimensions.slice(0, 5).map((dim) => (
+            {dimensions.slice(0, 5).map((dim) => (
               <div key={dim.key} className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -182,7 +237,7 @@ export function Dashboard() {
             <Link to="/apex" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
           </div>
           <div className="space-y-3">
-            {riskAlerts.slice(0, 3).map((risk) => (
+            {risks.slice(0, 3).map((risk) => (
               <div key={risk.id} className="p-3 rounded-lg bg-neutral-800/40 border border-neutral-800/50">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-neutral-200 line-clamp-1">{risk.title}</h4>
@@ -192,7 +247,7 @@ export function Dashboard() {
                 </div>
                 <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{risk.description}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-neutral-600">{Math.round(risk.confidence * 100)}% confidence</span>
+                  <span className="text-[10px] text-neutral-600">{Math.round(risk.probability * 100)}% confidence</span>
                   <LayerBadge layer="apex" />
                 </div>
               </div>
@@ -210,7 +265,7 @@ export function Dashboard() {
             <Link to="/pulse" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
           </div>
           <div className="space-y-3">
-            {anomalies.map((anom) => (
+            {anomalies.slice(0, 3).map((anom) => (
               <div key={anom.id} className="p-3 rounded-lg bg-neutral-800/40 border border-neutral-800/50">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-neutral-200 line-clamp-1">{anom.metric}</h4>
@@ -237,7 +292,7 @@ export function Dashboard() {
             <Link to="/catalysts" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
           </div>
           <div className="space-y-3">
-            {catalystActions.slice(0, 3).map((action) => (
+            {actions.slice(0, 3).map((action) => (
               <div key={action.id} className="p-3 rounded-lg bg-neutral-800/40 border border-neutral-800/50">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-neutral-200 line-clamp-1">{action.action}</h4>
@@ -245,7 +300,7 @@ export function Dashboard() {
                     {action.status}
                   </Badge>
                 </div>
-                <p className="text-xs text-neutral-500 mt-1">{action.clusterName}</p>
+                <p className="text-xs text-neutral-500 mt-1">{action.catalystName}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] text-neutral-600">{Math.round(action.confidence * 100)}% confidence</span>
                   <LayerBadge layer="catalysts" />
@@ -266,7 +321,7 @@ export function Dashboard() {
           <Link to="/pulse" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {processMetrics.slice(0, 8).map((metric) => (
+          {metrics.slice(0, 8).map((metric) => (
             <div key={metric.id} className="p-3 rounded-lg bg-neutral-800/30 border border-neutral-800/40">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-500 truncate">{metric.name}</span>
@@ -274,7 +329,7 @@ export function Dashboard() {
               </div>
               <div className="flex items-end justify-between mt-1">
                 <span className="text-lg font-bold text-white">{metric.value}<span className="text-xs text-neutral-500 ml-1">{metric.unit}</span></span>
-                <Sparkline data={metric.trend} width={50} height={18} color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'} />
+                <Sparkline data={metric.trend || []} width={50} height={18} color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'} />
               </div>
             </div>
           ))}

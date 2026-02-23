@@ -1,13 +1,35 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { processMetrics, anomalies, processFlows, correlationEvents } from "@/data/mockData";
-import { Activity, AlertTriangle, GitBranch, Link2, ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
+import type { Metric, AnomalyItem, ProcessItem, CorrelationItem } from "@/lib/api";
+import { Activity, AlertTriangle, GitBranch, Link2, ArrowRight, Loader2 } from "lucide-react";
 
 export function PulsePage() {
   const { activeTab, setActiveTab } = useTabState('monitoring');
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
+  const [processes, setProcesses] = useState<ProcessItem[]>([]);
+  const [correlations, setCorrelations] = useState<CorrelationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [m, a, p, c] = await Promise.allSettled([
+        api.pulse.metrics(), api.pulse.anomalies(), api.pulse.processes(), api.pulse.correlations(),
+      ]);
+      if (m.status === 'fulfilled') setMetrics(m.value.metrics);
+      if (a.status === 'fulfilled') setAnomalies(a.value.anomalies);
+      if (p.status === 'fulfilled') setProcesses(p.value.processes);
+      if (c.status === 'fulfilled') setCorrelations(c.value.correlations);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const tabs = [
     { id: 'monitoring', label: 'Live Monitoring', icon: <Activity size={14} /> },
@@ -15,6 +37,14 @@ export function PulsePage() {
     { id: 'processes', label: 'Process Mining', icon: <GitBranch size={14} /> },
     { id: 'correlations', label: 'Correlations', icon: <Link2 size={14} /> },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -33,7 +63,7 @@ export function PulsePage() {
       {activeTab === 'monitoring' && (
         <TabPanel>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {processMetrics.map((metric) => (
+            {metrics.map((metric) => (
               <Card key={metric.id} hover>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-neutral-500 truncate">{metric.name}</span>
@@ -47,7 +77,7 @@ export function PulsePage() {
                     <span className="text-sm text-neutral-500 ml-1">{metric.unit}</span>
                   </div>
                   <Sparkline
-                    data={metric.trend}
+                    data={metric.trend || []}
                     width={80}
                     height={30}
                     color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'}
@@ -56,11 +86,11 @@ export function PulsePage() {
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-[10px] text-neutral-600 mb-1">
                     <span>Threshold</span>
-                    <span className="text-emerald-500">{metric.threshold.green} (green)</span>
+                    <span className="text-emerald-500">{metric.thresholds?.green ?? 'N/A'} (green)</span>
                   </div>
                   <Progress
                     value={metric.value}
-                    max={metric.threshold.red * 1.2}
+                    max={(metric.thresholds?.red ?? metric.value) * 1.2}
                     color={metric.status === 'green' ? 'emerald' : metric.status === 'amber' ? 'amber' : 'red'}
                     size="sm"
                   />
@@ -74,7 +104,7 @@ export function PulsePage() {
       {activeTab === 'anomalies' && (
         <TabPanel>
           <div className="space-y-4">
-            {anomalies.map((anom) => (
+            {anomalies.map((anom: AnomalyItem) => (
               <Card key={anom.id}>
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -117,7 +147,7 @@ export function PulsePage() {
       {activeTab === 'processes' && (
         <TabPanel>
           <div className="space-y-6">
-            {processFlows.map((flow) => (
+            {processes.map((flow) => (
               <Card key={flow.id}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -173,7 +203,7 @@ export function PulsePage() {
       {activeTab === 'correlations' && (
         <TabPanel>
           <div className="space-y-4">
-            {correlationEvents.map((event) => (
+            {correlations.map((event) => (
               <Card key={event.id}>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-3 flex-1">
@@ -183,7 +213,7 @@ export function PulsePage() {
                     <div className="flex-1 relative">
                       <div className="h-px bg-gradient-to-r from-blue-500/50 to-indigo-500/50" />
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-700 text-[10px] text-neutral-400">
-                        {event.lag}d lag
+                        {event.lagDays}d lag
                       </div>
                     </div>
                     <div className="p-2 rounded-lg bg-indigo-500/15 text-center min-w-20">

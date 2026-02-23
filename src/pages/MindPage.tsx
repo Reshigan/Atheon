@@ -1,31 +1,62 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Brain, Cpu, Layers, Gauge, Zap, Database, BarChart3 } from "lucide-react";
-
-const modelTiers = [
-  { name: 'Tier 1 — Edge (Workers AI)', model: '@cf/meta/llama-3.1-8b-instruct', context: '8K tokens', latency: '<50ms', cost: 'Low', usage: 72, description: 'Fast classification, routing, simple Q&A' },
-  { name: 'Tier 2 — Atheon Mind 70B', model: 'atheon-mind-70b-q4', context: '32K tokens', latency: '200-500ms', cost: 'Medium', usage: 23, description: 'Complex reasoning, analysis, report generation' },
-  { name: 'Tier 3 — Apex Reasoning', model: 'atheon-mind-70b-full', context: '128K tokens', latency: '1-3s', cost: 'High', usage: 5, description: 'Scenario modelling, Monte Carlo, strategic analysis' },
-];
-
-const trainingPhases = [
-  { name: 'Domain Pre-Training', status: 'completed', progress: 100, duration: '2.5 weeks', tokens: '500B tokens' },
-  { name: 'Instruction Fine-Tuning (SFT)', status: 'completed', progress: 100, duration: '4 days', tokens: '50K pairs' },
-  { name: 'DPO Alignment', status: 'completed', progress: 100, duration: '1.5 weeks', tokens: '10K preferences' },
-  { name: 'LoRA Adapter — Vanta X', status: 'active', progress: 78, duration: '6 hours', tokens: 'Client-specific' },
-];
-
-const evaluationMetrics = [
-  { name: 'Task Completion Accuracy', value: 94.2, target: 95 },
-  { name: 'Format Compliance Rate', value: 97.8, target: 95 },
-  { name: 'Hallucination Rate', value: 2.1, target: 3, inverse: true },
-  { name: 'Citation Accuracy', value: 96.5, target: 95 },
-  { name: 'Enterprise Benchmark Score', value: 88.7, target: 85 },
-  { name: 'Latency P95 (Tier 2)', value: 450, target: 500, unit: 'ms', inverse: true },
-];
+import { api } from "@/lib/api";
+import type { MindModels, MindStats } from "@/lib/api";
+import { Brain, Cpu, Layers, Gauge, Zap, Database, BarChart3, Loader2 } from "lucide-react";
 
 export function MindPage() {
+  const [models, setModels] = useState<MindModels | null>(null);
+  const [stats, setStats] = useState<MindStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [m, s] = await Promise.allSettled([
+        api.mind.models(), api.mind.stats(),
+      ]);
+      if (m.status === 'fulfilled') setModels(m.value);
+      if (s.status === 'fulfilled') setStats(s.value);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
+
+  const modelTiers = (models?.tiers || []).map(t => ({
+    name: t.name, model: t.model, context: `${t.maxTokens} tokens`,
+    latency: `${t.avgLatency}ms`, cost: t.avgLatency < 100 ? 'Low' : t.avgLatency < 500 ? 'Medium' : 'High',
+    usage: stats?.tierBreakdown?.find(b => b.tier === t.id)?.count || 0,
+    description: t.description,
+  }));
+  const totalUsage = modelTiers.reduce((s, t) => s + t.usage, 0) || 1;
+
+  const pipeline = models?.trainingPipeline;
+  const trainingPhases = [
+    { name: 'Domain Pre-Training', status: pipeline?.preTraining?.status || 'pending', progress: pipeline?.preTraining?.progress || 0, duration: pipeline?.preTraining?.dataset || '', tokens: '' },
+    { name: 'Domain Fine-Tuning', status: pipeline?.domainFineTuning?.status || 'pending', progress: pipeline?.domainFineTuning?.progress || 0, duration: `Epoch ${pipeline?.domainFineTuning?.currentEpoch || 0}/${pipeline?.domainFineTuning?.totalEpochs || 0}`, tokens: '' },
+    { name: 'RLHF Alignment', status: pipeline?.rlhf?.status || 'pending', progress: pipeline?.rlhf?.progress || 0, duration: '', tokens: '' },
+  ];
+
+  const eval_ = pipeline?.evaluation;
+  const evaluationMetrics = [
+    { name: 'MMLU Score', value: eval_?.mmlu || 0, target: 80 },
+    { name: 'HumanEval', value: eval_?.humaneval || 0, target: 50 },
+    { name: 'Domain Accuracy', value: eval_?.domainAccuracy || 0, target: 85 },
+    { name: 'Hallucination Rate', value: eval_?.hallucination_rate || 0, target: 5, inverse: true, unit: '%' },
+    { name: 'Avg Latency', value: stats?.avgLatencyMs || 0, target: 500, unit: 'ms', inverse: true },
+    { name: 'Total Queries', value: stats?.totalQueries || 0, target: 100 },
+  ];
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
@@ -48,7 +79,7 @@ export function MindPage() {
             <Card key={tier.name} hover>
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-sm font-semibold text-white">{tier.name}</h3>
-                <Badge variant="outline">{tier.usage}% traffic</Badge>
+                <Badge variant="outline">{Math.round((tier.usage / totalUsage) * 100)}% traffic</Badge>
               </div>
               <div className="space-y-2 mb-3">
                 <div className="flex items-center justify-between">
@@ -69,7 +100,7 @@ export function MindPage() {
                 </div>
               </div>
               <p className="text-xs text-neutral-500">{tier.description}</p>
-              <Progress value={tier.usage} color="indigo" size="sm" className="mt-3" />
+              <Progress value={Math.round((tier.usage / totalUsage) * 100)} color="indigo" size="sm" className="mt-3" />
             </Card>
           ))}
         </div>

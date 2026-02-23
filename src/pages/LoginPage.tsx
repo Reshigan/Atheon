@@ -3,37 +3,66 @@ import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/appStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight, Shield, Globe } from "lucide-react";
+import { Sparkles, ArrowRight, Shield, Globe, Loader2 } from "lucide-react";
+import { api, setToken } from "@/lib/api";
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const setUser = useAppStore((s) => s.setUser);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setUser({
-      id: '1',
-      email: email || 'admin@vantax.co.za',
-      name: email ? email.split('@')[0] : 'Reshigan',
-      role: 'admin',
-      tenantId: 'vantax',
-      permissions: ['*'],
-    });
+  const doLogin = async () => {
+    try {
+      const res = await api.auth.demoLogin('vantax', 'admin');
+      setToken(res.token);
+      setUser({
+        id: res.user.id,
+        email: res.user.email,
+        name: res.user.name,
+        role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator',
+        tenantId: res.user.tenantId,
+        permissions: res.user.permissions,
+      });
+    } catch {
+      // Fallback to local login if API is unavailable
+      setUser({
+        id: '1',
+        email: email || 'admin@vantax.co.za',
+        name: email ? email.split('@')[0] : 'Reshigan',
+        role: 'admin',
+        tenantId: 'vantax',
+        permissions: ['*'],
+      });
+    }
     navigate('/');
   };
 
-  const handleSSO = (_provider: string) => {
-    setUser({
-      id: '1',
-      email: 'admin@vantax.co.za',
-      name: 'Reshigan',
-      role: 'admin',
-      tenantId: 'vantax',
-      permissions: ['*'],
-    });
-    navigate('/');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await doLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSSO = async (_provider: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await doLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,6 +112,12 @@ export function LoginPage() {
           <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
           <p className="text-sm text-neutral-500 mb-8">Sign in to your Atheon workspace</p>
 
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
           {/* SSO Buttons */}
           <div className="space-y-3 mb-6">
             <button
@@ -130,7 +165,8 @@ export function LoginPage() {
               </label>
               <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
             </div>
-            <Button variant="primary" size="lg" className="w-full" type="submit">
+            <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
+              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
               Sign In <ArrowRight size={16} />
             </Button>
           </form>

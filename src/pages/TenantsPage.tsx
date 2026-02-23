@@ -1,23 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { tenants } from "@/data/tenantData";
-import type { DeploymentModel } from "@/types";
+import { api } from "@/lib/api";
+import type { Tenant } from "@/lib/api";
 import {
   Building2, Cloud, Server, GitBranch, Users, Bot, Shield,
-  ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers
+  ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2
 } from "lucide-react";
 
-const deploymentIcon = (model: DeploymentModel) => {
+const deploymentIcon = (model: string) => {
   if (model === 'saas') return <Cloud size={14} className="text-blue-400" />;
   if (model === 'on-premise') return <Server size={14} className="text-amber-400" />;
   return <GitBranch size={14} className="text-violet-400" />;
 };
 
-const deploymentColor = (model: DeploymentModel) => {
+const deploymentColor = (model: string) => {
   if (model === 'saas') return 'info';
   if (model === 'on-premise') return 'warning';
   return 'default';
@@ -33,12 +32,34 @@ const statusBadge = (status: string) => {
 export function TenantsPage() {
   const { activeTab, setActiveTab } = useTabState('overview');
   const [expandedTenant, setExpandedTenant] = useState<string | null>(null);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await api.tenants.list();
+        setTenants(res.tenants);
+      } catch { /* silent */ }
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const tabs = [
     { id: 'overview', label: 'All Tenants', icon: <Building2 size={14} />, count: tenants.length },
     { id: 'entitlements', label: 'Entitlements', icon: <Shield size={14} /> },
     { id: 'infrastructure', label: 'Infrastructure', icon: <Server size={14} /> },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -133,8 +154,8 @@ export function TenantsPage() {
                     <p className="text-sm font-bold text-white">{tenant.entitlements.maxUsers}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-neutral-800/40">
-                    <span className="text-[10px] text-neutral-600">Storage</span>
-                    <p className="text-sm font-bold text-white">{tenant.infrastructure.storage.usedGb}/{tenant.infrastructure.storage.sizeGb}GB</p>
+                    <span className="text-[10px] text-neutral-600">Region</span>
+                    <p className="text-sm font-bold text-white">{tenant.region}</p>
                   </div>
                 </div>
 
@@ -192,21 +213,16 @@ export function TenantsPage() {
                       </h4>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="p-3 rounded bg-neutral-800/40">
-                          <span className="text-[10px] text-neutral-600">Compute</span>
-                          <p className="text-sm font-medium text-neutral-200">{tenant.infrastructure.compute.type}</p>
-                          <Badge variant={tenant.infrastructure.compute.status === 'running' ? 'success' : 'warning'} size="sm" className="mt-1">
-                            {tenant.infrastructure.compute.status}
-                          </Badge>
+                          <span className="text-[10px] text-neutral-600">Deployment</span>
+                          <p className="text-sm font-medium text-neutral-200">{tenant.deploymentModel}</p>
                         </div>
                         <div className="p-3 rounded bg-neutral-800/40">
-                          <span className="text-[10px] text-neutral-600">Database</span>
-                          <p className="text-sm font-medium text-neutral-200">{tenant.infrastructure.storage.type}</p>
-                          <Progress value={tenant.infrastructure.storage.usedGb} max={tenant.infrastructure.storage.sizeGb} color="indigo" size="sm" className="mt-2" />
+                          <span className="text-[10px] text-neutral-600">Plan</span>
+                          <p className="text-sm font-medium text-neutral-200">{tenant.plan}</p>
                         </div>
                         <div className="p-3 rounded bg-neutral-800/40">
-                          <span className="text-[10px] text-neutral-600">Vector DB</span>
-                          <p className="text-sm font-medium text-neutral-200">{tenant.infrastructure.vectorDb.type}</p>
-                          <span className="text-[10px] text-neutral-500">{tenant.infrastructure.vectorDb.indexCount.toLocaleString()} vectors</span>
+                          <span className="text-[10px] text-neutral-600">Region</span>
+                          <p className="text-sm font-medium text-neutral-200">{tenant.region}</p>
                         </div>
                       </div>
                     </div>
