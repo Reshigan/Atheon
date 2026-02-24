@@ -1,26 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="fp1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7dd3fc"/>
-      <stop offset="40%" stop-color="#38bdf8"/>
+    <linearGradient id="f1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9"/>
       <stop offset="100%" stop-color="#0ea5e9"/>
     </linearGradient>
-    <linearGradient id="fp2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#67e8f9"/>
-      <stop offset="50%" stop-color="#22d3ee"/>
-      <stop offset="100%" stop-color="#06b6d4"/>
+    <linearGradient id="f2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#0284c7"/>
     </linearGradient>
-    <linearGradient id="fs" x1="20%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.95"/>
-      <stop offset="40%" stop-color="white" stop-opacity="0.4"/>
+    <linearGradient id="f3" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#a5f3fc"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="sh" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
       <stop offset="100%" stop-color="white" stop-opacity="0"/>
     </linearGradient>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ecfeff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+    <filter id="gl">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
-  <rect width="64" height="64" rx="16" fill="#dbeafe"/>
-  <ellipse cx="24" cy="36" rx="10" ry="18" fill="url(#fp1)" transform="rotate(-35 24 36)"/>
-  <ellipse cx="40" cy="34" rx="9" ry="17" fill="url(#fp2)" transform="rotate(25 40 34)"/>
-  <ellipse cx="21" cy="30" rx="4" ry="9" fill="url(#fs)" transform="rotate(-35 21 30)" opacity="0.75"/>
-  <ellipse cx="38" cy="28" rx="3.5" ry="8" fill="url(#fs)" transform="rotate(25 38 28)" opacity="0.65"/>
-  <circle cx="19" cy="24" r="2.5" fill="white" opacity="0.9"/>
-  <circle cx="37" cy="23" r="2" fill="white" opacity="0.8"/>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <!-- Crystal polyhedron -->
+  <polygon points="32,8 18,26 22,42" fill="url(#f1)" stroke="#22d3ee" stroke-width="0.5" opacity="0.9"/>
+  <polygon points="32,8 46,26 42,42" fill="url(#f3)" stroke="#22d3ee" stroke-width="0.5" opacity="0.85"/>
+  <polygon points="32,8 22,42 42,42" fill="url(#f2)" stroke="#67e8f9" stroke-width="0.5" opacity="0.9"/>
+  <polygon points="22,42 32,56 42,42" fill="url(#f2)" stroke="#06b6d4" stroke-width="0.5" opacity="0.7"/>
+  <!-- Side faces -->
+  <polygon points="18,26 14,34 22,42" fill="url(#f2)" stroke="#22d3ee" stroke-width="0.3" opacity="0.6"/>
+  <polygon points="46,26 50,34 42,42" fill="url(#f1)" stroke="#22d3ee" stroke-width="0.3" opacity="0.5"/>
+  <!-- Specular highlight -->
+  <polygon points="32,10 24,24 30,22" fill="url(#sh)" opacity="0.5"/>
+  <!-- Vertex glows -->
+  <circle cx="32" cy="8" r="2.5" fill="white" opacity="0.95" filter="url(#gl)"/>
+  <circle cx="32" cy="56" r="2" fill="white" opacity="0.8" filter="url(#gl)"/>
+  <circle cx="18" cy="26" r="1.5" fill="#a5f3fc" opacity="0.7"/>
+  <circle cx="46" cy="26" r="1.5" fill="#a5f3fc" opacity="0.7"/>
+  <!-- Orbital ring hint -->
+  <ellipse cx="32" cy="32" rx="28" ry="9" fill="none" stroke="#22d3ee" stroke-width="0.6" opacity="0.35" transform="rotate(-15 32 32)"/>
+  <!-- Particles -->
+  <circle cx="10" cy="22" r="1" fill="#67e8f9" opacity="0.6"/>
+  <circle cx="54" cy="20" r="0.8" fill="#67e8f9" opacity="0.5"/>
+  <circle cx="12" cy="44" r="0.7" fill="#a5f3fc" opacity="0.4"/>
+  <circle cx="52" cy="46" r="0.9" fill="#a5f3fc" opacity="0.5"/>
 </svg>

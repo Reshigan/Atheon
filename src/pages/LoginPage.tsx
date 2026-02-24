@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { api, setToken, getToken } from "@/lib/api";
+import { Hero3D, AtheonCrystalIcon } from "@/components/common/Hero3D";
 
 type AuthMode = 'login' | 'register' | 'demo';
 
@@ -136,48 +137,9 @@ export function LoginPage() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_center,rgba(56,189,248,0.2),transparent_60%)]" />
 
           <div className="relative z-10 text-center">
-            {/* Large 3D Glossy Capsule Shape */}
-            <div className="animate-float mb-10">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" fill="none" className="w-56 h-48 mx-auto" style={{ filter: 'drop-shadow(0 25px 50px rgba(14,165,233,0.3))' }}>
-                <defs>
-                  <linearGradient id="login-pill-1" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#7dd3fc" />
-                    <stop offset="40%" stopColor="#38bdf8" />
-                    <stop offset="100%" stopColor="#0ea5e9" />
-                  </linearGradient>
-                  <linearGradient id="login-pill-2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#67e8f9" />
-                    <stop offset="50%" stopColor="#22d3ee" />
-                    <stop offset="100%" stopColor="#06b6d4" />
-                  </linearGradient>
-                  <linearGradient id="login-shine" x1="20%" y1="0%" x2="50%" y2="100%">
-                    <stop offset="0%" stopColor="white" stopOpacity="0.95" />
-                    <stop offset="40%" stopColor="white" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="white" stopOpacity="0" />
-                  </linearGradient>
-                  <filter id="login-glow">
-                    <feGaussianBlur stdDeviation="4" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
-                {/* Left capsule — larger */}
-                <ellipse cx="110" cy="150" rx="52" ry="95" fill="url(#login-pill-1)" transform="rotate(-35 110 150)" filter="url(#login-glow)" />
-                {/* Right capsule */}
-                <ellipse cx="195" cy="140" rx="46" ry="88" fill="url(#login-pill-2)" transform="rotate(25 195 140)" filter="url(#login-glow)" />
-                {/* Glass shine on left */}
-                <ellipse cx="92" cy="118" rx="22" ry="48" fill="url(#login-shine)" transform="rotate(-35 92 118)" opacity="0.75" />
-                {/* Glass shine on right */}
-                <ellipse cx="180" cy="108" rx="18" ry="42" fill="url(#login-shine)" transform="rotate(25 180 108)" opacity="0.65" />
-                {/* Bright highlights */}
-                <circle cx="85" cy="92" r="8" fill="white" opacity="0.9" />
-                <circle cx="85" cy="92" r="13" fill="white" opacity="0.2" />
-                <circle cx="175" cy="85" r="6" fill="white" opacity="0.8" />
-                <circle cx="175" cy="85" r="10" fill="white" opacity="0.15" />
-                {/* Depth dots */}
-                <circle cx="150" cy="190" r="4" fill="#7dd3fc" opacity="0.5" />
-                <circle cx="165" cy="80" r="2.5" fill="white" opacity="0.6" />
-                <circle cx="130" cy="100" r="3" fill="white" opacity="0.35" />
-              </svg>
+            {/* Advanced 3D Crystal Hero */}
+            <div className="mb-6 flex justify-center">
+              <Hero3D size="md" />
             </div>
 
             <h1 className="text-4xl font-bold text-gradient mb-3">Atheon</h1>
@@ -194,12 +156,8 @@ export function LoginPage() {
           <div className="w-full max-w-sm">
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="w-5 h-5">
-                  <path d="M32 12L16 48h8l2.5-6h11l2.5 6h8L32 12z" fill="white" opacity="0.95"/>
-                  <path d="M27.5 38L32 22l4.5 16h-9z" fill="rgba(14,165,233,0.5)"/>
-                  <circle cx="32" cy="16" r="2" fill="white" opacity="0.8"/>
-                </svg>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-50 to-sky-100 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <AtheonCrystalIcon size={32} />
               </div>
               <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
             </div>
