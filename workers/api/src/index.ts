@@ -63,14 +63,17 @@ app.use('/api/auth/*', authRateLimiter);
 app.use('/api/mind/*', aiRateLimiter);
 app.use('/api/*', apiRateLimiter);
 
-// Auto-seed database on first request (KV-backed to survive isolate restarts)
-const MIGRATION_VERSION = 'v4';
+// 4.4: Database migrations — canonical definitions live in /migrations/*.sql files
+// At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
+// New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
+// Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
+const MIGRATION_VERSION = 'v5';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
   if (!alreadyMigrated) {
     try {
-      // Run migrations inline (create tables if not exist)
+      // Runtime migration (mirrors /migrations/*.sql files — see 4.4 audit fix)
       const migrationSQL = `
         CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT UNIQUE NOT NULL, industry TEXT NOT NULL DEFAULT 'general', plan TEXT NOT NULL DEFAULT 'starter', status TEXT NOT NULL DEFAULT 'active', deployment_model TEXT NOT NULL DEFAULT 'saas', region TEXT NOT NULL DEFAULT 'af-south-1', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
         CREATE TABLE IF NOT EXISTS tenant_entitlements (tenant_id TEXT PRIMARY KEY REFERENCES tenants(id), layers TEXT NOT NULL DEFAULT '["apex","pulse"]', catalyst_clusters TEXT NOT NULL DEFAULT '["finance"]', max_agents INTEGER NOT NULL DEFAULT 5, max_users INTEGER NOT NULL DEFAULT 10, autonomy_tiers TEXT NOT NULL DEFAULT '["read-only"]', llm_tiers TEXT NOT NULL DEFAULT '["tier-1"]', features TEXT NOT NULL DEFAULT '[]', sso_enabled INTEGER NOT NULL DEFAULT 0, api_access INTEGER NOT NULL DEFAULT 0, custom_branding INTEGER NOT NULL DEFAULT 0, data_retention_days INTEGER NOT NULL DEFAULT 90);

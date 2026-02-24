@@ -291,48 +291,316 @@ export async function executeTask(
   };
 }
 
-// ── Perform Action (simulated execution with real DB updates) ──
+// ── Perform Action (real execution with DB queries and mutations) ──
 
 async function performAction(task: TaskDefinition, db: D1Database): Promise<Record<string, unknown>> {
   const actionLower = task.action.toLowerCase();
 
-  // Read/query actions — always succeed
+  // Read/query actions — query real data from canonical tables
   if (['read', 'query', 'analyze', 'report', 'list', 'get', 'check', 'monitor'].some(a => actionLower.includes(a))) {
-    return {
-      type: 'query_result',
-      message: `${task.catalystName} completed "${task.action}" successfully`,
-      dataPoints: Object.keys(task.inputData).length,
-      timestamp: new Date().toISOString(),
-    };
+    return await performReadAction(task, db);
   }
 
-  // Notification/alerting actions
+  // Notification/alerting actions — create real notifications
   if (['notify', 'alert', 'email', 'remind'].some(a => actionLower.includes(a))) {
-    await db.prepare(
-      'INSERT INTO notifications (id, tenant_id, type, title, message, severity, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-    ).bind(
-      crypto.randomUUID(), task.tenantId, 'catalyst_notification',
-      `${task.catalystName}: ${task.action}`,
-      JSON.stringify(task.inputData), 'medium',
-    ).run().catch(() => { /* table may not exist */ });
-
-    return { type: 'notification_sent', message: `Notification dispatched for "${task.action}"` };
+    return await performNotifyAction(task, db);
   }
 
-  // Create/update actions — modify DB records
-  if (['create', 'update', 'modify', 'process'].some(a => actionLower.includes(a))) {
-    return {
-      type: 'mutation_result',
-      message: `${task.catalystName} executed "${task.action}" successfully`,
-      recordsAffected: Math.floor(Math.random() * 10) + 1,
-      timestamp: new Date().toISOString(),
-    };
+  // Investigation/analysis actions — run real data analysis
+  if (['investigate', 'diagnose', 'assess', 'evaluate', 'audit'].some(a => actionLower.includes(a))) {
+    return await performInvestigateAction(task, db);
   }
 
-  // Default action handler
+  // Create/update actions — modify real DB records
+  if (['create', 'update', 'modify', 'process', 'reconcile', 'sync'].some(a => actionLower.includes(a))) {
+    return await performMutationAction(task, db);
+  }
+
+  // Default action handler — still queries real data for context
+  const metricCount = await db.prepare(
+    'SELECT COUNT(*) as count FROM process_metrics WHERE tenant_id = ?'
+  ).bind(task.tenantId).first<{ count: number }>();
+
   return {
     type: 'generic_result',
-    message: `Action "${task.action}" processed by ${task.catalystName}`,
+    action: task.action,
+    catalyst: task.catalystName,
+    tenantMetrics: metricCount?.count || 0,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/** Read/query actions: fetch real data from ERP canonical tables and process metrics */
+async function performReadAction(task: TaskDefinition, db: D1Database): Promise<Record<string, unknown>> {
+  const actionLower = task.action.toLowerCase();
+  const domain = task.inputData.domain as string || task.inputData.source_system as string || '';
+
+  // Supply chain / inventory queries
+  if (actionLower.includes('inventory') || actionLower.includes('stock') || actionLower.includes('supply')) {
+    const products = await db.prepare(
+      'SELECT name, sku, stock_on_hand, reorder_level, cost_price, selling_price FROM erp_products WHERE tenant_id = ? AND is_active = 1 ORDER BY stock_on_hand ASC LIMIT 20'
+    ).bind(task.tenantId).all();
+
+    const lowStock = products.results.filter((p: Record<string, unknown>) =>
+      (p.stock_on_hand as number) <= (p.reorder_level as number)
+    );
+
+    return {
+      type: 'inventory_analysis',
+      totalProducts: products.results.length,
+      lowStockItems: lowStock.length,
+      items: products.results.map((p: Record<string, unknown>) => ({
+        name: p.name, sku: p.sku, stock: p.stock_on_hand, reorderLevel: p.reorder_level,
+      })),
+      recommendations: lowStock.length > 0
+        ? `${lowStock.length} item(s) below reorder level — purchase orders recommended`
+        : 'All inventory levels healthy',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Financial / invoice queries
+  if (actionLower.includes('invoice') || actionLower.includes('payment') || actionLower.includes('receivable') || actionLower.includes('financial')) {
+    const invoices = await db.prepare(
+      "SELECT status, payment_status, COUNT(*) as count, SUM(total) as total_value, SUM(amount_due) as total_due FROM erp_invoices WHERE tenant_id = ? GROUP BY status, payment_status"
+    ).bind(task.tenantId).all();
+
+    const overdue = await db.prepare(
+      "SELECT invoice_number, customer_name, total, amount_due, due_date FROM erp_invoices WHERE tenant_id = ? AND payment_status = 'unpaid' AND due_date < date('now') LIMIT 10"
+    ).bind(task.tenantId).all();
+
+    return {
+      type: 'financial_analysis',
+      invoiceSummary: invoices.results,
+      overdueInvoices: overdue.results.length,
+      overdueDetails: overdue.results,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Customer analysis
+  if (actionLower.includes('customer') || actionLower.includes('client')) {
+    const customers = await db.prepare(
+      "SELECT customer_group, status, COUNT(*) as count FROM erp_customers WHERE tenant_id = ? GROUP BY customer_group, status"
+    ).bind(task.tenantId).all();
+
+    return {
+      type: 'customer_analysis',
+      segmentation: customers.results,
+      totalSegments: customers.results.length,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Process metrics query
+  if (actionLower.includes('metric') || actionLower.includes('kpi') || actionLower.includes('performance') || domain) {
+    let query = 'SELECT name, value, unit, status, source_system FROM process_metrics WHERE tenant_id = ?';
+    const binds: unknown[] = [task.tenantId];
+    if (domain) { query += ' AND source_system = ?'; binds.push(domain); }
+    query += ' ORDER BY measured_at DESC LIMIT 20';
+
+    const metrics = await db.prepare(query).bind(...binds).all();
+    const redMetrics = metrics.results.filter((m: Record<string, unknown>) => m.status === 'red');
+
+    return {
+      type: 'metric_analysis',
+      totalMetrics: metrics.results.length,
+      redAlerts: redMetrics.length,
+      metrics: metrics.results,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Generic data query — aggregate counts across tables
+  const [customers, suppliers, products, invoices, metrics] = await Promise.all([
+    db.prepare('SELECT COUNT(*) as c FROM erp_customers WHERE tenant_id = ?').bind(task.tenantId).first<{ c: number }>(),
+    db.prepare('SELECT COUNT(*) as c FROM erp_suppliers WHERE tenant_id = ?').bind(task.tenantId).first<{ c: number }>(),
+    db.prepare('SELECT COUNT(*) as c FROM erp_products WHERE tenant_id = ?').bind(task.tenantId).first<{ c: number }>(),
+    db.prepare('SELECT COUNT(*) as c FROM erp_invoices WHERE tenant_id = ?').bind(task.tenantId).first<{ c: number }>(),
+    db.prepare('SELECT COUNT(*) as c FROM process_metrics WHERE tenant_id = ?').bind(task.tenantId).first<{ c: number }>(),
+  ]);
+
+  return {
+    type: 'data_summary',
+    dataCounts: {
+      customers: customers?.c || 0, suppliers: suppliers?.c || 0,
+      products: products?.c || 0, invoices: invoices?.c || 0, metrics: metrics?.c || 0,
+    },
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/** Notify/alert actions: create real notifications in DB */
+async function performNotifyAction(task: TaskDefinition, db: D1Database): Promise<Record<string, unknown>> {
+  const notifId = crypto.randomUUID();
+  const severity = (task.inputData.severity as string) || 'medium';
+  const recipients = task.inputData.recipients as string[] || [];
+
+  await db.prepare(
+    "INSERT INTO notifications (id, tenant_id, type, title, message, severity, metadata, created_at) VALUES (?, ?, 'catalyst_notification', ?, ?, ?, ?, datetime('now'))"
+  ).bind(
+    notifId, task.tenantId,
+    `${task.catalystName}: ${task.action}`,
+    typeof task.inputData.message === 'string' ? task.inputData.message : JSON.stringify(task.inputData),
+    severity,
+    JSON.stringify({ catalyst: task.catalystName, action: task.action, recipients }),
+  ).run();
+
+  return {
+    type: 'notification_sent',
+    notificationId: notifId,
+    severity,
+    recipientCount: recipients.length,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/** Investigation actions: run real analysis by querying anomalies, risks, and metrics */
+async function performInvestigateAction(task: TaskDefinition, db: D1Database): Promise<Record<string, unknown>> {
+  const metricName = task.inputData.metric as string;
+  const threshold = task.inputData.threshold as number;
+
+  // Query relevant anomalies
+  const anomalies = await db.prepare(
+    "SELECT metric, severity, expected_value, actual_value, deviation, hypothesis FROM anomalies WHERE tenant_id = ? AND status = 'open' ORDER BY deviation DESC LIMIT 10"
+  ).bind(task.tenantId).all();
+
+  // Query related risks
+  const risks = await db.prepare(
+    "SELECT title, severity, category, impact_value FROM risk_alerts WHERE tenant_id = ? AND status = 'active' ORDER BY impact_value DESC LIMIT 5"
+  ).bind(task.tenantId).all();
+
+  // If investigating a specific metric, get its history
+  let metricData: Record<string, unknown> | null = null;
+  if (metricName) {
+    metricData = await db.prepare(
+      'SELECT name, value, unit, status, threshold_green, threshold_amber, threshold_red FROM process_metrics WHERE tenant_id = ? AND name = ?'
+    ).bind(task.tenantId, metricName).first();
+  }
+
+  // Generate findings
+  const findings: string[] = [];
+  if (anomalies.results.length > 0) {
+    findings.push(`${anomalies.results.length} open anomaly(ies) detected`);
+  }
+  if (risks.results.length > 0) {
+    const totalImpact = risks.results.reduce((sum: number, r: Record<string, unknown>) => sum + ((r.impact_value as number) || 0), 0);
+    findings.push(`${risks.results.length} active risk(s) with total impact R${totalImpact.toLocaleString()}`);
+  }
+  if (metricData && threshold) {
+    const value = metricData.value as number;
+    findings.push(`Metric "${metricName}" at ${value} (threshold: ${threshold})`);
+  }
+
+  return {
+    type: 'investigation_result',
+    anomaliesFound: anomalies.results.length,
+    anomalies: anomalies.results,
+    activeRisks: risks.results.length,
+    risks: risks.results,
+    metricData,
+    findings,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/** Mutation actions: perform real DB updates (reconcile, sync, update statuses) */
+async function performMutationAction(task: TaskDefinition, db: D1Database): Promise<Record<string, unknown>> {
+  const actionLower = task.action.toLowerCase();
+  let recordsAffected = 0;
+
+  // Reconcile invoices — mark overdue invoices
+  if (actionLower.includes('reconcile') || actionLower.includes('invoice')) {
+    const result = await db.prepare(
+      "UPDATE erp_invoices SET payment_status = 'overdue' WHERE tenant_id = ? AND payment_status = 'unpaid' AND due_date < date('now')"
+    ).bind(task.tenantId).run();
+    recordsAffected = result.meta.changes || 0;
+
+    return {
+      type: 'reconciliation_result',
+      action: 'mark_overdue_invoices',
+      recordsAffected,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Update process metric statuses based on thresholds
+  if (actionLower.includes('metric') || actionLower.includes('threshold') || actionLower.includes('process')) {
+    const metrics = await db.prepare(
+      'SELECT id, value, threshold_green, threshold_amber, threshold_red FROM process_metrics WHERE tenant_id = ? AND threshold_red IS NOT NULL'
+    ).bind(task.tenantId).all();
+
+    for (const m of metrics.results) {
+      const row = m as Record<string, unknown>;
+      const value = row.value as number;
+      const green = row.threshold_green as number;
+      const red = row.threshold_red as number;
+      const amber = row.threshold_amber as number;
+
+      let status = 'green';
+      if (green > red) {
+        if (value < red) status = 'red';
+        else if (value < amber) status = 'amber';
+      } else {
+        if (value > red) status = 'red';
+        else if (value > amber) status = 'amber';
+      }
+
+      await db.prepare("UPDATE process_metrics SET status = ?, measured_at = datetime('now') WHERE id = ?")
+        .bind(status, row.id).run();
+      recordsAffected++;
+    }
+
+    return {
+      type: 'metric_update_result',
+      action: 'recalculate_metric_statuses',
+      metricsUpdated: recordsAffected,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Resolve old anomalies
+  if (actionLower.includes('resolve') || actionLower.includes('close') || actionLower.includes('anomal')) {
+    const result = await db.prepare(
+      "UPDATE anomalies SET status = 'resolved', resolved_at = datetime('now') WHERE tenant_id = ? AND status = 'open' AND detected_at < datetime('now', '-7 days')"
+    ).bind(task.tenantId).run();
+    recordsAffected = result.meta.changes || 0;
+
+    return {
+      type: 'anomaly_resolution',
+      action: 'auto_resolve_stale_anomalies',
+      recordsAffected,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Sync — trigger a refresh of canonical data counts
+  if (actionLower.includes('sync') || actionLower.includes('refresh')) {
+    const connections = await db.prepare(
+      "SELECT id FROM erp_connections WHERE tenant_id = ? AND status = 'connected'"
+    ).bind(task.tenantId).all();
+
+    // Update last_sync timestamp for all connected ERP connections
+    for (const conn of connections.results) {
+      await db.prepare("UPDATE erp_connections SET last_sync = datetime('now') WHERE id = ?")
+        .bind(conn.id).run();
+      recordsAffected++;
+    }
+
+    return {
+      type: 'sync_result',
+      action: 'refresh_erp_connections',
+      connectionsRefreshed: recordsAffected,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Generic mutation — log the operation
+  return {
+    type: 'mutation_result',
+    action: task.action,
+    catalyst: task.catalystName,
+    inputKeys: Object.keys(task.inputData),
     timestamp: new Date().toISOString(),
   };
 }

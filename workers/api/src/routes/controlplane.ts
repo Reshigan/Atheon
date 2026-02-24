@@ -118,18 +118,74 @@ controlplane.post('/deployments', async (c) => {
 controlplane.put('/deployments/:id', async (c) => {
   const tenantId = getTenantId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<{ status?: string; version?: string }>();
+  const body = await c.req.json<{
+    status?: string; version?: string; name?: string;
+    agent_type?: string; deployment_model?: string;
+    config?: Record<string, unknown>;
+    health_score?: number; uptime?: number;
+  }>();
+
+  // Verify deployment exists
+  const existing = await c.env.DB.prepare(
+    'SELECT id, status, config FROM agent_deployments WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!existing) return c.json({ error: 'Deployment not found' }, 404);
 
   const updates: string[] = [];
   const values: unknown[] = [];
   if (body.status) { updates.push('status = ?'); values.push(body.status); }
   if (body.version) { updates.push('version = ?'); values.push(body.version); }
+  if (body.name) { updates.push('name = ?'); values.push(body.name); }
+  if (body.agent_type) { updates.push('agent_type = ?'); values.push(body.agent_type); }
+  if (body.deployment_model) { updates.push('deployment_model = ?'); values.push(body.deployment_model); }
+  if (typeof body.health_score === 'number') { updates.push('health_score = ?'); values.push(body.health_score); }
+  if (typeof body.uptime === 'number') { updates.push('uptime = ?'); values.push(body.uptime); }
+  if (body.config) {
+    // Merge with existing config
+    const existingConfig = JSON.parse(existing.config as string || '{}');
+    const mergedConfig = { ...existingConfig, ...body.config };
+    updates.push('config = ?');
+    values.push(JSON.stringify(mergedConfig));
+  }
   updates.push('last_heartbeat = datetime(\'now\')');
 
   values.push(id, tenantId);
   await c.env.DB.prepare(`UPDATE agent_deployments SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`).bind(...values).run();
 
-  return c.json({ success: true });
+  // Audit log for status changes
+  if (body.status) {
+    const prevStatus = existing.status as string;
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId,
+      `agent.${body.status === 'running' ? 'started' : body.status === 'stopped' ? 'stopped' : body.status === 'deploying' ? 'restarting' : 'updated'}`,
+      'controlplane', id,
+      JSON.stringify({ previousStatus: prevStatus, newStatus: body.status, version: body.version }),
+      'success',
+    ).run();
+  }
+
+  // Fetch and return updated deployment
+  const updated = await c.env.DB.prepare(
+    `SELECT ad.*, cc.name as cluster_name, t.name as tenant_name
+     FROM agent_deployments ad
+     LEFT JOIN catalyst_clusters cc ON ad.cluster_id = cc.id
+     JOIN tenants t ON ad.tenant_id = t.id
+     WHERE ad.id = ? AND ad.tenant_id = ?`
+  ).bind(id, tenantId).first();
+
+  return c.json({
+    success: true,
+    deployment: updated ? {
+      id: updated.id,
+      name: updated.name,
+      status: updated.status,
+      version: updated.version,
+      healthScore: updated.health_score,
+      config: JSON.parse(updated.config as string || '{}'),
+    } : null,
+  });
 });
 
 // DELETE /api/controlplane/deployments/:id

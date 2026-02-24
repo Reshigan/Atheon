@@ -28,7 +28,7 @@ export function CatalystsPage() {
   const [expandedAction, setExpandedAction] = useState<string | null>(null);
   const [clusters, setClusters] = useState<ClusterItem[]>([]);
   const [actions, setActions] = useState<ActionItem[]>([]);
-  const [_governance, setGovernance] = useState<GovernanceData | null>(null);
+  const [governance, setGovernance] = useState<GovernanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingAction, setUpdatingAction] = useState<string | null>(null);
 
@@ -264,23 +264,27 @@ export function CatalystsPage() {
 
             <Card>
               <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-600" /> Escalation Config
+                <Zap className="w-4 h-4 text-amber-600" /> Governance Metrics
               </h3>
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
-                  <span className="text-xs text-gray-400">Default Confidence Threshold</span>
-                  <p className="text-lg font-bold text-amber-600">85%</p>
-                  <p className="text-[10px] text-gray-400">Auto-escalate when below</p>
+                  <span className="text-xs text-gray-400">Total Actions</span>
+                  <p className="text-lg font-bold text-cyan-600">{governance?.totalActions ?? 0}</p>
+                  <p className="text-[10px] text-gray-400">All catalyst executions</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
-                  <span className="text-xs text-gray-400">Human Override Rate</span>
-                  <p className="text-lg font-bold text-gray-900">3.2%</p>
-                  <p className="text-[10px] text-gray-400">Last 30 days</p>
+                  <span className="text-xs text-gray-400">Pending Approvals</span>
+                  <p className="text-lg font-bold text-amber-600">{governance?.pendingApprovals ?? 0}</p>
+                  <p className="text-[10px] text-gray-400">Awaiting human review</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
-                  <span className="text-xs text-gray-400">Avg Execution Time</span>
-                  <p className="text-lg font-bold text-gray-900">4.2s</p>
-                  <p className="text-[10px] text-gray-400">Per catalyst action</p>
+                  <span className="text-xs text-gray-400">Approved / Rejected</span>
+                  <p className="text-lg font-bold text-gray-900">
+                    <span className="text-emerald-600">{governance?.approved ?? 0}</span>
+                    {' / '}
+                    <span className="text-red-500">{governance?.rejected ?? 0}</span>
+                  </p>
+                  <p className="text-[10px] text-gray-400">Human override decisions</p>
                 </div>
               </div>
             </Card>

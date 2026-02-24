@@ -152,8 +152,16 @@ export function auditEnrichment() {
     const duration = Date.now() - start;
 
     // 4.6: Audit dedup — skip middleware audit logging for routes that already audit themselves
-    // (auth, catalysts, iam routes all INSERT INTO audit_log in their handlers)
-    const selfAuditedPrefixes = ['/api/auth/', '/api/v1/auth/', '/api/audit/', '/api/v1/audit/'];
+    // These route handlers INSERT INTO audit_log directly in their request handlers
+    const selfAuditedPrefixes = [
+      '/api/auth/', '/api/v1/auth/',           // login, register, password change, SSO
+      '/api/audit/', '/api/v1/audit/',          // audit log creation
+      '/api/catalysts/', '/api/v1/catalysts/',  // catalyst actions, approvals, execution
+      '/api/iam/', '/api/v1/iam/',              // policy creation, role assignments
+      '/api/controlplane/', '/api/v1/controlplane/', // agent deploy, status change, config update
+      '/api/erp/', '/api/v1/erp/',              // ERP sync, connection management
+      '/api/storage/', '/api/v1/storage/',      // document upload, report generation
+    ];
     const isSelfAudited = selfAuditedPrefixes.some(p => c.req.path.startsWith(p));
 
     if (!isSelfAudited && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(c.req.method)) {

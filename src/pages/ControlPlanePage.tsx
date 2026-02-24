@@ -7,7 +7,7 @@ import type { ControlPlaneHealth, DeploymentItem } from "@/lib/api";
 import {
   Bot, Play, Square, RefreshCw, Plus, Server, Cloud, GitBranch,
   CheckCircle, XCircle, Activity, ChevronDown, ChevronUp,
-  Settings, Shield, Cpu, Loader2, X
+  Settings, Shield, Cpu, Loader2, X, Trash2, AlertCircle
 } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
@@ -37,10 +37,12 @@ function healthVariant(score: number): 'success' | 'warning' | 'danger' {
 export function ControlPlanePage() {
   const [expandedDep, setExpandedDep] = useState<string | null>(null);
   const [deployments, setDeployments] = useState<DeploymentItem[]>([]);
-  const [_health, setHealth] = useState<ControlPlaneHealth | null>(null);
+  const [health, setHealth] = useState<ControlPlaneHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeploy, setShowDeploy] = useState(false);
-  const [deployForm, setDeployForm] = useState({ name: '', agentType: 'catalyst', deploymentModel: 'saas', version: '1.0.0' });
+  const [deployForm, setDeployForm] = useState({ name: '', agent_type: 'catalyst', deployment_model: 'saas', version: '1.0.0', cluster_id: '' });
+  const [clusters, setClusters] = useState<{ id: string; name: string }[]>([]);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [deploying, setDeploying] = useState(false);
   const [updatingDeployment, setUpdatingDeployment] = useState<string | null>(null);
   const [showEditConfig, setShowEditConfig] = useState(false);
@@ -51,13 +53,22 @@ export function ControlPlanePage() {
   const handleDeploy = async () => {
     if (!deployForm.name.trim()) return;
     setDeploying(true);
+    setActionError(null);
     try {
-      await api.controlplane.createDeployment(deployForm);
-      const [d] = await Promise.allSettled([api.controlplane.deployments()]);
-      if (d.status === 'fulfilled') setDeployments(d.value.deployments);
+      const payload: Record<string, unknown> = {
+        name: deployForm.name,
+        agent_type: deployForm.agent_type,
+        deployment_model: deployForm.deployment_model,
+        version: deployForm.version,
+      };
+      if (deployForm.cluster_id) payload.cluster_id = deployForm.cluster_id;
+      await api.controlplane.createDeployment(payload);
+      await refresh();
       setShowDeploy(false);
-      setDeployForm({ name: '', agentType: 'catalyst', deploymentModel: 'saas', version: '1.0.0' });
-    } catch { /* silent */ }
+      setDeployForm({ name: '', agent_type: 'catalyst', deployment_model: 'saas', version: '1.0.0', cluster_id: '' });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Deploy failed');
+    }
     setDeploying(false);
   };
 
@@ -73,11 +84,12 @@ export function ControlPlanePage() {
   const updateStatus = async (deploymentId: string, status: string) => {
     if (updatingDeployment) return;
     setUpdatingDeployment(deploymentId);
+    setActionError(null);
     try {
       await api.controlplane.updateDeployment(deploymentId, { status });
       await refresh();
-    } catch {
-      /* silent */
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : `Failed to set status to ${status}`);
     }
     setUpdatingDeployment(null);
   };
@@ -85,12 +97,15 @@ export function ControlPlanePage() {
   const restartDeployment = async (deploymentId: string) => {
     if (updatingDeployment) return;
     setUpdatingDeployment(deploymentId);
+    setActionError(null);
     try {
       await api.controlplane.updateDeployment(deploymentId, { status: 'deploying' });
+      // Brief delay to simulate restart
+      await new Promise(r => setTimeout(r, 800));
       await api.controlplane.updateDeployment(deploymentId, { status: 'running' });
       await refresh();
-    } catch {
-      /* silent */
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Restart failed');
     }
     setUpdatingDeployment(null);
   };
@@ -105,6 +120,7 @@ export function ControlPlanePage() {
   const saveDeploymentConfig = async () => {
     if (!editingDeployment || updatingDeployment) return;
     setUpdatingDeployment(editingDeployment.id);
+    setActionError(null);
     try {
       await api.controlplane.updateDeployment(editingDeployment.id, {
         version: editVersion,
@@ -113,8 +129,23 @@ export function ControlPlanePage() {
       await refresh();
       setShowEditConfig(false);
       setEditingDeployment(null);
-    } catch {
-      /* silent */
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to save config');
+    }
+    setUpdatingDeployment(null);
+  };
+
+  const deleteDeployment = async (deploymentId: string) => {
+    if (updatingDeployment) return;
+    if (!confirm('Are you sure you want to delete this deployment?')) return;
+    setUpdatingDeployment(deploymentId);
+    setActionError(null);
+    try {
+      await api.controlplane.deleteDeployment(deploymentId);
+      await refresh();
+      setExpandedDep(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Delete failed');
     }
     setUpdatingDeployment(null);
   };
@@ -123,6 +154,11 @@ export function ControlPlanePage() {
     async function load() {
       setLoading(true);
       await refresh();
+      // Load clusters for deploy modal
+      try {
+        const cl = await api.catalysts.clusters();
+        setClusters(cl.clusters.map(c => ({ id: c.id, name: c.name })));
+      } catch { /* ignore */ }
       setLoading(false);
     }
     load();
@@ -176,8 +212,11 @@ export function ControlPlanePage() {
             </div>
             <div className="space-y-3">
               <div><label className="text-xs text-gray-500">Agent Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
-              <div><label className="text-xs text-gray-500">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.agentType} onChange={e => setDeployForm(p => ({ ...p, agentType: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
-              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.deploymentModel} onChange={e => setDeployForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs text-gray-500">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.agent_type} onChange={e => setDeployForm(p => ({ ...p, agent_type: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
+              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.deployment_model} onChange={e => setDeployForm(p => ({ ...p, deployment_model: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              {clusters.length > 0 && (
+                <div><label className="text-xs text-gray-500">Cluster (optional)</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.cluster_id} onChange={e => setDeployForm(p => ({ ...p, cluster_id: e.target.value }))}><option value="">No cluster</option>{clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+              )}
               <div><label className="text-xs text-gray-500">Version</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono" value={deployForm.version} onChange={e => setDeployForm(p => ({ ...p, version: e.target.value }))} /></div>
             </div>
             <div className="flex gap-3 pt-2">
@@ -264,6 +303,31 @@ export function ControlPlanePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Error Banner */}
+      {actionError && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <AlertCircle size={16} />
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="ml-auto text-red-400 hover:text-red-600"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* Health Overview */}
+      {health && (
+        <Card>
+          <div className="flex items-center gap-3 mb-3">
+            <Activity size={16} className="text-cyan-500" />
+            <h3 className="text-sm font-semibold text-gray-900">Platform Health</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div><span className="text-[10px] text-gray-400">Overall Health</span><p className="text-lg font-bold text-emerald-600">{health.overallHealth}%</p></div>
+            <div><span className="text-[10px] text-gray-400">Overall Uptime</span><p className="text-lg font-bold text-gray-900">{health.overallUptime}%</p></div>
+            <div><span className="text-[10px] text-gray-400">Deployment Status</span><div className="flex gap-2 mt-0.5">{Object.entries(health.deploymentStatus || {}).map(([s, c]) => <Badge key={s} variant={s === 'running' ? 'success' : s === 'stopped' ? 'danger' : 'default'} size="sm">{s}: {c}</Badge>)}</div></div>
+            <div><span className="text-[10px] text-gray-400">Last Checked</span><p className="text-sm font-bold text-gray-900">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
+          </div>
+        </Card>
       )}
 
       {/* Summary */}
@@ -442,6 +506,14 @@ export function ControlPlanePage() {
                       disabled={updatingDeployment === dep.id}
                     >
                       <Settings size={12} /> Edit Config
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); deleteDeployment(dep.id); }}
+                      disabled={updatingDeployment === dep.id}
+                    >
+                      <Trash2 size={12} /> Delete
                     </Button>
                   </div>
                 </div>

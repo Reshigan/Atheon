@@ -19,7 +19,7 @@ export interface CatalystQueueMessage {
 // Main scheduled handler — dispatched by Cron Triggers
 // Configured in wrangler.toml: [triggers] crons = ["every 15 minutes"]
 export async function handleScheduled(
-  _event: ScheduledEvent,
+  _event: ScheduledController,
   env: ScheduledEnv,
 ): Promise<void> {
   const db = env.DB;
@@ -43,8 +43,8 @@ export async function handleScheduled(
       // 3.8: Memory auto-population from ERP data
       await autoPopulateMemory(db, tenantId);
 
-      // 3.9: Process mining refresh
-      await refreshProcessMining(db, tenantId);
+      // 3.9: Process mining refresh + 5.4: event-driven catalyst triggers
+      await refreshProcessMining(db, tenantId, env.CATALYST_QUEUE);
 
       // 5.4: Agent lifecycle — heartbeat check & status updates
       await checkAgentLifecycle(db, cache, tenantId);
@@ -258,11 +258,14 @@ async function autoPopulateMemory(db: D1Database, tenantId: string): Promise<voi
 /**
  * 3.9: Process Mining Refresh
  * Recalculates process flow conformance rates and detects new anomalies
+ * 5.4: Enqueues catalyst tasks when metrics transition to red
  */
-async function refreshProcessMining(db: D1Database, tenantId: string): Promise<void> {
+async function refreshProcessMining(
+  db: D1Database, tenantId: string, queue?: Queue<CatalystQueueMessage>
+): Promise<void> {
   // Recalculate metric statuses based on thresholds
   const metrics = await db.prepare(
-    'SELECT id, value, threshold_green, threshold_amber, threshold_red FROM process_metrics WHERE tenant_id = ? AND threshold_red IS NOT NULL'
+    'SELECT id, name, value, status as current_status, threshold_green, threshold_amber, threshold_red, source_system FROM process_metrics WHERE tenant_id = ? AND threshold_red IS NOT NULL'
   ).bind(tenantId).all();
 
   for (const m of metrics.results) {
@@ -271,6 +274,7 @@ async function refreshProcessMining(db: D1Database, tenantId: string): Promise<v
     const green = row.threshold_green as number;
     const amber = row.threshold_amber as number;
     const red = row.threshold_red as number;
+    const previousStatus = row.current_status as string;
 
     let status = 'green';
     if (green > red) {
@@ -285,6 +289,51 @@ async function refreshProcessMining(db: D1Database, tenantId: string): Promise<v
 
     await db.prepare('UPDATE process_metrics SET status = ?, measured_at = datetime(\'now\') WHERE id = ?')
       .bind(status, row.id).run();
+
+    // 5.4: Event-driven trigger — enqueue catalyst task when metric goes red
+    if (status === 'red' && previousStatus !== 'red' && queue) {
+      try {
+        // Find a relevant catalyst cluster to handle this metric
+        const cluster = await db.prepare(
+          "SELECT id, name, autonomy_tier, trust_score FROM catalyst_clusters WHERE tenant_id = ? AND status = 'active' ORDER BY trust_score DESC LIMIT 1"
+        ).bind(tenantId).first();
+
+        if (cluster) {
+          await queue.send({
+            type: 'catalyst_execution',
+            tenantId,
+            payload: {
+              clusterId: cluster.id as string,
+              catalystName: `metric-remediation-${row.name}`,
+              action: 'investigate',
+              inputData: {
+                metricId: row.id,
+                metricName: row.name,
+                currentValue: value,
+                threshold: red,
+                sourceSystem: row.source_system,
+                trigger: 'metric_red_transition',
+              },
+              riskLevel: 'medium',
+              autonomyTier: cluster.autonomy_tier as string,
+              trustScore: cluster.trust_score as number,
+            },
+            scheduledAt: new Date().toISOString(),
+          });
+        }
+
+        // Also create a notification for the metric going red
+        await db.prepare(
+          "INSERT INTO notifications (id, tenant_id, type, title, message, severity, created_at) VALUES (?, ?, 'metric_alert', ?, ?, 'high', datetime('now'))"
+        ).bind(
+          crypto.randomUUID(), tenantId,
+          `Metric "${row.name}" is now RED`,
+          `${row.name} value ${value} has crossed the red threshold (${red}). A catalyst investigation has been triggered.`,
+        ).run();
+      } catch (err) {
+        console.error(`Failed to enqueue catalyst task for red metric ${row.id}:`, err);
+      }
+    }
   }
 }
 
@@ -343,11 +392,11 @@ async function checkAgentLifecycle(db: D1Database, cache: KVNamespace, tenantId:
  * 5.1: Queue Consumer — processes catalyst execution messages from Cloudflare Queue
  */
 export async function handleQueueMessage(
-  batch: MessageBatch<CatalystQueueMessage>,
+  batch: MessageBatch<unknown>,
   env: ScheduledEnv,
 ): Promise<void> {
   for (const message of batch.messages) {
-    const msg = message.body;
+    const msg = message.body as CatalystQueueMessage;
     try {
       switch (msg.type) {
         case 'catalyst_execution': {

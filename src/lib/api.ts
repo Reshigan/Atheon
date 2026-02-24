@@ -225,7 +225,9 @@ export const api = {
     createDeployment: (data: Record<string, unknown>) =>
       request<{ id: string }>('/api/controlplane/deployments', { method: 'POST', body: JSON.stringify(data) }),
     updateDeployment: (id: string, data: Record<string, unknown>) =>
-      request<{ success: boolean }>(`/api/controlplane/deployments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      request<{ success: boolean; deployment?: DeploymentItem }>(`/api/controlplane/deployments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteDeployment: (id: string) =>
+      request<{ success: boolean }>(`/api/controlplane/deployments/${id}`, { method: 'DELETE' }),
     health: (tenantId?: string) => {
       let url = '/api/controlplane/health';
       if (tenantId) url += `?tenant_id=${tenantId}`;

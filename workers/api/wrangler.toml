@@ -37,3 +37,14 @@ new_classes = ["DashboardRoom"]
 # Cron Triggers — scheduled tasks (health recalc, briefings, memory auto-population, process mining)
 [triggers]
 crons = ["*/15 * * * *"]
+
+# Task queue for async catalyst execution (5.2)
+[[queues.producers]]
+queue = "catalyst-tasks"
+binding = "CATALYST_QUEUE"
+
+[[queues.consumers]]
+queue = "catalyst-tasks"
+max_batch_size = 10
+max_retries = 3
+dead_letter_queue = "catalyst-dlq"
