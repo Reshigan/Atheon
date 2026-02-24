@@ -1,0 +1,343 @@
+-- Atheon D1 Schema - Core Tables
+-- Based on Cortex Technical Specification Section 2.1
+
+-- Tenants
+CREATE TABLE IF NOT EXISTS tenants (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  industry TEXT NOT NULL DEFAULT 'general',
+  plan TEXT NOT NULL DEFAULT 'starter',
+  status TEXT NOT NULL DEFAULT 'active',
+  deployment_model TEXT NOT NULL DEFAULT 'saas',
+  region TEXT NOT NULL DEFAULT 'af-south-1',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Tenant Entitlements
+CREATE TABLE IF NOT EXISTS tenant_entitlements (
+  tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
+  layers TEXT NOT NULL DEFAULT '["apex","pulse"]',
+  catalyst_clusters TEXT NOT NULL DEFAULT '["finance"]',
+  max_agents INTEGER NOT NULL DEFAULT 5,
+  max_users INTEGER NOT NULL DEFAULT 10,
+  autonomy_tiers TEXT NOT NULL DEFAULT '["read-only"]',
+  llm_tiers TEXT NOT NULL DEFAULT '["tier-1"]',
+  features TEXT NOT NULL DEFAULT '[]',
+  sso_enabled INTEGER NOT NULL DEFAULT 0,
+  api_access INTEGER NOT NULL DEFAULT 0,
+  custom_branding INTEGER NOT NULL DEFAULT 0,
+  data_retention_days INTEGER NOT NULL DEFAULT 90
+);
+
+-- Users
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'analyst',
+  password_hash TEXT,
+  permissions TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'active',
+  last_login TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(tenant_id, email)
+);
+
+-- IAM Policies
+CREATE TABLE IF NOT EXISTS iam_policies (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  type TEXT NOT NULL DEFAULT 'rbac',
+  rules TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- SSO Configurations
+CREATE TABLE IF NOT EXISTS sso_configs (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  provider TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  issuer_url TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  auto_provision INTEGER NOT NULL DEFAULT 0,
+  default_role TEXT NOT NULL DEFAULT 'analyst',
+  domain_hint TEXT
+);
+
+-- Catalyst Clusters
+CREATE TABLE IF NOT EXISTS catalyst_clusters (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'inactive',
+  agent_count INTEGER NOT NULL DEFAULT 0,
+  tasks_completed INTEGER NOT NULL DEFAULT 0,
+  tasks_in_progress INTEGER NOT NULL DEFAULT 0,
+  success_rate REAL NOT NULL DEFAULT 0,
+  trust_score REAL NOT NULL DEFAULT 0,
+  autonomy_tier TEXT NOT NULL DEFAULT 'read-only',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Catalyst Actions (Audit Trail)
+CREATE TABLE IF NOT EXISTS catalyst_actions (
+  id TEXT PRIMARY KEY,
+  cluster_id TEXT NOT NULL REFERENCES catalyst_clusters(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  catalyst_name TEXT NOT NULL,
+  action TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  confidence REAL,
+  input_data TEXT,
+  output_data TEXT,
+  reasoning TEXT,
+  approved_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at TEXT
+);
+
+-- Agent Deployments
+CREATE TABLE IF NOT EXISTS agent_deployments (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  cluster_id TEXT REFERENCES catalyst_clusters(id),
+  name TEXT NOT NULL,
+  agent_type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'provisioning',
+  deployment_model TEXT NOT NULL DEFAULT 'saas',
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  health_score REAL NOT NULL DEFAULT 100,
+  uptime REAL NOT NULL DEFAULT 100,
+  tasks_executed INTEGER NOT NULL DEFAULT 0,
+  last_heartbeat TEXT,
+  config TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Memory Graph: Entities
+CREATE TABLE IF NOT EXISTS graph_entities (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  type TEXT NOT NULL,
+  name TEXT NOT NULL,
+  properties TEXT NOT NULL DEFAULT '{}',
+  confidence REAL NOT NULL DEFAULT 1.0,
+  source TEXT,
+  valid_from TEXT NOT NULL DEFAULT (datetime('now')),
+  valid_to TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Memory Graph: Relationships
+CREATE TABLE IF NOT EXISTS graph_relationships (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  source_id TEXT NOT NULL REFERENCES graph_entities(id),
+  target_id TEXT NOT NULL REFERENCES graph_entities(id),
+  type TEXT NOT NULL,
+  properties TEXT NOT NULL DEFAULT '{}',
+  confidence REAL NOT NULL DEFAULT 1.0,
+  valid_from TEXT NOT NULL DEFAULT (datetime('now')),
+  valid_to TEXT
+);
+
+-- Apex: Business Health Scores
+CREATE TABLE IF NOT EXISTS health_scores (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  overall_score REAL NOT NULL,
+  dimensions TEXT NOT NULL DEFAULT '{}',
+  calculated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Apex: Executive Briefings
+CREATE TABLE IF NOT EXISTS executive_briefings (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  risks TEXT NOT NULL DEFAULT '[]',
+  opportunities TEXT NOT NULL DEFAULT '[]',
+  kpi_movements TEXT NOT NULL DEFAULT '[]',
+  decisions_needed TEXT NOT NULL DEFAULT '[]',
+  generated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Apex: Risk Alerts
+CREATE TABLE IF NOT EXISTS risk_alerts (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'medium',
+  category TEXT NOT NULL,
+  probability REAL,
+  impact_value REAL,
+  impact_unit TEXT DEFAULT 'ZAR',
+  recommended_actions TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'active',
+  detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);
+
+-- Apex: Scenarios
+CREATE TABLE IF NOT EXISTS scenarios (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  input_query TEXT NOT NULL,
+  variables TEXT NOT NULL DEFAULT '[]',
+  results TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'draft',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pulse: Process Metrics
+CREATE TABLE IF NOT EXISTS process_metrics (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  value REAL NOT NULL,
+  unit TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'green',
+  threshold_green REAL,
+  threshold_amber REAL,
+  threshold_red REAL,
+  trend TEXT NOT NULL DEFAULT '[]',
+  source_system TEXT,
+  measured_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pulse: Anomalies
+CREATE TABLE IF NOT EXISTS anomalies (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  metric TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'medium',
+  expected_value REAL NOT NULL,
+  actual_value REAL NOT NULL,
+  deviation REAL NOT NULL,
+  hypothesis TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);
+
+-- Pulse: Process Flows
+CREATE TABLE IF NOT EXISTS process_flows (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  steps TEXT NOT NULL DEFAULT '[]',
+  variants INTEGER NOT NULL DEFAULT 1,
+  avg_duration REAL NOT NULL DEFAULT 0,
+  conformance_rate REAL NOT NULL DEFAULT 100,
+  bottlenecks TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pulse: Correlation Events
+CREATE TABLE IF NOT EXISTS correlation_events (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  source_system TEXT NOT NULL,
+  source_event TEXT NOT NULL,
+  target_system TEXT NOT NULL,
+  target_impact TEXT NOT NULL,
+  confidence REAL NOT NULL,
+  lag_days REAL NOT NULL DEFAULT 0,
+  detected_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ERP Adapters
+CREATE TABLE IF NOT EXISTS erp_adapters (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  system TEXT NOT NULL,
+  version TEXT,
+  protocol TEXT NOT NULL DEFAULT 'REST',
+  status TEXT NOT NULL DEFAULT 'available',
+  operations TEXT NOT NULL DEFAULT '[]',
+  auth_methods TEXT NOT NULL DEFAULT '[]'
+);
+
+-- ERP Connections (per tenant)
+CREATE TABLE IF NOT EXISTS erp_connections (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  adapter_id TEXT NOT NULL REFERENCES erp_adapters(id),
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'disconnected',
+  config TEXT NOT NULL DEFAULT '{}',
+  last_sync TEXT,
+  sync_frequency TEXT DEFAULT 'realtime',
+  records_synced INTEGER NOT NULL DEFAULT 0,
+  connected_at TEXT
+);
+
+-- Canonical API Endpoints
+CREATE TABLE IF NOT EXISTS canonical_endpoints (
+  id TEXT PRIMARY KEY,
+  domain TEXT NOT NULL,
+  path TEXT NOT NULL,
+  method TEXT NOT NULL DEFAULT 'GET',
+  description TEXT,
+  request_schema TEXT,
+  response_schema TEXT,
+  rate_limit INTEGER NOT NULL DEFAULT 100,
+  version TEXT NOT NULL DEFAULT 'v1'
+);
+
+-- Audit Log
+CREATE TABLE IF NOT EXISTS audit_log (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  user_id TEXT,
+  action TEXT NOT NULL,
+  layer TEXT NOT NULL,
+  resource TEXT,
+  details TEXT,
+  outcome TEXT NOT NULL DEFAULT 'success',
+  ip_address TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Mind: LLM Query Log
+CREATE TABLE IF NOT EXISTS mind_queries (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  user_id TEXT,
+  query TEXT NOT NULL,
+  response TEXT,
+  tier TEXT NOT NULL DEFAULT 'tier-1',
+  tokens_in INTEGER NOT NULL DEFAULT 0,
+  tokens_out INTEGER NOT NULL DEFAULT 0,
+  latency_ms INTEGER NOT NULL DEFAULT 0,
+  citations TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_catalyst_clusters_tenant ON catalyst_clusters(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_catalyst_actions_tenant ON catalyst_actions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_agent_deployments_tenant ON agent_deployments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_graph_entities_tenant ON graph_entities(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_graph_entities_type ON graph_entities(tenant_id, type);
+CREATE INDEX IF NOT EXISTS idx_graph_relationships_source ON graph_relationships(source_id);
+CREATE INDEX IF NOT EXISTS idx_graph_relationships_target ON graph_relationships(target_id);
+CREATE INDEX IF NOT EXISTS idx_health_scores_tenant ON health_scores(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_risk_alerts_tenant ON risk_alerts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_anomalies_tenant ON anomalies(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_tenant ON audit_log(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_mind_queries_tenant ON mind_queries(tenant_id);

@@ -1,0 +1,19 @@
+name = "atheon-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+JWT_SECRET = "atheon-jwt-secret-change-in-production"
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "atheon-db"
+database_id = "5b83572b-a06c-45c2-bee4-e4c75552441e"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "ea7decf85cc142099038ad593b7140ae"

@@ -41,10 +41,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // Auth
 export const api = {
   auth: {
-    login: (email: string, password?: string) =>
+    login: (email: string, password: string) =>
       request<{ token: string; user: AuthUser }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
+      }),
+    register: (email: string, password: string, name: string, tenantSlug?: string) =>
+      request<{ token: string; user: AuthUser }>('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, name, tenant_slug: tenantSlug || 'vantax' }),
+      }),
+    changePassword: (newPassword: string, currentPassword?: string) =>
+      request<{ success: boolean; message: string }>('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ new_password: newPassword, current_password: currentPassword }),
       }),
     demoLogin: (tenantSlug?: string, role?: string) =>
       request<{ token: string; user: AuthUser }>('/api/auth/demo-login', {

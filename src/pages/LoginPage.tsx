@@ -3,40 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/appStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight, Shield, Globe, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, Shield, Globe, Loader2, UserPlus } from "lucide-react";
 import { api, setToken } from "@/lib/api";
 
+type AuthMode = 'login' | 'register' | 'demo';
+
 export function LoginPage() {
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const setUser = useAppStore((s) => s.setUser);
 
-  const doLogin = async () => {
-    try {
-      const res = await api.auth.demoLogin('vantax', 'admin');
-      setToken(res.token);
-      setUser({
-        id: res.user.id,
-        email: res.user.email,
-        name: res.user.name,
-        role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator',
-        tenantId: res.user.tenantId,
-        permissions: res.user.permissions,
-      });
-    } catch {
-      // Fallback to local login if API is unavailable
-      setUser({
-        id: '1',
-        email: email || 'admin@vantax.co.za',
-        name: email ? email.split('@')[0] : 'Reshigan',
-        role: 'admin',
-        tenantId: 'vantax',
-        permissions: ['*'],
-      });
-    }
+  const handleAuthResult = (res: { token: string; user: { id: string; email: string; name: string; role: string; tenantId: string; permissions: string[] } }) => {
+    setToken(res.token);
+    setUser({
+      id: res.user.id,
+      email: res.user.email,
+      name: res.user.name,
+      role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator',
+      tenantId: res.user.tenantId,
+      permissions: res.user.permissions,
+    });
     navigate('/');
   };
 
@@ -45,9 +36,39 @@ export function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await doLogin();
+      if (mode === 'register') {
+        if (!name.trim()) { setError('Name is required'); setLoading(false); return; }
+        if (password.length < 8) { setError('Password must be at least 8 characters'); setLoading(false); return; }
+        const res = await api.auth.register(email, password, name);
+        handleAuthResult(res);
+      } else {
+        const res = await api.auth.login(email, password);
+        handleAuthResult(res);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.auth.demoLogin('vantax', 'admin');
+      handleAuthResult(res);
+    } catch {
+      // Fallback to local login if API is unavailable
+      setUser({
+        id: '1',
+        email: 'admin@vantax.co.za',
+        name: 'Reshigan',
+        role: 'admin',
+        tenantId: 'vantax',
+        permissions: ['*'],
+      });
+      navigate('/');
     } finally {
       setLoading(false);
     }
@@ -57,9 +78,10 @@ export function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await doLogin();
+      const res = await api.auth.demoLogin('vantax', 'admin');
+      handleAuthResult(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'SSO login failed');
     } finally {
       setLoading(false);
     }
@@ -109,8 +131,12 @@ export function LoginPage() {
             <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
           </div>
 
-          <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
-          <p className="text-sm text-neutral-500 mb-8">Sign in to your Atheon workspace</p>
+          <h2 className="text-2xl font-bold text-white mb-1">
+            {mode === 'register' ? 'Create your account' : 'Welcome back'}
+          </h2>
+          <p className="text-sm text-neutral-500 mb-8">
+            {mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}
+          </p>
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
@@ -119,31 +145,44 @@ export function LoginPage() {
           )}
 
           {/* SSO Buttons */}
-          <div className="space-y-3 mb-6">
-            <button
-              onClick={() => handleSSO('azure')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900/60 border border-neutral-800/50 text-sm text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
-            >
-              <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
-              Continue with Azure AD
-            </button>
-            <button
-              onClick={() => handleSSO('okta')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900/60 border border-neutral-800/50 text-sm text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
-            >
-              <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">O</div>
-              Continue with Okta
-            </button>
-          </div>
+          {mode === 'login' && (
+            <div className="space-y-3 mb-6">
+              <button
+                onClick={() => handleSSO('azure')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900/60 border border-neutral-800/50 text-sm text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
+              >
+                <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
+                Continue with Azure AD
+              </button>
+              <button
+                onClick={() => handleSSO('okta')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900/60 border border-neutral-800/50 text-sm text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
+              >
+                <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">O</div>
+                Continue with Okta
+              </button>
+            </div>
+          )}
 
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-neutral-800" />
-            <span className="text-xs text-neutral-600">or sign in with email</span>
-            <div className="flex-1 h-px bg-neutral-800" />
-          </div>
+          {mode === 'login' && (
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px bg-neutral-800" />
+              <span className="text-xs text-neutral-600">or sign in with email</span>
+              <div className="flex-1 h-px bg-neutral-800" />
+            </div>
+          )}
 
           {/* Email/Password Form */}
           <form onSubmit={handleLogin} className="space-y-4">
+            {mode === 'register' && (
+              <Input
+                label="Full Name"
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            )}
             <Input
               label="Email"
               type="email"
@@ -154,25 +193,56 @@ export function LoginPage() {
             <Input
               label="Password"
               type="password"
-              placeholder="••••••••"
+              placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs text-neutral-400">
-                <input type="checkbox" className="rounded bg-neutral-800 border-neutral-700" />
-                Remember me
-              </label>
-              <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
-            </div>
+            {mode === 'login' && (
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-neutral-400">
+                  <input type="checkbox" className="rounded bg-neutral-800 border-neutral-700" />
+                  Remember me
+                </label>
+                <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
+              </div>
+            )}
             <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              Sign In <ArrowRight size={16} />
+              {mode === 'register' ? (
+                <><UserPlus size={16} /> Create Account</>
+              ) : (
+                <>Sign In <ArrowRight size={16} /></>
+              )}
             </Button>
           </form>
 
+          {/* Demo Login */}
+          <div className="mt-4">
+            <button
+              onClick={handleDemoLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all disabled:opacity-50"
+            >
+              <Sparkles size={14} />
+              Try Demo (No account needed)
+            </button>
+          </div>
+
+          {/* Toggle mode */}
           <p className="text-xs text-neutral-600 text-center mt-8">
-            Don't have an account? <a href="#" className="text-indigo-400 hover:text-indigo-300">Request access</a>
+            {mode === 'login' ? (
+              <>Don't have an account?{' '}
+                <button onClick={() => { setMode('register'); setError(null); }} className="text-indigo-400 hover:text-indigo-300">
+                  Create one
+                </button>
+              </>
+            ) : (
+              <>Already have an account?{' '}
+                <button onClick={() => { setMode('login'); setError(null); }} className="text-indigo-400 hover:text-indigo-300">
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>
