@@ -41,7 +41,7 @@ export function PulsePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -211,13 +211,13 @@ export function PulsePage() {
                       <span className="text-xs text-blue-600 font-medium">{event.sourceSystem}</span>
                     </div>
                     <div className="flex-1 relative">
-                      <div className="h-px bg-gradient-to-r from-blue-500/50 to-indigo-500/50" />
+                      <div className="h-px bg-gradient-to-r from-blue-500/50 to-blue-400/50" />
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white border border-gray-300 text-[10px] text-gray-500">
                         {event.lagDays}d lag
                       </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-indigo-50 text-center min-w-20">
-                      <span className="text-xs text-indigo-600 font-medium">{event.targetSystem}</span>
+                    <div className="p-2 rounded-lg bg-blue-50 text-center min-w-20">
+                      <span className="text-xs text-blue-600 font-medium">{event.targetSystem}</span>
                     </div>
                   </div>
                   <Badge variant="info">{Math.round(event.confidence * 100)}%</Badge>

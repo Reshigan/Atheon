@@ -20,7 +20,7 @@ const statusIcon = (status: string) => {
   if (status === 'pending') return <Clock size={14} className="text-amber-600" />;
   if (status === 'approved') return <CheckCircle size={14} className="text-blue-600" />;
   if (status === 'rejected' || status === 'failed') return <XCircle size={14} className="text-red-600" />;
-  return <Zap size={14} className="text-indigo-600" />;
+  return <Zap size={14} className="text-blue-600" />;
 };
 
 export function CatalystsPage() {
@@ -30,6 +30,33 @@ export function CatalystsPage() {
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [_governance, setGovernance] = useState<GovernanceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingAction, setUpdatingAction] = useState<string | null>(null);
+
+  const handleApprove = async (actionId: string) => {
+    if (updatingAction) return;
+    setUpdatingAction(actionId);
+    try {
+      await api.catalysts.approveAction(actionId);
+      const a = await api.catalysts.actions();
+      setActions(a.actions);
+    } catch {
+      /* silent */
+    }
+    setUpdatingAction(null);
+  };
+
+  const handleReject = async (actionId: string) => {
+    if (updatingAction) return;
+    setUpdatingAction(actionId);
+    try {
+      await api.catalysts.rejectAction(actionId);
+      const a = await api.catalysts.actions();
+      setActions(a.actions);
+    } catch {
+      /* silent */
+    }
+    setUpdatingAction(null);
+  };
 
   useEffect(() => {
     async function load() {
@@ -54,7 +81,7 @@ export function CatalystsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -168,8 +195,22 @@ export function CatalystsPage() {
                     </div>
                     {action.status === 'pending' && (
                       <div className="flex gap-2">
-                        <Button variant="success" size="sm"><CheckCircle size={12} /> Approve</Button>
-                        <Button variant="danger" size="sm"><XCircle size={12} /> Reject</Button>
+                        <Button
+                          variant="success"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleApprove(action.id); }}
+                          disabled={updatingAction === action.id}
+                        >
+                          <CheckCircle size={12} /> Approve
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleReject(action.id); }}
+                          disabled={updatingAction === action.id}
+                        >
+                          <XCircle size={12} /> Reject
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -206,7 +247,7 @@ export function CatalystsPage() {
 
             <Card>
               <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-indigo-600" /> Trust Scores
+                <Shield className="w-4 h-4 text-blue-600" /> Trust Scores
               </h3>
               <div className="space-y-3">
                 {clusters.slice(0, 5).map((cluster) => (

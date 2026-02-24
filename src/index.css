@@ -15,16 +15,13 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700;
   }
   .bg-glass {
     @apply bg-white/80 backdrop-blur-xl border border-gray-200/80;
   }
-  .glow-indigo {
-    box-shadow: 0 0 20px rgba(99,102,241,0.08), 0 0 60px rgba(99,102,241,0.03);
-  }
-  .glow-violet {
-    box-shadow: 0 0 20px rgba(139,92,246,0.08), 0 0 60px rgba(139,92,246,0.03);
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(37,99,235,0.08), 0 0 60px rgba(37,99,235,0.03);
   }
   .scrollbar-thin {
     scrollbar-width: thin;

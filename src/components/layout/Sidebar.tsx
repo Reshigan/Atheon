@@ -1,41 +1,42 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { Link, useLocation } from "react-router-dom";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import {
-  LayoutDashboard, Crown, Activity, Zap, Brain, Database,
-  MessageSquare, Settings, Link2, Shield, ChevronLeft, ChevronRight,
-  Sparkles, Building2, ShieldCheck, Cpu, Globe, Plug, X
-} from "lucide-react";
+  IconDashboard, IconApex, IconPulse, IconCatalysts, IconMind, IconMemory,
+  IconChat, IconClients, IconIAM, IconControlPlane, IconCanonicalApi,
+  IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
+} from "@/components/icons/AtheonIcons";
 
 const navSections = [
   {
     title: 'Intelligence',
     items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard, layer: null },
-      { path: '/apex', label: 'Apex', icon: Crown, layer: 'apex' as const, sublabel: 'Executive Intelligence' },
-      { path: '/pulse', label: 'Pulse', icon: Activity, layer: 'pulse' as const, sublabel: 'Process Intelligence' },
-      { path: '/catalysts', label: 'Catalysts', icon: Zap, layer: 'catalysts' as const, sublabel: 'Autonomous Execution' },
-      { path: '/mind', label: 'Mind', icon: Brain, layer: 'mind' as const, sublabel: 'Domain LLM' },
-      { path: '/memory', label: 'Memory', icon: Database, layer: 'memory' as const, sublabel: 'GraphRAG' },
-      { path: '/chat', label: 'Chat', icon: MessageSquare, layer: null, sublabel: 'Conversational AI' },
+      { path: '/', label: 'Dashboard', icon: IconDashboard, layer: null },
+      { path: '/apex', label: 'Apex', icon: IconApex, layer: 'apex' as const, sublabel: 'Executive Intelligence' },
+      { path: '/pulse', label: 'Pulse', icon: IconPulse, layer: 'pulse' as const, sublabel: 'Process Intelligence' },
+      { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, layer: 'catalysts' as const, sublabel: 'Autonomous Execution' },
+      { path: '/mind', label: 'Mind', icon: IconMind, layer: 'mind' as const, sublabel: 'Domain LLM' },
+      { path: '/memory', label: 'Memory', icon: IconMemory, layer: 'memory' as const, sublabel: 'GraphRAG' },
+      { path: '/chat', label: 'Chat', icon: IconChat, layer: null, sublabel: 'Conversational AI' },
     ],
   },
   {
     title: 'Platform',
     items: [
-      { path: '/tenants', label: 'Clients', icon: Building2, layer: null, sublabel: 'Tenant Management' },
-      { path: '/iam', label: 'IAM', icon: ShieldCheck, layer: null, sublabel: 'Identity & Access' },
-      { path: '/control-plane', label: 'Control Plane', icon: Cpu, layer: null, sublabel: 'Agent Management' },
-      { path: '/canonical-api', label: 'Canonical API', icon: Globe, layer: null, sublabel: 'Unified API' },
-      { path: '/erp-adapters', label: 'ERP Adapters', icon: Plug, layer: null, sublabel: 'System Connectors' },
+      { path: '/tenants', label: 'Clients', icon: IconClients, layer: null, sublabel: 'Tenant Management' },
+      { path: '/iam', label: 'IAM', icon: IconIAM, layer: null, sublabel: 'Identity & Access' },
+      { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, layer: null, sublabel: 'Agent Management' },
+      { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, layer: null, sublabel: 'Unified API' },
+      { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, layer: null, sublabel: 'System Connectors' },
     ],
   },
   {
     title: 'System',
     items: [
-      { path: '/connectivity', label: 'Connectivity', icon: Link2, layer: null, sublabel: 'MCP + A2A' },
-      { path: '/audit', label: 'Audit', icon: Shield, layer: null, sublabel: 'Governance' },
-      { path: '/settings', label: 'Settings', icon: Settings, layer: null },
+      { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, layer: null, sublabel: 'MCP + A2A' },
+      { path: '/audit', label: 'Audit', icon: IconAudit, layer: null, sublabel: 'Governance' },
+      { path: '/settings', label: 'Settings', icon: IconSettings, layer: null },
     ],
   },
 ];
@@ -44,7 +45,7 @@ const layerColors: Record<string, string> = {
   apex: 'text-amber-600',
   pulse: 'text-emerald-600',
   catalysts: 'text-blue-600',
-  mind: 'text-violet-600',
+  mind: 'text-blue-600',
   memory: 'text-pink-600',
 };
 
@@ -74,12 +75,12 @@ function SidebarNav({ expanded, onNavClick }: { expanded: boolean; onNavClick?: 
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group',
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
                   )}
                   title={!expanded ? item.label : undefined}
                 >
-                  <Icon className={cn('flex-shrink-0', isActive ? 'text-indigo-600' : colorClass || 'text-gray-400 group-hover:text-gray-600')} size={18} />
+                  <Icon className={cn('flex-shrink-0', isActive ? 'text-blue-600' : colorClass || 'text-gray-400 group-hover:text-gray-600')} size={18} />
                   {expanded && (
                     <div className="min-w-0 animate-fadeIn">
                       <span className="font-medium">{item.label}</span>
@@ -120,8 +121,11 @@ export function Sidebar() {
         sidebarOpen ? 'w-64' : 'w-16',
       )}>
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="w-5 h-5">
+              <path d="M32 8L14 48h7l3.5-7h15l3.5 7h7L32 8zm0 11l5.5 13h-11L32 19z" fill="white"/>
+              <circle cx="32" cy="20" r="2.5" fill="white" opacity="0.7"/>
+            </svg>
           </div>
           {sidebarOpen && (
             <div className="animate-fadeIn">
@@ -150,8 +154,11 @@ export function Sidebar() {
       )}>
         <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="w-5 h-5">
+                <path d="M32 8L14 48h7l3.5-7h15l3.5 7h7L32 8zm0 11l5.5 13h-11L32 19z" fill="white"/>
+                <circle cx="32" cy="20" r="2.5" fill="white" opacity="0.7"/>
+              </svg>
             </div>
             <div>
               <h1 className="text-lg font-bold text-gradient">Atheon</h1>

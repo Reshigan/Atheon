@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,13 +18,37 @@ export function IAMPage() {
   const [roles, setRoles] = useState<IAMRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewPolicy, setShowNewPolicy] = useState(false);
+  const [creatingPolicy, setCreatingPolicy] = useState(false);
   const [policyForm, setPolicyForm] = useState({ name: '', description: '', type: 'rbac' });
+
+  const tenantId = useAppStore((s) => s.user?.tenantId) || 'vantax';
+
+  const handleCreatePolicy = async () => {
+    if (!policyForm.name.trim() || creatingPolicy) return;
+    setCreatingPolicy(true);
+    try {
+      await api.iam.createPolicy({
+        tenant_id: tenantId,
+        name: policyForm.name.trim(),
+        description: policyForm.description.trim(),
+        type: policyForm.type,
+        rules: [],
+      });
+      const p = await api.iam.policies(tenantId);
+      setPolicies(p.policies);
+      setPolicyForm({ name: '', description: '', type: 'rbac' });
+      setShowNewPolicy(false);
+    } catch {
+      /* silent */
+    }
+    setCreatingPolicy(false);
+  };
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       const [p, s, r] = await Promise.allSettled([
-        api.iam.policies(), api.iam.sso(), api.iam.roles(),
+        api.iam.policies(tenantId), api.iam.sso(tenantId), api.iam.roles(tenantId),
       ]);
       if (p.status === 'fulfilled') setPolicies(p.value.policies);
       if (s.status === 'fulfilled') setSsoConfigs(s.value.configs);
@@ -31,7 +56,7 @@ export function IAMPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [tenantId]);
 
   const tabs = [
     { id: 'policies', label: 'Policies', icon: <Shield size={14} />, count: policies.length },
@@ -42,7 +67,7 @@ export function IAMPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -78,8 +103,8 @@ export function IAMPage() {
             <p className="text-[10px] text-gray-400">Rules can be added after creating the policy.</p>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(false)}>Cancel</Button>
-              <Button variant="primary" size="sm" onClick={() => setShowNewPolicy(false)} disabled={!policyForm.name.trim()}>
-                <Plus size={14} /> Create Policy
+              <Button variant="primary" size="sm" onClick={handleCreatePolicy} disabled={!policyForm.name.trim() || creatingPolicy}>
+                {creatingPolicy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Create Policy
               </Button>
             </div>
           </div>
@@ -158,8 +183,8 @@ export function IAMPage() {
               <Card key={i}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-                      <Globe className="w-5 h-5 text-indigo-600" />
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <h3 className="text-base font-semibold text-gray-900">{sso.provider.replace('_', ' ').toUpperCase()}</h3>
@@ -197,7 +222,7 @@ export function IAMPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => {
               const Icon = role.name.toLowerCase().includes('admin') ? ShieldCheck : role.name.toLowerCase().includes('exec') ? Shield : role.name.toLowerCase().includes('manager') ? UserCheck : Users;
-              const color = role.name.toLowerCase().includes('admin') ? 'text-red-600' : role.name.toLowerCase().includes('exec') ? 'text-amber-600' : role.name.toLowerCase().includes('manager') ? 'text-blue-600' : 'text-violet-600';
+              const color = role.name.toLowerCase().includes('admin') ? 'text-red-600' : role.name.toLowerCase().includes('exec') ? 'text-amber-600' : role.name.toLowerCase().includes('manager') ? 'text-blue-600' : 'text-blue-600';
               return (
                 <Card key={role.id}>
                   <div className="flex items-center justify-between mb-2">

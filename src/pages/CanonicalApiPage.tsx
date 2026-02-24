@@ -4,13 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import type { CanonicalEndpoint } from "@/lib/api";
-import { Code, Layers, ArrowRight, Globe, BookOpen, Loader2 } from "lucide-react";
+import { Code, Layers, ArrowRight, Globe, BookOpen, Loader2, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const methodColor: Record<string, string> = {
   GET: 'bg-emerald-50 text-emerald-600 border-emerald-200',
   POST: 'bg-blue-50 text-blue-600 border-blue-200',
   PUT: 'bg-amber-50 text-amber-600 border-amber-200',
-  PATCH: 'bg-violet-50 text-violet-600 border-violet-200',
+  PATCH: 'bg-blue-50 text-blue-600 border-blue-200',
   DELETE: 'bg-red-50 text-red-600 border-red-200',
 };
 
@@ -18,7 +19,7 @@ const domainColor: Record<string, string> = {
   finance: 'text-emerald-600',
   procurement: 'text-blue-600',
   'supply-chain': 'text-amber-600',
-  hr: 'text-violet-600',
+  hr: 'text-blue-600',
   sales: 'text-pink-600',
   inventory: 'text-cyan-400',
   crm: 'text-orange-400',
@@ -28,6 +29,9 @@ export function CanonicalApiPage() {
   const { activeTab, setActiveTab } = useTabState('endpoints');
   const [endpoints, setEndpoints] = useState<CanonicalEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tryingEndpoint, setTryingEndpoint] = useState<string | null>(null);
+  const [tryResult, setTryResult] = useState<{ endpointId: string; status: number; data: unknown } | null>(null);
+  const [tryLoading, setTryLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -44,7 +48,7 @@ export function CanonicalApiPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -104,15 +108,68 @@ export function CanonicalApiPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-gray-900">{ep.description || ep.path}</h3>
                     </div>
-                    <p className="text-xs font-mono text-indigo-600 mt-0.5">{ep.path}</p>
+                    <p className="text-xs font-mono text-blue-600 mt-0.5">{ep.path}</p>
                     <p className="text-xs text-gray-400 mt-1">{ep.description}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
                       <span className="text-[10px] text-gray-400">v{ep.version}</span>
                       <span className="text-[10px] text-gray-400">Rate limit: {ep.rateLimit}/min</span>
+                      {ep.method === 'GET' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (tryingEndpoint === ep.id) {
+                              setTryingEndpoint(null);
+                              setTryResult(null);
+                            } else {
+                              setTryingEndpoint(ep.id);
+                              setTryLoading(true);
+                              setTryResult(null);
+                              const apiUrl = import.meta.env.VITE_API_URL || 'https://atheon-api.reshigan-085.workers.dev';
+                              fetch(`${apiUrl}${ep.path}?tenant_id=vantax`, {
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('atheon_token') || ''}` },
+                              })
+                                .then(async (res) => {
+                                  const data = await res.json().catch(() => ({}));
+                                  setTryResult({ endpointId: ep.id, status: res.status, data });
+                                })
+                                .catch(() => {
+                                  setTryResult({ endpointId: ep.id, status: 0, data: { error: 'Network error' } });
+                                })
+                                .finally(() => setTryLoading(false));
+                            }
+                          }}
+                        >
+                          <Play size={12} /> {tryingEndpoint === ep.id ? 'Hide' : 'Try it'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
+
+                {tryingEndpoint === ep.id && (
+                  <div className="mt-3 space-y-2 animate-fadeIn">
+                    {tryLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Loader2 size={14} className="animate-spin" /> Calling endpoint...
+                      </div>
+                    ) : tryResult && tryResult.endpointId === ep.id ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={tryResult.status >= 200 && tryResult.status < 300 ? 'success' : 'danger'} size="sm">
+                            {tryResult.status || 'ERR'}
+                          </Badge>
+                          <span className="text-xs text-gray-500">Response</span>
+                        </div>
+                        <pre className="p-3 rounded-lg bg-gray-900 text-green-400 text-xs font-mono overflow-x-auto max-h-48">
+                          {JSON.stringify(tryResult.data, null, 2)}
+                        </pre>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </Card>
             ))}
           </div>
@@ -139,7 +196,7 @@ export function CanonicalApiPage() {
                 <div className="space-y-1">
                   {entity.fields.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                       <span className="font-mono text-gray-600">{f}</span>
                     </div>
                   ))}

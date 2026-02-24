@@ -106,10 +106,10 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Left - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-50 via-gray-50 to-violet-50 flex-col justify-center items-center p-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.15),transparent_70%)]" />
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-50 via-gray-50 to-blue-50 flex-col justify-center items-center p-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.12),transparent_70%)]" />
         <div className="relative z-10 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-indigo-500/30">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-500/30">
             <Sparkles className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-5xl font-bold text-gradient mb-4">Atheon</h1>
@@ -141,7 +141,7 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
@@ -219,7 +219,7 @@ export function LoginPage() {
                   <input type="checkbox" className="rounded bg-gray-100 border-gray-300" />
                   Remember me
                 </label>
-                <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-indigo-600 hover:text-indigo-500">Forgot password?</button>
+                <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-blue-600 hover:text-blue-500">Forgot password?</button>
               </div>
             )}
             <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
@@ -240,7 +240,7 @@ export function LoginPage() {
                 {forgotSent ? (
                   <div className="space-y-3">
                     <p className="text-sm text-gray-600">If an account exists for <strong>{forgotEmail}</strong>, a password reset link has been sent.</p>
-                    <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors">Back to Login</button>
+                    <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors">Back to Login</button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -248,7 +248,7 @@ export function LoginPage() {
                     <input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
                     <div className="flex gap-3">
                       <button onClick={() => { setShowForgotPw(false); setForgotEmail(''); }} className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                      <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50">Send Reset Link</button>
+                      <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors disabled:opacity-50">Send Reset Link</button>
                     </div>
                   </div>
                 )}
@@ -272,13 +272,13 @@ export function LoginPage() {
           <p className="text-xs text-gray-400 text-center mt-8">
             {mode === 'login' ? (
               <>Don't have an account?{' '}
-                <button onClick={() => { setMode('register'); setError(null); }}                className="text-indigo-600 hover:text-indigo-500">
+                <button onClick={() => { setMode('register'); setError(null); }}                className="text-blue-600 hover:text-blue-500">
                                   Create one
                 </button>
               </>
             ) : (
               <>Already have an account?{' '}
-                <button onClick={() => { setMode('login'); setError(null); }}                className="text-indigo-600 hover:text-indigo-500">
+                <button onClick={() => { setMode('login'); setError(null); }}                className="text-blue-600 hover:text-blue-500">
                                   Sign in
                 </button>
               </>

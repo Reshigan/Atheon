@@ -91,6 +91,10 @@ export const api = {
       request<{ configs: SSOConfig[] }>(`/api/iam/sso?tenant_id=${tenantId || 'vantax'}`),
     createUser: (data: Record<string, unknown>) =>
       request<{ id: string }>('/api/iam/users', { method: 'POST', body: JSON.stringify(data) }),
+    createPolicy: (data: Record<string, unknown>) =>
+      request<{ id: string; name: string }>('/api/iam/policies', { method: 'POST', body: JSON.stringify(data) }),
+    deletePolicy: (id: string) =>
+      request<{ success: boolean }>(`/api/iam/policies/${id}`, { method: 'DELETE' }),
   },
 
   apex: {
@@ -130,8 +134,10 @@ export const api = {
     },
     createAction: (data: Record<string, unknown>) =>
       request<{ id: string }>('/api/catalysts/actions', { method: 'POST', body: JSON.stringify(data) }),
-    approveAction: (id: string) =>
-      request<{ success: boolean }>(`/api/catalysts/actions/${id}/approve`, { method: 'PUT', body: JSON.stringify({}) }),
+    approveAction: (id: string, approvedBy?: string) =>
+      request<{ success: boolean }>(`/api/catalysts/actions/${id}/approve`, { method: 'PUT', body: JSON.stringify({ approved_by: approvedBy || 'ui' }) }),
+    rejectAction: (id: string, rejectedBy?: string, reason?: string) =>
+      request<{ success: boolean }>(`/api/catalysts/actions/${id}/reject`, { method: 'PUT', body: JSON.stringify({ approved_by: rejectedBy || 'ui', reason: reason || '' }) }),
     governance: (tenantId?: string) =>
       request<GovernanceData>(`/api/catalysts/governance?tenant_id=${tenantId || 'vantax'}`),
   },
@@ -174,6 +180,10 @@ export const api = {
     adapter: (id: string) => request<ERPAdapterDetail>(`/api/erp/adapters/${id}`),
     connections: (tenantId?: string) =>
       request<{ connections: ERPConnection[]; total: number }>(`/api/erp/connections?tenant_id=${tenantId || 'vantax'}`),
+    createConnection: (data: Record<string, unknown>) =>
+      request<{ id: string; status: string }>('/api/erp/connections', { method: 'POST', body: JSON.stringify(data) }),
+    testConnection: (id: string) =>
+      request<{ connected: boolean; message?: string }>(`/api/erp/connections/${id}/test`, { method: 'POST' }),
     canonical: (domain?: string) => {
       let url = '/api/erp/canonical';
       if (domain) url += `?domain=${domain}`;
@@ -192,6 +202,8 @@ export const api = {
     deployment: (id: string) => request<DeploymentItem>(`/api/controlplane/deployments/${id}`),
     createDeployment: (data: Record<string, unknown>) =>
       request<{ id: string }>('/api/controlplane/deployments', { method: 'POST', body: JSON.stringify(data) }),
+    updateDeployment: (id: string, data: Record<string, unknown>) =>
+      request<{ success: boolean }>(`/api/controlplane/deployments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     health: (tenantId?: string) => {
       let url = '/api/controlplane/health';
       if (tenantId) url += `?tenant_id=${tenantId}`;

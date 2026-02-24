@@ -54,8 +54,8 @@ export function ChatPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-indigo-600" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 flex items-center justify-center">
+          <MessageSquare className="w-5 h-5 text-blue-600" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Atheon Chat</h1>
@@ -67,7 +67,7 @@ export function ChatPage() {
         {/* Sidebar - Thread List */}
         <div className="space-y-3">
           <Button variant="primary" size="sm" className="w-full" onClick={() => setMessages([])}><Plus size={14} /> New Thread</Button>
-          <Card hover className="border-indigo-200">
+          <Card hover className="border-blue-200">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-sm font-medium text-gray-900">Current Thread</h3>
@@ -88,13 +88,13 @@ export function ChatPage() {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                   {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                   )}
                   <div className={`max-w-2xl rounded-xl p-4 ${
                     msg.role === 'user'
-                      ? 'bg-indigo-600/20 border border-indigo-200'
+                      ? 'bg-blue-600/20 border border-blue-200'
                       : 'bg-gray-100 border border-gray-200'
                   }`}>
                     <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
@@ -114,7 +114,7 @@ export function ChatPage() {
                       <div className="mt-3 space-y-1.5">
                         {msg.citations.map((cit) => (
                           <div key={cit.id} className="flex items-center gap-2 p-2 rounded bg-gray-100 text-xs">
-                            <span className="text-indigo-600">📎</span>
+                            <span className="text-blue-600">📎</span>
                             <span className="text-gray-600">{cit.source}</span>
                             <Badge variant="info" size="sm">{Math.round(cit.confidence * 100)}%</Badge>
                           </div>
@@ -133,8 +133,8 @@ export function ChatPage() {
               ))}
               {sending && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-                    <Loader2 className="w-4 h-4 text-gray-900 animate-spin" />
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
                   </div>
                   <div className="rounded-xl p-4 bg-gray-100 border border-gray-200">
                     <span className="text-sm text-gray-500">Thinking...</span>
@@ -168,7 +168,7 @@ export function ChatPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask Atheon anything across your enterprise..."
-                  className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all"
                 />
               </div>
               <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending}>

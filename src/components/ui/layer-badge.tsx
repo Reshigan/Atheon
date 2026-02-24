@@ -5,7 +5,7 @@ const layerConfig: Record<AtheonLayer, { label: string; color: string; bg: strin
   apex: { label: 'Apex', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
   pulse: { label: 'Pulse', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
   catalysts: { label: 'Catalysts', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-  mind: { label: 'Mind', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-200' },
+  mind: { label: 'Mind', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
   memory: { label: 'Memory', color: 'text-pink-700', bg: 'bg-pink-50 border-pink-200' },
 };
 

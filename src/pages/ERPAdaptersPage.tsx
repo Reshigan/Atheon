@@ -22,6 +22,8 @@ export function ERPAdaptersPage() {
   const [showConnect, setShowConnect] = useState(false);
   const [connectForm, setConnectForm] = useState({ adapterId: '', name: '', syncFrequency: 'daily' });
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [showLogs, setShowLogs] = useState<string | null>(null);
 
   const handleSync = async (connectionId: string) => {
     setSyncing(connectionId);
@@ -31,6 +33,29 @@ export function ERPAdaptersPage() {
       setConnections(c.connections);
     } catch { /* silent */ }
     setSyncing(null);
+  };
+
+  const handleConnect = async () => {
+    if (!connectForm.adapterId || !connectForm.name.trim() || connecting) return;
+    setConnecting(true);
+    try {
+      await api.erp.createConnection({
+        adapter_id: connectForm.adapterId,
+        name: connectForm.name.trim(),
+        sync_frequency: connectForm.syncFrequency,
+        tenant_id: 'vantax',
+      });
+      const c = await api.erp.connections();
+      setConnections(c.connections);
+      setShowConnect(false);
+      setConnectForm({ adapterId: '', name: '', syncFrequency: 'daily' });
+    } catch { /* silent */ }
+    setConnecting(false);
+  };
+
+  const handleAdapterConnect = (adapterId: string, adapterName: string) => {
+    setConnectForm({ adapterId, name: adapterName + ' Connection', syncFrequency: 'daily' });
+    setShowConnect(true);
   };
 
   useEffect(() => {
@@ -50,7 +75,7 @@ export function ERPAdaptersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -91,8 +116,8 @@ export function ERPAdaptersPage() {
             <p className="text-[10px] text-gray-400">OAuth authentication will be initiated after connection setup. You will be redirected to the ERP provider to authorise access.</p>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowConnect(false)}>Cancel</Button>
-              <Button variant="primary" size="sm" onClick={() => setShowConnect(false)} disabled={!connectForm.adapterId || !connectForm.name.trim()}>
-                <Plug size={14} /> Connect
+              <Button variant="primary" size="sm" onClick={handleConnect} disabled={!connectForm.adapterId || !connectForm.name.trim() || connecting}>
+                {connecting ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />} Connect
               </Button>
             </div>
           </div>
@@ -146,7 +171,7 @@ export function ERPAdaptersPage() {
 
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-3 p-2 rounded bg-gray-100">
-                    <span className="text-xs font-medium text-indigo-600 w-24">Operations</span>
+                    <span className="text-xs font-medium text-blue-600 w-24">Operations</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.operations.map(op => (
                         <Badge key={op} variant={op === 'write' ? 'warning' : op === 'subscribe' ? 'info' : 'success'} size="sm">{op}</Badge>
@@ -154,7 +179,7 @@ export function ERPAdaptersPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-2 rounded bg-gray-100">
-                    <span className="text-xs font-medium text-indigo-600 w-24">Auth</span>
+                    <span className="text-xs font-medium text-blue-600 w-24">Auth</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.authMethods.map(m => (
                         <Badge key={m} variant="outline" size="sm">{m}</Badge>
@@ -163,7 +188,7 @@ export function ERPAdaptersPage() {
                   </div>
                 </div>
 
-                <Button variant="secondary" size="sm" className="mt-3 w-full">
+                <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => handleAdapterConnect(adapter.id, adapter.name)}>
                   <Plug size={12} /> Connect
                 </Button>
               </Card>
@@ -220,8 +245,22 @@ export function ERPAdaptersPage() {
                   <Button variant="secondary" size="sm" onClick={() => handleSync(conn.id)} disabled={syncing === conn.id}>
                     {syncing === conn.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Sync Now
                   </Button>
-                  <Button variant="ghost" size="sm"><Activity size={12} /> View Logs</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setShowLogs(showLogs === conn.id ? null : conn.id)}>
+                    <Activity size={12} /> {showLogs === conn.id ? 'Hide Logs' : 'View Logs'}
+                  </Button>
                 </div>
+
+                {showLogs === conn.id && (
+                  <div className="mt-3 p-3 rounded-lg bg-gray-900 text-green-400 font-mono text-xs max-h-48 overflow-y-auto animate-fadeIn">
+                    <p>[{new Date().toISOString()}] Connection: {conn.name}</p>
+                    <p>[{new Date().toISOString()}] Adapter: {conn.adapterName} ({conn.adapterSystem})</p>
+                    <p>[{new Date().toISOString()}] Status: {conn.status}</p>
+                    <p>[{new Date().toISOString()}] Records synced: {(conn.recordsSynced || 0).toLocaleString()}</p>
+                    <p>[{new Date().toISOString()}] Sync frequency: {conn.syncFrequency}</p>
+                    <p>[{new Date().toISOString()}] Last sync: {conn.lastSync || 'Never'}</p>
+                    <p className="text-gray-500">[{new Date().toISOString()}] --- End of log ---</p>
+                  </div>
+                )}
               </Card>
             ))}
           </div>

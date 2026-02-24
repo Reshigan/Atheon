@@ -27,7 +27,7 @@ export function MindPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -60,8 +60,8 @@ export function MindPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
-          <Brain className="w-5 h-5 text-violet-600" />
+        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+          <Brain className="w-5 h-5 text-blue-600" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Atheon Mind</h1>
@@ -72,7 +72,7 @@ export function MindPage() {
       {/* Model Tiers */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Layers className="w-4 h-4 text-violet-600" /> Inference Tiers
+          <Layers className="w-4 h-4 text-blue-600" /> Inference Tiers
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {modelTiers.map((tier) => (
@@ -100,7 +100,7 @@ export function MindPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-400">{tier.description}</p>
-              <Progress value={Math.round((tier.usage / totalUsage) * 100)} color="indigo" size="sm" className="mt-3" />
+              <Progress value={Math.round((tier.usage / totalUsage) * 100)} color="blue" size="sm" className="mt-3" />
             </Card>
           ))}
         </div>
@@ -109,7 +109,7 @@ export function MindPage() {
       {/* Training Pipeline */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-violet-600" /> Training Pipeline
+          <Cpu className="w-4 h-4 text-blue-600" /> Training Pipeline
         </h2>
         <Card>
           <div className="space-y-4">
@@ -144,7 +144,7 @@ export function MindPage() {
       {/* Evaluation Metrics */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-violet-600" /> Evaluation Metrics
+          <BarChart3 className="w-4 h-4 text-blue-600" /> Evaluation Metrics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {evaluationMetrics.map((metric) => {
@@ -174,13 +174,13 @@ export function MindPage() {
       </div>
 
       {/* Architecture Note */}
-      <Card className="border-violet-200">
+      <Card className="border-blue-200">
         <div className="flex items-start gap-3">
-          <Database className="w-5 h-5 text-violet-600 mt-0.5 flex-shrink-0" />
+          <Database className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-semibold text-gray-900">Architecture Note</h3>
             <p className="text-xs text-gray-500 mt-1">
-              Atheon Mind uses a multi-tier inference architecture. The <span className="text-violet-600">atheon-mind-proxy</span> Worker
+              Atheon Mind uses a multi-tier inference architecture. The <span className="text-blue-600">atheon-mind-proxy</span> Worker
               classifies query complexity and routes to the appropriate tier. Tier 1 (Workers AI) handles 72% of queries at the edge
               with sub-50ms latency. Complex reasoning escalates to Tier 2/3 with full Atheon Mind 70B capabilities.
               Client-specific LoRA adapters are hot-swapped based on tenant context.

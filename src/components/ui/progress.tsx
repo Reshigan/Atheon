@@ -10,7 +10,7 @@ interface ProgressProps {
 }
 
 const colorClasses: Record<string, string> = {
-  indigo: 'bg-indigo-500',
+  indigo: 'bg-blue-500',
   emerald: 'bg-emerald-500',
   amber: 'bg-amber-500',
   red: 'bg-red-500',
@@ -23,7 +23,7 @@ const sizeClasses: Record<string, string> = {
   lg: 'h-3',
 };
 
-export function Progress({ value, max = 100, color = 'indigo', size = 'md', showLabel, className }: ProgressProps) {
+export function Progress({ value, max = 100, color = 'blue', size = 'md', showLabel, className }: ProgressProps) {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
   return (

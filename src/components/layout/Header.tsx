@@ -36,7 +36,7 @@ export function Header() {
           <input
             type="text"
             placeholder="Ask Atheon anything..."
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 border border-gray-200 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40 transition-all"
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 border border-gray-200 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all"
           />
         </div>
         {/* Mobile search icon */}
@@ -52,7 +52,7 @@ export function Header() {
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
-            className="appearance-none bg-gray-100 border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 text-xs sm:text-sm text-gray-600 cursor-pointer hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            className="appearance-none bg-gray-100 border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 text-xs sm:text-sm text-gray-600 cursor-pointer hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
           >
             {industries.map(i => (
               <option key={i.value} value={i.value}>{i.label}</option>
@@ -71,7 +71,7 @@ export function Header() {
 
         {/* User */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
             {user?.name?.charAt(0) || 'A'}
           </div>
           <div className="hidden md:block">

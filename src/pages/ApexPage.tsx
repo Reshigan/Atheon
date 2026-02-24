@@ -30,6 +30,25 @@ export function ApexPage() {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [scenarios, setScenarios] = useState<ScenarioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creatingScenario, setCreatingScenario] = useState(false);
+
+  const handleNewScenario = async () => {
+    if (creatingScenario) return;
+    setCreatingScenario(true);
+    try {
+      const result = await api.apex.createScenario({
+        title: `Scenario ${scenarios.length + 1}`,
+        description: 'New what-if analysis',
+        input_query: 'What if revenue drops by 10%?',
+        variables: ['revenue', 'margin', 'headcount'],
+      });
+      if (result.id) {
+        const s = await api.apex.scenarios();
+        setScenarios(s.scenarios);
+      }
+    } catch { /* silent */ }
+    setCreatingScenario(false);
+  };
 
   useEffect(() => {
     async function load() {
@@ -66,7 +85,7 @@ export function ApexPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -149,7 +168,7 @@ export function ApexPage() {
               {/* KPI Movements */}
               <Card>
                 <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-indigo-600" /> KPI Movements
+                  <TrendingUp className="w-4 h-4 text-blue-600" /> KPI Movements
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.kpiMovements || []).map((kpi) => (
@@ -225,7 +244,7 @@ export function ApexPage() {
                 key={risk.id}
                 hover
                 onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
-                className={expandedRisk === risk.id ? 'border-indigo-200' : ''}
+                className={expandedRisk === risk.id ? 'border-blue-200' : ''}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -255,7 +274,7 @@ export function ApexPage() {
                         <div className="space-y-2">
                           {risk.recommendedActions.map((action, i) => (
                             <div key={i} className="flex items-start gap-2">
-                              <ArrowRight className="w-3.5 h-3.5 text-indigo-600 mt-0.5 flex-shrink-0" />
+                              <ArrowRight className="w-3.5 h-3.5 text-blue-600 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-gray-600">{action}</span>
                             </div>
                           ))}
@@ -276,7 +295,7 @@ export function ApexPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Scenario Analysis</h3>
-              <Button variant="primary" size="sm"><Play size={14} /> New Scenario</Button>
+              <Button variant="primary" size="sm" onClick={handleNewScenario}><Play size={14} /> New Scenario</Button>
             </div>
             {scenarios.map((scenario) => (
               <Card key={scenario.id}>

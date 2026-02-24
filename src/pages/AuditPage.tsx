@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { LayerBadge } from "@/components/ui/layer-badge";
 import { api } from "@/lib/api";
 import type { AuditEntry } from "@/lib/api";
-import { Shield, CheckCircle, XCircle, Clock, Filter, Loader2 } from "lucide-react";
+import { Shield, CheckCircle, XCircle, Clock, Filter, Loader2, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { AtheonLayer } from "@/types";
 
 export function AuditPage() {
@@ -28,7 +29,7 @@ export function AuditPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -45,12 +46,32 @@ export function AuditPage() {
             <p className="text-sm text-gray-500">Complete governance trail across all Atheon layers</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
-        >
-          <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
-        </button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              const filtered = entries.filter(e => (!filterLayer || e.layer === filterLayer) && (!filterOutcome || e.outcome === filterOutcome));
+              const csv = ['Timestamp,Action,Layer,Outcome,Details']
+                .concat(filtered.map(e => `"${new Date(e.createdAt).toISOString()}","${e.action}","${e.layer}","${e.outcome}","${e.details ? Object.entries(e.details).map(([k,v]) => `${k}: ${v}`).join('; ') : ''}"`));
+              const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `atheon-audit-${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <Download size={14} /> Export CSV
+          </Button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+          >
+            <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
+          </button>
+        </div>
       </div>
 
       {/* Filter Panel */}
@@ -80,7 +101,7 @@ export function AuditPage() {
             </select>
           </div>
           {(filterLayer || filterOutcome) && (
-            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-indigo-600 hover:text-indigo-500 pb-1.5">Clear filters</button>
+            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-blue-600 hover:text-blue-500 pb-1.5">Clear filters</button>
           )}
         </div>
       )}

@@ -13,7 +13,7 @@ import {
 const deploymentIcon = (model: string) => {
   if (model === 'saas') return <Cloud size={14} className="text-blue-600" />;
   if (model === 'on-premise') return <Server size={14} className="text-amber-600" />;
-  return <GitBranch size={14} className="text-violet-600" />;
+  return <GitBranch size={14} className="text-blue-600" />;
 };
 
 const deploymentColor = (model: string) => {
@@ -72,7 +72,7 @@ export function TenantsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -81,8 +81,8 @@ export function TenantsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-indigo-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Client Access Layer</h1>
@@ -137,7 +137,7 @@ export function TenantsPage() {
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Hybrid</span>
-          <p className="text-2xl font-bold text-violet-600 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
           <span className="text-xs text-gray-400">mixed deployment</span>
         </Card>
       </div>
@@ -155,7 +155,7 @@ export function TenantsPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center text-lg font-bold text-indigo-500">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 flex items-center justify-center text-lg font-bold text-blue-600">
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
@@ -207,7 +207,7 @@ export function TenantsPage() {
                     {/* Entitlements */}
                     <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-indigo-600" /> Feature Entitlements
+                        <Shield size={14} className="text-blue-600" /> Feature Entitlements
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
                         {tenant.entitlements.features.map((f) => (
@@ -317,7 +317,7 @@ export function TenantsPage() {
                       <td className="py-2.5 font-medium">{row.feature}</td>
                       <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.starter}</td>
                       <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.pro}</td>
-                      <td className="py-2.5 text-center text-indigo-500">{row.enterprise}</td>
+                      <td className="py-2.5 text-center text-blue-600">{row.enterprise}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -333,13 +333,13 @@ export function TenantsPage() {
             {[
               { model: 'SaaS (Cloud)', icon: Cloud, color: 'blue', desc: 'Fully managed on Cloudflare edge. Zero infrastructure management. Automatic scaling and updates.', features: ['Cloudflare Workers', 'D1 Database', 'Vectorize', 'Auto-scaling', 'Global CDN'] },
               { model: 'On-Premise', icon: Server, color: 'amber', desc: 'Deploy within your own infrastructure. Full data sovereignty. Customer manages compute and storage.', features: ['Kubernetes / VM', 'PostgreSQL / SQL Server', 'Weaviate / Local Vector DB', 'Customer-managed', 'Air-gapped option'] },
-              { model: 'Hybrid', icon: GitBranch, color: 'violet', desc: 'Sensitive data on-premise, compute at the edge. Best of both worlds for regulated industries.', features: ['Edge compute + Local DB', 'Split data plane', 'Pinecone / Weaviate', 'Compliance-ready', 'Selective sync'] },
+              { model: 'Hybrid', icon: GitBranch, color: 'sky', desc: 'Sensitive data on-premise, compute at the edge. Best of both worlds for regulated industries.', features: ['Edge compute + Local DB', 'Split data plane', 'Pinecone / Weaviate', 'Compliance-ready', 'Selective sync'] },
             ].map((infra) => {
               const Icon = infra.icon;
               const colorMap: Record<string, { bg: string; text: string }> = {
                 blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
                 amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
-                violet: { bg: 'bg-violet-50', text: 'text-violet-600' },
+                sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
               };
               const colors = colorMap[infra.color] || colorMap.blue;
               return (

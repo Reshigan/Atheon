@@ -42,6 +42,11 @@ export function ControlPlanePage() {
   const [showDeploy, setShowDeploy] = useState(false);
   const [deployForm, setDeployForm] = useState({ name: '', agentType: 'catalyst', deploymentModel: 'saas', version: '1.0.0' });
   const [deploying, setDeploying] = useState(false);
+  const [updatingDeployment, setUpdatingDeployment] = useState<string | null>(null);
+  const [showEditConfig, setShowEditConfig] = useState(false);
+  const [editingDeployment, setEditingDeployment] = useState<DeploymentItem | null>(null);
+  const [editVersion, setEditVersion] = useState('');
+  const [editConfig, setEditConfig] = useState<DeploymentConfig>({});
 
   const handleDeploy = async () => {
     if (!deployForm.name.trim()) return;
@@ -56,15 +61,68 @@ export function ControlPlanePage() {
     setDeploying(false);
   };
 
+  const refresh = async () => {
+    const [d, h] = await Promise.allSettled([
+      api.controlplane.deployments(),
+      api.controlplane.health(),
+    ]);
+    if (d.status === 'fulfilled') setDeployments(d.value.deployments);
+    if (h.status === 'fulfilled') setHealth(h.value);
+  };
+
+  const updateStatus = async (deploymentId: string, status: string) => {
+    if (updatingDeployment) return;
+    setUpdatingDeployment(deploymentId);
+    try {
+      await api.controlplane.updateDeployment(deploymentId, { status });
+      await refresh();
+    } catch {
+      /* silent */
+    }
+    setUpdatingDeployment(null);
+  };
+
+  const restartDeployment = async (deploymentId: string) => {
+    if (updatingDeployment) return;
+    setUpdatingDeployment(deploymentId);
+    try {
+      await api.controlplane.updateDeployment(deploymentId, { status: 'deploying' });
+      await api.controlplane.updateDeployment(deploymentId, { status: 'running' });
+      await refresh();
+    } catch {
+      /* silent */
+    }
+    setUpdatingDeployment(null);
+  };
+
+  const openEditDeploymentConfig = (dep: DeploymentItem) => {
+    setEditingDeployment(dep);
+    setEditVersion(dep.version || '1.0.0');
+    setEditConfig((dep.config as DeploymentConfig) || {});
+    setShowEditConfig(true);
+  };
+
+  const saveDeploymentConfig = async () => {
+    if (!editingDeployment || updatingDeployment) return;
+    setUpdatingDeployment(editingDeployment.id);
+    try {
+      await api.controlplane.updateDeployment(editingDeployment.id, {
+        version: editVersion,
+        config: editConfig,
+      });
+      await refresh();
+      setShowEditConfig(false);
+      setEditingDeployment(null);
+    } catch {
+      /* silent */
+    }
+    setUpdatingDeployment(null);
+  };
+
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const [d, h] = await Promise.allSettled([
-        api.controlplane.deployments(),
-        api.controlplane.health(),
-      ]);
-      if (d.status === 'fulfilled') setDeployments(d.value.deployments);
-      if (h.status === 'fulfilled') setHealth(h.value);
+      await refresh();
       setLoading(false);
     }
     load();
@@ -88,7 +146,7 @@ export function ControlPlanePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -126,6 +184,82 @@ export function ControlPlanePage() {
               <Button variant="secondary" size="sm" onClick={() => setShowDeploy(false)}>Cancel</Button>
               <Button variant="primary" size="sm" onClick={handleDeploy} disabled={deploying || !deployForm.name.trim()}>
                 {deploying ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Deploy
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Config Modal */}
+      {showEditConfig && editingDeployment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-xl mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Deployment Config</h3>
+              <button
+                onClick={() => { setShowEditConfig(false); setEditingDeployment(null); }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500">Version</label>
+                <input
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono"
+                  value={editVersion}
+                  onChange={(e) => setEditVersion(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Replicas</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  value={String(editConfig.replicas ?? 1)}
+                  onChange={(e) => setEditConfig((p) => ({ ...p, replicas: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Max Concurrent Tasks</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  value={String(editConfig.maxConcurrentTasks ?? 10)}
+                  onChange={(e) => setEditConfig((p) => ({ ...p, maxConcurrentTasks: Math.max(1, parseInt(e.target.value || '10', 10) || 10) }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Confidence Threshold (%)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  value={String(Math.round(((editConfig.confidenceThreshold ?? 0.85) as number) * 100))}
+                  onChange={(e) => {
+                    const pct = Math.min(100, Math.max(0, parseInt(e.target.value || '85', 10) || 0));
+                    setEditConfig((p) => ({ ...p, confidenceThreshold: pct / 100 }));
+                  }}
+                />
+              </div>
+            </div>
+
+            <p className="text-[10px] text-gray-400">Configuration updates apply on next heartbeat/restart.</p>
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => { setShowEditConfig(false); setEditingDeployment(null); }}>Cancel</Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={saveDeploymentConfig}
+                disabled={updatingDeployment === editingDeployment.id}
+              >
+                {updatingDeployment === editingDeployment.id ? <Loader2 size={14} className="animate-spin" /> : <Settings size={14} />} Save
               </Button>
             </div>
           </div>
@@ -272,11 +406,43 @@ export function ControlPlanePage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    {dep.status === 'running' && <Button variant="danger" size="sm"><Square size={12} /> Stop</Button>}
-                    {dep.status === 'stopped' && <Button variant="success" size="sm"><Play size={12} /> Start</Button>}
-                    <Button variant="secondary" size="sm"><RefreshCw size={12} /> Restart</Button>
-                    <Button variant="secondary" size="sm"><Settings size={12} /> Edit Config</Button>
+                  <div className="flex flex-wrap gap-2">
+                    {dep.status === 'running' && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); updateStatus(dep.id, 'stopped'); }}
+                        disabled={updatingDeployment === dep.id}
+                      >
+                        <Square size={12} /> Stop
+                      </Button>
+                    )}
+                    {dep.status === 'stopped' && (
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); updateStatus(dep.id, 'running'); }}
+                        disabled={updatingDeployment === dep.id}
+                      >
+                        <Play size={12} /> Start
+                      </Button>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); restartDeployment(dep.id); }}
+                      disabled={updatingDeployment === dep.id}
+                    >
+                      <RefreshCw size={12} /> Restart
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); openEditDeploymentConfig(dep); }}
+                      disabled={updatingDeployment === dep.id}
+                    >
+                      <Settings size={12} /> Edit Config
+                    </Button>
                   </div>
                 </div>
               )}

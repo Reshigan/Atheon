@@ -21,7 +21,7 @@ export function SettingsPage() {
   const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [accentColor, setAccentColor] = useState('bg-indigo-500');
+  const [accentColor, setAccentColor] = useState('bg-blue-500');
 
   const [notifications, setNotifications] = useState<NotificationPref[]>([
     { label: 'Risk alerts (critical)', desc: 'Immediate notification for critical risk alerts', enabled: true },
@@ -74,9 +74,9 @@ export function SettingsPage() {
   };
 
   const accentOptions = [
-    { class: 'bg-indigo-500', name: 'Indigo' },
-    { class: 'bg-violet-500', name: 'Violet' },
-    { class: 'bg-blue-500', name: 'Blue' },
+    { class: 'bg-blue-600', name: 'Blue' },
+    { class: 'bg-sky-500', name: 'Sky' },
+    { class: 'bg-cyan-500', name: 'Cyan' },
     { class: 'bg-emerald-500', name: 'Emerald' },
     { class: 'bg-amber-500', name: 'Amber' },
   ];
@@ -97,11 +97,11 @@ export function SettingsPage() {
         {/* Profile */}
         <Card>
           <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-indigo-600" /> Profile
+            <User className="w-4 h-4 text-blue-600" /> Profile
           </h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-2xl font-bold text-white">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-2xl font-bold text-white">
                 {displayName?.charAt(0) || 'A'}
               </div>
               <div>
@@ -154,7 +154,7 @@ export function SettingsPage() {
                 </div>
                 <button
                   onClick={() => toggleNotification(index)}
-                  className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-indigo-500' : 'bg-gray-300'} relative`}
+                  className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-blue-500' : 'bg-gray-300'} relative`}
                   aria-label={`Toggle ${notif.label}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`} />
@@ -167,7 +167,7 @@ export function SettingsPage() {
         {/* Appearance */}
         <Card>
           <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4 text-violet-600" /> Appearance
+            <Palette className="w-4 h-4 text-blue-600" /> Appearance
           </h3>
           <div className="space-y-4">
             <div>
@@ -176,7 +176,7 @@ export function SettingsPage() {
                 <div className="w-20 h-14 rounded-lg bg-gray-800 border border-gray-300 flex items-center justify-center text-xs text-gray-300 cursor-not-allowed opacity-40" title="Dark theme not available">
                   Dark
                 </div>
-                <div className="w-20 h-14 rounded-lg bg-white border-2 border-indigo-500 flex items-center justify-center text-xs text-gray-600">
+                <div className="w-20 h-14 rounded-lg bg-white border-2 border-blue-500 flex items-center justify-center text-xs text-gray-600">
                   Light
                 </div>
               </div>
@@ -189,7 +189,7 @@ export function SettingsPage() {
                     key={c.class}
                     onClick={() => setAccentColor(c.class)}
                     title={c.name}
-                    className={`w-8 h-8 rounded-full ${c.class} transition-all ${c.class === accentColor ? 'ring-2 ring-offset-2 ring-offset-white ring-indigo-400 scale-110' : 'hover:scale-105'}`}
+                    className={`w-8 h-8 rounded-full ${c.class} transition-all ${c.class === accentColor ? 'ring-2 ring-offset-2 ring-offset-white ring-blue-400 scale-110' : 'hover:scale-105'}`}
                   />
                 ))}
               </div>
