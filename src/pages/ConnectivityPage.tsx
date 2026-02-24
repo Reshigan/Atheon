@@ -161,11 +161,11 @@ export function ConnectivityPage() {
                   Each Catalyst publishes an <strong className="text-gray-800">Agent Card</strong> (JSON-LD) describing its capabilities,
                   skills, and communication endpoints.
                 </p>
-                <div className="flex items-center gap-2 mt-4 text-xs text-gray-400">
+                <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
                   <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-200">Finance Catalyst</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-gray-100">A2A Protocol</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-200">Supply Chain Catalyst</span>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">

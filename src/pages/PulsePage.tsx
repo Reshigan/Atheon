@@ -122,7 +122,7 @@ export function PulsePage() {
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{anom.hypothesis}</p>
-                    <div className="grid grid-cols-3 gap-4 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                       <div className="p-2 rounded bg-gray-100">
                         <span className="text-[10px] text-gray-400">Expected</span>
                         <p className="text-sm font-medium text-gray-600">{anom.expectedValue}</p>

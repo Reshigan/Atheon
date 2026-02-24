@@ -161,13 +161,13 @@ export function CanonicalApiPage() {
                   The Atheon Canonical API provides a <strong className="text-gray-800">single, unified interface</strong> to interact with any connected ERP system.
                   Instead of calling SAP BAPIs, Salesforce REST, or Workday SOAP directly, Catalysts and user queries go through the Canonical API layer.
                 </p>
-                <div className="flex items-center gap-2 mt-4 text-xs text-gray-400">
+                <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
                   <span className="px-2 py-1 rounded bg-gray-100">Catalyst / Chat</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-orange-500/15 text-orange-400 border border-orange-500/20">Canonical API</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-gray-100">ERP Adapter</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-gray-100">SAP / SF / WD / ...</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-4 leading-relaxed">

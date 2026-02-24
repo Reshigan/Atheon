@@ -103,24 +103,26 @@ export function ApexPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Dimension Breakdown</h3>
               <div className="space-y-4">
                 {dimensions.map((dim) => (
-                  <div key={dim.key} className="flex items-center gap-4">
-                    <div className="w-36 flex-shrink-0">
+                  <div key={dim.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <div className="sm:w-36 flex-shrink-0">
                       <span className="text-sm text-gray-600">{dim.name}</span>
                       <span className="block text-[10px] text-gray-400">Weight: {(dim.weight * 100).toFixed(0)}%</span>
                     </div>
                     <div className="flex-1">
                       <Progress value={dim.score} color={dim.score >= 80 ? 'emerald' : dim.score >= 60 ? 'amber' : 'red'} size="md" />
                     </div>
-                    <div className="w-12 text-right">
-                      <span className="text-sm font-bold text-gray-900">{dim.score}</span>
+                    <div className="flex items-center gap-3 sm:gap-0">
+                      <div className="w-12 text-right">
+                        <span className="text-sm font-bold text-gray-900">{dim.score}</span>
+                      </div>
+                      <div className="flex items-center gap-1 w-20">
+                        {trendIcon(dim.trend, 12)}
+                        <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {dim.change > 0 ? '+' : ''}{dim.change}
+                        </span>
+                      </div>
+                      <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'up' ? '#10b981' : dim.trend === 'down' ? '#ef4444' : '#6b7280'} />
                     </div>
-                    <div className="flex items-center gap-1 w-20">
-                      {trendIcon(dim.trend, 12)}
-                      <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {dim.change > 0 ? '+' : ''}{dim.change}
-                      </span>
-                    </div>
-                    <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'up' ? '#10b981' : dim.trend === 'down' ? '#ef4444' : '#6b7280'} />
                   </div>
                 ))}
               </div>

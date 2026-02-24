@@ -153,13 +153,13 @@ export function MemoryPage() {
               similarity with structured graph traversal. Every fact carries a confidence score and source citation,
               ensuring full provenance from query to response.
             </p>
-            <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
+            <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-gray-400">
               <span className="px-2 py-1 rounded bg-gray-100">D1 Graph</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3 flex-shrink-0" />
               <span className="px-2 py-1 rounded bg-gray-100">Vectorize</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3 flex-shrink-0" />
               <span className="px-2 py-1 rounded bg-gray-100">Hybrid RAG</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3 flex-shrink-0" />
               <span className="px-2 py-1 rounded bg-gray-100">Citation Injection</span>
             </div>
           </div>

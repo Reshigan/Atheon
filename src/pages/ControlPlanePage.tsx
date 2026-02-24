@@ -79,7 +79,7 @@ export function ControlPlanePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
             <Cpu className="w-5 h-5 text-cyan-400" />
@@ -137,7 +137,7 @@ export function ControlPlanePage() {
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-gray-900">{dep.name || dep.clusterName || dep.id}</h3>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-xs text-gray-500">{dep.tenantName || dep.tenantId}</span>
                       <Badge variant={dep.deploymentModel === 'saas' ? 'info' : dep.deploymentModel === 'on-premise' ? 'warning' : 'default'} size="sm">
                         {dep.deploymentModel === 'saas' && <Cloud size={10} className="mr-1" />}
@@ -160,7 +160,7 @@ export function ControlPlanePage() {
               </div>
 
               {/* Quick Metrics */}
-              <div className="grid grid-cols-5 gap-3 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
                 <div className="text-center p-2 rounded bg-gray-100">
                   <span className="text-[10px] text-gray-400">Replicas</span>
                   <p className="text-sm font-bold text-gray-900">{replicas}</p>
