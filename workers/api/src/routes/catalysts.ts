@@ -292,6 +292,111 @@ catalysts.get('/approvals', async (c) => {
   });
 });
 
+// POST /api/catalysts/manual-execute - Manual catalyst execution with file upload + datetime range
+catalysts.post('/manual-execute', async (c) => {
+  const tenantId = getTenantId(c);
+
+  // Parse multipart form data or JSON
+  let clusterId: string;
+  let catalystName: string;
+  let action: string;
+  let startDatetime: string;
+  let endDatetime: string;
+  let fileData: string | null = null;
+  let fileName: string | null = null;
+  let reasoning: string | null = null;
+
+  const contentType = c.req.header('Content-Type') || '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await c.req.formData();
+    clusterId = formData.get('cluster_id') as string;
+    catalystName = formData.get('catalyst_name') as string;
+    action = formData.get('action') as string;
+    startDatetime = formData.get('start_datetime') as string;
+    endDatetime = formData.get('end_datetime') as string;
+    reasoning = formData.get('reasoning') as string | null;
+    const file = formData.get('file') as File | null;
+    if (file) {
+      fileName = file.name;
+      fileData = await file.text();
+    }
+  } else {
+    const body = await c.req.json<{
+      cluster_id: string; catalyst_name: string; action: string;
+      start_datetime: string; end_datetime: string;
+      file_data?: string; file_name?: string; reasoning?: string;
+    }>();
+    clusterId = body.cluster_id;
+    catalystName = body.catalyst_name;
+    action = body.action;
+    startDatetime = body.start_datetime;
+    endDatetime = body.end_datetime;
+    fileData = body.file_data || null;
+    fileName = body.file_name || null;
+    reasoning = body.reasoning || null;
+  }
+
+  if (!clusterId || !catalystName || !action || !startDatetime || !endDatetime) {
+    return c.json({ error: 'Missing required fields: cluster_id, catalyst_name, action, start_datetime, end_datetime' }, 400);
+  }
+
+  // Validate datetime format
+  const start = new Date(startDatetime);
+  const end = new Date(endDatetime);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return c.json({ error: 'Invalid datetime format. Use ISO 8601 format.' }, 400);
+  }
+  if (end <= start) {
+    return c.json({ error: 'end_datetime must be after start_datetime' }, 400);
+  }
+
+  // Verify cluster exists
+  const cluster = await c.env.DB.prepare('SELECT * FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, tenantId).first();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  // Create the manual action
+  const actionId = crypto.randomUUID();
+  const inputData = JSON.stringify({
+    manual: true,
+    start_datetime: startDatetime,
+    end_datetime: endDatetime,
+    file_name: fileName,
+    file_size: fileData ? fileData.length : 0,
+    file_preview: fileData ? fileData.substring(0, 500) : null,
+  });
+
+  await c.env.DB.prepare(
+    'INSERT INTO catalyst_actions (id, cluster_id, tenant_id, catalyst_name, action, status, confidence, input_data, reasoning, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
+  ).bind(actionId, clusterId, tenantId, catalystName, action, 'pending', 0.85, inputData, reasoning || `Manual execution requested for period ${startDatetime} to ${endDatetime}`).run();
+
+  // Store file in R2 if available
+  if (fileData && c.env.STORAGE) {
+    try {
+      await c.env.STORAGE.put(`catalyst-files/${tenantId}/${actionId}/${fileName}`, fileData);
+    } catch {
+      // R2 may not be configured, continue without file storage
+    }
+  }
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), tenantId, 'catalyst.manual_execute', 'catalysts', clusterId,
+    JSON.stringify({ action_id: actionId, catalyst: catalystName, action, start: startDatetime, end: endDatetime, file: fileName }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({
+    actionId,
+    status: 'pending',
+    message: `Manual catalyst execution created for ${catalystName}. Period: ${startDatetime} to ${endDatetime}.${fileName ? ` File: ${fileName}` : ''}`,
+    startDatetime,
+    endDatetime,
+    fileName,
+  }, 201);
+});
+
 // GET /api/catalysts/execution-stats - Execution engine stats
 catalysts.get('/execution-stats', async (c) => {
   const tenantId = getTenantId(c);

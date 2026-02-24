@@ -1,5 +1,5 @@
 import { useAppStore } from "@/stores/appStore";
-import { Bell, ChevronDown, Menu, LogOut, MessageCircle, Settings, X, Check } from "lucide-react";
+import { Bell, ChevronDown, Menu, LogOut, MessageCircle, Settings, X, Check, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, setToken } from "@/lib/api";
 import type { NotificationItem } from "@/lib/api";
@@ -35,7 +35,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function Header() {
-  const { user, industry, setIndustry, setMobileSidebarOpen, setUser } = useAppStore();
+  const { user, industry, setIndustry, setMobileSidebarOpen, setUser, theme, toggleTheme } = useAppStore();
   const navigate = useNavigate();
 
   // Notifications state
@@ -118,7 +118,7 @@ export function Header() {
   return (
     <header
       className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6"
-      style={{ left: '0px', background: 'rgba(22, 22, 30, 0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ left: '0px', background: 'rgba(26, 26, 46, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
     >
       {/* Left: hamburger (mobile) + spacer (desktop) */}
       <div className="flex items-center gap-3 flex-1">
@@ -255,6 +255,15 @@ export function Header() {
               </div>
             )}
           </div>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
 
           {/* Settings → Settings page */}
           <button

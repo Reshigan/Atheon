@@ -164,6 +164,18 @@ export const api = {
       request<GovernanceData>(`/api/catalysts/governance?tenant_id=${tenantId || 'vantax'}`),
     createCluster: (data: Record<string, unknown>) =>
       request<{ id: string; name: string; domain: string }>('/api/catalysts/clusters', { method: 'POST', body: JSON.stringify(data) }),
+    manualExecute: async (data: FormData): Promise<ManualExecuteResult> => {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`${API_URL}/api/catalysts/manual-execute`, {
+        method: 'POST', headers, body: data,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error((err as Record<string, string>).error || res.statusText);
+      }
+      return res.json() as Promise<ManualExecuteResult>;
+    },
   },
 
   memory: {
@@ -663,6 +675,15 @@ export interface AuditStats {
   layerBreakdown: { layer: string; count: number }[];
   outcomeBreakdown: { outcome: string; count: number }[];
   recentActivity: { action: string; layer: string; outcome: string; created_at: string }[];
+}
+
+export interface ManualExecuteResult {
+  actionId: string;
+  status: string;
+  message: string;
+  startDatetime: string;
+  endDatetime: string;
+  fileName: string | null;
 }
 
 export interface NotificationItem {

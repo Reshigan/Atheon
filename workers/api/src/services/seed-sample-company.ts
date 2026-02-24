@@ -35,7 +35,14 @@ export async function seedSampleCompany(db: D1Database) {
   ).run();
 
   // ── Users ──
+  // Default password hash for seeded users (password: "Atheon@2026")
+  // Generated with PBKDF2 100000 iterations SHA-256
+  const defaultPasswordHash = 'pbkdf2:100000:c2VlZC1zYWx0LXByb3RlYQ:placeholder';
+
   const users = [
+    { id: 'protea-user-sa', email: 'atheon@vantax.co.za', name: 'Atheon System', role: 'admin', permissions: '["*"]' },
+    { id: 'protea-user-admin', email: 'reshigan@vantax.co.za', name: 'Reshigan Naidoo', role: 'admin', permissions: '["*"]' },
+    { id: 'protea-user-normal', email: 'essen@vantax.co.za', name: 'Essen Naidoo', role: 'analyst', permissions: '["pulse.read","apex.read","catalysts.read","memory.read","mind.query"]' },
     { id: 'protea-user-1', email: 'ceo@protea-mfg.co.za', name: 'Thabo Mokoena', role: 'admin', permissions: '["*"]' },
     { id: 'protea-user-2', email: 'cfo@protea-mfg.co.za', name: 'Lindiwe Nkosi', role: 'executive', permissions: '["apex.*","pulse.read","catalysts.approve"]' },
     { id: 'protea-user-3', email: 'ops@protea-mfg.co.za', name: 'Johan van Wyk', role: 'manager', permissions: '["pulse.*","catalysts.read","catalysts.execute"]' },
@@ -43,8 +50,8 @@ export async function seedSampleCompany(db: D1Database) {
     { id: 'protea-user-5', email: 'hr@protea-mfg.co.za', name: 'Sipho Dlamini', role: 'analyst', permissions: '["pulse.read"]' },
   ];
   for (const u of users) {
-    await db.prepare('INSERT INTO users (id, tenant_id, email, name, role, permissions) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(u.id, 'protea', u.email, u.name, u.role, u.permissions).run();
+    await db.prepare('INSERT INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(u.id, 'protea', u.email, u.name, u.role, defaultPasswordHash, u.permissions, 'active').run();
   }
 
   // ── ERP Adapter Definitions (Xero, Sage Business Cloud, Sage Pastel) ──
@@ -595,6 +602,86 @@ export async function seedSampleCompany(db: D1Database) {
     }),
     'completed'
   ).run();
+
+  // ── Catalyst Actions (Issues for manual processing — with exceptions) ──
+  const catalystActions = [
+    {
+      id: 'ca-protea-1', cluster: 'cc-fin-protea', catalyst: 'Invoice Reconciliation', action: 'Match INV-2026-0107 to PO-2026-0003',
+      status: 'exception', confidence: 0.42,
+      input: JSON.stringify({ invoice_id: 'INV-2026-0107', po_id: 'PO-2026-0003', amount_invoice: 234500, amount_po: 198000, variance: 36500, variance_pct: 18.4 }),
+      output: JSON.stringify({ exception_type: 'amount_mismatch', exception_detail: 'Invoice amount R234,500 exceeds PO amount R198,000 by R36,500 (18.4%). Exceeds 5% tolerance threshold.', suggested_action: 'Escalate to finance manager for manual review' }),
+      reasoning: 'Three-way match failed: Invoice amount R234,500 does not match PO R198,000 — variance of 18.4% exceeds configured 5% tolerance. Nampak may have included expedited shipping surcharge not in original PO.',
+    },
+    {
+      id: 'ca-protea-2', cluster: 'cc-fin-protea', catalyst: 'Payment Run Validation', action: 'Validate payment batch BATCH-2026-FEB-W3',
+      status: 'exception', confidence: 0.38,
+      input: JSON.stringify({ batch_id: 'BATCH-2026-FEB-W3', total_amount: 2890000, payment_count: 47, duplicate_detected: true }),
+      output: JSON.stringify({ exception_type: 'duplicate_payment', exception_detail: 'Potential duplicate: Supplier Sasol Chemicals (SUP-001) has two payments of R445,000 in same batch. Previous payment cleared 3 days ago.', suggested_action: 'Remove duplicate payment, re-validate batch' }),
+      reasoning: 'Duplicate payment detection triggered for Sasol Chemicals — R445,000 appears twice in batch. First payment was processed in BATCH-2026-FEB-W2 and cleared on 2026-02-20.',
+    },
+    {
+      id: 'ca-protea-3', cluster: 'cc-proc-protea', catalyst: 'PO Auto-Generation', action: 'Create PO for depleted raw material stock',
+      status: 'exception', confidence: 0.55,
+      input: JSON.stringify({ material: 'Sodium Lauryl Sulfate', current_stock_kg: 450, reorder_point_kg: 2000, supplier: 'Sasol Chemicals', price_increase: 18 }),
+      output: JSON.stringify({ exception_type: 'price_threshold_exceeded', exception_detail: 'Sasol Chemicals price increase of 18% exceeds auto-approval threshold of 10%. Current price R48.50/kg vs last PO R41.10/kg.', suggested_action: 'Seek alternative supplier quote or get management approval for price increase' }),
+      reasoning: 'Auto-PO blocked: Material price from Sasol has increased 18% since last order. Company policy requires management approval for price increases above 10%.',
+    },
+    {
+      id: 'ca-protea-4', cluster: 'cc-sc-protea', catalyst: 'Demand Forecast', action: 'Adjust Q2 demand forecast for ProClean range',
+      status: 'pending', confidence: 0.78,
+      input: JSON.stringify({ product_range: 'ProClean', current_forecast_units: 125000, suggested_adjustment: -15000, reason: 'Shoprite order reduction' }),
+      output: null,
+      reasoning: 'Shoprite communicated 12% reduction in Q2 ProClean orders due to shelf-space reallocation. Recommend reducing production forecast by 15,000 units to avoid overstock.',
+    },
+    {
+      id: 'ca-protea-5', cluster: 'cc-fin-protea', catalyst: 'Debtor Management', action: 'Escalate overdue Shoprite account',
+      status: 'exception', confidence: 0.65,
+      input: JSON.stringify({ customer: 'Shoprite Holdings', overdue_amount: 601910, days_overdue: 12, disputed_items: 3, total_outstanding: 1234567 }),
+      output: JSON.stringify({ exception_type: 'payment_dispute', exception_detail: 'Shoprite disputes 3 line items on INV-2026-0089: (1) Short delivery on ProClean 5L x 200 cases, (2) Damaged goods claim R45,000, (3) Pricing discrepancy on NaturaGlow promo.', suggested_action: 'Schedule meeting with Shoprite procurement, prepare credit notes for valid claims' }),
+      reasoning: 'Debtor aging trigger: Shoprite payment 12 days overdue for R601,910. Dispute involves short delivery, damages, and pricing. Credit team needs to resolve before automated collection escalation.',
+    },
+    {
+      id: 'ca-protea-6', cluster: 'cc-sc-protea', catalyst: 'Inventory Optimization', action: 'Rebalance warehouse stock JHB-DC1 to JHB-DC2',
+      status: 'pending', confidence: 0.82,
+      input: JSON.stringify({ sku: 'PC-5L-LEMON', dc1_stock: 8500, dc2_stock: 320, dc2_demand_weekly: 1200, transfer_cost: 12500 }),
+      output: null,
+      reasoning: 'JHB-DC2 has only 2 days of ProClean 5L Lemon stock remaining. JHB-DC1 has 3 weeks surplus. Recommend inter-warehouse transfer of 4,000 units at R12,500 cost.',
+    },
+    {
+      id: 'ca-protea-7', cluster: 'cc-hr-protea', catalyst: 'Leave Management', action: 'Flag excessive absenteeism in Manufacturing',
+      status: 'exception', confidence: 0.71,
+      input: JSON.stringify({ department: 'Manufacturing', absenteeism_rate: 14.2, threshold: 8.0, affected_employees: 12, period: 'Feb 2026' }),
+      output: JSON.stringify({ exception_type: 'hr_policy_breach', exception_detail: 'Manufacturing absenteeism at 14.2% (threshold 8%). 12 employees flagged — 8 with unverified sick leave, 4 with pattern absenteeism (Mondays/Fridays).', suggested_action: 'HR to schedule return-to-work interviews, review sick leave documentation' }),
+      reasoning: 'Absenteeism rate in Manufacturing is 77.5% above the 8% threshold. Pattern analysis shows Monday/Friday concentration suggesting potential abuse. Load shedding may also be a contributing factor.',
+    },
+    {
+      id: 'ca-protea-8', cluster: 'cc-fin-protea', catalyst: 'GL Reconciliation', action: 'Reconcile bank statement vs GL for Feb 2026',
+      status: 'exception', confidence: 0.48,
+      input: JSON.stringify({ period: '2026-02', bank_balance: 4521890, gl_balance: 4398234, difference: 123656, unmatched_items: 7 }),
+      output: JSON.stringify({ exception_type: 'reconciliation_variance', exception_detail: 'Bank-to-GL variance of R123,656. 7 unmatched items: 3 bank charges not posted (R8,900), 2 direct deposits unidentified (R89,000), 2 stale cheques (R25,756).', suggested_action: 'Post bank charges, identify direct deposits, write off stale cheques per policy' }),
+      reasoning: 'Month-end bank reconciliation has R123,656 variance with 7 unmatched items. Requires manual investigation of 2 unidentified direct deposits totaling R89,000.',
+    },
+    {
+      id: 'ca-protea-9', cluster: 'cc-proc-protea', catalyst: 'Contract Lifecycle', action: 'Alert: Nampak contract renewal in 30 days',
+      status: 'pending', confidence: 0.90,
+      input: JSON.stringify({ supplier: 'Nampak', contract_end: '2026-03-25', annual_value: 3200000, performance_score: 72, delivery_issues: 4 }),
+      output: null,
+      reasoning: 'Nampak packaging contract expires in 30 days. Performance score 72/100 with 4 delivery issues in last quarter. Consider renegotiating terms or tendering alternative suppliers.',
+    },
+    {
+      id: 'ca-protea-10', cluster: 'cc-sales-protea', catalyst: 'Customer Health Monitor', action: 'Woolworths order volume spike analysis',
+      status: 'completed', confidence: 0.92,
+      input: JSON.stringify({ customer: 'Woolworths', order_increase: 15, product_range: 'NaturaGlow', period: 'Q2 2026' }),
+      output: JSON.stringify({ result: 'success', detail: 'Woolworths increasing NaturaGlow orders +15% for Q2. Production capacity confirmed. Raw material availability checked — sufficient except for shea butter (2 week lead time).', action_taken: 'Adjusted production schedule, raised PO for additional shea butter' }),
+      reasoning: 'Woolworths buyer confirmed 15% volume increase for NaturaGlow range. Supply chain impact assessed: capacity OK, shea butter needs early procurement.',
+    },
+  ];
+
+  for (const a of catalystActions) {
+    await db.prepare(
+      'INSERT INTO catalyst_actions (id, cluster_id, tenant_id, catalyst_name, action, status, confidence, input_data, output_data, reasoning, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\', \'-\' || abs(random() % 7) || \' days\'))'
+    ).bind(a.id, a.cluster, 'protea', a.catalyst, a.action, a.status, a.confidence, a.input, a.output, a.reasoning).run();
+  }
 
   // ── IAM Policies ──
   await db.prepare('INSERT INTO iam_policies (id, tenant_id, name, description, type, rules) VALUES (?, ?, ?, ?, ?, ?)').bind(

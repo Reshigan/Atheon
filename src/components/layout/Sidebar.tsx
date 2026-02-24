@@ -32,7 +32,7 @@ function AtheonLogo({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   const s = size === 'lg' ? 'w-9 h-9' : 'w-8 h-8';
   const iconSize = size === 'lg' ? 36 : 32;
   return (
-    <div className={cn(s, 'rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/10')}>
+    <div className={cn(s, 'rounded-xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/5')}>
       <AtheonCrystalIcon size={iconSize} />
     </div>
   );
@@ -56,7 +56,7 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar — icon-only narrow glass bar */}
-      <aside className="fixed left-0 top-0 h-full z-40 w-16 hidden lg:flex flex-col items-center py-5" style={{ background: 'rgba(22, 22, 30, 0.95)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      <aside className="fixed left-0 top-0 h-full z-40 w-16 hidden lg:flex flex-col items-center py-5" style={{ background: 'rgba(26, 26, 46, 0.97)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Logo */}
         <div className="mb-8">
           <AtheonLogo />
@@ -80,8 +80,8 @@ export function Sidebar() {
                   className={cn(
                     'w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group relative',
                     isActive
-                      ? 'bg-white/[0.1] shadow-sm shadow-amber-500/10 text-amber-400'
-                      : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'
+                      ? 'bg-white/[0.08] shadow-sm shadow-amber-500/5 text-amber-400'
+                      : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.05]'
                   )}
                 >
                   <Icon size={19} className={cn(isActive ? 'text-amber-400' : 'text-gray-500 group-hover:text-gray-300')} />
@@ -100,7 +100,7 @@ export function Sidebar() {
       <aside className={cn(
         'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-72 lg:hidden',
         mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
-      )} style={{ background: 'rgba(22, 22, 30, 0.98)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      )} style={{ background: 'rgba(26, 26, 46, 0.98)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <AtheonLogo size="lg" />

@@ -5,11 +5,11 @@
 @layer base {
   :root {
     --radius: 0.875rem;
-    --bg-primary: #16161e;
-    --bg-secondary: #1e1e2a;
-    --bg-card: rgba(255, 255, 255, 0.05);
-    --bg-card-hover: rgba(255, 255, 255, 0.08);
-    --border-subtle: rgba(255, 255, 255, 0.08);
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #22223a;
+    --bg-card: rgba(255, 255, 255, 0.04);
+    --bg-card-hover: rgba(255, 255, 255, 0.07);
+    --border-subtle: rgba(255, 255, 255, 0.07);
     --border-card: rgba(255, 255, 255, 0.06);
     --text-primary: #f0f0f2;
     --text-secondary: #9a9ab0;
@@ -22,11 +22,64 @@
     @apply text-gray-100;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
-    background-image: radial-gradient(ellipse at 20% 0%, rgba(245, 197, 66, 0.04) 0%, transparent 50%),
-                       radial-gradient(ellipse at 80% 100%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
-                       radial-gradient(circle at 50% 50%, rgba(30, 30, 42, 0.8) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at 30% 0%, rgba(160, 120, 80, 0.06) 0%, transparent 50%),
+                       radial-gradient(ellipse at 70% 100%, rgba(80, 80, 120, 0.04) 0%, transparent 50%);
     background-attachment: fixed;
     min-height: 100vh;
+  }
+
+  /* Light theme */
+  .atheon-light {
+    --bg-primary: #f5f5f7;
+    --bg-secondary: #eaeaef;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-card-hover: rgba(255, 255, 255, 0.95);
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-card: rgba(0, 0, 0, 0.06);
+    --text-primary: #1a1a2e;
+    --text-secondary: #555568;
+    --text-muted: #8888a0;
+    --accent: #d4941a;
+    --accent-glow: rgba(212, 148, 26, 0.12);
+  }
+  .atheon-light,
+  body.atheon-light {
+    background: var(--bg-primary);
+    background-image: radial-gradient(ellipse at 30% 0%, rgba(212, 148, 26, 0.06) 0%, transparent 50%),
+                       radial-gradient(ellipse at 70% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+    color: var(--text-primary);
+  }
+  .atheon-light .card-dark,
+  .atheon-light .card-glass,
+  .atheon-light .bg-glass,
+  .atheon-light .bg-glass-strong,
+  .atheon-light .bg-glass-subtle {
+    background: var(--bg-card);
+    border-color: var(--border-card);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+  .atheon-light .card-dark:hover,
+  .atheon-light .card-glass:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-subtle);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  .atheon-light .text-white { color: var(--text-primary) !important; }
+  .atheon-light .text-gray-100 { color: var(--text-primary) !important; }
+  .atheon-light .text-gray-200 { color: #333348 !important; }
+  .atheon-light .text-gray-300 { color: #444460 !important; }
+  .atheon-light .text-gray-400 { color: var(--text-secondary) !important; }
+  .atheon-light .text-gray-500 { color: var(--text-muted) !important; }
+  .atheon-light input:not([type="checkbox"]):not([type="radio"]),
+  .atheon-light select,
+  .atheon-light textarea {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+  }
+  .atheon-light select option {
+    background-color: #ffffff;
+    color: var(--text-primary);
   }
 }
 
@@ -36,18 +89,18 @@
     background-image: linear-gradient(135deg, #f5c542, #e8a317, #d4941a);
   }
   .bg-glass {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  }
-  .bg-glass-strong {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.035);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  }
+  .bg-glass-strong {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
   }
   .bg-glass-subtle {
     background: rgba(255, 255, 255, 0.04);
@@ -62,40 +115,40 @@
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.04), 0 0 60px rgba(99, 102, 241, 0.02);
   }
   .card-dark {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 1rem;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
     transition: all 0.25s ease;
   }
   .card-dark:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     transform: translateY(-1px);
   }
   .card-glass {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 1rem;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
     transition: all 0.25s ease;
   }
   .card-glass:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     transform: translateY(-1px);
   }
   /* Dark-themed form controls inside modals and dark panels */
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: rgba(255, 255, 255, 0.035);
     color: #f0f0f2;
   }
   input::placeholder,
@@ -103,7 +156,7 @@
     color: #5a5a70;
   }
   select option {
-    background-color: #1e1e2a;
+    background-color: #22223a;
     color: #f0f0f2;
   }
   .scrollbar-thin {

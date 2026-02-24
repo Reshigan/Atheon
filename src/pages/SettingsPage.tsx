@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/stores/appStore";
 import { api } from "@/lib/api";
 import {
-  Settings, User, Bell, Palette, Cpu, Loader2, Check
+  Settings, User, Bell, Palette, Cpu, Loader2, Check, Sun, Moon
 } from "lucide-react";
 
 interface NotificationPref {
@@ -16,12 +16,12 @@ interface NotificationPref {
 }
 
 export function SettingsPage() {
-  const { user, setUser } = useAppStore();
+  const { user, setUser, theme, setTheme } = useAppStore();
   const [displayName, setDisplayName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [accentColor, setAccentColor] = useState('bg-blue-500/100');
+  const [accentColor, setAccentColor] = useState('bg-amber-500/100');
 
   const [notifications, setNotifications] = useState<NotificationPref[]>([
     { label: 'Risk alerts (critical)', desc: 'Immediate notification for critical risk alerts', enabled: true },
@@ -74,11 +74,11 @@ export function SettingsPage() {
   };
 
   const accentOptions = [
+    { class: 'bg-amber-500/100', name: 'Amber' },
     { class: 'bg-blue-600', name: 'Blue' },
     { class: 'bg-sky-500', name: 'Sky' },
-    { class: 'bg-amber-500/100', name: 'Cyan' },
     { class: 'bg-emerald-500/100', name: 'Emerald' },
-    { class: 'bg-amber-500/100', name: 'Amber' },
+    { class: 'bg-rose-500/100', name: 'Rose' },
   ];
 
   return (
@@ -173,12 +173,28 @@ export function SettingsPage() {
             <div>
               <span className="text-sm text-gray-400">Theme</span>
               <div className="flex gap-3 mt-2">
-                <div className="w-20 h-14 rounded-lg bg-gray-800 border border-white/[0.08] flex items-center justify-center text-xs text-gray-300 cursor-not-allowed opacity-40" title="Dark theme not available">
+                <button
+                  onClick={() => setTheme('dark')}
+                  className={`w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-all ${
+                    theme === 'dark'
+                      ? 'bg-white/[0.1] border-2 border-amber-500 text-amber-400'
+                      : 'bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:bg-white/[0.06]'
+                  }`}
+                >
+                  <Moon size={16} />
                   Dark
-                </div>
-                <div className="w-20 h-14 rounded-lg bg-white/[0.1] border-2 border-amber-500 flex items-center justify-center text-xs text-gray-400">
+                </button>
+                <button
+                  onClick={() => setTheme('light')}
+                  className={`w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-all ${
+                    theme === 'light'
+                      ? 'bg-white/[0.1] border-2 border-amber-500 text-amber-400'
+                      : 'bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:bg-white/[0.06]'
+                  }`}
+                >
+                  <Sun size={16} />
                   Light
-                </div>
+                </button>
               </div>
             </div>
             <div>

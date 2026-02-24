@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { OnboardingModal } from "@/components/common/OnboardingModal";
+import { HelpButton } from "@/components/common/HelpButton";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { api, getToken, setToken } from "@/lib/api";
@@ -9,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { Hero3D } from "@/components/common/Hero3D";
 
 export function AppLayout() {
-  const { user, setUser } = useAppStore();
+  const { user, setUser, theme, onboardingDismissed } = useAppStore();
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
 
@@ -56,7 +58,7 @@ export function AppLayout() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen relative">
+    <div className={cn('min-h-screen relative', theme === 'light' ? 'atheon-light' : '')}>
       {/* Global 3D Crystal Background — visible on all pages */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-start justify-center" style={{ paddingTop: '4vh' }}>
         <div className="opacity-30">
@@ -76,6 +78,12 @@ export function AppLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Onboarding modal for new users */}
+      {!onboardingDismissed && <OnboardingModal />}
+
+      {/* Floating help button */}
+      <HelpButton />
     </div>
   );
 }

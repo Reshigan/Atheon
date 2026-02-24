@@ -106,6 +106,107 @@ export function getEscalationEmailTemplate(catalystName: string, action: string,
   return { html, text };
 }
 
+// ── Welcome Email Template (User Creation with Password) ──
+
+export function getWelcomeEmailTemplate(
+  name: string,
+  email: string,
+  temporaryPassword: string,
+  loginUrl: string,
+  theme: 'dark' | 'light' = 'dark'
+): { html: string; text: string } {
+  const isDark = theme === 'dark';
+  const bg = isDark ? '#16161e' : '#f8f9fa';
+  const cardBg = isDark ? '#1e1e2a' : '#ffffff';
+  const textColor = isDark ? '#f0f0f2' : '#1a1a2e';
+  const mutedText = isDark ? '#9a9ab0' : '#6b7280';
+  const accent = '#f5c542';
+  const accentDark = '#d4941a';
+  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const codeBg = isDark ? '#111118' : '#f3f4f6';
+  const codeColor = isDark ? '#f5c542' : '#d4941a';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:${bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <div style="max-width:600px;margin:0 auto;padding:32px 24px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="display:inline-block;background:linear-gradient(135deg,${accent},${accentDark});width:56px;height:56px;border-radius:16px;line-height:56px;font-size:28px;font-weight:800;color:#16161e">A</div>
+      <h1 style="color:${textColor};font-size:24px;margin:12px 0 4px;font-weight:700">Welcome to Atheon</h1>
+      <p style="color:${mutedText};font-size:14px;margin:0">Enterprise Intelligence Platform</p>
+    </div>
+    <div style="background:${cardBg};border-radius:12px;padding:32px;border:1px solid ${borderColor}">
+      <p style="color:${textColor};font-size:16px;margin:0 0 16px">Hi ${name},</p>
+      <p style="color:${mutedText};font-size:14px;line-height:1.6;margin:0 0 24px">Your Atheon account has been created. Use the credentials below to sign in for the first time. You will be prompted to change your password after logging in.</p>
+      <div style="background:${codeBg};border-radius:8px;padding:20px;margin:0 0 24px;border:1px solid ${borderColor}">
+        <p style="color:${mutedText};font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px">Your Login Credentials</p>
+        <p style="color:${textColor};font-size:14px;margin:0 0 4px"><strong>Email:</strong> ${email}</p>
+        <p style="color:${textColor};font-size:14px;margin:0"><strong>Temporary Password:</strong> <code style="background:${isDark ? '#2a2a3a' : '#e5e7eb'};padding:2px 8px;border-radius:4px;color:${codeColor};font-size:15px;font-weight:600">${temporaryPassword}</code></p>
+      </div>
+      <div style="text-align:center;margin:0 0 24px">
+        <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,${accent},${accentDark});color:#16161e;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">Sign In to Atheon</a>
+      </div>
+      <div style="border-top:1px solid ${borderColor};padding-top:16px">
+        <p style="color:${mutedText};font-size:12px;line-height:1.5;margin:0">
+          <strong style="color:${textColor}">Security Tip:</strong> Please change your password immediately after your first login. Never share your credentials with anyone.
+        </p>
+      </div>
+    </div>
+    <p style="color:${mutedText};font-size:12px;text-align:center;margin-top:24px">Atheon\u2122 Enterprise Intelligence Platform</p>
+  </div>
+</body>
+</html>`;
+
+  const text = `Welcome to Atheon!\n\nHi ${name},\n\nYour account has been created.\n\nEmail: ${email}\nTemporary Password: ${temporaryPassword}\n\nSign in at: ${loginUrl}\n\nPlease change your password after your first login.\n\n-- Atheon Enterprise Intelligence Platform`;
+
+  return { html, text };
+}
+
+// ── Password Reset Confirmation Template ──
+
+export function getPasswordResetEmailTemplate(
+  name: string,
+  resetUrl: string,
+  theme: 'dark' | 'light' = 'dark'
+): { html: string; text: string } {
+  const isDark = theme === 'dark';
+  const bg = isDark ? '#16161e' : '#f8f9fa';
+  const cardBg = isDark ? '#1e1e2a' : '#ffffff';
+  const textColor = isDark ? '#f0f0f2' : '#1a1a2e';
+  const mutedText = isDark ? '#9a9ab0' : '#6b7280';
+  const accent = '#f5c542';
+  const accentDark = '#d4941a';
+  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:${bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <div style="max-width:600px;margin:0 auto;padding:32px 24px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="display:inline-block;background:linear-gradient(135deg,${accent},${accentDark});width:56px;height:56px;border-radius:16px;line-height:56px;font-size:28px;font-weight:800;color:#16161e">A</div>
+    </div>
+    <div style="background:${cardBg};border-radius:12px;padding:32px;border:1px solid ${borderColor}">
+      <h2 style="color:${textColor};font-size:20px;margin:0 0 16px">Reset Your Password</h2>
+      <p style="color:${mutedText};font-size:14px;line-height:1.6;margin:0 0 24px">Hi ${name}, we received a request to reset your password. Click the button below to set a new password:</p>
+      <div style="text-align:center;margin:0 0 24px">
+        <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,${accent},${accentDark});color:#16161e;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">Reset Password</a>
+      </div>
+      <p style="color:${mutedText};font-size:12px;line-height:1.5;margin:0">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+    </div>
+    <p style="color:${mutedText};font-size:12px;text-align:center;margin-top:24px">Atheon\u2122 Enterprise Intelligence Platform</p>
+  </div>
+</body>
+</html>`;
+
+  const text = `Reset Your Password\n\nHi ${name}, click the link below to reset your password:\n${resetUrl}\n\nThis link expires in 1 hour.\n\n-- Atheon Enterprise Intelligence Platform`;
+
+  return { html, text };
+}
+
 // ── Send Email via MailChannels (Cloudflare Workers native) ──
 
 export async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
