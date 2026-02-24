@@ -108,7 +108,7 @@ notifications.post('/', async (c) => {
           htmlBody: template.html,
           textBody: template.text,
           tenantId,
-        });
+        }, c.env);
         results.push({ id: emailResult.id, delivered: emailResult.sent, channel: emailResult.channel });
       }
     } catch (err) {
