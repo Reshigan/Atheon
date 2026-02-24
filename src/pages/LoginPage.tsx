@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppStore } from "@/stores/appStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight, Shield, Globe, Loader2, UserPlus } from "lucide-react";
+import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { api, setToken, getToken } from "@/lib/api";
 
 type AuthMode = 'login' | 'register' | 'demo';
@@ -122,186 +122,214 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-50 via-gray-50 to-blue-50 flex-col justify-center items-center p-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.12),transparent_70%)]" />
-        <div className="relative z-10 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-500/30">
-            <Sparkles className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-5xl font-bold text-gradient mb-4">Atheon</h1>
-          <p className="text-xl text-gray-500 mb-2">Enterprise Intelligence Platform</p>
-          <p className="text-sm text-gray-400 max-w-md">
-            Multi-tenant AI platform connecting executive intelligence, process monitoring,
-            and autonomous execution across your enterprise.
-          </p>
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-5xl flex rounded-3xl overflow-hidden bg-glass-strong glow-cyan shadow-2xl shadow-cyan-500/10">
+        {/* Left - Branding with 3D Logo */}
+        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden">
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/60 via-sky-100/40 to-blue-100/60" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,165,233,0.12),transparent_70%)]" />
 
-          <div className="flex items-center gap-6 mt-12">
-            {[
-              { icon: Shield, label: 'RBAC/ABAC' },
-              { icon: Globe, label: 'SaaS / On-Prem / Hybrid' },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="flex items-center gap-2 text-gray-400">
-                  <Icon size={16} />
-                  <span className="text-xs">{item.label}</span>
-                </div>
-              );
-            })}
+          <div className="relative z-10 text-center">
+            {/* 3D Crystalline Logo */}
+            <div className="animate-float mb-8">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" className="w-40 h-40 mx-auto drop-shadow-2xl">
+                <defs>
+                  <linearGradient id="logo3d-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#67e8f9" />
+                    <stop offset="50%" stopColor="#22d3ee" />
+                    <stop offset="100%" stopColor="#0ea5e9" />
+                  </linearGradient>
+                  <linearGradient id="logo3d-2" x1="0%" y1="0%" x2="50%" y2="100%">
+                    <stop offset="0%" stopColor="white" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="white" stopOpacity="0.1" />
+                  </linearGradient>
+                  <linearGradient id="logo3d-3" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#0284c7" />
+                    <stop offset="100%" stopColor="#0369a1" />
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                {/* Main body — left facet */}
+                <path d="M100 20L40 160h30l10-24h40l10 24h30L100 20z" fill="url(#logo3d-1)" filter="url(#glow)" />
+                {/* Right facet — darker for 3D depth */}
+                <path d="M100 20L160 160h-30l-10-24H100L100 20z" fill="url(#logo3d-3)" opacity="0.7" />
+                {/* Shine highlight */}
+                <path d="M100 20L70 100h30L100 20z" fill="url(#logo3d-2)" opacity="0.6" />
+                {/* Inner cutout */}
+                <path d="M85 128L100 60l15 68H85z" fill="url(#logo3d-1)" opacity="0.5" />
+                {/* Apex highlight */}
+                <circle cx="100" cy="30" r="5" fill="white" opacity="0.9" />
+                <circle cx="100" cy="30" r="8" fill="white" opacity="0.2" />
+                {/* Glass reflection */}
+                <ellipse cx="90" cy="80" rx="12" ry="20" fill="white" opacity="0.1" transform="rotate(-10 90 80)" />
+              </svg>
+            </div>
+
+            <h1 className="text-4xl font-bold text-gradient mb-3">Atheon</h1>
+            <p className="text-lg text-gray-600 mb-2">Enterprise Intelligence Platform</p>
+            <p className="text-sm text-gray-400 max-w-sm mx-auto">
+              AI-powered platform for executive intelligence, process monitoring,
+              and autonomous execution.
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Right - Login Form */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+        {/* Right - Login Form */}
+        <div className="flex-1 flex flex-col justify-center items-center p-8 sm:p-12">
+          <div className="w-full max-w-sm">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="w-5 h-5">
+                  <path d="M32 12L16 48h8l2.5-6h11l2.5 6h8L32 12z" fill="white" opacity="0.95"/>
+                  <path d="M27.5 38L32 22l4.5 16h-9z" fill="rgba(14,165,233,0.5)"/>
+                  <circle cx="32" cy="16" r="2" fill="white" opacity="0.8"/>
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
             </div>
-            <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
-          </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {mode === 'register' ? 'Create your account' : 'Welcome back'}
-          </h2>
-          <p className="text-sm text-gray-400 mb-8">
-            {mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}
-          </p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-1">
+              {mode === 'register' ? 'Create your account' : 'Welcome back'}
+            </h2>
+            <p className="text-sm text-gray-400 mb-8">
+              {mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}
+            </p>
 
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* SSO Buttons */}
-          {mode === 'login' && (
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={() => handleSSO('azure')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-200 transition-all"
-              >
-                <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
-                Continue with Azure AD
-              </button>
-              <button
-                onClick={() => handleSSO('okta')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-200 transition-all"
-              >
-                <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">O</div>
-                Continue with Okta
-              </button>
-            </div>
-          )}
-
-          {mode === 'login' && (
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400">or sign in with email</span>
-              <div className="flex-1 h-px bg-gray-100" />
-            </div>
-          )}
-
-          {/* Email/Password Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            {mode === 'register' && (
-              <Input
-                label="Full Name"
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50/80 border border-red-200/50 text-sm text-red-700 backdrop-blur-sm">
+                {error}
+              </div>
             )}
-            <Input
-              label="Email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Input
-              label="Password"
-              type="password"
-              placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+
+            {/* SSO Buttons */}
             {mode === 'login' && (
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs text-gray-500">
-                  <input type="checkbox" className="rounded bg-gray-100 border-gray-300" />
-                  Remember me
-                </label>
-                <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-blue-600 hover:text-blue-500">Forgot password?</button>
+              <div className="space-y-3 mb-6">
+                <button
+                  onClick={() => handleSSO('azure')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/60 border border-white/70 text-sm text-gray-600 hover:bg-white/80 transition-all backdrop-blur-sm"
+                >
+                  <div className="w-5 h-5 rounded bg-sky-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
+                  Continue with Azure AD
+                </button>
+                <button
+                  onClick={() => handleSSO('okta')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/60 border border-white/70 text-sm text-gray-600 hover:bg-white/80 transition-all backdrop-blur-sm"
+                >
+                  <div className="w-5 h-5 rounded bg-cyan-600 flex items-center justify-center text-[10px] font-bold text-white">O</div>
+                  Continue with Okta
+                </button>
               </div>
             )}
-            <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
-              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              {mode === 'register' ? (
-                <><UserPlus size={16} /> Create Account</>
-              ) : (
-                <>Sign In <ArrowRight size={16} /></>
+
+            {mode === 'login' && (
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-px bg-gray-200/50" />
+                <span className="text-xs text-gray-400">or sign in with email</span>
+                <div className="flex-1 h-px bg-gray-200/50" />
+              </div>
+            )}
+
+            {/* Email/Password Form */}
+            <form onSubmit={handleLogin} className="space-y-4">
+              {mode === 'register' && (
+                <Input
+                  label="Full Name"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               )}
-            </Button>
-          </form>
-
-          {/* Forgot Password Modal */}
-          {showForgotPw && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-              <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
-                {forgotSent ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-600">If an account exists for <strong>{forgotEmail}</strong>, a password reset link has been sent.</p>
-                    <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors">Back to Login</button>
-                  </div>
+              <Input
+                label="Email"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                label="Password"
+                type="password"
+                placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {mode === 'login' && (
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs text-gray-500">
+                    <input type="checkbox" className="rounded bg-white/60 border-gray-300" />
+                    Remember me
+                  </label>
+                  <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-cyan-600 hover:text-cyan-500">Forgot password?</button>
+                </div>
+              )}
+              <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
+                {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+                {mode === 'register' ? (
+                  <><UserPlus size={16} /> Create Account</>
                 ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-500">Enter your email address and we'll send you a reset link.</p>
-                    <input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
-                    <div className="flex gap-3">
-                      <button onClick={() => { setShowForgotPw(false); setForgotEmail(''); }} className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                      <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors disabled:opacity-50">Send Reset Link</button>
-                    </div>
-                  </div>
+                  <>Sign In <ArrowRight size={16} /></>
                 )}
+              </Button>
+            </form>
+
+            {/* Forgot Password Modal */}
+            {showForgotPw && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                <div className="bg-glass-strong rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Reset Password</h3>
+                  {forgotSent ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-600">If an account exists for <strong>{forgotEmail}</strong>, a password reset link has been sent.</p>
+                      <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm hover:opacity-90 transition-opacity">Back to Login</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-500">Enter your email address and we'll send you a reset link.</p>
+                      <input className="w-full px-3 py-2 rounded-xl bg-white/60 border border-white/70 text-sm backdrop-blur-sm" type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
+                      <div className="flex gap-3">
+                        <button onClick={() => { setShowForgotPw(false); setForgotEmail(''); }} className="flex-1 px-4 py-2 rounded-xl bg-white/50 border border-white/60 text-sm text-gray-600 hover:bg-white/70 transition-all">Cancel</button>
+                        <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm hover:opacity-90 transition-opacity disabled:opacity-50">Send Reset Link</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Demo Login */}
-          <div className="mt-4">
-            <button
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-all disabled:opacity-50"
-            >
-              <Sparkles size={14} />
-              Try Demo (No account needed)
-            </button>
-          </div>
-
-          {/* Toggle mode */}
-          <p className="text-xs text-gray-400 text-center mt-8">
-            {mode === 'login' ? (
-              <>Don't have an account?{' '}
-                <button onClick={() => { setMode('register'); setError(null); }}                className="text-blue-600 hover:text-blue-500">
-                                  Create one
-                </button>
-              </>
-            ) : (
-              <>Already have an account?{' '}
-                <button onClick={() => { setMode('login'); setError(null); }}                className="text-blue-600 hover:text-blue-500">
-                                  Sign in
-                </button>
-              </>
             )}
-          </p>
+
+            {/* Demo Login */}
+            <div className="mt-4">
+              <button
+                onClick={handleDemoLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200/50 text-sm text-emerald-700 hover:bg-emerald-100/70 transition-all disabled:opacity-50 backdrop-blur-sm"
+              >
+                Try Demo (No account needed)
+              </button>
+            </div>
+
+            {/* Toggle mode */}
+            <p className="text-xs text-gray-400 text-center mt-8">
+              {mode === 'login' ? (
+                <>Don&apos;t have an account?{' '}
+                  <button onClick={() => { setMode('register'); setError(null); }} className="text-cyan-600 hover:text-cyan-500">
+                    Create one
+                  </button>
+                </>
+              ) : (
+                <>Already have an account?{' '}
+                  <button onClick={() => { setMode('login'); setError(null); }} className="text-cyan-600 hover:text-cyan-500">
+                    Sign in
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>

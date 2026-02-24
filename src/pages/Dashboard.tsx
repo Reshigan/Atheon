@@ -79,7 +79,7 @@ export function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -95,7 +95,7 @@ export function Dashboard() {
       {/* Top KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-bl-full" />
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
@@ -131,7 +131,7 @@ export function Dashboard() {
         </Card>
 
         <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-bl-full" />
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
@@ -194,15 +194,15 @@ export function Dashboard() {
               })()}>
                 <defs>
                   <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <Tooltip
                   contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#374151', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                   labelStyle={{ color: '#6b7280' }}
                 />
-                <Area type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} fill="url(#revenueGrad)" />
+                <Area type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2} fill="url(#revenueGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -212,7 +212,7 @@ export function Dashboard() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Health Dimensions</h3>
-            <Link to="/apex" className="text-xs text-blue-600 hover:text-blue-500">View all</Link>
+            <Link to="/apex" className="text-xs text-cyan-600 hover:text-cyan-500">View all</Link>
           </div>
           <div className="space-y-3">
             {dimensions.slice(0, 5).map((dim) => (
@@ -248,11 +248,11 @@ export function Dashboard() {
               <Crown className="w-4 h-4 text-amber-600" />
               <h3 className="text-base font-semibold text-gray-900">Risk Alerts</h3>
             </div>
-            <Link to="/apex" className="text-xs text-blue-600 hover:text-blue-500">View all</Link>
+            <Link to="/apex" className="text-xs text-cyan-600 hover:text-cyan-500">View all</Link>
           </div>
           <div className="space-y-3">
             {risks.slice(0, 3).map((risk) => (
-              <div key={risk.id} className="p-3 rounded-lg bg-gray-100 border border-gray-200">
+              <div key={risk.id} className="p-3 rounded-lg bg-white/40 border border-white/50">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-gray-800 line-clamp-1">{risk.title}</h4>
                   <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'default'}>
@@ -276,11 +276,11 @@ export function Dashboard() {
               <Activity className="w-4 h-4 text-emerald-600" />
               <h3 className="text-base font-semibold text-gray-900">Anomalies</h3>
             </div>
-            <Link to="/pulse" className="text-xs text-blue-600 hover:text-blue-500">View all</Link>
+            <Link to="/pulse" className="text-xs text-cyan-600 hover:text-cyan-500">View all</Link>
           </div>
           <div className="space-y-3">
             {anomalies.slice(0, 3).map((anom) => (
-              <div key={anom.id} className="p-3 rounded-lg bg-gray-100 border border-gray-200">
+              <div key={anom.id} className="p-3 rounded-lg bg-white/40 border border-white/50">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-gray-800 line-clamp-1">{anom.metric}</h4>
                   <Badge variant={anom.severity === 'critical' ? 'danger' : anom.severity === 'high' ? 'warning' : 'default'}>
@@ -303,11 +303,11 @@ export function Dashboard() {
               <Zap className="w-4 h-4 text-blue-600" />
               <h3 className="text-base font-semibold text-gray-900">Catalyst Activity</h3>
             </div>
-            <Link to="/catalysts" className="text-xs text-blue-600 hover:text-blue-500">View all</Link>
+            <Link to="/catalysts" className="text-xs text-cyan-600 hover:text-cyan-500">View all</Link>
           </div>
           <div className="space-y-3">
             {actions.slice(0, 3).map((action) => (
-              <div key={action.id} className="p-3 rounded-lg bg-gray-100 border border-gray-200">
+              <div key={action.id} className="p-3 rounded-lg bg-white/40 border border-white/50">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-sm font-medium text-gray-800 line-clamp-1">{action.action}</h4>
                   <Badge variant={action.status === 'completed' ? 'success' : action.status === 'pending' ? 'warning' : 'info'}>
@@ -332,11 +332,11 @@ export function Dashboard() {
             <Shield className="w-4 h-4 text-blue-600" />
             <h3 className="text-base font-semibold text-gray-900">Process Metrics</h3>
           </div>
-          <Link to="/pulse" className="text-xs text-blue-600 hover:text-blue-500">View all</Link>
+          <Link to="/pulse" className="text-xs text-cyan-600 hover:text-cyan-500">View all</Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {metrics.slice(0, 8).map((metric) => (
-            <div key={metric.id} className="p-3 rounded-lg bg-gray-50 border border-gray-200/40">
+            <div key={metric.id} className="p-3 rounded-lg bg-white/40 border border-white/50">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400 truncate">{metric.name}</span>
                 <span className={`w-2 h-2 rounded-full ${metric.status === 'green' ? 'bg-emerald-500' : metric.status === 'amber' ? 'bg-amber-500' : 'bg-red-500'}`} />

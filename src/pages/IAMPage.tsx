@@ -67,7 +67,7 @@ export function IAMPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -76,8 +76,8 @@ export function IAMPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+          <div className="          w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
+                      <ShieldCheck className="w-5 h-5 text-cyan-600"/>
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Identity & Access Management</h1>
@@ -154,8 +154,8 @@ export function IAMPage() {
                   {(Array.isArray(policy.rules) ? policy.rules : []).map((rule, idx) => {
                     const r = rule as Record<string, unknown>;
                     return (
-                      <div key={idx} className="flex items-center gap-3 p-2 rounded bg-gray-100">
-                        {r.effect === 'allow' ? (
+                      <div key={idx} className="flex items-center gap-3                      p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                              {r.effect === 'allow' ? (
                           <Unlock size={14} className="text-emerald-600" />
                         ) : (
                           <Lock size={14} className="text-red-600" />
@@ -183,8 +183,8 @@ export function IAMPage() {
               <Card key={i}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <Globe className="w-5 h-5 text-blue-600" />
+                    <div className="                    w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
+                                          <Globe className="w-5 h-5 text-cyan-600"/>
                     </div>
                     <div>
                       <h3 className="text-base font-semibold text-gray-900">{sso.provider.replace('_', ' ').toUpperCase()}</h3>
@@ -194,20 +194,20 @@ export function IAMPage() {
                   <Badge variant={sso.enabled ? 'success' : 'default'}>{sso.enabled ? 'Active' : 'Disabled'}</Badge>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                  <div className="p-2 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Client ID</span>
+                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Client ID</span>
                     <p className="text-xs text-gray-600 font-mono truncate">{sso.clientId}</p>
                   </div>
-                  <div className="p-2 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Issuer URL</span>
+                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Issuer URL</span>
                     <p className="text-xs text-gray-600 font-mono truncate">{sso.issuerUrl}</p>
                   </div>
-                  <div className="p-2 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Auto-Provision</span>
+                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Auto-Provision</span>
                     <p className="text-xs text-gray-600">{sso.autoProvision ? 'Yes' : 'No'}</p>
                   </div>
-                  <div className="p-2 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Default Role</span>
+                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Default Role</span>
                     <p className="text-xs text-gray-600">{sso.defaultRole}</p>
                   </div>
                 </div>
@@ -222,7 +222,7 @@ export function IAMPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => {
               const Icon = role.name.toLowerCase().includes('admin') ? ShieldCheck : role.name.toLowerCase().includes('exec') ? Shield : role.name.toLowerCase().includes('manager') ? UserCheck : Users;
-              const color = role.name.toLowerCase().includes('admin') ? 'text-red-600' : role.name.toLowerCase().includes('exec') ? 'text-amber-600' : role.name.toLowerCase().includes('manager') ? 'text-blue-600' : 'text-blue-600';
+              const color = role.name.toLowerCase().includes('admin') ? 'text-red-600' : role.name.toLowerCase().includes('exec') ? 'text-amber-600' : role.name.toLowerCase().includes('manager') ? 'text-cyan-600' : 'text-cyan-600';
               return (
                 <Card key={role.id}>
                   <div className="flex items-center justify-between mb-2">

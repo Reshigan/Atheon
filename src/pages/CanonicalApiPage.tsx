@@ -9,17 +9,17 @@ import { Button } from "@/components/ui/button";
 
 const methodColor: Record<string, string> = {
   GET: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-  POST: 'bg-blue-50 text-blue-600 border-blue-200',
+  POST: 'bg-cyan-50 text-cyan-600 border-cyan-200',
   PUT: 'bg-amber-50 text-amber-600 border-amber-200',
-  PATCH: 'bg-blue-50 text-blue-600 border-blue-200',
+  PATCH: 'bg-cyan-50 text-cyan-600 border-cyan-200',
   DELETE: 'bg-red-50 text-red-600 border-red-200',
 };
 
 const domainColor: Record<string, string> = {
   finance: 'text-emerald-600',
-  procurement: 'text-blue-600',
+  procurement: 'text-cyan-600',
   'supply-chain': 'text-amber-600',
-  hr: 'text-blue-600',
+  hr: 'text-cyan-600',
   sales: 'text-pink-600',
   inventory: 'text-cyan-400',
   crm: 'text-orange-400',
@@ -48,7 +48,7 @@ export function CanonicalApiPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export function CanonicalApiPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-gray-900">{ep.description || ep.path}</h3>
                     </div>
-                    <p className="text-xs font-mono text-blue-600 mt-0.5">{ep.path}</p>
+                    <p className="text-xs font-mono text-cyan-600 mt-0.5">{ep.path}</p>
                     <p className="text-xs text-gray-400 mt-1">{ep.description}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
@@ -196,7 +196,7 @@ export function CanonicalApiPage() {
                 <div className="space-y-1">
                   {entity.fields.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
                       <span className="font-mono text-gray-600">{f}</span>
                     </div>
                   ))}
@@ -219,13 +219,13 @@ export function CanonicalApiPage() {
                   Instead of calling SAP BAPIs, Salesforce REST, or Workday SOAP directly, Catalysts and user queries go through the Canonical API layer.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
-                  <span className="px-2 py-1 rounded bg-gray-100">Catalyst / Chat</span>
+                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">Catalyst / Chat</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-orange-500/15 text-orange-400 border border-orange-500/20">Canonical API</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-gray-100">ERP Adapter</span>
+                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">ERP Adapter</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-gray-100">SAP / SF / WD / ...</span>
+                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">SAP / SF / WD / ...</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-4 leading-relaxed">
                   <strong className="text-gray-800">Key benefits:</strong> ERP-agnostic Catalysts, hot-swap ERP backends without agent changes,

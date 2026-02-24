@@ -1,165 +1,111 @@
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   IconDashboard, IconApex, IconPulse, IconCatalysts, IconMind, IconMemory,
   IconChat, IconClients, IconIAM, IconControlPlane, IconCanonicalApi,
   IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
 } from "@/components/icons/AtheonIcons";
 
-const navSections = [
-  {
-    title: 'Intelligence',
-    items: [
-      { path: '/', label: 'Dashboard', icon: IconDashboard, layer: null },
-      { path: '/apex', label: 'Apex', icon: IconApex, layer: 'apex' as const, sublabel: 'Executive Intelligence' },
-      { path: '/pulse', label: 'Pulse', icon: IconPulse, layer: 'pulse' as const, sublabel: 'Process Intelligence' },
-      { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, layer: 'catalysts' as const, sublabel: 'Autonomous Execution' },
-      { path: '/mind', label: 'Mind', icon: IconMind, layer: 'mind' as const, sublabel: 'Domain LLM' },
-      { path: '/memory', label: 'Memory', icon: IconMemory, layer: 'memory' as const, sublabel: 'GraphRAG' },
-      { path: '/chat', label: 'Chat', icon: IconChat, layer: null, sublabel: 'Conversational AI' },
-    ],
-  },
-  {
-    title: 'Platform',
-    items: [
-      { path: '/tenants', label: 'Clients', icon: IconClients, layer: null, sublabel: 'Tenant Management' },
-      { path: '/iam', label: 'IAM', icon: IconIAM, layer: null, sublabel: 'Identity & Access' },
-      { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, layer: null, sublabel: 'Agent Management' },
-      { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, layer: null, sublabel: 'Unified API' },
-      { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, layer: null, sublabel: 'System Connectors' },
-    ],
-  },
-  {
-    title: 'System',
-    items: [
-      { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, layer: null, sublabel: 'MCP + A2A' },
-      { path: '/audit', label: 'Audit', icon: IconAudit, layer: null, sublabel: 'Governance' },
-      { path: '/settings', label: 'Settings', icon: IconSettings, layer: null },
-    ],
-  },
+const navItems = [
+  { path: '/', label: 'Dashboard', icon: IconDashboard, section: 'intelligence' },
+  { path: '/apex', label: 'Apex', icon: IconApex, section: 'intelligence', sublabel: 'Executive Intelligence' },
+  { path: '/pulse', label: 'Pulse', icon: IconPulse, section: 'intelligence', sublabel: 'Process Intelligence' },
+  { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, section: 'intelligence', sublabel: 'Autonomous Execution' },
+  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM' },
+  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'GraphRAG' },
+  { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI' },
+  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management' },
+  { path: '/iam', label: 'IAM', icon: IconIAM, section: 'platform', sublabel: 'Identity & Access' },
+  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management' },
+  { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, section: 'platform', sublabel: 'Unified API' },
+  { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, section: 'platform', sublabel: 'System Connectors' },
+  { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'system', sublabel: 'MCP + A2A' },
+  { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance' },
+  { path: '/settings', label: 'Settings', icon: IconSettings, section: 'system' },
 ];
 
-const layerColors: Record<string, string> = {
-  apex: 'text-amber-600',
-  pulse: 'text-emerald-600',
-  catalysts: 'text-blue-600',
-  mind: 'text-blue-600',
-  memory: 'text-pink-600',
-};
-
-function SidebarNav({ expanded, onNavClick }: { expanded: boolean; onNavClick?: () => void }) {
-  const location = useLocation();
-
+/** Logo component used in both desktop and mobile sidebar */
+function AtheonLogo({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
+  const s = size === 'lg' ? 'w-9 h-9' : 'w-8 h-8';
   return (
-    <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 px-2">
-      {navSections.map((section) => (
-        <div key={section.title} className="mb-4">
-          {expanded && (
-            <span className="block px-3 mb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{section.title}</span>
-          )}
-          {!expanded && <div className="h-px bg-gray-200 mx-2 mb-2" />}
-          <div className="space-y-0.5">
-            {section.items.map((item) => {
-              const isActive = location.pathname === item.path || 
-                (item.path !== '/' && location.pathname.startsWith(item.path));
-              const Icon = item.icon;
-              const colorClass = item.layer ? layerColors[item.layer] : '';
-
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={onNavClick}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group',
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
-                  )}
-                  title={!expanded ? item.label : undefined}
-                >
-                  <Icon className={cn('flex-shrink-0', isActive ? 'text-blue-600' : colorClass || 'text-gray-400 group-hover:text-gray-600')} size={18} />
-                  {expanded && (
-                    <div className="min-w-0 animate-fadeIn">
-                      <span className="font-medium">{item.label}</span>
-                      {item.sublabel && (
-                        <span className="block text-[10px] text-gray-400 truncate">{item.sublabel}</span>
-                      )}
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </nav>
+    <div className={cn(s, 'rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/20')}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className={size === 'lg' ? 'w-5 h-5' : 'w-4.5 h-4.5'}>
+        <path d="M32 12L16 48h8l2.5-6h11l2.5 6h8L32 12z" fill="white" opacity="0.95"/>
+        <path d="M27.5 38L32 22l4.5 16h-9z" fill="rgba(14,165,233,0.5)"/>
+        <circle cx="32" cy="16" r="2" fill="white" opacity="0.8"/>
+      </svg>
+    </div>
   );
 }
 
 export function Sidebar() {
-  const { sidebarOpen, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useAppStore();
-
+  const { mobileSidebarOpen, setMobileSidebarOpen } = useAppStore();
+  const location = useLocation();
   const closeMobile = () => setMobileSidebarOpen(false);
+
+  let lastSection = '';
 
   return (
     <>
       {/* Mobile overlay backdrop */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
           onClick={closeMobile}
         />
       )}
 
-      {/* Desktop sidebar */}
-      <aside className={cn(
-        'fixed left-0 top-0 h-full z-40 flex-col border-r border-gray-200 bg-white/95 backdrop-blur-xl transition-all duration-300',
-        'hidden lg:flex',
-        sidebarOpen ? 'w-64' : 'w-16',
-      )}>
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="w-5 h-5">
-              <path d="M32 8L14 48h7l3.5-7h15l3.5 7h7L32 8zm0 11l5.5 13h-11L32 19z" fill="white"/>
-              <circle cx="32" cy="20" r="2.5" fill="white" opacity="0.7"/>
-            </svg>
-          </div>
-          {sidebarOpen && (
-            <div className="animate-fadeIn">
-              <h1 className="text-lg font-bold text-gradient">Atheon</h1>
-              <p className="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
-            </div>
-          )}
+      {/* Desktop sidebar — icon-only narrow glass bar */}
+      <aside className="fixed left-0 top-0 h-full z-40 w-16 hidden lg:flex flex-col items-center py-4 bg-glass-subtle">
+        {/* Logo */}
+        <div className="mb-6">
+          <AtheonLogo />
         </div>
 
-        <SidebarNav expanded={sidebarOpen} />
+        {/* Nav icons */}
+        <nav className="flex-1 flex flex-col items-center gap-1 overflow-y-auto scrollbar-thin w-full px-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path ||
+              (item.path !== '/' && location.pathname.startsWith(item.path));
+            const Icon = item.icon;
+            const showDivider = lastSection !== '' && lastSection !== item.section;
+            lastSection = item.section;
 
-        <div className="border-t border-gray-200 p-2">
-          <button
-            onClick={toggleSidebar}
-            className="w-full flex items-center justify-center py-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
-          >
-            {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-          </button>
-        </div>
+            return (
+              <div key={item.path} className="w-full flex flex-col items-center">
+                {showDivider && <div className="w-6 h-px bg-white/30 my-1.5" />}
+                <Link
+                  to={item.path}
+                  title={item.label}
+                  className={cn(
+                    'w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group relative',
+                    isActive
+                      ? 'bg-white/70 shadow-md shadow-cyan-500/10 text-cyan-600'
+                      : 'text-gray-500 hover:bg-white/40 hover:text-gray-700'
+                  )}
+                >
+                  <Icon size={20} className={cn(isActive ? 'text-cyan-600' : 'text-gray-500 group-hover:text-gray-700')} />
+                  {/* Tooltip */}
+                  <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-gray-900/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 backdrop-blur-sm">
+                    {item.label}
+                  </div>
+                </Link>
+              </div>
+            );
+          })}
+        </nav>
       </aside>
 
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar — full expanded with labels */}
       <aside className={cn(
-        'fixed left-0 top-0 h-full z-50 flex flex-col border-r border-gray-200 bg-white backdrop-blur-xl transition-transform duration-300 w-72 lg:hidden',
+        'fixed left-0 top-0 h-full z-50 flex flex-col bg-glass-strong transition-transform duration-300 w-72 lg:hidden',
         mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
-        <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 h-16 border-b border-white/20">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="w-5 h-5">
-                <path d="M32 8L14 48h7l3.5-7h15l3.5 7h7L32 8zm0 11l5.5 13h-11L32 19z" fill="white"/>
-                <circle cx="32" cy="20" r="2.5" fill="white" opacity="0.7"/>
-              </svg>
-            </div>
+            <AtheonLogo size="lg" />
             <div>
               <h1 className="text-lg font-bold text-gradient">Atheon</h1>
               <p className="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
@@ -167,13 +113,53 @@ export function Sidebar() {
           </div>
           <button
             onClick={closeMobile}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white/40 transition-all"
           >
             <X size={20} />
           </button>
         </div>
 
-        <SidebarNav expanded onNavClick={closeMobile} />
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 px-3">
+          {(() => {
+            let prevSection = '';
+            return navItems.map((item) => {
+              const isActive = location.pathname === item.path ||
+                (item.path !== '/' && location.pathname.startsWith(item.path));
+              const Icon = item.icon;
+              const showSectionHeader = prevSection !== item.section;
+              prevSection = item.section;
+              const sectionLabels: Record<string, string> = { intelligence: 'Intelligence', platform: 'Platform', system: 'System' };
+
+              return (
+                <div key={item.path}>
+                  {showSectionHeader && (
+                    <span className="block px-3 mt-4 mb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider first:mt-0">
+                      {sectionLabels[item.section]}
+                    </span>
+                  )}
+                  <Link
+                    to={item.path}
+                    onClick={closeMobile}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group',
+                      isActive
+                        ? 'bg-white/60 text-cyan-700 shadow-sm'
+                        : 'text-gray-600 hover:bg-white/40 hover:text-gray-800'
+                    )}
+                  >
+                    <Icon className={cn('flex-shrink-0', isActive ? 'text-cyan-600' : 'text-gray-400 group-hover:text-gray-600')} size={18} />
+                    <div className="min-w-0">
+                      <span className="font-medium">{item.label}</span>
+                      {item.sublabel && (
+                        <span className="block text-[10px] text-gray-400 truncate">{item.sublabel}</span>
+                      )}
+                    </div>
+                  </Link>
+                </div>
+              );
+            });
+          })()}
+        </nav>
       </aside>
     </>
   );

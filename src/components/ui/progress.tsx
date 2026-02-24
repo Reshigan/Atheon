@@ -3,18 +3,19 @@ import { cn } from "@/lib/utils";
 interface ProgressProps {
   value: number;
   max?: number;
-  color?: 'indigo' | 'emerald' | 'amber' | 'red' | 'blue';
+  color?: 'indigo' | 'emerald' | 'amber' | 'red' | 'blue' | 'cyan';
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   className?: string;
 }
 
 const colorClasses: Record<string, string> = {
-  indigo: 'bg-blue-500',
+  indigo: 'bg-cyan-500',
   emerald: 'bg-emerald-500',
   amber: 'bg-amber-500',
   red: 'bg-red-500',
-  blue: 'bg-blue-500',
+  blue: 'bg-cyan-500',
+  cyan: 'bg-cyan-500',
 };
 
 const sizeClasses: Record<string, string> = {
@@ -34,7 +35,7 @@ export function Progress({ value, max = 100, color = 'blue', size = 'md', showLa
           <span>{max}</span>
         </div>
       )}
-      <div className={cn('w-full rounded-full bg-gray-200 overflow-hidden', sizeClasses[size])}>
+      <div className={cn('w-full rounded-full bg-white/40 overflow-hidden', sizeClasses[size])}>
         <div
           className={cn('h-full rounded-full transition-all duration-500 ease-out', colorClasses[color])}
           style={{ width: `${percentage}%` }}
