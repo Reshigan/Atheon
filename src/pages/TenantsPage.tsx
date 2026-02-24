@@ -194,7 +194,7 @@ export function TenantsPage() {
       {/* Onboard Modal */}
       {showOnboard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.08)" }} className="rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Onboard New Tenant</h3>
               <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -466,7 +466,7 @@ export function TenantsPage() {
       {/* Manage Users Modal */}
       {showManageUsers && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.08)" }} className="rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Manage Users</h3>
               <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -517,7 +517,7 @@ export function TenantsPage() {
       {/* Deploy Catalyst Modal */}
       {showDeployCatalyst && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.08)" }} className="rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Deploy Catalyst Cluster</h3>
               <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -541,7 +541,7 @@ export function TenantsPage() {
       {/* Edit Entitlements Modal */}
       {showEditEntitlements && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.08)" }} className="rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Edit Entitlements</h3>
               <button onClick={() => setShowEditEntitlements(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>

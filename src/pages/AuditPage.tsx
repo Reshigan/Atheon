@@ -67,7 +67,7 @@ export function AuditPage() {
           </Button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-cyan-500/10 border-cyan-200 text-cyan-400' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:bg-white/[0.04]'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:bg-white/[0.04]'}`}
           >
             <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
           </button>
@@ -79,7 +79,7 @@ export function AuditPage() {
         <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
           <div>
             <label className="text-xs text-gray-500 block mb-1">Layer</label>
-            <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
+            <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white/[0.04] text-gray-200" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
               <option value="">All Layers</option>
               <option value="apex">Apex</option>
               <option value="pulse">Pulse</option>
@@ -93,7 +93,7 @@ export function AuditPage() {
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Outcome</label>
-            <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
+            <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white/[0.04] text-gray-200" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
               <option value="">All Outcomes</option>
               <option value="success">Success</option>
               <option value="pending">Pending</option>

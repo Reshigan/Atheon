@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 
 const methodColor: Record<string, string> = {
   GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  POST: 'bg-cyan-500/10 text-cyan-400 border-cyan-200',
+  POST: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
   PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  PATCH: 'bg-cyan-500/10 text-cyan-400 border-cyan-200',
+  PATCH: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
   DELETE: 'bg-red-500/10 text-red-400 border-red-500/20',
 };
 

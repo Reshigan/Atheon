@@ -157,7 +157,7 @@ export function SettingsPage() {
                   className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-cyan-500/100' : 'bg-gray-300'} relative`}
                   aria-label={`Toggle ${notif.label}`}
                 >
-                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`} />
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-gray-300 transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`} />
                 </button>
               </div>
             ))}
@@ -176,7 +176,7 @@ export function SettingsPage() {
                 <div className="w-20 h-14 rounded-lg bg-gray-800 border border-white/[0.08] flex items-center justify-center text-xs text-gray-300 cursor-not-allowed opacity-40" title="Dark theme not available">
                   Dark
                 </div>
-                <div className="w-20 h-14 rounded-lg bg-white border-2 border-cyan-500 flex items-center justify-center text-xs text-gray-400">
+                <div className="w-20 h-14 rounded-lg bg-white/[0.1] border-2 border-cyan-500 flex items-center justify-center text-xs text-gray-400">
                   Light
                 </div>
               </div>

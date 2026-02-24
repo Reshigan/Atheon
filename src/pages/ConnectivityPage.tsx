@@ -162,11 +162,11 @@ export function ConnectivityPage() {
                   skills, and communication endpoints.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
-                  <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-200">Finance Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Finance Catalyst</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">A2A Protocol</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-200">Supply Chain Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Supply Chain Catalyst</span>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
