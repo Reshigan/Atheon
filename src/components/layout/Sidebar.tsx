@@ -26,15 +26,29 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: IconSettings, section: 'system' },
 ];
 
-/** Logo component used in both desktop and mobile sidebar */
+/** Logo component used in both desktop and mobile sidebar — 3D capsule design */
 function AtheonLogo({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   const s = size === 'lg' ? 'w-9 h-9' : 'w-8 h-8';
   return (
-    <div className={cn(s, 'rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/20')}>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className={size === 'lg' ? 'w-5 h-5' : 'w-4.5 h-4.5'}>
-        <path d="M32 12L16 48h8l2.5-6h11l2.5 6h8L32 12z" fill="white" opacity="0.95"/>
-        <path d="M27.5 38L32 22l4.5 16h-9z" fill="rgba(14,165,233,0.5)"/>
-        <circle cx="32" cy="16" r="2" fill="white" opacity="0.8"/>
+    <div className={cn(s, 'rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 shadow-md')}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className={size === 'lg' ? 'w-6 h-6' : 'w-5 h-5'}>
+        <defs>
+          <linearGradient id="slp1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7dd3fc"/><stop offset="100%" stopColor="#0ea5e9"/>
+          </linearGradient>
+          <linearGradient id="slp2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#67e8f9"/><stop offset="100%" stopColor="#06b6d4"/>
+          </linearGradient>
+          <linearGradient id="sls" x1="20%" y1="0%" x2="50%" y2="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.9"/><stop offset="100%" stopColor="white" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="24" cy="36" rx="10" ry="18" fill="url(#slp1)" transform="rotate(-35 24 36)"/>
+        <ellipse cx="40" cy="34" rx="9" ry="17" fill="url(#slp2)" transform="rotate(25 40 34)"/>
+        <ellipse cx="21" cy="30" rx="4" ry="9" fill="url(#sls)" transform="rotate(-35 21 30)" opacity="0.7"/>
+        <ellipse cx="38" cy="28" rx="3.5" ry="8" fill="url(#sls)" transform="rotate(25 38 28)" opacity="0.6"/>
+        <circle cx="19" cy="24" r="2.5" fill="white" opacity="0.9"/>
+        <circle cx="37" cy="23" r="2" fill="white" opacity="0.8"/>
       </svg>
     </div>
   );
