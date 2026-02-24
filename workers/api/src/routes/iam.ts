@@ -160,6 +160,50 @@ iam.post('/users', async (c) => {
   return c.json({ id, email: body.email, name: body.name, role, tempPassword }, 201);
 });
 
+// DELETE /api/iam/users/:id
+iam.delete('/users/:id', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  await c.env.DB.prepare('DELETE FROM users WHERE id = ? AND tenant_id = ?').bind(id, tenantId).run();
+  return c.json({ success: true });
+});
+
+// POST /api/iam/users/:id/resend-welcome - Reset password and resend welcome email
+iam.post('/users/:id/resend-welcome', async (c) => {
+  const tenantId = getTenantId(c);
+  const userId = c.req.param('id');
+
+  const user = await c.env.DB.prepare(
+    'SELECT id, email, name, role FROM users WHERE id = ? AND tenant_id = ?'
+  ).bind(userId, tenantId).first<{ id: string; email: string; name: string; role: string }>();
+  if (!user) return c.json({ error: 'User not found' }, 404);
+
+  // Generate new temporary password
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  let tempPassword = '';
+  const randomBytes = new Uint8Array(12);
+  crypto.getRandomValues(randomBytes);
+  for (let i = 0; i < 12; i++) {
+    tempPassword += chars[randomBytes[i] % chars.length];
+  }
+
+  const passwordHash = await hashPassword(tempPassword);
+  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ? AND tenant_id = ?')
+    .bind(passwordHash, userId, tenantId).run();
+
+  const loginUrl = 'https://atheon.vantax.co.za/login';
+  const template = getWelcomeEmailTemplate(user.name, user.email, tempPassword, loginUrl, 'dark');
+  await sendOrQueueEmail(c.env.DB, {
+    to: [user.email],
+    subject: 'Welcome to Atheon\u2122 \u2014 Your Account Has Been Created',
+    htmlBody: template.html,
+    textBody: template.text,
+    tenantId,
+  });
+
+  return c.json({ success: true, email: user.email, tempPassword });
+});
+
 // GET /api/iam/sso
 iam.get('/sso', async (c) => {
   const tenantId = getTenantId(c);
