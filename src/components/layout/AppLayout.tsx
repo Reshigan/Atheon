@@ -60,9 +60,9 @@ export function AppLayout() {
 
   return (
     <div className={cn('min-h-screen relative', theme === 'light' ? 'atheon-light' : '')}>
-      {/* Global 3D Crystal Background — visible on all pages */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-start justify-center" style={{ paddingTop: '4vh' }}>
-        <div className="opacity-30">
+      {/* Global 3D Crystal Background — visible on all pages, centered */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
+        <div className="opacity-25">
           <Hero3D size="lg" />
         </div>
       </div>

@@ -14,7 +14,7 @@ export function Hero3D({ size = 'lg', className = '' }: Hero3DProps) {
   const dimensions = {
     sm: { w: 200, h: 200, viewBox: '0 0 400 400' },
     md: { w: 320, h: 320, viewBox: '0 0 400 400' },
-    lg: { w: 440, h: 440, viewBox: '0 0 400 400' },
+    lg: { w: 700, h: 700, viewBox: '0 0 400 400' },
   }[size];
 
   return (
