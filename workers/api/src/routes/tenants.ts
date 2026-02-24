@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const tenants = new Hono<AppBindings>();
 
@@ -87,13 +88,18 @@ tenants.get('/:id', async (c) => {
 
 // POST /api/tenants
 tenants.post('/', async (c) => {
-  const body = await c.req.json<{
+  const { data: body, errors } = await getValidatedJsonBody<{
     name: string; slug: string; industry?: string; plan?: string;
     deploymentModel?: string; region?: string; entitlements?: Record<string, unknown>;
-  }>();
-
-  if (!body.name || !body.slug) {
-    return c.json({ error: 'Name and slug are required' }, 400);
+  }>(c, [
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'slug', type: 'string', required: true, minLength: 1, maxLength: 64, pattern: /^[a-z0-9-]+$/ },
+    { field: 'industry', type: 'string', required: false, maxLength: 64 },
+    { field: 'plan', type: 'string', required: false, maxLength: 32 },
+    { field: 'region', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   const id = crypto.randomUUID();

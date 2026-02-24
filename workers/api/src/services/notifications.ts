@@ -72,9 +72,9 @@ export async function dispatchWebhook(
     data: payload,
   });
 
-  const signature = await signWebhookPayload(body, config.secret);
-
   try {
+    const signature = await signWebhookPayload(body, config.secret);
+
     const resp = await fetch(config.url, {
       method: 'POST',
       headers: {
@@ -92,12 +92,12 @@ export async function dispatchWebhook(
       channel: 'webhook',
       error: resp.ok ? undefined : `HTTP ${resp.status}: ${resp.statusText}`,
     };
-  } catch (err) {
+  } catch {
     return {
       id: crypto.randomUUID(),
       delivered: false,
       channel: 'webhook',
-      error: (err as Error).message,
+      error: 'Webhook dispatch failed',
     };
   }
 }
@@ -173,8 +173,8 @@ export async function getUnreadCount(db: D1Database, tenantId: string): Promise<
 
 // ── Mark notifications as read ──
 
-export async function markAsRead(db: D1Database, notificationIds: string[]): Promise<void> {
+export async function markAsRead(db: D1Database, tenantId: string, notificationIds: string[]): Promise<void> {
   for (const id of notificationIds) {
-    await db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').bind(id).run();
+    await db.prepare('UPDATE notifications SET read = 1 WHERE id = ? AND tenant_id = ?').bind(id, tenantId).run();
   }
 }

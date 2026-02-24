@@ -1,11 +1,17 @@
 import { Hono } from 'hono';
-import type { AppBindings } from '../types';
+import type { AppBindings, AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const audit = new Hono<AppBindings>();
 
-// GET /api/audit/log?tenant_id=&layer=&action=&limit=
+function getTenantId(c: { get: (key: string) => unknown }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/audit/log
 audit.get('/log', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const layer = c.req.query('layer');
   const action = c.req.query('action');
   const limit = parseInt(c.req.query('limit') || '100');
@@ -40,22 +46,29 @@ audit.get('/log', async (c) => {
 
 // POST /api/audit/log
 audit.post('/log', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; user_id?: string; action: string; layer: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    user_id?: string; action: string; layer: string;
     resource?: string; details?: unknown; outcome?: string;
-  }>();
+  }>(c, [
+    { field: 'action', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'layer', type: 'string', required: true, minLength: 1, maxLength: 64 },
+    { field: 'resource', type: 'string', required: false, maxLength: 200 },
+    { field: 'outcome', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.user_id || null, body.action, body.layer, body.resource || null, body.details ? JSON.stringify(body.details) : null, body.outcome || 'success').run();
+  ).bind(id, tenantId, body.user_id || null, body.action, body.layer, body.resource || null, body.details ? JSON.stringify(body.details) : null, body.outcome || 'success').run();
 
   return c.json({ id }, 201);
 });
 
-// GET /api/audit/stats?tenant_id=
+// GET /api/audit/stats
 audit.get('/stats', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const totalEntries = await c.env.DB.prepare('SELECT COUNT(*) as count FROM audit_log WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>();
 
@@ -79,9 +92,9 @@ audit.get('/stats', async (c) => {
   });
 });
 
-// GET /api/audit/export?tenant_id=&format=
+// GET /api/audit/export
 audit.get('/export', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const results = await c.env.DB.prepare(
     'SELECT * FROM audit_log WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 1000'

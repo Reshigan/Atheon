@@ -5,16 +5,21 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
 import type { AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 import { dispatchNotification, getUnreadCount, markAsRead } from '../services/notifications';
 import { sendOrQueueEmail, getAlertEmailTemplate, getApprovalEmailTemplate, getEscalationEmailTemplate } from '../services/email';
 import { encrypt, decrypt, isEncrypted } from '../services/encryption';
 
 const notifications = new Hono<AppBindings>();
 
-// GET /api/notifications?tenant_id=&type=&unread=
-notifications.get('/', async (c) => {
+function getTenantId(c: { get: (key: string) => unknown }): string {
   const auth = c.get('auth') as AuthContext | undefined;
-  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'vantax';
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/notifications
+notifications.get('/', async (c) => {
+  const tenantId = getTenantId(c);
   const type = c.req.query('type');
   const unreadOnly = c.req.query('unread') === 'true';
   const limit = parseInt(c.req.query('limit') || '50');
@@ -49,20 +54,27 @@ notifications.get('/', async (c) => {
 
 // POST /api/notifications - Create a notification
 notifications.post('/', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; type: string; title: string; message: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    type: string; title: string; message: string;
     severity?: string; action_url?: string; metadata?: Record<string, unknown>;
-  }>();
+  }>(c, [
+    { field: 'title', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'message', type: 'string', required: true, minLength: 1, maxLength: 2000 },
+    { field: 'type', type: 'string', required: false, maxLength: 64 },
+    { field: 'severity', type: 'string', required: false, maxLength: 32 },
+    { field: 'action_url', type: 'string', required: false, maxLength: 500 },
+  ]);
 
-  if (!body.tenant_id || !body.title || !body.message) {
-    return c.json({ error: 'tenant_id, title, and message are required' }, 400);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   const notifType = (body.type || 'system') as 'alert' | 'approval' | 'escalation' | 'system' | 'catalyst_notification' | 'webhook';
   const severity = (body.severity || 'info') as 'critical' | 'high' | 'medium' | 'low' | 'info';
 
   const results = await dispatchNotification(c.env.DB, c.env.CACHE, {
-    tenantId: body.tenant_id,
+    tenantId,
     type: notifType,
     title: body.title,
     message: body.message,
@@ -77,7 +89,7 @@ notifications.post('/', async (c) => {
       // Get tenant admin emails
       const admins = await c.env.DB.prepare(
         'SELECT email FROM users WHERE tenant_id = ? AND role IN (?, ?) AND status = ?'
-      ).bind(body.tenant_id, 'admin', 'manager', 'active').all();
+      ).bind(tenantId, 'admin', 'manager', 'active').all();
 
       const recipients = admins.results.map((u: Record<string, unknown>) => u.email as string);
       if (recipients.length > 0) {
@@ -95,7 +107,7 @@ notifications.post('/', async (c) => {
           subject: `[Atheon ${severity.toUpperCase()}] ${body.title}`,
           htmlBody: template.html,
           textBody: template.text,
-          tenantId: body.tenant_id,
+          tenantId,
         });
         results.push({ id: emailResult.id, delivered: emailResult.sent, channel: emailResult.channel });
       }
@@ -109,28 +121,27 @@ notifications.post('/', async (c) => {
 
 // PUT /api/notifications/read - Mark notifications as read
 notifications.put('/read', async (c) => {
-  const body = await c.req.json<{ ids: string[] }>();
-  if (!body.ids || body.ids.length === 0) {
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{ ids: string[] }>(c, []);
+  if (!body || errors.length > 0 || !body.ids || body.ids.length === 0) {
     return c.json({ error: 'ids array is required' }, 400);
   }
-  await markAsRead(c.env.DB, body.ids);
+  await markAsRead(c.env.DB, tenantId, body.ids);
   return c.json({ success: true, marked: body.ids.length });
 });
 
-// GET /api/notifications/unread-count?tenant_id=
+// GET /api/notifications/unread-count
 notifications.get('/unread-count', async (c) => {
-  const auth = c.get('auth') as AuthContext | undefined;
-  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const count = await getUnreadCount(c.env.DB, tenantId);
   return c.json({ unreadCount: count });
 });
 
 // ── Webhook Management ──
 
-// GET /api/notifications/webhooks?tenant_id=
+// GET /api/notifications/webhooks
 notifications.get('/webhooks', async (c) => {
-  const auth = c.get('auth') as AuthContext | undefined;
-  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM webhooks WHERE tenant_id = ? ORDER BY created_at DESC'
   ).bind(tenantId).all();
@@ -151,12 +162,15 @@ notifications.get('/webhooks', async (c) => {
 
 // POST /api/notifications/webhooks - Create a webhook
 notifications.post('/webhooks', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; url: string; events?: string[];
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    url: string; events?: string[];
+  }>(c, [
+    { field: 'url', type: 'url', required: true },
+  ]);
 
-  if (!body.tenant_id || !body.url) {
-    return c.json({ error: 'tenant_id and url are required' }, 400);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   // Validate URL
@@ -174,15 +188,21 @@ notifications.post('/webhooks', async (c) => {
 
   await c.env.DB.prepare(
     'INSERT INTO webhooks (id, tenant_id, url, secret, events, active, retry_count, created_at) VALUES (?, ?, ?, ?, ?, 1, 0, datetime(\'now\'))'
-  ).bind(id, body.tenant_id, body.url, encryptedSecret, JSON.stringify(body.events || ['*'])).run();
+  ).bind(id, tenantId, body.url, encryptedSecret, JSON.stringify(body.events || ['*'])).run();
 
   return c.json({ id, secret, message: 'Webhook created. Store the secret — it will not be shown again.' }, 201);
 });
 
 // PUT /api/notifications/webhooks/:id
 notifications.put('/webhooks/:id', async (c) => {
+  const tenantId = getTenantId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<{ url?: string; events?: string[]; active?: boolean }>();
+  const { data: body, errors: valErrors } = await getValidatedJsonBody<{ url?: string; events?: string[]; active?: boolean }>(c, [
+    { field: 'url', type: 'url', required: false },
+  ]);
+  if (!body || valErrors.length > 0) {
+    return c.json({ error: 'Invalid input', details: valErrors }, 400);
+  }
 
   const updates: string[] = [];
   const values: unknown[] = [];
@@ -191,8 +211,8 @@ notifications.put('/webhooks/:id', async (c) => {
   if (body.active !== undefined) { updates.push('active = ?'); values.push(body.active ? 1 : 0); }
 
   if (updates.length > 0) {
-    values.push(id);
-    await c.env.DB.prepare(`UPDATE webhooks SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run();
+    values.push(id, tenantId);
+    await c.env.DB.prepare(`UPDATE webhooks SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`).bind(...values).run();
   }
 
   return c.json({ success: true });
@@ -200,15 +220,17 @@ notifications.put('/webhooks/:id', async (c) => {
 
 // DELETE /api/notifications/webhooks/:id
 notifications.delete('/webhooks/:id', async (c) => {
+  const tenantId = getTenantId(c);
   const id = c.req.param('id');
-  await c.env.DB.prepare('DELETE FROM webhooks WHERE id = ?').bind(id).run();
+  await c.env.DB.prepare('DELETE FROM webhooks WHERE id = ? AND tenant_id = ?').bind(id, tenantId).run();
   return c.json({ success: true });
 });
 
 // POST /api/notifications/webhooks/:id/test - Test a webhook
 notifications.post('/webhooks/:id/test', async (c) => {
+  const tenantId = getTenantId(c);
   const id = c.req.param('id');
-  const webhook = await c.env.DB.prepare('SELECT * FROM webhooks WHERE id = ?').bind(id).first();
+  const webhook = await c.env.DB.prepare('SELECT * FROM webhooks WHERE id = ? AND tenant_id = ?').bind(id, tenantId).first();
   if (!webhook) return c.json({ error: 'Webhook not found' }, 404);
 
   // Decrypt the webhook secret for signing
@@ -221,7 +243,7 @@ notifications.post('/webhooks/:id/test', async (c) => {
   const result = await dispatchWebhook(
     {
       id: webhook.id as string,
-      tenantId: webhook.tenant_id as string,
+      tenantId: tenantId,
       url: webhook.url as string,
       secret: decryptedSecret,
       events: JSON.parse(webhook.events as string || '[]'),

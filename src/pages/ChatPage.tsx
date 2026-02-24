@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,27 @@ export function ChatPage() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  // 3.11: Load chat conversation history from mind_queries on mount
+  useEffect(() => {
+    api.mind.history()
+      .then((data) => {
+        const restored: ChatMessage[] = [];
+        for (const item of data.queries) {
+          restored.push({ id: `u-${item.id}`, role: 'user', content: item.query });
+          restored.push({
+            id: item.id,
+            role: 'assistant',
+            content: item.response,
+            citations: item.citations.map((c: string, i: number) => ({ id: `c-${i}`, source: c, confidence: 0.9 })),
+          });
+        }
+        setMessages(restored);
+      })
+      .catch(() => { /* no history available */ })
+      .finally(() => setLoadingHistory(false));
+  }, []);
 
   const suggestedQueries = [
     { text: 'Why is OTIF declining?', layer: 'pulse' as AtheonLayer },
@@ -66,7 +87,7 @@ export function ChatPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar - Thread List */}
         <div className="space-y-3">
-          <Button variant="primary" size="sm" className="w-full" onClick={() => setMessages([])}><Plus size={14} /> New Thread</Button>
+          <Button variant="primary" size="sm" className="w-full" onClick={() => { setMessages([]); setLoadingHistory(false); }}><Plus size={14} /> New Thread</Button>
           <Card hover className="border-cyan-500/20">
             <div className="flex items-start justify-between">
               <div>
@@ -82,7 +103,10 @@ export function ChatPage() {
           <Card className="flex flex-col" style={{ minHeight: '600px' }}>
             {/* Messages */}
             <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
-              {messages.length === 0 && (
+              {loadingHistory && (
+                <div className="flex items-center justify-center h-40 text-gray-400 text-sm"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading conversation history...</div>
+              )}
+              {!loadingHistory && messages.length === 0 && (
                 <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Ask Atheon anything to get started</div>
               )}
               {messages.map((msg) => (

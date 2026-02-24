@@ -1,13 +1,19 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
 import type { AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 import { semanticSearch, indexGraphEntities } from '../services/vectorize';
 
 const memory = new Hono<AppBindings>();
 
-// GET /api/memory/entities?tenant_id=&type=
+function getTenantId(c: { get: (key: string) => unknown }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/memory/entities
 memory.get('/entities', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const entityType = c.req.query('type');
   const search = c.req.query('search');
 
@@ -83,21 +89,27 @@ memory.get('/entities/:id', async (c) => {
 
 // POST /api/memory/entities
 memory.post('/entities', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; type: string; name: string; properties?: Record<string, unknown>; source?: string;
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    type: string; name: string; properties?: Record<string, unknown>; source?: string;
+  }>(c, [
+    { field: 'type', type: 'string', required: true, minLength: 1, maxLength: 64 },
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'source', type: 'string', required: false, maxLength: 64 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO graph_entities (id, tenant_id, type, name, properties, source) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.type, body.name, JSON.stringify(body.properties || {}), body.source || 'manual').run();
+  ).bind(id, tenantId, body.type, body.name, JSON.stringify(body.properties || {}), body.source || 'manual').run();
 
   return c.json({ id, type: body.type, name: body.name }, 201);
 });
 
-// GET /api/memory/relationships?tenant_id=
+// GET /api/memory/relationships
 memory.get('/relationships', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const results = await c.env.DB.prepare(
     `SELECT r.*, 
@@ -128,21 +140,27 @@ memory.get('/relationships', async (c) => {
 
 // POST /api/memory/relationships
 memory.post('/relationships', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; source_id: string; target_id: string; type: string; properties?: Record<string, unknown>;
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    source_id: string; target_id: string; type: string; properties?: Record<string, unknown>;
+  }>(c, [
+    { field: 'source_id', type: 'string', required: true, minLength: 1 },
+    { field: 'target_id', type: 'string', required: true, minLength: 1 },
+    { field: 'type', type: 'string', required: true, minLength: 1, maxLength: 64 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO graph_relationships (id, tenant_id, source_id, target_id, type, properties) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.source_id, body.target_id, body.type, JSON.stringify(body.properties || {})).run();
+  ).bind(id, tenantId, body.source_id, body.target_id, body.type, JSON.stringify(body.properties || {})).run();
 
   return c.json({ id }, 201);
 });
 
-// GET /api/memory/graph?tenant_id= (full graph for visualization)
+// GET /api/memory/graph (full graph for visualization)
 memory.get('/graph', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const entities = await c.env.DB.prepare(
     'SELECT id, type, name, properties, confidence FROM graph_entities WHERE tenant_id = ? LIMIT 200'
@@ -172,9 +190,11 @@ memory.get('/graph', async (c) => {
 
 // POST /api/memory/query (GraphRAG query with semantic + keyword search)
 memory.post('/query', async (c) => {
-  const body = await c.req.json<{ tenant_id?: string; query: string; depth?: number }>();
-  const auth = c.get('auth') as AuthContext | undefined;
-  const tenantId = auth?.tenantId || body.tenant_id || 'vantax';
+  const { data: body, errors } = await getValidatedJsonBody<{ query: string; depth?: number }>(c, [
+    { field: 'query', type: 'string', required: true, minLength: 1, maxLength: 500 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+  const tenantId = getTenantId(c);
   const query = body.query.toLowerCase();
 
   // Try Vectorize semantic search first (if available)
@@ -275,9 +295,7 @@ memory.post('/query', async (c) => {
 
 // POST /api/memory/index - Index graph entities into Vectorize for semantic search
 memory.post('/index', async (c) => {
-  const auth = c.get('auth') as AuthContext | undefined;
-  const body = await c.req.json<{ tenant_id?: string }>().catch(() => ({ tenant_id: undefined }));
-  const tenantId = auth?.tenantId || body.tenant_id || 'vantax';
+  const tenantId = getTenantId(c);
 
   if (!c.env.VECTORIZE) {
     return c.json({ error: 'Vectorize not configured', message: 'Vector index not available' }, 503);
@@ -287,9 +305,9 @@ memory.post('/index', async (c) => {
   return c.json({ ...result, tenantId });
 });
 
-// GET /api/memory/stats?tenant_id=
+// GET /api/memory/stats
 memory.get('/stats', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const entityCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM graph_entities WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>();
   const relationshipCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM graph_relationships WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>();

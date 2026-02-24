@@ -1,7 +1,7 @@
 import { useAppStore } from "@/stores/appStore";
 import { Bell, ChevronDown, Menu, LogOut, MessageCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { setToken } from "@/lib/api";
+import { api, setToken } from "@/lib/api";
 import type { IndustryVertical } from "@/types";
 
 const industries: { value: IndustryVertical; label: string }[] = [
@@ -15,7 +15,12 @@ export function Header() {
   const { user, industry, setIndustry, setMobileSidebarOpen, setUser } = useAppStore();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout();
+    } catch {
+      // Continue with client-side logout even if API call fails
+    }
     setToken(null);
     setUser(null);
     navigate('/login', { replace: true });

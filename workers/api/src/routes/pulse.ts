@@ -1,11 +1,17 @@
 import { Hono } from 'hono';
-import type { AppBindings } from '../types';
+import type { AppBindings, AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const pulse = new Hono<AppBindings>();
 
-// GET /api/pulse/metrics?tenant_id=
+function getTenantId(c: { get: (key: string) => unknown }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/pulse/metrics
 pulse.get('/metrics', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM process_metrics WHERE tenant_id = ? ORDER BY name ASC'
   ).bind(tenantId).all();
@@ -31,10 +37,17 @@ pulse.get('/metrics', async (c) => {
 
 // POST /api/pulse/metrics
 pulse.post('/metrics', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; name: string; value: number; unit: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    name: string; value: number; unit: string;
     threshold_green?: number; threshold_amber?: number; threshold_red?: number; source_system?: string;
-  }>();
+  }>(c, [
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'value', type: 'number', required: true },
+    { field: 'unit', type: 'string', required: true, minLength: 1, maxLength: 32 },
+    { field: 'source_system', type: 'string', required: false, maxLength: 64 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
 
@@ -54,14 +67,14 @@ pulse.post('/metrics', async (c) => {
 
   await c.env.DB.prepare(
     'INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, source_system) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.name, body.value, body.unit, status, body.threshold_green || null, body.threshold_amber || null, body.threshold_red || null, body.source_system || null).run();
+  ).bind(id, tenantId, body.name, body.value, body.unit, status, body.threshold_green || null, body.threshold_amber || null, body.threshold_red || null, body.source_system || null).run();
 
   return c.json({ id, status }, 201);
 });
 
-// GET /api/pulse/anomalies?tenant_id=
+// GET /api/pulse/anomalies
 pulse.get('/anomalies', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM anomalies WHERE tenant_id = ? ORDER BY CASE severity WHEN \'critical\' THEN 1 WHEN \'high\' THEN 2 WHEN \'medium\' THEN 3 WHEN \'low\' THEN 4 END'
   ).bind(tenantId).all();
@@ -93,9 +106,9 @@ pulse.put('/anomalies/:id', async (c) => {
   return c.json({ success: true });
 });
 
-// GET /api/pulse/processes?tenant_id=
+// GET /api/pulse/processes
 pulse.get('/processes', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM process_flows WHERE tenant_id = ?'
   ).bind(tenantId).all();
@@ -113,9 +126,9 @@ pulse.get('/processes', async (c) => {
   return c.json({ processes: formatted, total: formatted.length });
 });
 
-// GET /api/pulse/correlations?tenant_id=
+// GET /api/pulse/correlations
 pulse.get('/correlations', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM correlation_events WHERE tenant_id = ? ORDER BY confidence DESC'
   ).bind(tenantId).all();
@@ -134,9 +147,9 @@ pulse.get('/correlations', async (c) => {
   return c.json({ correlations: formatted, total: formatted.length });
 });
 
-// GET /api/pulse/summary?tenant_id= (aggregated overview)
+// GET /api/pulse/summary (aggregated overview)
 pulse.get('/summary', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const totalMetrics = await c.env.DB.prepare('SELECT COUNT(*) as count FROM process_metrics WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>();
   const greenMetrics = await c.env.DB.prepare('SELECT COUNT(*) as count FROM process_metrics WHERE tenant_id = ? AND status = ?').bind(tenantId, 'green').first<{ count: number }>();

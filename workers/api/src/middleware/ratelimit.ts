@@ -73,3 +73,10 @@ export const authRateLimiter = rateLimiter({
   maxRequests: 10,    // 10 attempts per 5 min
   keyPrefix: 'rl:auth',
 });
+
+// Demo-login rate limit (extra strict)
+export const demoAuthRateLimiter = rateLimiter({
+  windowMs: 3600000, // 1 hour
+  maxRequests: 3,    // 3 per hour
+  keyPrefix: 'rl:demo',
+});

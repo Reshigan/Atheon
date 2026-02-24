@@ -32,6 +32,12 @@ export function tenantIsolation() {
         return c.json({ error: 'Unauthorized', message: 'Invalid or expired token' }, 401);
       }
 
+      // Check if token has been blacklisted (logout)
+      const blacklisted = await c.env.CACHE.get(`token:blacklist:${token}`);
+      if (blacklisted) {
+        return c.json({ error: 'Unauthorized', message: 'Token has been revoked' }, 401);
+      }
+
       const authCtx: AuthContext = {
         userId: payload.sub as string,
         email: payload.email as string,

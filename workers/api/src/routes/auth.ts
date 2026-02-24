@@ -1,21 +1,23 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
 import { generateToken, verifyToken, hashPassword, verifyPassword } from '../middleware/auth';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const auth = new Hono<AppBindings>();
 
 // POST /api/auth/register
 auth.post('/register', async (c) => {
-  const body = await c.req.json<{
+  const { data: body, errors } = await getValidatedJsonBody<{
     email: string; password: string; name: string; tenant_slug?: string;
-  }>();
+  }>(c, [
+    { field: 'email', type: 'email', required: true },
+    { field: 'password', type: 'string', required: true, minLength: 8 },
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 100 },
+    { field: 'tenant_slug', type: 'string', required: false, maxLength: 64 },
+  ]);
 
-  if (!body.email || !body.password || !body.name) {
-    return c.json({ error: 'Email, password and name are required' }, 400);
-  }
-
-  if (body.password.length < 8) {
-    return c.json({ error: 'Password must be at least 8 characters' }, 400);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   const slug = body.tenant_slug || 'vantax';
@@ -71,10 +73,14 @@ auth.post('/register', async (c) => {
 
 // POST /api/auth/login
 auth.post('/login', async (c) => {
-  const body = await c.req.json<{ email: string; password: string; tenant_slug?: string }>();
+  const { data: body, errors } = await getValidatedJsonBody<{ email: string; password: string; tenant_slug?: string }>(c, [
+    { field: 'email', type: 'email', required: true },
+    { field: 'password', type: 'string', required: true, minLength: 1 },
+    { field: 'tenant_slug', type: 'string', required: false, maxLength: 64 },
+  ]);
 
-  if (!body.email || !body.password) {
-    return c.json({ error: 'Email and password are required' }, 400);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   // Find user by email
@@ -132,7 +138,18 @@ auth.post('/login', async (c) => {
 
 // POST /api/auth/demo-login (for demo access without password)
 auth.post('/demo-login', async (c) => {
-  const body = await c.req.json<{ tenant_slug?: string; role?: string }>();
+  if (c.env.ENVIRONMENT === 'production') {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const { data: body, errors } = await getValidatedJsonBody<{ tenant_slug?: string; role?: string }>(c, [
+    { field: 'tenant_slug', type: 'string', required: false, maxLength: 64 },
+    { field: 'role', type: 'string', required: false, maxLength: 32 },
+  ]);
+
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
   const slug = body.tenant_slug || 'vantax';
   const requestedRole = body.role || 'admin';
 
@@ -192,10 +209,13 @@ auth.post('/change-password', async (c) => {
     return c.json({ error: 'Invalid token' }, 401);
   }
 
-  const body = await c.req.json<{ current_password?: string; new_password: string }>();
+  const { data: body, errors } = await getValidatedJsonBody<{ current_password?: string; new_password: string }>(c, [
+    { field: 'current_password', type: 'string', required: false, minLength: 1 },
+    { field: 'new_password', type: 'string', required: true, minLength: 8 },
+  ]);
 
-  if (!body.new_password || body.new_password.length < 8) {
-    return c.json({ error: 'New password must be at least 8 characters' }, 400);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   const user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(payload.sub).first();
@@ -203,8 +223,12 @@ auth.post('/change-password', async (c) => {
     return c.json({ error: 'User not found' }, 404);
   }
 
-  // Verify current password if it exists
-  if (user.password_hash && body.current_password) {
+  // Verify current password if the user already has a password
+  if (user.password_hash) {
+    if (!body.current_password) {
+      return c.json({ error: 'current_password is required' }, 400);
+    }
+
     const valid = await verifyPassword(body.current_password, user.password_hash as string);
     if (!valid) {
       return c.json({ error: 'Current password is incorrect' }, 401);
@@ -220,6 +244,122 @@ auth.post('/change-password', async (c) => {
   ).bind(crypto.randomUUID(), payload.tenant_id, payload.sub, 'change_password', 'auth', 'user', '{}', 'success').run();
 
   return c.json({ success: true, message: 'Password changed successfully' });
+});
+
+// POST /api/auth/logout - Invalidate token via KV blacklist
+auth.post('/logout', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const payload = await verifyToken(token, c.env.JWT_SECRET);
+  if (!payload) {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+
+  // Blacklist the token in KV until it expires
+  const exp = (payload.exp as number) || Math.floor(Date.now() / 1000) + 86400;
+  const ttl = Math.max(exp - Math.floor(Date.now() / 1000), 60);
+  await c.env.CACHE.put(`token:blacklist:${token}`, 'revoked', { expirationTtl: ttl });
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), payload.tenant_id, payload.sub, 'logout', 'auth', 'session', '{}', 'success').run();
+
+  return c.json({ success: true, message: 'Logged out successfully' });
+});
+
+// POST /api/auth/forgot-password - Send password reset email
+auth.post('/forgot-password', async (c) => {
+  const { data: body, errors } = await getValidatedJsonBody<{ email: string }>(c, [
+    { field: 'email', type: 'email', required: true },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  // Find user by email (don't reveal if user exists)
+  const user = await c.env.DB.prepare(
+    'SELECT u.id, u.email, u.name, u.tenant_id, t.name as tenant_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = ? AND u.status = ?'
+  ).bind(body.email, 'active').first();
+
+  if (user) {
+    // Generate a reset token and store in KV (expires in 1 hour)
+    const resetToken = crypto.randomUUID();
+    await c.env.CACHE.put(`password_reset:${resetToken}`, JSON.stringify({
+      userId: user.id,
+      email: user.email,
+      tenantId: user.tenant_id,
+    }), { expirationTtl: 3600 });
+
+    // Queue email for sending
+    const resetUrl = `https://atheon.vantax.co.za/reset-password?token=${resetToken}`;
+    await c.env.DB.prepare(
+      'INSERT INTO email_queue (id, tenant_id, recipients, subject, html_body, text_body, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
+    ).bind(
+      crypto.randomUUID(),
+      user.tenant_id,
+      JSON.stringify([user.email]),
+      'Atheon™ — Password Reset Request',
+      `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+        <h2 style="color:#0ea5e9;">Atheon™ Password Reset</h2>
+        <p>Hi ${user.name},</p>
+        <p>We received a request to reset your password. Click the button below to set a new password:</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${resetUrl}" style="background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Reset Password</a>
+        </p>
+        <p style="color:#666;font-size:13px;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+        <p style="color:#9ca3af;font-size:12px;">Atheon™ Enterprise Intelligence Platform</p>
+      </div>`,
+      `Reset your Atheon password: ${resetUrl}\nThis link expires in 1 hour.`,
+      'pending',
+    ).run().catch(() => {});
+
+    // Audit log
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(crypto.randomUUID(), user.tenant_id, user.id, 'forgot_password', 'auth', 'user', JSON.stringify({ email: body.email }), 'success').run();
+  }
+
+  // Always return success (don't reveal if user exists)
+  return c.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
+});
+
+// POST /api/auth/reset-password - Complete password reset with token
+auth.post('/reset-password', async (c) => {
+  const { data: body, errors } = await getValidatedJsonBody<{ token: string; new_password: string }>(c, [
+    { field: 'token', type: 'string', required: true, minLength: 1 },
+    { field: 'new_password', type: 'string', required: true, minLength: 8 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  // Look up reset token in KV
+  const resetData = await c.env.CACHE.get(`password_reset:${body.token}`);
+  if (!resetData) {
+    return c.json({ error: 'Invalid or expired reset token' }, 400);
+  }
+
+  const { userId, tenantId } = JSON.parse(resetData) as { userId: string; email: string; tenantId: string };
+
+  // Hash new password and update
+  const newHash = await hashPassword(body.new_password);
+  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, userId).run();
+
+  // Delete the reset token
+  await c.env.CACHE.delete(`password_reset:${body.token}`);
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), tenantId, userId, 'password_reset', 'auth', 'user', '{}', 'success').run();
+
+  return c.json({ success: true, message: 'Password has been reset successfully' });
 });
 
 // GET /api/auth/me
@@ -284,7 +424,14 @@ auth.get('/sso/:tenant_slug', async (c) => {
 
 // POST /api/auth/sso (legacy: attempt SSO login)
 auth.post('/sso', async (c) => {
-  const body = await c.req.json<{ provider: string; tenant_slug?: string }>();
+  const { data: body, errors } = await getValidatedJsonBody<{ provider: string; tenant_slug?: string }>(c, [
+    { field: 'provider', type: 'string', required: true, minLength: 2, maxLength: 64 },
+    { field: 'tenant_slug', type: 'string', required: false, maxLength: 64 },
+  ]);
+
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
   const slug = body.tenant_slug || 'vantax';
 
   const tenant = await c.env.DB.prepare('SELECT * FROM tenants WHERE slug = ?').bind(slug).first();
@@ -327,10 +474,13 @@ auth.post('/sso', async (c) => {
 
 // POST /api/auth/sso/callback (Azure AD OAuth callback - exchange code for token)
 auth.post('/sso/callback', async (c) => {
-  const body = await c.req.json<{ code: string; state: string }>();
+  const { data: body, errors } = await getValidatedJsonBody<{ code: string; state: string }>(c, [
+    { field: 'code', type: 'string', required: true, minLength: 1, maxLength: 4096 },
+    { field: 'state', type: 'string', required: true, minLength: 1, maxLength: 4096 },
+  ]);
 
-  if (!body.code || !body.state) {
-    return c.json({ error: 'Authorization code and state are required' }, 400);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   let stateData: { tenant_slug: string; provider: string };
