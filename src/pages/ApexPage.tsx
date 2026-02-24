@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,13 @@ import { ScoreRing } from "@/components/ui/score-ring";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { businessHealthScore, executiveBriefing, riskAlerts, scenarios } from "@/data/mockData";
+import { api } from "@/lib/api";
+import type { HealthScore, Briefing, Risk, ScenarioItem } from "@/lib/api";
 import {
   Crown, TrendingUp, TrendingDown, Minus, AlertTriangle, FileText,
-  Play, CheckCircle, ArrowRight, BarChart3, Shield, Lightbulb
+  Play, ArrowRight, BarChart3, Shield, Lightbulb, Loader2
 } from "lucide-react";
-import { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+
 
 const trendIcon = (trend: string, size = 14) => {
   if (trend === 'up') return <TrendingUp size={size} className="text-emerald-400" />;
@@ -24,13 +25,51 @@ const severityColor = (s: string) => s === 'critical' ? 'danger' : s === 'high' 
 export function ApexPage() {
   const { activeTab, setActiveTab } = useTabState('health');
   const [expandedRisk, setExpandedRisk] = useState<string | null>(null);
+  const [health, setHealth] = useState<HealthScore | null>(null);
+  const [briefing, setBriefing] = useState<Briefing | null>(null);
+  const [risks, setRisks] = useState<Risk[]>([]);
+  const [scenarios, setScenarios] = useState<ScenarioItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [h, b, r, s] = await Promise.allSettled([
+        api.apex.health(), api.apex.briefing(), api.apex.risks(), api.apex.scenarios(),
+      ]);
+      if (h.status === 'fulfilled') setHealth(h.value);
+      if (b.status === 'fulfilled') setBriefing(b.value);
+      if (r.status === 'fulfilled') setRisks(r.value.risks);
+      if (s.status === 'fulfilled') setScenarios(s.value.scenarios);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const overallScore = health?.overall ?? 78;
+  const dimensions = health?.dimensions
+    ? Object.entries(health.dimensions).map(([key, val]) => ({
+        key, name: key.charAt(0).toUpperCase() + key.slice(1),
+        score: val.score, trend: val.trend as 'up' | 'down' | 'stable',
+        change: val.delta, weight: 0.2,
+        sparkline: [val.score - 6, val.score - 4, val.score - 3, val.score - 2, val.score - 1, val.score],
+      }))
+    : [];
 
   const tabs = [
     { id: 'health', label: 'Business Health', icon: <Crown size={14} /> },
     { id: 'briefing', label: 'Executive Briefing', icon: <FileText size={14} /> },
-    { id: 'risks', label: 'Risk Alerts', icon: <AlertTriangle size={14} />, count: riskAlerts.length },
+    { id: 'risks', label: 'Risk Alerts', icon: <AlertTriangle size={14} />, count: risks.length },
     { id: 'scenarios', label: 'Scenario Modelling', icon: <BarChart3 size={14} /> },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -53,9 +92,9 @@ export function ApexPage() {
         <TabPanel>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-1 flex flex-col items-center justify-center" glow>
-              <ScoreRing score={businessHealthScore.overall} size="xl" label="Overall Health" sublabel="Composite Index" />
+              <ScoreRing score={overallScore} size="xl" label="Overall Health" sublabel="Composite Index" />
               <div className="flex items-center gap-2 mt-4">
-                {trendIcon(businessHealthScore.trend)}
+                {trendIcon('up')}
                 <span className="text-sm text-emerald-400">+2.3 points (7d)</span>
               </div>
             </Card>
@@ -63,7 +102,7 @@ export function ApexPage() {
             <Card className="lg:col-span-2">
               <h3 className="text-lg font-semibold text-white mb-4">Dimension Breakdown</h3>
               <div className="space-y-4">
-                {businessHealthScore.dimensions.map((dim) => (
+                {dimensions.map((dim) => (
                   <div key={dim.key} className="flex items-center gap-4">
                     <div className="w-36 flex-shrink-0">
                       <span className="text-sm text-neutral-300">{dim.name}</span>
@@ -101,7 +140,7 @@ export function ApexPage() {
                 <h3 className="text-lg font-semibold text-white">Daily Executive Briefing</h3>
                 <Badge variant="info">Today</Badge>
               </div>
-              <p className="text-sm text-neutral-300 leading-relaxed">{executiveBriefing.narrative}</p>
+              <p className="text-sm text-neutral-300 leading-relaxed">{briefing?.summary || 'No briefing available'}</p>
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -111,17 +150,12 @@ export function ApexPage() {
                   <TrendingUp className="w-4 h-4 text-indigo-400" /> KPI Movements
                 </h3>
                 <div className="space-y-3">
-                  {executiveBriefing.kpiMovements.map((kpi) => (
+                  {(briefing?.kpiMovements || []).map((kpi) => (
                     <div key={kpi.kpi} className="flex items-center justify-between py-2 border-b border-neutral-800/50 last:border-0">
                       <span className="text-sm text-neutral-300">{kpi.kpi}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white">{kpi.value}{kpi.unit && ` ${kpi.unit}`}</span>
-                        <div className="flex items-center gap-1">
-                          {trendIcon(kpi.trend, 12)}
-                          <span className={`text-xs ${kpi.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {kpi.change > 0 ? '+' : ''}{kpi.change}%
-                          </span>
-                        </div>
+                        <span className="text-sm font-medium text-white">{kpi.movement}</span>
+                        <span className="text-xs text-neutral-500">{kpi.period}</span>
                       </div>
                     </div>
                   ))}
@@ -134,13 +168,12 @@ export function ApexPage() {
                   <AlertTriangle className="w-4 h-4 text-red-400" /> Top Risks
                 </h3>
                 <div className="space-y-3">
-                  {executiveBriefing.topRisks.map((risk) => (
-                    <div key={risk.id} className="p-3 rounded-lg bg-neutral-800/40">
+                  {(briefing?.risks || []).map((risk, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-neutral-800/40">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-medium text-neutral-200">{risk.title}</h4>
-                        <Badge variant={severityColor(risk.severity)} size="sm">{risk.severity}</Badge>
+                        <h4 className="text-sm font-medium text-neutral-200">{risk}</h4>
+                        <Badge variant="warning" size="sm">risk</Badge>
                       </div>
-                      <p className="text-xs text-neutral-500 mt-1">{risk.description}</p>
                     </div>
                   ))}
                 </div>
@@ -152,13 +185,12 @@ export function ApexPage() {
                   <Lightbulb className="w-4 h-4 text-emerald-400" /> Opportunities
                 </h3>
                 <div className="space-y-3">
-                  {executiveBriefing.topOpportunities.map((opp) => (
-                    <div key={opp.id} className="p-3 rounded-lg bg-neutral-800/40">
+                  {(briefing?.opportunities || []).map((opp, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-neutral-800/40">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-medium text-neutral-200">{opp.title}</h4>
-                        <Badge variant="success" size="sm">{Math.round(opp.confidence * 100)}%</Badge>
+                        <h4 className="text-sm font-medium text-neutral-200">{opp}</h4>
+                        <Badge variant="success" size="sm">opportunity</Badge>
                       </div>
-                      <p className="text-xs text-neutral-500 mt-1">{opp.description}</p>
                     </div>
                   ))}
                 </div>
@@ -166,27 +198,14 @@ export function ApexPage() {
             </div>
 
             {/* Required Decisions */}
-            {executiveBriefing.requiredDecisions.length > 0 && (
+            {(briefing?.decisionsNeeded || []).length > 0 && (
               <Card className="border-amber-500/20">
                 <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
                   <Shield className="w-4 h-4 text-amber-400" /> Decisions Required
                 </h3>
-                {executiveBriefing.requiredDecisions.map((dec) => (
-                  <div key={dec.id} className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                    <h4 className="text-sm font-semibold text-amber-200">{dec.title}</h4>
-                    <p className="text-xs text-neutral-400 mt-1">{dec.description}</p>
-                    <div className="flex gap-2 mt-3">
-                      {dec.options.map((opt) => (
-                        <Button
-                          key={opt.id}
-                          variant={opt.id === dec.recommendedOption ? 'success' : 'secondary'}
-                          size="sm"
-                        >
-                          {opt.id === dec.recommendedOption && <CheckCircle size={12} />}
-                          {opt.label}
-                        </Button>
-                      ))}
-                    </div>
+                {(briefing?.decisionsNeeded || []).map((dec, i) => (
+                  <div key={i} className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                    <h4 className="text-sm font-semibold text-amber-200">{dec}</h4>
                   </div>
                 ))}
               </Card>
@@ -199,7 +218,7 @@ export function ApexPage() {
       {activeTab === 'risks' && (
         <TabPanel>
           <div className="space-y-4">
-            {riskAlerts.map((risk) => (
+            {risks.map((risk) => (
               <Card
                 key={risk.id}
                 hover
@@ -224,9 +243,8 @@ export function ApexPage() {
                     </div>
                     <p className="text-sm text-neutral-400 mt-1">{risk.description}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-neutral-500">
-                      <span>Confidence: {Math.round(risk.confidence * 100)}%</span>
                       <span>Probability: {Math.round(risk.probability * 100)}%</span>
-                      <span>Impact: {Math.round(risk.impact * 100)}%</span>
+                      <span>Impact: {risk.impactValue} {risk.impactUnit}</span>
                     </div>
 
                     {expandedRisk === risk.id && (
@@ -262,51 +280,21 @@ export function ApexPage() {
               <Card key={scenario.id}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-white">{scenario.name}</h3>
+                    <h3 className="text-base font-semibold text-white">{scenario.title}</h3>
                     <p className="text-sm text-neutral-400 mt-1">{scenario.description}</p>
                   </div>
                   <Badge variant={scenario.status === 'completed' ? 'success' : 'warning'}>{scenario.status}</Badge>
                 </div>
 
                 {scenario.results && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="mt-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-lg bg-neutral-800/40">
-                        <span className="text-xs text-neutral-500">Revenue Impact</span>
-                        <p className={`text-lg font-bold ${scenario.results.revenue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {scenario.results.revenue > 0 ? '+' : ''}{scenario.results.revenue}M
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-neutral-800/40">
-                        <span className="text-xs text-neutral-500">Cost Impact</span>
-                        <p className={`text-lg font-bold ${scenario.results.cost <= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {scenario.results.cost > 0 ? '+' : ''}{scenario.results.cost}M
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-neutral-800/40">
-                        <span className="text-xs text-neutral-500">Net Profit</span>
-                        <p className={`text-lg font-bold ${scenario.results.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {scenario.results.profit > 0 ? '+' : ''}{scenario.results.profit}M
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-neutral-800/40">
-                        <span className="text-xs text-neutral-500">Probability</span>
-                        <p className="text-lg font-bold text-indigo-400">{Math.round(scenario.results.probability * 100)}%</p>
-                      </div>
-                    </div>
-                    <div className="h-40">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={scenario.results.timeline}>
-                          <XAxis dataKey="month" tick={{ fill: '#737373', fontSize: 10 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill: '#737373', fontSize: 10 }} axisLine={false} tickLine={false} />
-                          <Tooltip contentStyle={{ background: '#171717', border: '1px solid #262626', borderRadius: '8px', fontSize: '12px' }} />
-                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                            {scenario.results.timeline.map((entry, index) => (
-                              <Cell key={index} fill={entry.value >= 0 ? '#10b981' : '#ef4444'} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                      {Object.entries(scenario.results).slice(0, 4).map(([key, val]) => (
+                        <div key={key} className="p-3 rounded-lg bg-neutral-800/40">
+                          <span className="text-xs text-neutral-500">{key}</span>
+                          <p className="text-lg font-bold text-white">{String(val)}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

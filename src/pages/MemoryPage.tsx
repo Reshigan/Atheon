@@ -1,33 +1,16 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Database, Network, Search, BookOpen, ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
+import type { GraphStats, GraphEntity } from "@/lib/api";
+import { Database, Network, Search, BookOpen, ArrowRight, Loader2 } from "lucide-react";
 
-const graphStats = [
-  { label: 'Total Entities', value: '24,892', change: '+342 (7d)' },
-  { label: 'Relationships', value: '89,431', change: '+1,204 (7d)' },
-  { label: 'Avg Confidence', value: '0.87', change: '+0.02 (7d)' },
-  { label: 'Vector Embeddings', value: '156K', change: 'Indexed' },
-];
-
-const entityTypes = [
-  { type: 'Organisation', count: 145, color: 'bg-indigo-500' },
-  { type: 'Department', count: 892, color: 'bg-blue-500' },
-  { type: 'Person', count: 4521, color: 'bg-violet-500' },
-  { type: 'Process', count: 2340, color: 'bg-emerald-500' },
-  { type: 'System', count: 89, color: 'bg-amber-500' },
-  { type: 'KPI', count: 456, color: 'bg-pink-500' },
-  { type: 'Document', count: 12890, color: 'bg-cyan-500' },
-  { type: 'Risk', count: 234, color: 'bg-red-500' },
-  { type: 'Asset', count: 3325, color: 'bg-orange-500' },
-];
-
-const recentQueries = [
-  { query: 'Why is OTIF declining?', strategy: 'Graph + Vector', entities: 12, latency: '120ms', confidence: 0.89 },
-  { query: 'Who manages the Limpopo expansion?', strategy: 'Graph traversal', entities: 5, latency: '45ms', confidence: 0.95 },
-  { query: 'What are the risks for Q2 forex?', strategy: 'Vector search', entities: 8, latency: '85ms', confidence: 0.91 },
-  { query: 'Show invoice processing bottlenecks', strategy: 'Graph + Vector', entities: 15, latency: '150ms', confidence: 0.87 },
-];
+const entityColors: Record<string, string> = {
+  Organisation: 'bg-indigo-500', Department: 'bg-blue-500', Person: 'bg-violet-500',
+  Process: 'bg-emerald-500', System: 'bg-amber-500', KPI: 'bg-pink-500',
+  Document: 'bg-cyan-500', Risk: 'bg-red-500', Asset: 'bg-orange-500',
+};
 
 const industryTemplates = [
   { name: 'FMCG Graph Template', entities: 'SKU, Retailer, Distributor, Promotion, Route, Shelf', status: 'active' },
@@ -36,6 +19,40 @@ const industryTemplates = [
 ];
 
 export function MemoryPage() {
+  const [stats, setStats] = useState<GraphStats | null>(null);
+  const [entities, setEntities] = useState<GraphEntity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [s, e] = await Promise.allSettled([
+        api.memory.stats(), api.memory.entities(),
+      ]);
+      if (s.status === 'fulfilled') setStats(s.value);
+      if (e.status === 'fulfilled') setEntities(e.value.entities);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
+
+  const entityTypes = stats?.entityTypes || [];
+  const maxCount = entityTypes.length > 0 ? Math.max(...entityTypes.map(e => e.count)) : 1;
+  const graphStats = [
+    { label: 'Total Entities', value: stats?.entities?.toLocaleString() || '0', change: `${entityTypes.length} types` },
+    { label: 'Relationships', value: stats?.relationships?.toLocaleString() || '0', change: `${stats?.relationshipTypes?.length || 0} types` },
+    { label: 'Entity Types', value: String(entityTypes.length), change: 'Indexed' },
+    { label: 'Recent Entities', value: String(entities.length), change: 'loaded' },
+  ];
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
@@ -68,12 +85,12 @@ export function MemoryPage() {
           <div className="space-y-3">
             {entityTypes.map((entity) => (
               <div key={entity.type} className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${entity.color} flex-shrink-0`} />
+                <div className={`w-3 h-3 rounded-full ${entityColors[entity.type] || 'bg-neutral-500'} flex-shrink-0`} />
                 <span className="text-sm text-neutral-300 w-28">{entity.type}</span>
                 <div className="flex-1">
                   <Progress
                     value={entity.count}
-                    max={Math.max(...entityTypes.map(e => e.count))}
+                    max={maxCount}
                     color="indigo"
                     size="sm"
                   />
@@ -87,19 +104,18 @@ export function MemoryPage() {
         {/* RAG Pipeline */}
         <Card>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-pink-400" /> RAG Pipeline - Recent Queries
+            <Search className="w-4 h-4 text-pink-400" /> Recent Entities
           </h3>
           <div className="space-y-3">
-            {recentQueries.map((q, i) => (
-              <div key={i} className="p-3 rounded-lg bg-neutral-800/40 border border-neutral-800/50">
+            {entities.slice(0, 6).map((entity) => (
+              <div key={entity.id} className="p-3 rounded-lg bg-neutral-800/40 border border-neutral-800/50">
                 <div className="flex items-start justify-between">
-                  <p className="text-sm text-neutral-200 font-medium">"{q.query}"</p>
-                  <Badge variant="info" size="sm">{Math.round(q.confidence * 100)}%</Badge>
+                  <p className="text-sm text-neutral-200 font-medium">{entity.name}</p>
+                  <Badge variant="info" size="sm">{Math.round(entity.confidence * 100)}%</Badge>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-[10px] text-neutral-600">
-                  <span>Strategy: {q.strategy}</span>
-                  <span>{q.entities} entities</span>
-                  <span>{q.latency}</span>
+                  <span>Type: {entity.type}</span>
+                  <span>Source: {entity.source}</span>
                 </div>
               </div>
             ))}

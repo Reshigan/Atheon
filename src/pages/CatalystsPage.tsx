@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { catalystClusters, catalystActions } from "@/data/mockData";
-import { Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { api } from "@/lib/api";
+import type { ClusterItem, ActionItem, GovernanceData } from "@/lib/api";
+import { Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import type { AutonomyTier } from "@/types";
 
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
@@ -25,12 +26,38 @@ const statusIcon = (status: string) => {
 export function CatalystsPage() {
   const { activeTab, setActiveTab } = useTabState('clusters');
   const [expandedAction, setExpandedAction] = useState<string | null>(null);
+  const [clusters, setClusters] = useState<ClusterItem[]>([]);
+  const [actions, setActions] = useState<ActionItem[]>([]);
+  const [_governance, setGovernance] = useState<GovernanceData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const [c, a, g] = await Promise.allSettled([
+        api.catalysts.clusters(), api.catalysts.actions(), api.catalysts.governance(),
+      ]);
+      if (c.status === 'fulfilled') setClusters(c.value.clusters);
+      if (a.status === 'fulfilled') setActions(a.value.actions);
+      if (g.status === 'fulfilled') setGovernance(g.value);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const tabs = [
     { id: 'clusters', label: 'Catalyst Clusters', icon: <Bot size={14} /> },
-    { id: 'actions', label: 'Action Log', icon: <Zap size={14} />, count: catalystActions.length },
+    { id: 'actions', label: 'Action Log', icon: <Zap size={14} />, count: actions.length },
     { id: 'governance', label: 'Governance', icon: <Shield size={14} /> },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -49,8 +76,8 @@ export function CatalystsPage() {
       {activeTab === 'clusters' && (
         <TabPanel>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {catalystClusters.map((cluster) => {
-              const tier = tierConfig[cluster.autonomyTier];
+            {clusters.map((cluster) => {
+              const tier = tierConfig[cluster.autonomyTier as AutonomyTier] || tierConfig['read-only'];
               const TierIcon = tier.icon;
               return (
                 <Card key={cluster.id} hover>
@@ -64,9 +91,9 @@ export function CatalystsPage() {
                         <div className="flex items-center gap-2 mt-0.5">
                           <TierIcon size={12} className={tier.color} />
                           <span className={`text-xs ${tier.color}`}>{tier.label}</span>
-                          {cluster.industry && (
-                            <Badge variant="outline" size="sm">{cluster.industry}</Badge>
-                          )}
+                              {cluster.domain && (
+                                <Badge variant="outline" size="sm">{cluster.domain}</Badge>
+                              )}
                         </div>
                       </div>
                     </div>
@@ -84,15 +111,15 @@ export function CatalystsPage() {
                     </div>
                     <div className="text-center p-2 rounded bg-neutral-800/40">
                       <span className="text-[10px] text-neutral-600">Agents</span>
-                      <p className="text-sm font-bold text-white">{cluster.activeAgents}</p>
+                      <p className="text-sm font-bold text-white">{cluster.agentCount}</p>
                     </div>
                     <div className="text-center p-2 rounded bg-neutral-800/40">
                       <span className="text-[10px] text-neutral-600">Completed</span>
                       <p className="text-sm font-bold text-white">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
                     </div>
                     <div className="text-center p-2 rounded bg-neutral-800/40">
-                      <span className="text-[10px] text-neutral-600">Accuracy</span>
-                      <p className="text-sm font-bold text-emerald-400">{cluster.accuracy}%</p>
+                      <span className="text-[10px] text-neutral-600">Success Rate</span>
+                      <p className="text-sm font-bold text-emerald-400">{cluster.successRate}%</p>
                     </div>
                   </div>
 
@@ -113,14 +140,14 @@ export function CatalystsPage() {
       {activeTab === 'actions' && (
         <TabPanel>
           <div className="space-y-3">
-            {catalystActions.map((action) => (
+            {actions.map((action) => (
               <Card key={action.id} hover onClick={() => setExpandedAction(expandedAction === action.id ? null : action.id)}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     {statusIcon(action.status)}
                     <div>
                       <h3 className="text-sm font-semibold text-white">{action.action}</h3>
-                      <p className="text-xs text-neutral-500">{action.clusterName}</p>
+                      <p className="text-xs text-neutral-500">{action.catalystName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -131,27 +158,13 @@ export function CatalystsPage() {
                     {expandedAction === action.id ? <ChevronUp size={14} className="text-neutral-500" /> : <ChevronDown size={14} className="text-neutral-500" />}
                   </div>
                 </div>
-                <p className="text-xs text-neutral-400 mt-1">{action.description}</p>
+                <p className="text-xs text-neutral-400 mt-1">{action.reasoning || ''}</p>
 
                 {expandedAction === action.id && (
                   <div className="mt-4 space-y-3 animate-fadeIn">
                     <div className="p-3 rounded-lg bg-neutral-800/40">
                       <h4 className="text-xs font-semibold text-neutral-300 mb-1">Reasoning Chain</h4>
-                      <p className="text-xs text-neutral-400">{action.reasoning}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-lg bg-neutral-800/40">
-                        <h4 className="text-xs font-semibold text-neutral-300 mb-1">Data Sources</h4>
-                        {action.dataSources.map((src, i) => (
-                          <p key={i} className="text-xs text-neutral-400">{src}</p>
-                        ))}
-                      </div>
-                      <div className="p-3 rounded-lg bg-neutral-800/40">
-                        <h4 className="text-xs font-semibold text-neutral-300 mb-1">LOB System Calls</h4>
-                        {action.lobCalls.map((call, i) => (
-                          <p key={i} className="text-xs text-neutral-400 font-mono">{call}</p>
-                        ))}
-                      </div>
+                      <p className="text-xs text-neutral-400">{action.reasoning || 'No reasoning provided'}</p>
                     </div>
                     {action.status === 'pending' && (
                       <div className="flex gap-2">
@@ -177,7 +190,7 @@ export function CatalystsPage() {
               <div className="space-y-3">
                 {Object.entries(tierConfig).map(([key, config]) => {
                   const Icon = config.icon;
-                  const count = catalystClusters.filter(c => c.autonomyTier === key).length;
+                  const count = clusters.filter(c => c.autonomyTier === key).length;
                   return (
                     <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-neutral-800/40">
                       <div className="flex items-center gap-2">
@@ -196,7 +209,7 @@ export function CatalystsPage() {
                 <Shield className="w-4 h-4 text-indigo-400" /> Trust Scores
               </h3>
               <div className="space-y-3">
-                {catalystClusters.slice(0, 5).map((cluster) => (
+                {clusters.slice(0, 5).map((cluster) => (
                   <div key={cluster.id} className="flex items-center justify-between">
                     <span className="text-sm text-neutral-300 truncate">{cluster.name}</span>
                     <div className="flex items-center gap-2">

@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { canonicalEndpoints } from "@/data/tenantData";
-import { Code, Layers, ArrowRight, Globe, BookOpen } from "lucide-react";
+import { api } from "@/lib/api";
+import type { CanonicalEndpoint } from "@/lib/api";
+import { Code, Layers, ArrowRight, Globe, BookOpen, Loader2 } from "lucide-react";
 
 const methodColor: Record<string, string> = {
   GET: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
@@ -24,14 +26,36 @@ const domainColor: Record<string, string> = {
 
 export function CanonicalApiPage() {
   const { activeTab, setActiveTab } = useTabState('endpoints');
+  const [endpoints, setEndpoints] = useState<CanonicalEndpoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await api.erp.canonical();
+        setEndpoints(data.endpoints);
+      } catch { /* ignore */ }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
+
+  const domains = [...new Set(endpoints.map(e => e.domain))];
 
   const tabs = [
-    { id: 'endpoints', label: 'API Endpoints', icon: <Code size={14} />, count: canonicalEndpoints.length },
+    { id: 'endpoints', label: 'API Endpoints', icon: <Code size={14} />, count: endpoints.length },
     { id: 'schema', label: 'Data Model', icon: <Layers size={14} /> },
     { id: 'docs', label: 'Documentation', icon: <BookOpen size={14} /> },
   ];
-
-  const domains = [...new Set(canonicalEndpoints.map(e => e.domain))];
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -49,7 +73,7 @@ export function CanonicalApiPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-neutral-500">Endpoints</span>
-          <p className="text-2xl font-bold text-white mt-1">{canonicalEndpoints.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{endpoints.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Domains</span>
@@ -57,7 +81,7 @@ export function CanonicalApiPage() {
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Active</span>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{canonicalEndpoints.filter(e => e.status === 'active').length}</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{endpoints.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-neutral-500">Version</span>
@@ -70,28 +94,22 @@ export function CanonicalApiPage() {
       {activeTab === 'endpoints' && (
         <TabPanel>
           <div className="space-y-3">
-            {canonicalEndpoints.map((ep) => (
+            {endpoints.map((ep) => (
               <Card key={ep.id} hover>
                 <div className="flex items-start gap-4">
-                  <span className={`px-2.5 py-1 rounded text-xs font-bold border ${methodColor[ep.method]}`}>
+                  <span className={`px-2.5 py-1 rounded text-xs font-bold border ${methodColor[ep.method] || ''}`}>
                     {ep.method}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-white">{ep.name}</h3>
-                      <Badge variant={ep.status === 'active' ? 'success' : ep.status === 'beta' ? 'warning' : 'default'} size="sm">{ep.status}</Badge>
+                      <h3 className="text-sm font-semibold text-white">{ep.description || ep.path}</h3>
                     </div>
                     <p className="text-xs font-mono text-indigo-400 mt-0.5">{ep.path}</p>
                     <p className="text-xs text-neutral-500 mt-1">{ep.description}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-neutral-400'}`}>{ep.domain}</span>
                       <span className="text-[10px] text-neutral-600">v{ep.version}</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-neutral-600">Supported:</span>
-                        {ep.supportedERPs.map((erp) => (
-                          <Badge key={erp} variant="outline" size="sm">{erp}</Badge>
-                        ))}
-                      </div>
+                      <span className="text-[10px] text-neutral-600">Rate limit: {ep.rateLimit}/min</span>
                     </div>
                   </div>
                 </div>
