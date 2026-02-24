@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
-  running: { icon: CheckCircle, color: 'text-emerald-400', label: 'Running' },
-  deploying: { icon: RefreshCw, color: 'text-blue-400', label: 'Deploying' },
-  stopped: { icon: Square, color: 'text-neutral-500', label: 'Stopped' },
-  error: { icon: XCircle, color: 'text-red-400', label: 'Error' },
-  pending: { icon: Activity, color: 'text-amber-400', label: 'Pending' },
+  running: { icon: CheckCircle, color: 'text-emerald-600', label: 'Running' },
+  deploying: { icon: RefreshCw, color: 'text-blue-600', label: 'Deploying' },
+  stopped: { icon: Square, color: 'text-gray-400', label: 'Stopped' },
+  error: { icon: XCircle, color: 'text-red-600', label: 'Error' },
+  pending: { icon: Activity, color: 'text-amber-600', label: 'Pending' },
 };
 
 interface DeploymentConfig {
@@ -72,7 +72,7 @@ export function ControlPlanePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
       </div>
     );
   }
@@ -85,8 +85,8 @@ export function ControlPlanePage() {
             <Cpu className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Agent Control Plane</h1>
-            <p className="text-sm text-neutral-400">Deploy, manage, and monitor Catalyst agents per tenant</p>
+            <h1 className="text-2xl font-bold text-gray-900">Agent Control Plane</h1>
+            <p className="text-sm text-gray-500">Deploy, manage, and monitor Catalyst agents per tenant</p>
           </div>
         </div>
         <Button variant="primary" size="sm"><Plus size={14} /> Deploy Agent</Button>
@@ -95,23 +95,23 @@ export function ControlPlanePage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs text-neutral-500">Total Deployments</span>
-          <p className="text-2xl font-bold text-white mt-1">{deployments.length}</p>
-          <span className="text-xs text-emerald-400">{computed.running} running</span>
+          <span className="text-xs text-gray-400">Total Deployments</span>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{deployments.length}</p>
+          <span className="text-xs text-emerald-600">{computed.running} running</span>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">Total Replicas</span>
-          <p className="text-2xl font-bold text-white mt-1">{computed.totalReplicas}</p>
+          <span className="text-xs text-gray-400">Total Replicas</span>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{computed.totalReplicas}</p>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">Avg Uptime</span>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">
+          <span className="text-xs text-gray-400">Avg Uptime</span>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">
             {computed.avgUptime.toFixed(2)}%
           </p>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">Avg Health</span>
-          <p className="text-2xl font-bold text-white mt-1">
+          <span className="text-xs text-gray-400">Avg Health</span>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
             {Math.round(computed.avgHealth)}%
           </p>
         </Card>
@@ -136,9 +136,9 @@ export function ControlPlanePage() {
                     <Bot className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-white">{dep.name || dep.clusterName || dep.id}</h3>
+                    <h3 className="text-base font-semibold text-gray-900">{dep.name || dep.clusterName || dep.id}</h3>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-neutral-400">{dep.tenantName || dep.tenantId}</span>
+                      <span className="text-xs text-gray-500">{dep.tenantName || dep.tenantId}</span>
                       <Badge variant={dep.deploymentModel === 'saas' ? 'info' : dep.deploymentModel === 'on-premise' ? 'warning' : 'default'} size="sm">
                         {dep.deploymentModel === 'saas' && <Cloud size={10} className="mr-1" />}
                         {dep.deploymentModel === 'on-premise' && <Server size={10} className="mr-1" />}
@@ -155,31 +155,31 @@ export function ControlPlanePage() {
                     <span className={`text-sm font-medium ${sConfig.color}`}>{sConfig.label}</span>
                   </div>
                   <Badge variant={healthVariant(dep.healthScore)} size="sm">{dep.healthScore}%</Badge>
-                  {expandedDep === dep.id ? <ChevronUp size={14} className="text-neutral-500" /> : <ChevronDown size={14} className="text-neutral-500" />}
+                  {expandedDep === dep.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                 </div>
               </div>
 
               {/* Quick Metrics */}
               <div className="grid grid-cols-5 gap-3 mt-4">
-                <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Replicas</span>
-                  <p className="text-sm font-bold text-white">{replicas}</p>
+                <div className="text-center p-2 rounded bg-gray-100">
+                  <span className="text-[10px] text-gray-400">Replicas</span>
+                  <p className="text-sm font-bold text-gray-900">{replicas}</p>
                 </div>
-                <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Uptime</span>
-                  <p className="text-sm font-bold text-emerald-400">{dep.uptime.toFixed(1)}%</p>
+                <div className="text-center p-2 rounded bg-gray-100">
+                  <span className="text-[10px] text-gray-400">Uptime</span>
+                  <p className="text-sm font-bold text-emerald-600">{dep.uptime.toFixed(1)}%</p>
                 </div>
-                <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Version</span>
-                  <p className="text-sm font-bold text-white">{dep.version}</p>
+                <div className="text-center p-2 rounded bg-gray-100">
+                  <span className="text-[10px] text-gray-400">Version</span>
+                  <p className="text-sm font-bold text-gray-900">{dep.version}</p>
                 </div>
-                <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Tasks</span>
-                  <p className="text-sm font-bold text-white">{dep.tasksExecuted.toLocaleString()}</p>
+                <div className="text-center p-2 rounded bg-gray-100">
+                  <span className="text-[10px] text-gray-400">Tasks</span>
+                  <p className="text-sm font-bold text-gray-900">{dep.tasksExecuted.toLocaleString()}</p>
                 </div>
-                <div className="text-center p-2 rounded bg-neutral-800/40">
-                  <span className="text-[10px] text-neutral-600">Heartbeat</span>
-                  <p className="text-sm font-bold text-white">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
+                <div className="text-center p-2 rounded bg-gray-100">
+                  <span className="text-[10px] text-gray-400">Heartbeat</span>
+                  <p className="text-sm font-bold text-gray-900">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
                 </div>
               </div>
 
@@ -187,44 +187,44 @@ export function ControlPlanePage() {
                 <div className="mt-4 space-y-4 animate-fadeIn">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Config */}
-                    <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800/50">
-                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Settings size={14} className="text-cyan-400" /> Configuration
                       </h4>
                       <div className="space-y-2 text-xs">
-                        <div className="flex justify-between"><span className="text-neutral-500">Replicas</span><span className="text-neutral-200">{replicas}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Max Concurrent Tasks</span><span className="text-neutral-200">{cfg.maxConcurrentTasks ?? 'N/A'}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Confidence Threshold</span><span className="text-neutral-200">{typeof cfg.confidenceThreshold === 'number' ? `${Math.round(cfg.confidenceThreshold * 100)}%` : 'N/A'}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Escalation Policy</span><Badge variant="outline" size="sm">{cfg.escalationPolicy ?? 'N/A'}</Badge></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">CPU / Memory</span><span className="text-neutral-200">{cfg.resourceLimits?.cpuMillicores ?? '?'}m / {cfg.resourceLimits?.memoryMb ?? '?'}MB</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Replicas</span><span className="text-gray-800">{replicas}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Max Concurrent Tasks</span><span className="text-gray-800">{cfg.maxConcurrentTasks ?? 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Confidence Threshold</span><span className="text-gray-800">{typeof cfg.confidenceThreshold === 'number' ? `${Math.round(cfg.confidenceThreshold * 100)}%` : 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Escalation Policy</span><Badge variant="outline" size="sm">{cfg.escalationPolicy ?? 'N/A'}</Badge></div>
+                        <div className="flex justify-between"><span className="text-gray-400">CPU / Memory</span><span className="text-gray-800">{cfg.resourceLimits?.cpuMillicores ?? '?'}m / {cfg.resourceLimits?.memoryMb ?? '?'}MB</span></div>
                       </div>
                     </div>
 
                     {/* Permissions */}
-                    <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800/50">
-                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-emerald-400" /> Action Permissions
+                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Shield size={14} className="text-emerald-600" /> Action Permissions
                       </h4>
                       <div className="space-y-2">
                         <div>
-                          <span className="text-[10px] text-neutral-600">Allowed Actions</span>
+                          <span className="text-[10px] text-gray-400">Allowed Actions</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {(Array.isArray(cfg.allowedActions) ? cfg.allowedActions : []).map((a: string) => (
                               <Badge key={a} variant="success" size="sm">{a}</Badge>
                             ))}
                             {(!cfg.allowedActions || (Array.isArray(cfg.allowedActions) && cfg.allowedActions.length === 0)) && (
-                              <span className="text-xs text-neutral-500">None</span>
+                              <span className="text-xs text-gray-400">None</span>
                             )}
                           </div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-neutral-600">Blocked Actions</span>
+                          <span className="text-[10px] text-gray-400">Blocked Actions</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {(Array.isArray(cfg.blockedActions) ? cfg.blockedActions : []).map((a: string) => (
                               <Badge key={a} variant="danger" size="sm">{a}</Badge>
                             ))}
                             {(!cfg.blockedActions || (Array.isArray(cfg.blockedActions) && cfg.blockedActions.length === 0)) && (
-                              <span className="text-xs text-neutral-500">None</span>
+                              <span className="text-xs text-gray-400">None</span>
                             )}
                           </div>
                         </div>

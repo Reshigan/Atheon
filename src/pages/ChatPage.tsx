@@ -55,11 +55,11 @@ export function ChatPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-indigo-400" />
+          <MessageSquare className="w-5 h-5 text-indigo-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Atheon Chat</h1>
-          <p className="text-sm text-neutral-400">Unified conversational interface across all intelligence layers</p>
+          <h1 className="text-2xl font-bold text-gray-900">Atheon Chat</h1>
+          <p className="text-sm text-gray-500">Unified conversational interface across all intelligence layers</p>
         </div>
       </div>
 
@@ -67,11 +67,11 @@ export function ChatPage() {
         {/* Sidebar - Thread List */}
         <div className="space-y-3">
           <Button variant="primary" size="sm" className="w-full" onClick={() => setMessages([])}><Plus size={14} /> New Thread</Button>
-          <Card hover className="border-indigo-500/30">
+          <Card hover className="border-indigo-200">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-medium text-white">Current Thread</h3>
-                <span className="text-[10px] text-neutral-500">{messages.length} messages</span>
+                <h3 className="text-sm font-medium text-gray-900">Current Thread</h3>
+                <span className="text-[10px] text-gray-400">{messages.length} messages</span>
               </div>
             </div>
           </Card>
@@ -83,27 +83,27 @@ export function ChatPage() {
             {/* Messages */}
             <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
               {messages.length === 0 && (
-                <div className="flex items-center justify-center h-40 text-neutral-500 text-sm">Ask Atheon anything to get started</div>
+                <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Ask Atheon anything to get started</div>
               )}
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                   {msg.role === 'assistant' && (
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-white" />
+                      <Sparkles className="w-4 h-4 text-gray-900" />
                     </div>
                   )}
                   <div className={`max-w-2xl rounded-xl p-4 ${
                     msg.role === 'user'
-                      ? 'bg-indigo-600/20 border border-indigo-500/20'
-                      : 'bg-neutral-800/40 border border-neutral-800/50'
+                      ? 'bg-indigo-600/20 border border-indigo-200'
+                      : 'bg-gray-100 border border-gray-200'
                   }`}>
-                    <div className="text-sm text-neutral-200 whitespace-pre-wrap leading-relaxed">
+                    <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                       {msg.content.split('\n').map((line, i) => {
                         if (line.startsWith('**') && line.endsWith('**')) {
-                          return <p key={i} className="font-semibold text-white mt-2 mb-1">{line.replace(/\*\*/g, '')}</p>;
+                          return <p key={i} className="font-semibold text-gray-900 mt-2 mb-1">{line.replace(/\*\*/g, '')}</p>;
                         }
                         if (line.startsWith('- ')) {
-                          return <p key={i} className="ml-3 text-neutral-300">{line}</p>;
+                          return <p key={i} className="ml-3 text-gray-600">{line}</p>;
                         }
                         return <p key={i} className={line === '' ? 'h-2' : ''}>{line}</p>;
                       })}
@@ -113,9 +113,9 @@ export function ChatPage() {
                     {msg.citations && msg.citations.length > 0 && (
                       <div className="mt-3 space-y-1.5">
                         {msg.citations.map((cit) => (
-                          <div key={cit.id} className="flex items-center gap-2 p-2 rounded bg-neutral-800/60 text-xs">
-                            <span className="text-indigo-400">📎</span>
-                            <span className="text-neutral-300">{cit.source}</span>
+                          <div key={cit.id} className="flex items-center gap-2 p-2 rounded bg-gray-100 text-xs">
+                            <span className="text-indigo-600">📎</span>
+                            <span className="text-gray-600">{cit.source}</span>
                             <Badge variant="info" size="sm">{Math.round(cit.confidence * 100)}%</Badge>
                           </div>
                         ))}
@@ -125,8 +125,8 @@ export function ChatPage() {
                     {msg.layer && <LayerBadge layer={msg.layer} className="mt-2" />}
                   </div>
                   {msg.role === 'user' && (
-                    <div className="w-8 h-8 rounded-lg bg-neutral-700 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-neutral-300" />
+                    <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-gray-600" />
                     </div>
                   )}
                 </div>
@@ -134,10 +134,10 @@ export function ChatPage() {
               {sending && (
                 <div className="flex gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    <Loader2 className="w-4 h-4 text-gray-900 animate-spin" />
                   </div>
-                  <div className="rounded-xl p-4 bg-neutral-800/40 border border-neutral-800/50">
-                    <span className="text-sm text-neutral-400">Thinking...</span>
+                  <div className="rounded-xl p-4 bg-gray-100 border border-gray-200">
+                    <span className="text-sm text-gray-500">Thinking...</span>
                   </div>
                 </div>
               )}
@@ -145,13 +145,13 @@ export function ChatPage() {
 
             {/* Suggested Queries */}
             <div className="mb-3">
-              <span className="text-[10px] text-neutral-600 uppercase tracking-wider mb-2 block">Suggested</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider mb-2 block">Suggested</span>
               <div className="flex flex-wrap gap-2">
                 {suggestedQueries.map((q, i) => (
                   <button
                     key={i}
                     onClick={() => setInput(q.text)}
-                    className="px-3 py-1.5 rounded-lg bg-neutral-800/40 border border-neutral-800/50 text-xs text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
+                    className="px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-600 hover:bg-gray-100 hover:border-gray-200 transition-all"
                   >
                     {q.text}
                   </button>
@@ -168,7 +168,7 @@ export function ChatPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask Atheon anything across your enterprise..."
-                  className="w-full px-4 py-3 rounded-xl bg-neutral-800/60 border border-neutral-700/50 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40 transition-all"
                 />
               </div>
               <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending}>

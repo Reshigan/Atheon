@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 
 const deploymentIcon = (model: string) => {
-  if (model === 'saas') return <Cloud size={14} className="text-blue-400" />;
-  if (model === 'on-premise') return <Server size={14} className="text-amber-400" />;
-  return <GitBranch size={14} className="text-violet-400" />;
+  if (model === 'saas') return <Cloud size={14} className="text-blue-600" />;
+  if (model === 'on-premise') return <Server size={14} className="text-amber-600" />;
+  return <GitBranch size={14} className="text-violet-600" />;
 };
 
 const deploymentColor = (model: string) => {
@@ -56,7 +56,7 @@ export function TenantsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
       </div>
     );
   }
@@ -65,12 +65,12 @@ export function TenantsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-indigo-400" />
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Client Access Layer</h1>
-            <p className="text-sm text-neutral-400">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
+            <h1 className="text-2xl font-bold text-gray-900">Client Access Layer</h1>
+            <p className="text-sm text-gray-500">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
           </div>
         </div>
         <Button variant="primary" size="sm"><Plus size={14} /> Onboard Tenant</Button>
@@ -79,24 +79,24 @@ export function TenantsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs text-neutral-500">Total Tenants</span>
-          <p className="text-2xl font-bold text-white mt-1">{tenants.length}</p>
-          <span className="text-xs text-emerald-400">{tenants.filter(t => t.status === 'active').length} active</span>
+          <span className="text-xs text-gray-400">Total Tenants</span>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{tenants.length}</p>
+          <span className="text-xs text-emerald-600">{tenants.filter(t => t.status === 'active').length} active</span>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">SaaS</span>
-          <p className="text-2xl font-bold text-blue-400 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
-          <span className="text-xs text-neutral-500">cloud-hosted</span>
+          <span className="text-xs text-gray-400">SaaS</span>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
+          <span className="text-xs text-gray-400">cloud-hosted</span>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">On-Premise</span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
-          <span className="text-xs text-neutral-500">self-hosted</span>
+          <span className="text-xs text-gray-400">On-Premise</span>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
+          <span className="text-xs text-gray-400">self-hosted</span>
         </Card>
         <Card>
-          <span className="text-xs text-neutral-500">Hybrid</span>
-          <p className="text-2xl font-bold text-violet-400 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
-          <span className="text-xs text-neutral-500">mixed deployment</span>
+          <span className="text-xs text-gray-400">Hybrid</span>
+          <p className="text-2xl font-bold text-violet-600 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
+          <span className="text-xs text-gray-400">mixed deployment</span>
         </Card>
       </div>
 
@@ -113,11 +113,11 @@ export function TenantsPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center text-lg font-bold text-indigo-300">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center text-lg font-bold text-indigo-500">
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-white">{tenant.name}</h3>
+                      <h3 className="text-base font-semibold text-gray-900">{tenant.name}</h3>
                       <div className="flex items-center gap-3 mt-1">
                         {deploymentIcon(tenant.deploymentModel)}
                         <Badge variant={deploymentColor(tenant.deploymentModel) as 'info' | 'warning' | 'default'} size="sm">
@@ -125,37 +125,37 @@ export function TenantsPage() {
                         </Badge>
                         <Badge variant="outline" size="sm">{tenant.plan}</Badge>
                         <Badge variant="outline" size="sm">{tenant.industry}</Badge>
-                        <span className="text-xs text-neutral-600">{tenant.region}</span>
+                        <span className="text-xs text-gray-400">{tenant.region}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {statusBadge(tenant.status)}
-                    {expandedTenant === tenant.id ? <ChevronUp size={14} className="text-neutral-500" /> : <ChevronDown size={14} className="text-neutral-500" />}
+                    {expandedTenant === tenant.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                   </div>
                 </div>
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-5 gap-3 mt-4">
-                  <div className="text-center p-2 rounded bg-neutral-800/40">
-                    <span className="text-[10px] text-neutral-600">Layers</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.layers.length}/5</p>
+                  <div className="text-center p-2 rounded bg-gray-100">
+                    <span className="text-[10px] text-gray-400">Layers</span>
+                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.layers.length}/5</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-neutral-800/40">
-                    <span className="text-[10px] text-neutral-600">Catalysts</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.catalystClusters.length}</p>
+                  <div className="text-center p-2 rounded bg-gray-100">
+                    <span className="text-[10px] text-gray-400">Catalysts</span>
+                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.catalystClusters.length}</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-neutral-800/40">
-                    <span className="text-[10px] text-neutral-600">Max Agents</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.maxAgents}</p>
+                  <div className="text-center p-2 rounded bg-gray-100">
+                    <span className="text-[10px] text-gray-400">Max Agents</span>
+                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.maxAgents}</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-neutral-800/40">
-                    <span className="text-[10px] text-neutral-600">Max Users</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.maxUsers}</p>
+                  <div className="text-center p-2 rounded bg-gray-100">
+                    <span className="text-[10px] text-gray-400">Max Users</span>
+                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.maxUsers}</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-neutral-800/40">
-                    <span className="text-[10px] text-neutral-600">Region</span>
-                    <p className="text-sm font-bold text-white">{tenant.region}</p>
+                  <div className="text-center p-2 rounded bg-gray-100">
+                    <span className="text-[10px] text-gray-400">Region</span>
+                    <p className="text-sm font-bold text-gray-900">{tenant.region}</p>
                   </div>
                 </div>
 
@@ -163,9 +163,9 @@ export function TenantsPage() {
                 {expandedTenant === tenant.id && (
                   <div className="mt-4 space-y-4 animate-fadeIn">
                     {/* Entitlements */}
-                    <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800/50">
-                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-indigo-400" /> Feature Entitlements
+                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Shield size={14} className="text-indigo-600" /> Feature Entitlements
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
                         {tenant.entitlements.features.map((f) => (
@@ -174,7 +174,7 @@ export function TenantsPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-4 mt-3">
                         <div>
-                          <span className="text-[10px] text-neutral-600">Autonomy Tiers</span>
+                          <span className="text-[10px] text-gray-400">Autonomy Tiers</span>
                           <div className="flex gap-1 mt-1">
                             {tenant.entitlements.autonomyTiers.map(t => (
                               <Badge key={t} variant="info" size="sm">{t}</Badge>
@@ -182,7 +182,7 @@ export function TenantsPage() {
                           </div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-neutral-600">LLM Tiers</span>
+                          <span className="text-[10px] text-gray-400">LLM Tiers</span>
                           <div className="flex gap-1 mt-1">
                             {tenant.entitlements.llmTiers.map(t => (
                               <Badge key={t} variant="info" size="sm">{t}</Badge>
@@ -190,15 +190,15 @@ export function TenantsPage() {
                           </div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-neutral-600">Flags</span>
+                          <span className="text-[10px] text-gray-400">Flags</span>
                           <div className="flex gap-2 mt-1 text-xs">
-                            <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-400' : 'text-neutral-600'}>
+                            <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-600' : 'text-gray-400'}>
                               {tenant.entitlements.ssoEnabled ? '✓' : '✗'} SSO
                             </span>
-                            <span className={tenant.entitlements.apiAccess ? 'text-emerald-400' : 'text-neutral-600'}>
+                            <span className={tenant.entitlements.apiAccess ? 'text-emerald-600' : 'text-gray-400'}>
                               {tenant.entitlements.apiAccess ? '✓' : '✗'} API
                             </span>
-                            <span className={tenant.entitlements.customBranding ? 'text-emerald-400' : 'text-neutral-600'}>
+                            <span className={tenant.entitlements.customBranding ? 'text-emerald-600' : 'text-gray-400'}>
                               {tenant.entitlements.customBranding ? '✓' : '✗'} Branding
                             </span>
                           </div>
@@ -207,22 +207,22 @@ export function TenantsPage() {
                     </div>
 
                     {/* Infrastructure */}
-                    <div className="p-4 rounded-lg bg-neutral-800/30 border border-neutral-800/50">
-                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                        <Server size={14} className="text-amber-400" /> Infrastructure
+                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Server size={14} className="text-amber-600" /> Infrastructure
                       </h4>
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="p-3 rounded bg-neutral-800/40">
-                          <span className="text-[10px] text-neutral-600">Deployment</span>
-                          <p className="text-sm font-medium text-neutral-200">{tenant.deploymentModel}</p>
+                        <div className="p-3 rounded bg-gray-100">
+                          <span className="text-[10px] text-gray-400">Deployment</span>
+                          <p className="text-sm font-medium text-gray-800">{tenant.deploymentModel}</p>
                         </div>
-                        <div className="p-3 rounded bg-neutral-800/40">
-                          <span className="text-[10px] text-neutral-600">Plan</span>
-                          <p className="text-sm font-medium text-neutral-200">{tenant.plan}</p>
+                        <div className="p-3 rounded bg-gray-100">
+                          <span className="text-[10px] text-gray-400">Plan</span>
+                          <p className="text-sm font-medium text-gray-800">{tenant.plan}</p>
                         </div>
-                        <div className="p-3 rounded bg-neutral-800/40">
-                          <span className="text-[10px] text-neutral-600">Region</span>
-                          <p className="text-sm font-medium text-neutral-200">{tenant.region}</p>
+                        <div className="p-3 rounded bg-gray-100">
+                          <span className="text-[10px] text-gray-400">Region</span>
+                          <p className="text-sm font-medium text-gray-800">{tenant.region}</p>
                         </div>
                       </div>
                     </div>
@@ -243,18 +243,18 @@ export function TenantsPage() {
       {activeTab === 'entitlements' && (
         <TabPanel>
           <Card>
-            <h3 className="text-lg font-semibold text-white mb-4">Plan Comparison</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan Comparison</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-800">
-                    <th className="text-left py-3 text-neutral-500 font-medium">Feature</th>
-                    <th className="text-center py-3 text-neutral-500 font-medium">Starter</th>
-                    <th className="text-center py-3 text-neutral-500 font-medium">Professional</th>
-                    <th className="text-center py-3 text-neutral-500 font-medium">Enterprise</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 text-gray-400 font-medium">Feature</th>
+                    <th className="text-center py-3 text-gray-400 font-medium">Starter</th>
+                    <th className="text-center py-3 text-gray-400 font-medium">Professional</th>
+                    <th className="text-center py-3 text-gray-400 font-medium">Enterprise</th>
                   </tr>
                 </thead>
-                <tbody className="text-neutral-300">
+                <tbody className="text-gray-600">
                   {[
                     { feature: 'Atheon Layers', starter: '2', pro: '4', enterprise: '5 (all)' },
                     { feature: 'Catalyst Clusters', starter: '1', pro: '5', enterprise: 'Unlimited' },
@@ -271,11 +271,11 @@ export function TenantsPage() {
                     { feature: 'Process Mining', starter: '—', pro: 'Yes', enterprise: 'Yes' },
                     { feature: 'GraphRAG Memory', starter: '—', pro: 'Yes', enterprise: 'Yes + Templates' },
                   ].map((row) => (
-                    <tr key={row.feature} className="border-b border-neutral-800/50">
+                    <tr key={row.feature} className="border-b border-gray-200">
                       <td className="py-2.5 font-medium">{row.feature}</td>
-                      <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-neutral-700 mx-auto" /> : row.starter}</td>
-                      <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-neutral-700 mx-auto" /> : row.pro}</td>
-                      <td className="py-2.5 text-center text-indigo-300">{row.enterprise}</td>
+                      <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.starter}</td>
+                      <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.pro}</td>
+                      <td className="py-2.5 text-center text-indigo-500">{row.enterprise}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -294,17 +294,23 @@ export function TenantsPage() {
               { model: 'Hybrid', icon: GitBranch, color: 'violet', desc: 'Sensitive data on-premise, compute at the edge. Best of both worlds for regulated industries.', features: ['Edge compute + Local DB', 'Split data plane', 'Pinecone / Weaviate', 'Compliance-ready', 'Selective sync'] },
             ].map((infra) => {
               const Icon = infra.icon;
+              const colorMap: Record<string, { bg: string; text: string }> = {
+                blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+                amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+                violet: { bg: 'bg-violet-50', text: 'text-violet-600' },
+              };
+              const colors = colorMap[infra.color] || colorMap.blue;
               return (
                 <Card key={infra.model}>
-                  <div className={`w-10 h-10 rounded-lg bg-${infra.color}-500/15 flex items-center justify-center mb-3`}>
-                    <Icon className={`w-5 h-5 text-${infra.color}-400`} />
+                  <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center mb-3`}>
+                    <Icon className={`w-5 h-5 ${colors.text}`} />
                   </div>
-                  <h3 className="text-base font-semibold text-white">{infra.model}</h3>
-                  <p className="text-xs text-neutral-400 mt-1">{infra.desc}</p>
+                  <h3 className="text-base font-semibold text-gray-900">{infra.model}</h3>
+                  <p className="text-xs text-gray-500 mt-1">{infra.desc}</p>
                   <div className="mt-3 space-y-1.5">
                     {infra.features.map((f) => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-neutral-300">
-                        <CheckCircle size={12} className="text-emerald-400" />
+                      <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                        <CheckCircle size={12} className="text-emerald-600" />
                         {f}
                       </div>
                     ))}

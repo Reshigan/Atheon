@@ -4,6 +4,17 @@ import { executeTask, approveAction, rejectAction } from '../services/catalyst-e
 
 const catalysts = new Hono<AppBindings>();
 
+// Safe JSON parse that handles plain text strings
+function safeJsonParse(value: unknown): unknown {
+  if (!value || value === 'null') return null;
+  const str = String(value);
+  try {
+    return JSON.parse(str);
+  } catch {
+    return str;
+  }
+}
+
 // GET /api/catalysts/clusters?tenant_id=
 catalysts.get('/clusters', async (c) => {
   const tenantId = c.req.query('tenant_id') || 'vantax';
@@ -140,8 +151,8 @@ catalysts.get('/actions', async (c) => {
     action: a.action,
     status: a.status,
     confidence: a.confidence,
-    inputData: a.input_data ? JSON.parse(a.input_data as string) : null,
-    outputData: a.output_data ? JSON.parse(a.output_data as string) : null,
+    inputData: safeJsonParse(a.input_data as string),
+    outputData: safeJsonParse(a.output_data as string),
     reasoning: a.reasoning,
     approvedBy: a.approved_by,
     createdAt: a.created_at,
@@ -254,7 +265,7 @@ catalysts.get('/approvals', async (c) => {
       status: a.status,
       confidence: a.confidence,
       reasoning: a.reasoning,
-      inputData: a.input_data ? JSON.parse(a.input_data as string) : null,
+      inputData: safeJsonParse(a.input_data as string),
       createdAt: a.created_at,
     })),
     total: results.results.length,

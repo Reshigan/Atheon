@@ -9,10 +9,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<string, string> = {
   primary: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20',
-  secondary: 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700',
-  ghost: 'bg-transparent hover:bg-neutral-800/60 text-neutral-400 hover:text-neutral-200',
-  danger: 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30',
-  success: 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30',
+  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300',
+  ghost: 'bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-700',
+  danger: 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200',
+  success: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200',
 };
 
 const sizes: Record<string, string> = {

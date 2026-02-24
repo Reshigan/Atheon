@@ -88,17 +88,17 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Left - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-950 via-neutral-950 to-violet-950 flex-col justify-center items-center p-16 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-50 via-gray-50 to-violet-50 flex-col justify-center items-center p-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.15),transparent_70%)]" />
         <div className="relative z-10 text-center">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-indigo-500/30">
             <Sparkles className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-5xl font-bold text-gradient mb-4">Atheon</h1>
-          <p className="text-xl text-neutral-400 mb-2">Enterprise Intelligence Platform</p>
-          <p className="text-sm text-neutral-600 max-w-md">
+          <p className="text-xl text-gray-500 mb-2">Enterprise Intelligence Platform</p>
+          <p className="text-sm text-gray-400 max-w-md">
             Multi-tenant AI platform connecting executive intelligence, process monitoring,
             and autonomous execution across your enterprise.
           </p>
@@ -110,7 +110,7 @@ export function LoginPage() {
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.label} className="flex items-center gap-2 text-neutral-500">
+                <div key={item.label} className="flex items-center gap-2 text-gray-400">
                   <Icon size={16} />
                   <span className="text-xs">{item.label}</span>
                 </div>
@@ -131,15 +131,15 @@ export function LoginPage() {
             <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
           </div>
 
-          <h2 className="text-2xl font-bold text-white mb-1">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">
             {mode === 'register' ? 'Create your account' : 'Welcome back'}
           </h2>
-          <p className="text-sm text-neutral-500 mb-8">
+          <p className="text-sm text-gray-400 mb-8">
             {mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}
           </p>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -149,14 +149,14 @@ export function LoginPage() {
             <div className="space-y-3 mb-6">
               <button
                 onClick={() => handleSSO('azure')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900/60 border border-neutral-800/50 text-sm text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-200 transition-all"
               >
                 <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
                 Continue with Azure AD
               </button>
               <button
                 onClick={() => handleSSO('okta')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900/60 border border-neutral-800/50 text-sm text-neutral-300 hover:bg-neutral-800/60 hover:border-neutral-700/50 transition-all"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-200 transition-all"
               >
                 <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">O</div>
                 Continue with Okta
@@ -166,9 +166,9 @@ export function LoginPage() {
 
           {mode === 'login' && (
             <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px bg-neutral-800" />
-              <span className="text-xs text-neutral-600">or sign in with email</span>
-              <div className="flex-1 h-px bg-neutral-800" />
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-xs text-gray-400">or sign in with email</span>
+              <div className="flex-1 h-px bg-gray-100" />
             </div>
           )}
 
@@ -199,11 +199,11 @@ export function LoginPage() {
             />
             {mode === 'login' && (
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs text-neutral-400">
-                  <input type="checkbox" className="rounded bg-neutral-800 border-neutral-700" />
+                <label className="flex items-center gap-2 text-xs text-gray-500">
+                  <input type="checkbox" className="rounded bg-gray-100 border-gray-300" />
                   Remember me
                 </label>
-                <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
+                <a href="#" className="text-xs text-indigo-600 hover:text-indigo-500">Forgot password?</a>
               </div>
             )}
             <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
@@ -221,7 +221,7 @@ export function LoginPage() {
             <button
               onClick={handleDemoLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-all disabled:opacity-50"
             >
               <Sparkles size={14} />
               Try Demo (No account needed)
@@ -229,17 +229,17 @@ export function LoginPage() {
           </div>
 
           {/* Toggle mode */}
-          <p className="text-xs text-neutral-600 text-center mt-8">
+          <p className="text-xs text-gray-400 text-center mt-8">
             {mode === 'login' ? (
               <>Don't have an account?{' '}
-                <button onClick={() => { setMode('register'); setError(null); }} className="text-indigo-400 hover:text-indigo-300">
-                  Create one
+                <button onClick={() => { setMode('register'); setError(null); }}                className="text-indigo-600 hover:text-indigo-500">
+                                  Create one
                 </button>
               </>
             ) : (
               <>Already have an account?{' '}
-                <button onClick={() => { setMode('login'); setError(null); }} className="text-indigo-400 hover:text-indigo-300">
-                  Sign in
+                <button onClick={() => { setMode('login'); setError(null); }}                className="text-indigo-600 hover:text-indigo-500">
+                                  Sign in
                 </button>
               </>
             )}

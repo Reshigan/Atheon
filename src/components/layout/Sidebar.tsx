@@ -41,11 +41,11 @@ const navSections = [
 ];
 
 const layerColors: Record<string, string> = {
-  apex: 'text-amber-400',
-  pulse: 'text-emerald-400',
-  catalysts: 'text-blue-400',
-  mind: 'text-violet-400',
-  memory: 'text-pink-400',
+  apex: 'text-amber-600',
+  pulse: 'text-emerald-600',
+  catalysts: 'text-blue-600',
+  mind: 'text-violet-600',
+  memory: 'text-pink-600',
 };
 
 export function Sidebar() {
@@ -54,18 +54,18 @@ export function Sidebar() {
 
   return (
     <aside className={cn(
-      'fixed left-0 top-0 h-full z-40 flex flex-col border-r border-neutral-800/50 bg-neutral-950/95 backdrop-blur-xl transition-all duration-300',
+      'fixed left-0 top-0 h-full z-40 flex flex-col border-r border-gray-200 bg-white/95 backdrop-blur-xl transition-all duration-300',
       sidebarOpen ? 'w-64' : 'w-16'
     )}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-neutral-800/50">
+      <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-4 h-4 text-white" />
         </div>
         {sidebarOpen && (
           <div className="animate-fadeIn">
             <h1 className="text-lg font-bold text-gradient">Atheon</h1>
-            <p className="text-[10px] text-neutral-500 -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
+            <p className="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
           </div>
         )}
       </div>
@@ -75,9 +75,9 @@ export function Sidebar() {
         {navSections.map((section) => (
           <div key={section.title} className="mb-4">
             {sidebarOpen && (
-              <span className="block px-3 mb-1.5 text-[10px] font-semibold text-neutral-600 uppercase tracking-wider">{section.title}</span>
+              <span className="block px-3 mb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{section.title}</span>
             )}
-            {!sidebarOpen && <div className="h-px bg-neutral-800/50 mx-2 mb-2" />}
+            {!sidebarOpen && <div className="h-px bg-gray-200 mx-2 mb-2" />}
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive = location.pathname === item.path || 
@@ -92,17 +92,17 @@ export function Sidebar() {
                     className={cn(
                       'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group',
                       isActive
-                        ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/20'
-                        : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200 border border-transparent'
+                                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
                     )}
                     title={!sidebarOpen ? item.label : undefined}
                   >
-                    <Icon className={cn('flex-shrink-0', isActive ? 'text-indigo-400' : colorClass || 'text-neutral-500 group-hover:text-neutral-300')} size={18} />
+                    <Icon className={cn('flex-shrink-0', isActive ? 'text-indigo-600' : colorClass || 'text-gray-400 group-hover:text-gray-600')} size={18} />
                     {sidebarOpen && (
                       <div className="min-w-0 animate-fadeIn">
                         <span className="font-medium">{item.label}</span>
                         {item.sublabel && (
-                          <span className="block text-[10px] text-neutral-500 truncate">{item.sublabel}</span>
+                          <span className="block text-[10px] text-gray-400 truncate">{item.sublabel}</span>
                         )}
                       </div>
                     )}
@@ -115,10 +115,10 @@ export function Sidebar() {
       </nav>
 
       {/* Collapse button */}
-      <div className="border-t border-neutral-800/50 p-2">
+      <div className="border-t border-gray-200 p-2">
         <button
           onClick={toggleSidebar}
-          className="w-full flex items-center justify-center py-2 rounded-lg text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/60 transition-all"
+          className="w-full flex items-center justify-center py-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
         >
           {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
         </button>

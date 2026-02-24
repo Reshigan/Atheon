@@ -6,33 +6,33 @@
   :root {
     --radius: 0.625rem;
   }
-  * { @apply border-neutral-800; }
+  * { @apply border-gray-200; }
   body {
-    @apply bg-neutral-950 text-neutral-100;
+    @apply bg-gray-50 text-gray-900;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600;
   }
   .bg-glass {
-    @apply bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/50;
+    @apply bg-white/80 backdrop-blur-xl border border-gray-200/80;
   }
   .glow-indigo {
-    box-shadow: 0 0 20px rgba(99,102,241,0.15), 0 0 60px rgba(99,102,241,0.05);
+    box-shadow: 0 0 20px rgba(99,102,241,0.08), 0 0 60px rgba(99,102,241,0.03);
   }
   .glow-violet {
-    box-shadow: 0 0 20px rgba(139,92,246,0.15), 0 0 60px rgba(139,92,246,0.05);
+    box-shadow: 0 0 20px rgba(139,92,246,0.08), 0 0 60px rgba(139,92,246,0.03);
   }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(64 64 64) transparent;
+    scrollbar-color: rgb(209 213 219) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar { width: 6px; }
   .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgb(64 64 64); border-radius: 3px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgb(209 213 219); border-radius: 3px; }
 }
 
 @keyframes fadeIn {
