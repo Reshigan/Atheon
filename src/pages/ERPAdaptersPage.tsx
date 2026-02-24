@@ -49,7 +49,7 @@ export function ERPAdaptersPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center">
             <Plug className="w-5 h-5 text-teal-400" />
@@ -164,7 +164,7 @@ export function ERPAdaptersPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                   <div className="p-3 rounded bg-gray-100">
                     <span className="text-[10px] text-gray-400">Records Synced</span>
                     <p className="text-lg font-bold text-gray-900">{(conn.recordsSynced || 0).toLocaleString()}</p>

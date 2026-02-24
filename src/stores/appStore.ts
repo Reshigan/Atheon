@@ -5,10 +5,12 @@ interface AppState {
   user: User | null;
   currentLayer: AtheonLayer;
   sidebarOpen: boolean;
+  mobileSidebarOpen: boolean;
   industry: IndustryVertical;
   setUser: (user: User | null) => void;
   setCurrentLayer: (layer: AtheonLayer) => void;
   toggleSidebar: () => void;
+  setMobileSidebarOpen: (open: boolean) => void;
   setIndustry: (industry: IndustryVertical) => void;
 }
 
@@ -26,6 +28,8 @@ export const useAppStore = create<AppState>((set) => ({
   industry: 'general',
   setUser: (user) => set({ user }),
   setCurrentLayer: (layer) => set({ currentLayer: layer }),
+  mobileSidebarOpen: false,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+  setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
   setIndustry: (industry) => set({ industry }),
 }));

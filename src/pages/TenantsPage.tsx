@@ -63,7 +63,7 @@ export function TenantsPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
             <Building2 className="w-5 h-5 text-indigo-600" />
@@ -118,7 +118,7 @@ export function TenantsPage() {
                     </div>
                     <div>
                       <h3 className="text-base font-semibold text-gray-900">{tenant.name}</h3>
-                      <div className="flex items-center gap-3 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         {deploymentIcon(tenant.deploymentModel)}
                         <Badge variant={deploymentColor(tenant.deploymentModel) as 'info' | 'warning' | 'default'} size="sm">
                           {tenant.deploymentModel}
@@ -136,7 +136,7 @@ export function TenantsPage() {
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-5 gap-3 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
                   <div className="text-center p-2 rounded bg-gray-100">
                     <span className="text-[10px] text-gray-400">Layers</span>
                     <p className="text-sm font-bold text-gray-900">{tenant.entitlements.layers.length}/5</p>
@@ -172,7 +172,7 @@ export function TenantsPage() {
                           <Badge key={f} variant="outline" size="sm">{f}</Badge>
                         ))}
                       </div>
-                      <div className="grid grid-cols-3 gap-4 mt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                         <div>
                           <span className="text-[10px] text-gray-400">Autonomy Tiers</span>
                           <div className="flex gap-1 mt-1">
@@ -211,7 +211,7 @@ export function TenantsPage() {
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Server size={14} className="text-amber-600" /> Infrastructure
                       </h4>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="p-3 rounded bg-gray-100">
                           <span className="text-[10px] text-gray-400">Deployment</span>
                           <p className="text-sm font-medium text-gray-800">{tenant.deploymentModel}</p>

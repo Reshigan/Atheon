@@ -104,7 +104,7 @@ export function CatalystsPage() {
 
                   <p className="text-xs text-gray-400 mt-3">{cluster.description}</p>
 
-                  <div className="grid grid-cols-4 gap-3 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                     <div className="text-center p-2 rounded bg-gray-100">
                       <span className="text-[10px] text-gray-400">Trust Score</span>
                       <p className="text-sm font-bold text-gray-900">{cluster.trustScore}%</p>
