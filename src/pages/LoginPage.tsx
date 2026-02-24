@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/appStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight, Shield, Globe, Loader2, UserPlus } from "lucide-react";
+import { Sparkles, ArrowRight, Shield, Globe, Loader2, UserPlus, Building2, ChevronDown } from "lucide-react";
 import { api, setToken } from "@/lib/api";
 
 type AuthMode = 'login' | 'register' | 'demo';
@@ -52,20 +52,32 @@ export function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async () => {
+  const [showDemoSelector, setShowDemoSelector] = useState(false);
+
+  const demoCompanies = [
+    { slug: 'vantax', name: 'Vanta X (Platform Admin)', desc: 'Full platform admin access', icon: '🏢' },
+    { slug: 'protea', name: 'Protea Manufacturing', desc: 'SA manufacturing company with SAP data', icon: '🏭' },
+    { slug: 'acme-fmcg', name: 'Acme FMCG', desc: 'Fast-moving consumer goods', icon: '🛒' },
+    { slug: 'healthco', name: 'HealthCo', desc: 'Healthcare provider', icon: '🏥' },
+    { slug: 'deepmine', name: 'DeepMine Resources', desc: 'Mining operations', icon: '⛏️' },
+  ];
+
+  const handleDemoLogin = async (tenantSlug?: string) => {
     setLoading(true);
     setError(null);
+    setShowDemoSelector(false);
+    const slug = tenantSlug || 'protea';
     try {
-      const res = await api.auth.demoLogin('vantax', 'admin');
+      const res = await api.auth.demoLogin(slug, 'admin');
       handleAuthResult(res);
     } catch {
       // Fallback to local login if API is unavailable
       setUser({
         id: '1',
-        email: 'admin@vantax.co.za',
-        name: 'Reshigan',
+        email: `admin@${slug}.co.za`,
+        name: slug === 'vantax' ? 'Reshigan' : 'Demo User',
         role: 'admin',
-        tenantId: 'vantax',
+        tenantId: slug,
         permissions: ['*'],
       });
       navigate('/');
@@ -257,15 +269,43 @@ export function LoginPage() {
           )}
 
           {/* Demo Login */}
-          <div className="mt-4">
-            <button
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-all disabled:opacity-50"
-            >
-              <Sparkles size={14} />
-              Try Demo (No account needed)
-            </button>
+          <div className="mt-4 relative">
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleDemoLogin('protea')}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-all disabled:opacity-50"
+              >
+                <Sparkles size={14} />
+                Try Demo (Protea Mfg)
+              </button>
+              <button
+                onClick={() => setShowDemoSelector(!showDemoSelector)}
+                disabled={loading}
+                className="flex items-center gap-1 px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-all disabled:opacity-50"
+              >
+                <Building2 size={14} />
+                <ChevronDown size={12} />
+              </button>
+            </div>
+            {showDemoSelector && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                <p className="text-[10px] text-gray-400 px-4 pt-3 pb-1">Select a demo company</p>
+                {demoCompanies.map(co => (
+                  <button
+                    key={co.slug}
+                    onClick={() => handleDemoLogin(co.slug)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <span className="text-lg">{co.icon}</span>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{co.name}</p>
+                      <p className="text-[10px] text-gray-400">{co.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Toggle mode */}
