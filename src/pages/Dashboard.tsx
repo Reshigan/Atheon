@@ -86,58 +86,10 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Hero Section with 3D Logo */}
-      <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '180px' }}>
-        {/* Floating 3D Shape — glossy capsule/pill like reference */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div className="animate-float">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" fill="none" className="w-64 h-44 drop-shadow-2xl" style={{ filter: 'drop-shadow(0 20px 40px rgba(14,165,233,0.25))' }}>
-              <defs>
-                <linearGradient id="hero-pill-1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7dd3fc" />
-                  <stop offset="40%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#0ea5e9" />
-                </linearGradient>
-                <linearGradient id="hero-pill-2" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#67e8f9" />
-                  <stop offset="50%" stopColor="#22d3ee" />
-                  <stop offset="100%" stopColor="#06b6d4" />
-                </linearGradient>
-                <linearGradient id="hero-shine" x1="0%" y1="0%" x2="50%" y2="100%">
-                  <stop offset="0%" stopColor="white" stopOpacity="0.9" />
-                  <stop offset="50%" stopColor="white" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="white" stopOpacity="0" />
-                </linearGradient>
-                <filter id="hero-glow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-              </defs>
-              {/* Left capsule */}
-              <ellipse cx="120" cy="130" rx="45" ry="80" fill="url(#hero-pill-1)" transform="rotate(-35 120 130)" filter="url(#hero-glow)" />
-              {/* Right capsule */}
-              <ellipse cx="200" cy="120" rx="40" ry="75" fill="url(#hero-pill-2)" transform="rotate(25 200 120)" filter="url(#hero-glow)" />
-              {/* Glass shine on left capsule */}
-              <ellipse cx="105" cy="105" rx="18" ry="40" fill="url(#hero-shine)" transform="rotate(-35 105 105)" opacity="0.7" />
-              {/* Glass shine on right capsule */}
-              <ellipse cx="188" cy="95" rx="15" ry="35" fill="url(#hero-shine)" transform="rotate(25 188 95)" opacity="0.6" />
-              {/* Highlight dots */}
-              <circle cx="100" cy="82" r="6" fill="white" opacity="0.85" />
-              <circle cx="100" cy="82" r="10" fill="white" opacity="0.2" />
-              <circle cx="185" cy="78" r="5" fill="white" opacity="0.75" />
-              <circle cx="185" cy="78" r="8" fill="white" opacity="0.15" />
-              {/* Small scattered dots for depth */}
-              <circle cx="155" cy="160" r="3" fill="#7dd3fc" opacity="0.5" />
-              <circle cx="170" cy="70" r="2" fill="white" opacity="0.6" />
-              <circle cx="140" cy="90" r="2.5" fill="white" opacity="0.4" />
-            </svg>
-          </div>
-        </div>
-        {/* Page Header overlaying hero */}
-        <div className="relative z-20 p-6">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Today&apos;s Performance Summary</p>
-        </div>
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-1">Today&apos;s Performance Summary</p>
       </div>
 
       {/* Top KPI Row */}
