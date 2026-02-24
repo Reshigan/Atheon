@@ -244,6 +244,22 @@ export const api = {
     stats: (tenantId?: string) =>
       request<AuditStats>(`/api/audit/stats?tenant_id=${tenantId || 'vantax'}`),
   },
+
+  notifications: {
+    list: (opts?: { unread?: boolean; limit?: number }) => {
+      let url = '/api/notifications?';
+      if (opts?.unread) url += 'unread=true&';
+      if (opts?.limit) url += `limit=${opts.limit}&`;
+      return request<{ notifications: NotificationItem[]; total: number; unreadCount: number }>(url);
+    },
+    unreadCount: () =>
+      request<{ unreadCount: number }>('/api/notifications/unread-count'),
+    markRead: (ids: string[]) =>
+      request<{ success: boolean; marked: number }>('/api/notifications/read', {
+        method: 'PUT',
+        body: JSON.stringify({ ids }),
+      }),
+  },
 };
 
 // Types for API responses
@@ -645,4 +661,16 @@ export interface AuditStats {
   layerBreakdown: { layer: string; count: number }[];
   outcomeBreakdown: { outcome: string; count: number }[];
   recentActivity: { action: string; layer: string; outcome: string; created_at: string }[];
+}
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  actionUrl: string | null;
+  metadata: Record<string, unknown> | null;
+  read: boolean;
+  createdAt: string;
 }
