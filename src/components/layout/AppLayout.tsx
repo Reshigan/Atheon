@@ -8,7 +8,7 @@ import { api, getToken, setToken } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 export function AppLayout() {
-  const { sidebarOpen, user, setUser } = useAppStore();
+  const { user, setUser } = useAppStore();
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
 
@@ -44,8 +44,10 @@ export function AppLayout() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-glass-strong rounded-2xl p-8 glow-cyan">
+          <Loader2 className="w-8 h-8 text-cyan-600 animate-spin" />
+        </div>
       </div>
     );
   }
@@ -53,14 +55,13 @@ export function AppLayout() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Sidebar />
       <Header />
       <main
         className={cn(
           'pt-16 min-h-screen transition-all duration-300',
-          'pl-0 lg:pl-64',
-          !sidebarOpen && 'lg:pl-16'
+          'pl-0 lg:pl-16'
         )}
       >
         <div className="p-4 sm:p-6">

@@ -41,7 +41,7 @@ export function PulsePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -108,10 +108,10 @@ export function PulsePage() {
               <Card key={anom.id}>
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    anom.severity === 'critical' ? 'bg-red-50' : anom.severity === 'high' ? 'bg-amber-50' : 'bg-blue-50'
+                    anom.severity === 'critical' ? 'bg-red-50' : anom.severity === 'high' ? 'bg-amber-50' : 'bg-cyan-50'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      anom.severity === 'critical' ? 'text-red-600' : anom.severity === 'high' ? 'text-amber-600' : 'text-blue-600'
+                      anom.severity === 'critical' ? 'text-red-600' : anom.severity === 'high' ? 'text-amber-600' : 'text-cyan-600'
                     }`} />
                   </div>
                   <div className="flex-1">
@@ -123,15 +123,15 @@ export function PulsePage() {
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{anom.hypothesis}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-                      <div className="p-2 rounded bg-gray-100">
+                      <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Expected</span>
                         <p className="text-sm font-medium text-gray-600">{anom.expectedValue}</p>
                       </div>
-                      <div className="p-2 rounded bg-gray-100">
+                      <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Actual</span>
                         <p className="text-sm font-medium text-red-600">{anom.actualValue}</p>
                       </div>
-                      <div className="p-2 rounded bg-gray-100">
+                      <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Detected</span>
                         <p className="text-sm font-medium text-gray-600">{new Date(anom.detectedAt).toLocaleTimeString()}</p>
                       </div>
@@ -168,7 +168,7 @@ export function PulsePage() {
                       <div className={`p-3 rounded-lg border min-w-32 ${
                         step.status === 'bottleneck' ? 'bg-red-50 border-red-200' :
                         step.status === 'degraded' ? 'bg-amber-50 border-amber-200' :
-                        'bg-gray-100 border-gray-200'
+                        'bg-white/40 border-white/50 backdrop-blur-sm'
                       }`}>
                         <span className="text-sm font-medium text-gray-800">{step.name}</span>
                         <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
@@ -207,27 +207,27 @@ export function PulsePage() {
               <Card key={event.id}>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="p-2 rounded-lg bg-blue-50 text-center min-w-20">
-                      <span className="text-xs text-blue-600 font-medium">{event.sourceSystem}</span>
+                    <div className="p-2 rounded-lg bg-cyan-50 text-center min-w-20">
+                      <span className="text-xs text-cyan-600 font-medium">{event.sourceSystem}</span>
                     </div>
                     <div className="flex-1 relative">
-                      <div className="h-px bg-gradient-to-r from-blue-500/50 to-blue-400/50" />
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white border border-gray-300 text-[10px] text-gray-500">
+                      <div className="h-px bg-gradient-to-r from-cyan-500/40 to-blue-500/30" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white/70 border border-white/50 backdrop-blur-sm text-[10px] text-gray-500">
                         {event.lagDays}d lag
                       </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-blue-50 text-center min-w-20">
-                      <span className="text-xs text-blue-600 font-medium">{event.targetSystem}</span>
+                    <div className="p-2 rounded-lg bg-cyan-50 text-center min-w-20">
+                      <span className="text-xs text-cyan-600 font-medium">{event.targetSystem}</span>
                     </div>
                   </div>
                   <Badge variant="info">{Math.round(event.confidence * 100)}%</Badge>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div className="p-2 rounded bg-gray-100">
+                  <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
                     <span className="text-[10px] text-gray-400">Source Event</span>
                     <p className="text-sm text-gray-600">{event.sourceEvent}</p>
                   </div>
-                  <div className="p-2 rounded bg-gray-100">
+                  <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
                     <span className="text-[10px] text-gray-400">Target Impact</span>
                     <p className="text-sm text-gray-600">{event.targetImpact}</p>
                   </div>

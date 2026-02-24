@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 
 const deploymentIcon = (model: string) => {
-  if (model === 'saas') return <Cloud size={14} className="text-blue-600" />;
+  if (model === 'saas') return <Cloud size={14} className="text-cyan-600" />;
   if (model === 'on-premise') return <Server size={14} className="text-amber-600" />;
-  return <GitBranch size={14} className="text-blue-600" />;
+  return <GitBranch size={14} className="text-cyan-600" />;
 };
 
 const deploymentColor = (model: string) => {
@@ -72,7 +72,7 @@ export function TenantsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -81,8 +81,8 @@ export function TenantsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-blue-600" />
+          <div className="          w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-cyan-600"/>
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Client Access Layer</h1>
@@ -127,7 +127,7 @@ export function TenantsPage() {
         </Card>
         <Card>
           <span className="text-xs text-gray-400">SaaS</span>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
+          <p className="text-2xl font-bold text-cyan-600 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
           <span className="text-xs text-gray-400">cloud-hosted</span>
         </Card>
         <Card>
@@ -137,7 +137,7 @@ export function TenantsPage() {
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Hybrid</span>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
+          <p className="text-2xl font-bold text-cyan-600 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
           <span className="text-xs text-gray-400">mixed deployment</span>
         </Card>
       </div>
@@ -155,7 +155,7 @@ export function TenantsPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 flex items-center justify-center text-lg font-bold text-blue-600">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-400/20 flex items-center justify-center text-lg font-bold text-cyan-600">
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
@@ -207,7 +207,7 @@ export function TenantsPage() {
                     {/* Entitlements */}
                     <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-blue-600" /> Feature Entitlements
+                        <Shield size={14} className="text-cyan-600" /> Feature Entitlements
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
                         {tenant.entitlements.features.map((f) => (
@@ -317,7 +317,7 @@ export function TenantsPage() {
                       <td className="py-2.5 font-medium">{row.feature}</td>
                       <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.starter}</td>
                       <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.pro}</td>
-                      <td className="py-2.5 text-center text-blue-600">{row.enterprise}</td>
+                      <td className="py-2.5 text-center text-cyan-600">{row.enterprise}</td>
                     </tr>
                   ))}
                 </tbody>

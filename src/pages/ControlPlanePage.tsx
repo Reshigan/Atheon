@@ -12,7 +12,7 @@ import {
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
   running: { icon: CheckCircle, color: 'text-emerald-600', label: 'Running' },
-  deploying: { icon: RefreshCw, color: 'text-blue-600', label: 'Deploying' },
+  deploying: { icon: RefreshCw, color: 'text-cyan-600', label: 'Deploying' },
   stopped: { icon: Square, color: 'text-gray-400', label: 'Stopped' },
   error: { icon: XCircle, color: 'text-red-600', label: 'Error' },
   pending: { icon: Activity, color: 'text-amber-600', label: 'Pending' },
@@ -146,7 +146,7 @@ export function ControlPlanePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -335,24 +335,24 @@ export function ControlPlanePage() {
 
               {/* Quick Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-                <div className="text-center p-2 rounded bg-gray-100">
-                  <span className="text-[10px] text-gray-400">Replicas</span>
+                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                  <span className="text-[10px] text-gray-400">Replicas</span>
                   <p className="text-sm font-bold text-gray-900">{replicas}</p>
                 </div>
-                <div className="text-center p-2 rounded bg-gray-100">
-                  <span className="text-[10px] text-gray-400">Uptime</span>
+                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                  <span className="text-[10px] text-gray-400">Uptime</span>
                   <p className="text-sm font-bold text-emerald-600">{dep.uptime.toFixed(1)}%</p>
                 </div>
-                <div className="text-center p-2 rounded bg-gray-100">
-                  <span className="text-[10px] text-gray-400">Version</span>
+                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                  <span className="text-[10px] text-gray-400">Version</span>
                   <p className="text-sm font-bold text-gray-900">{dep.version}</p>
                 </div>
-                <div className="text-center p-2 rounded bg-gray-100">
-                  <span className="text-[10px] text-gray-400">Tasks</span>
+                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                  <span className="text-[10px] text-gray-400">Tasks</span>
                   <p className="text-sm font-bold text-gray-900">{dep.tasksExecuted.toLocaleString()}</p>
                 </div>
-                <div className="text-center p-2 rounded bg-gray-100">
-                  <span className="text-[10px] text-gray-400">Heartbeat</span>
+                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                  <span className="text-[10px] text-gray-400">Heartbeat</span>
                   <p className="text-sm font-bold text-gray-900">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
                 </div>
               </div>
@@ -361,9 +361,9 @@ export function ControlPlanePage() {
                 <div className="mt-4 space-y-4 animate-fadeIn">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Config */}
-                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Settings size={14} className="text-cyan-400" /> Configuration
+                    <div className="                    p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            <Settings size={14} className="text-cyan-600" /> Configuration
                       </h4>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between"><span className="text-gray-400">Replicas</span><span className="text-gray-800">{replicas}</span></div>
@@ -375,9 +375,9 @@ export function ControlPlanePage() {
                     </div>
 
                     {/* Permissions */}
-                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-emerald-600" /> Action Permissions
+                    <div className="                    p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            <Shield size={14} className="text-emerald-600" /> Action Permissions
                       </h4>
                       <div className="space-y-2">
                         <div>

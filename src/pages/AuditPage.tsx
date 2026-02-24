@@ -29,7 +29,7 @@ export function AuditPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -38,8 +38,8 @@ export function AuditPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-gray-500" />
+          <div className="          w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-cyan-600"/>
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
@@ -67,7 +67,7 @@ export function AuditPage() {
           </Button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-cyan-50 border-cyan-200 text-cyan-600' : 'bg-white/40 border-white/50 text-gray-600 hover:bg-white/60'}`}
           >
             <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
           </button>
@@ -76,7 +76,7 @@ export function AuditPage() {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
+        <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-white/40 border border-white/50 backdrop-blur-sm">
           <div>
             <label className="text-xs text-gray-500 block mb-1">Layer</label>
             <select className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
@@ -101,7 +101,7 @@ export function AuditPage() {
             </select>
           </div>
           {(filterLayer || filterOutcome) && (
-            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-blue-600 hover:text-blue-500 pb-1.5">Clear filters</button>
+            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-cyan-600 hover:text-cyan-500 pb-1.5">Clear filters</button>
           )}
         </div>
       )}
@@ -141,7 +141,7 @@ export function AuditPage() {
             </thead>
             <tbody>
               {entries.filter(e => (!filterLayer || e.layer === filterLayer) && (!filterOutcome || e.outcome === filterOutcome)).map((entry) => (
-                <tr key={entry.id} className="border-b border-gray-200 hover:bg-gray-100/20 transition-colors">
+                <tr key={entry.id} className="border-b border-gray-200 hover:bg-white/30 transition-colors">
                   <td className="py-3 px-4 text-xs text-gray-500 font-mono whitespace-nowrap">
                     {new Date(entry.createdAt).toLocaleString()}
                   </td>

@@ -85,7 +85,7 @@ export function ApexPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -168,11 +168,11 @@ export function ApexPage() {
               {/* KPI Movements */}
               <Card>
                 <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600" /> KPI Movements
+                  <TrendingUp className="w-4 h-4 text-cyan-600" /> KPI Movements
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.kpiMovements || []).map((kpi) => (
-                    <div key={kpi.kpi} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
+                    <div key={kpi.kpi} className="flex items-center justify-between py-2 border-b border-white/40 last:border-0">
                       <span className="text-sm text-gray-600">{kpi.kpi}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900">{kpi.movement}</span>
@@ -190,7 +190,7 @@ export function ApexPage() {
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.risks || []).map((risk, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-gray-100">
+                    <div key={i} className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-sm font-medium text-gray-800">{risk}</h4>
                         <Badge variant="warning" size="sm">risk</Badge>
@@ -207,7 +207,7 @@ export function ApexPage() {
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.opportunities || []).map((opp, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-gray-100">
+                    <div key={i} className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-sm font-medium text-gray-800">{opp}</h4>
                         <Badge variant="success" size="sm">opportunity</Badge>
@@ -220,13 +220,13 @@ export function ApexPage() {
 
             {/* Required Decisions */}
             {(briefing?.decisionsNeeded || []).length > 0 && (
-              <Card className="border-amber-200">
+              <Card className="border-amber-500/20">
                 <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Shield className="w-4 h-4 text-amber-600" /> Decisions Required
                 </h3>
                 {(briefing?.decisionsNeeded || []).map((dec, i) => (
                   <div key={i} className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                    <h4 className="text-sm font-semibold text-amber-200">{dec}</h4>
+                    <h4 className="text-sm font-semibold text-amber-800">{dec}</h4>
                   </div>
                 ))}
               </Card>
@@ -244,14 +244,14 @@ export function ApexPage() {
                 key={risk.id}
                 hover
                 onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
-                className={expandedRisk === risk.id ? 'border-blue-200' : ''}
+                className={expandedRisk === risk.id ? 'border-cyan-500/20' : ''}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    risk.severity === 'critical' ? 'bg-red-50' : risk.severity === 'high' ? 'bg-amber-50' : 'bg-blue-50'
+                    risk.severity === 'critical' ? 'bg-red-50' : risk.severity === 'high' ? 'bg-amber-50' : 'bg-cyan-50'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      risk.severity === 'critical' ? 'text-red-600' : risk.severity === 'high' ? 'text-amber-600' : 'text-blue-600'
+                      risk.severity === 'critical' ? 'text-red-600' : risk.severity === 'high' ? 'text-amber-600' : 'text-cyan-600'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -269,12 +269,12 @@ export function ApexPage() {
                     </div>
 
                     {expandedRisk === risk.id && (
-                      <div className="mt-4 p-4 rounded-lg bg-gray-100 border border-gray-200 animate-fadeIn">
+                      <div className="mt-4 p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm animate-fadeIn">
                         <h4 className="text-sm font-semibold text-gray-900 mb-2">Recommended Actions</h4>
                         <div className="space-y-2">
                           {risk.recommendedActions.map((action, i) => (
                             <div key={i} className="flex items-start gap-2">
-                              <ArrowRight className="w-3.5 h-3.5 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <ArrowRight className="w-3.5 h-3.5 text-cyan-600 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-gray-600">{action}</span>
                             </div>
                           ))}
@@ -311,7 +311,7 @@ export function ApexPage() {
                   <div className="mt-4">
                     <div className="grid grid-cols-2 gap-3">
                       {Object.entries(scenario.results).slice(0, 4).map(([key, val]) => (
-                        <div key={key} className="p-3 rounded-lg bg-gray-100">
+                        <div key={key} className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
                           <span className="text-xs text-gray-400">{key}</span>
                           <p className="text-lg font-bold text-gray-900">{String(val)}</p>
                         </div>

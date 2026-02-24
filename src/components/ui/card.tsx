@@ -14,9 +14,9 @@ export function Card({ children, className, hover, glow, onClick, style }: CardP
   return (
     <div
       className={cn(
-                'rounded-xl bg-white border border-gray-200 p-6 shadow-sm',
-                hover && 'hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer',
-                glow && 'shadow-[0_0_20px_rgba(99,102,241,0.08)]',
+                        'card-glass p-6',
+                        hover && 'hover:bg-white/70 transition-all duration-200 cursor-pointer',
+                        glow && 'shadow-[0_0_20px_rgba(14,165,233,0.1)]',
         className
       )}
       onClick={onClick}

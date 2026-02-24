@@ -84,8 +84,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-          <Settings className="w-5 h-5 text-gray-500" />
+        <div className="        w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
+                  <Settings className="w-5 h-5 text-cyan-600"/>
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -97,11 +97,11 @@ export function SettingsPage() {
         {/* Profile */}
         <Card>
           <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-blue-600" /> Profile
+            <User className="w-4 h-4 text-cyan-600" /> Profile
           </h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-2xl font-bold text-white">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center text-2xl font-bold text-white">
                 {displayName?.charAt(0) || 'A'}
               </div>
               <div>
@@ -147,14 +147,14 @@ export function SettingsPage() {
           </h3>
           <div className="space-y-3">
             {notifications.map((notif, index) => (
-              <div key={notif.label} className="flex items-center justify-between p-3 rounded-lg bg-gray-100">
+              <div key={notif.label} className="flex items-center justify-between p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
                 <div>
                   <span className="text-sm text-gray-800">{notif.label}</span>
                   <p className="text-[10px] text-gray-400">{notif.desc}</p>
                 </div>
                 <button
                   onClick={() => toggleNotification(index)}
-                  className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-blue-500' : 'bg-gray-300'} relative`}
+                  className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-cyan-500' : 'bg-gray-300'} relative`}
                   aria-label={`Toggle ${notif.label}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`} />
@@ -167,7 +167,7 @@ export function SettingsPage() {
         {/* Appearance */}
         <Card>
           <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4 text-blue-600" /> Appearance
+            <Palette className="w-4 h-4 text-cyan-600" /> Appearance
           </h3>
           <div className="space-y-4">
             <div>
@@ -176,7 +176,7 @@ export function SettingsPage() {
                 <div className="w-20 h-14 rounded-lg bg-gray-800 border border-gray-300 flex items-center justify-center text-xs text-gray-300 cursor-not-allowed opacity-40" title="Dark theme not available">
                   Dark
                 </div>
-                <div className="w-20 h-14 rounded-lg bg-white border-2 border-blue-500 flex items-center justify-center text-xs text-gray-600">
+                <div className="w-20 h-14 rounded-lg bg-white border-2 border-cyan-500 flex items-center justify-center text-xs text-gray-600">
                   Light
                 </div>
               </div>
@@ -189,7 +189,7 @@ export function SettingsPage() {
                     key={c.class}
                     onClick={() => setAccentColor(c.class)}
                     title={c.name}
-                    className={`w-8 h-8 rounded-full ${c.class} transition-all ${c.class === accentColor ? 'ring-2 ring-offset-2 ring-offset-white ring-blue-400 scale-110' : 'hover:scale-105'}`}
+                    className={`w-8 h-8 rounded-full ${c.class} transition-all ${c.class === accentColor ? 'ring-2 ring-offset-2 ring-offset-white ring-cyan-400 scale-110' : 'hover:scale-105'}`}
                   />
                 ))}
               </div>

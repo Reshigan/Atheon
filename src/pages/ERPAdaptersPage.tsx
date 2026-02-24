@@ -75,7 +75,7 @@ export function ERPAdaptersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -153,8 +153,8 @@ export function ERPAdaptersPage() {
               <Card key={adapter.id} hover>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl">
-                      {systemIcons[adapter.system] || '🔌'}
+                    <div className="                    w-12 h-12 rounded-xl bg-white/40 border border-white/50 flex items-center justify-center text-xl">
+                                          {systemIcons[adapter.system]|| '🔌'}
                     </div>
                     <div>
                       <h3 className="text-base font-semibold text-gray-900">{adapter.name}</h3>
@@ -170,16 +170,16 @@ export function ERPAdaptersPage() {
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  <div className="flex items-center gap-3 p-2 rounded bg-gray-100">
-                    <span className="text-xs font-medium text-blue-600 w-24">Operations</span>
+                  <div className="flex items-center gap-3                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-xs font-medium text-cyan-600 w-24">Operations</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.operations.map(op => (
                         <Badge key={op} variant={op === 'write' ? 'warning' : op === 'subscribe' ? 'info' : 'success'} size="sm">{op}</Badge>
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-2 rounded bg-gray-100">
-                    <span className="text-xs font-medium text-blue-600 w-24">Auth</span>
+                  <div className="flex items-center gap-3                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-xs font-medium text-cyan-600 w-24">Auth</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.authMethods.map(m => (
                         <Badge key={m} variant="outline" size="sm">{m}</Badge>
@@ -204,8 +204,8 @@ export function ERPAdaptersPage() {
               <Card key={conn.id}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-lg">
-                      {systemIcons[conn.adapterSystem] || '🔌'}
+                    <div className="                    w-10 h-10 rounded-lg bg-white/40 border border-white/50 flex items-center justify-center text-lg">
+                                          {systemIcons[conn.adapterSystem]|| '🔌'}
                     </div>
                     <div>
                       <h3 className="text-base font-semibold text-gray-900">{conn.name}</h3>
@@ -227,16 +227,16 @@ export function ERPAdaptersPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                  <div className="p-3 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Records Synced</span>
+                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Records Synced</span>
                     <p className="text-lg font-bold text-gray-900">{(conn.recordsSynced || 0).toLocaleString()}</p>
                   </div>
-                  <div className="p-3 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Sync Frequency</span>
+                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Sync Frequency</span>
                     <p className="text-lg font-bold text-gray-900">{conn.syncFrequency}</p>
                   </div>
-                  <div className="p-3 rounded bg-gray-100">
-                    <span className="text-[10px] text-gray-400">Last Sync</span>
+                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-[10px] text-gray-400">Last Sync</span>
                     <p className="text-sm font-medium text-gray-600">{conn.lastSync ? new Date(conn.lastSync).toLocaleTimeString() : 'Never'}</p>
                   </div>
                 </div>

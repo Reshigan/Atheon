@@ -49,7 +49,7 @@ export function ConnectivityPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
       </div>
     );
   }
@@ -125,9 +125,9 @@ export function ConnectivityPage() {
                   <span className="text-xs text-gray-400">Available Tools ({server.tools.length})</span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {server.tools.map((tool) => (
-                      <div key={tool.name} className="flex items-center justify-between p-2 rounded bg-gray-100">
-                        <div>
-                          <span className="text-xs font-mono text-gray-600">{tool.name}</span>
+                      <div key={tool.name} className="flex items-center justify-between                      p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                              <div>
+                                                <span className="text-xs font-mono text-gray-600">{tool.name}</span>
                           <p className="text-[10px] text-gray-400">{tool.description}</p>
                         </div>
                         <div className="flex gap-1">
@@ -162,23 +162,23 @@ export function ConnectivityPage() {
                   skills, and communication endpoints.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
-                  <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-200">Finance Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-cyan-50 text-cyan-600 border border-cyan-200">Finance Catalyst</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-gray-100">A2A Protocol</span>
+                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">A2A Protocol</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-200">Supply Chain Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-cyan-50 text-cyan-600 border border-cyan-200">Supply Chain Catalyst</span>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="p-3 rounded bg-gray-100">
-                    <span className="text-xs font-semibold text-gray-800">Discovery</span>
+                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-xs font-semibold text-gray-800">Discovery</span>
                     <p className="text-[10px] text-gray-400 mt-1">Catalysts register Agent Cards at /.well-known/agent.json</p>
                   </div>
-                  <div className="p-3 rounded bg-gray-100">
-                    <span className="text-xs font-semibold text-gray-800">Communication</span>
+                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-xs font-semibold text-gray-800">Communication</span>
                     <p className="text-[10px] text-gray-400 mt-1">JSON-RPC over HTTP/2. Structured task/result protocol.</p>
                   </div>
-                  <div className="p-3 rounded bg-gray-100">
-                    <span className="text-xs font-semibold text-gray-800">Governance</span>
+                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                                      <span className="text-xs font-semibold text-gray-800">Governance</span>
                     <p className="text-[10px] text-gray-400 mt-1">All cross-cluster calls logged. Trust scores affect routing.</p>
                   </div>
                 </div>
