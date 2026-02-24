@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import type { Tenant } from "@/lib/api";
 import {
   Building2, Cloud, Server, GitBranch, Users, Bot, Shield,
-  ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2
+  ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2, X
 } from "lucide-react";
 
 const deploymentIcon = (model: string) => {
@@ -34,6 +34,22 @@ export function TenantsPage() {
   const [expandedTenant, setExpandedTenant] = useState<string | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOnboard, setShowOnboard] = useState(false);
+  const [onboardForm, setOnboardForm] = useState({ name: '', slug: '', industry: 'general', plan: 'starter', deploymentModel: 'saas', region: 'af-south-1' });
+  const [onboarding, setOnboarding] = useState(false);
+
+  const handleOnboard = async () => {
+    if (!onboardForm.name.trim() || !onboardForm.slug.trim()) return;
+    setOnboarding(true);
+    try {
+      await api.tenants.create(onboardForm);
+      const res = await api.tenants.list();
+      setTenants(res.tenants);
+      setShowOnboard(false);
+      setOnboardForm({ name: '', slug: '', industry: 'general', plan: 'starter', deploymentModel: 'saas', region: 'af-south-1' });
+    } catch { /* silent */ }
+    setOnboarding(false);
+  };
 
   useEffect(() => {
     async function load() {
@@ -73,8 +89,34 @@ export function TenantsPage() {
             <p className="text-sm text-gray-500">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
           </div>
         </div>
-        <Button variant="primary" size="sm"><Plus size={14} /> Onboard Tenant</Button>
+        <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)}><Plus size={14} /> Onboard Tenant</Button>
       </div>
+
+      {/* Onboard Modal */}
+      {showOnboard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Onboard New Tenant</h3>
+              <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
+              <div><label className="text-xs text-gray-500">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
+              <div><label className="text-xs text-gray-500">Industry</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="financial_services">Financial Services</option></select></div>
+              <div><label className="text-xs text-gray-500">Plan</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
+              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs text-gray-500">Region</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setShowOnboard(false)}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleOnboard} disabled={onboarding || !onboardForm.name.trim() || !onboardForm.slug.trim()}>
+                {onboarding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Onboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

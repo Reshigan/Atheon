@@ -62,6 +62,11 @@ export const api = {
         body: JSON.stringify({ tenant_slug: tenantSlug || 'vantax', role: role || 'admin' }),
       }),
     me: () => request<AuthUser>('/api/auth/me'),
+    ssoLogin: (provider: string) =>
+      request<{ token: string; user: AuthUser }>('/api/auth/sso', {
+        method: 'POST',
+        body: JSON.stringify({ provider }),
+      }),
   },
 
   tenants: {

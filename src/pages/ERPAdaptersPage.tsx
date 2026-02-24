@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import type { ERPAdapter, ERPConnection } from "@/lib/api";
 import {
   Plug, CheckCircle, XCircle, RefreshCw, Plus, Database,
-  Activity, Loader2
+  Activity, Loader2, X
 } from "lucide-react";
 
 const systemIcons: Record<string, string> = {
@@ -19,6 +19,19 @@ export function ERPAdaptersPage() {
   const [adapters, setAdapters] = useState<ERPAdapter[]>([]);
   const [connections, setConnections] = useState<ERPConnection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showConnect, setShowConnect] = useState(false);
+  const [connectForm, setConnectForm] = useState({ adapterId: '', name: '', syncFrequency: 'daily' });
+  const [syncing, setSyncing] = useState<string | null>(null);
+
+  const handleSync = async (connectionId: string) => {
+    setSyncing(connectionId);
+    try {
+      await api.erp.sync(connectionId);
+      const c = await api.erp.connections();
+      setConnections(c.connections);
+    } catch { /* silent */ }
+    setSyncing(null);
+  };
 
   useEffect(() => {
     async function load() {
@@ -59,8 +72,32 @@ export function ERPAdaptersPage() {
             <p className="text-sm text-gray-500">Pluggable adapters for enterprise system connectivity</p>
           </div>
         </div>
-        <Button variant="primary" size="sm"><Plus size={14} /> Connect ERP</Button>
+        <Button variant="primary" size="sm" onClick={() => setShowConnect(true)}><Plus size={14} /> Connect ERP</Button>
       </div>
+
+      {/* Connect ERP Modal */}
+      {showConnect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Connect ERP System</h3>
+              <button onClick={() => setShowConnect(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">ERP Adapter</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={connectForm.adapterId} onChange={e => setConnectForm(p => ({ ...p, adapterId: e.target.value }))}><option value="">Select an adapter...</option>{adapters.map(a => <option key={a.id} value={a.id}>{a.name} ({a.system})</option>)}</select></div>
+              <div><label className="text-xs text-gray-500">Connection Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={connectForm.name} onChange={e => setConnectForm(p => ({ ...p, name: e.target.value }))} placeholder="Production SAP" /></div>
+              <div><label className="text-xs text-gray-500">Sync Frequency</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={connectForm.syncFrequency} onChange={e => setConnectForm(p => ({ ...p, syncFrequency: e.target.value }))}><option value="realtime">Real-time</option><option value="hourly">Hourly</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></div>
+            </div>
+            <p className="text-[10px] text-gray-400">OAuth authentication will be initiated after connection setup. You will be redirected to the ERP provider to authorise access.</p>
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setShowConnect(false)}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={() => setShowConnect(false)} disabled={!connectForm.adapterId || !connectForm.name.trim()}>
+                <Plug size={14} /> Connect
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -180,7 +217,9 @@ export function ERPAdaptersPage() {
                 </div>
 
                 <div className="flex gap-2 mt-3">
-                  <Button variant="secondary" size="sm"><RefreshCw size={12} /> Sync Now</Button>
+                  <Button variant="secondary" size="sm" onClick={() => handleSync(conn.id)} disabled={syncing === conn.id}>
+                    {syncing === conn.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Sync Now
+                  </Button>
                   <Button variant="ghost" size="sm"><Activity size={12} /> View Logs</Button>
                 </div>
               </Card>

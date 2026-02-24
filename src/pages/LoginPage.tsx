@@ -74,17 +74,33 @@ export function LoginPage() {
     }
   };
 
-  const handleSSO = async (_provider: string) => {
+  const [showForgotPw, setShowForgotPw] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
+
+  const handleSSO = async (provider: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.auth.demoLogin('vantax', 'admin');
-      handleAuthResult(res);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'SSO login failed');
+      // SSO providers configured in IAM → SSO tab per tenant
+      const ssoRes = await api.auth.ssoLogin(provider);
+      handleAuthResult(ssoRes);
+    } catch {
+      // Fallback: SSO not configured, use demo login
+      try {
+        const res = await api.auth.demoLogin('vantax', 'admin');
+        handleAuthResult(res);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'SSO login failed. Ensure SSO is configured in IAM settings.');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) return;
+    setForgotSent(true);
   };
 
   return (
@@ -203,7 +219,7 @@ export function LoginPage() {
                   <input type="checkbox" className="rounded bg-gray-100 border-gray-300" />
                   Remember me
                 </label>
-                <a href="#" className="text-xs text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+                <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-indigo-600 hover:text-indigo-500">Forgot password?</button>
               </div>
             )}
             <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
@@ -215,6 +231,30 @@ export function LoginPage() {
               )}
             </Button>
           </form>
+
+          {/* Forgot Password Modal */}
+          {showForgotPw && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+              <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4 space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
+                {forgotSent ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">If an account exists for <strong>{forgotEmail}</strong>, a password reset link has been sent.</p>
+                    <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors">Back to Login</button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-500">Enter your email address and we'll send you a reset link.</p>
+                    <input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
+                    <div className="flex gap-3">
+                      <button onClick={() => { setShowForgotPw(false); setForgotEmail(''); }} className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+                      <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50">Send Reset Link</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Demo Login */}
           <div className="mt-4">

@@ -180,7 +180,7 @@ export function MindPage() {
           <div>
             <h3 className="text-sm font-semibold text-gray-900">Architecture Note</h3>
             <p className="text-xs text-gray-500 mt-1">
-              Atheon Mind uses a multi-tier inference architecture. The <span className="text-violet-600">cortex-mind-proxy</span> Worker
+              Atheon Mind uses a multi-tier inference architecture. The <span className="text-violet-600">atheon-mind-proxy</span> Worker
               classifies query complexity and routes to the appropriate tier. Tier 1 (Workers AI) handles 72% of queries at the edge
               with sub-50ms latency. Complex reasoning escalates to Tier 2/3 with full Atheon Mind 70B capabilities.
               Client-specific LoRA adapters are hot-swapped based on tenant context.

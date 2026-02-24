@@ -9,6 +9,9 @@ import type { AtheonLayer } from "@/types";
 export function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterLayer, setFilterLayer] = useState<string>('');
+  const [filterOutcome, setFilterOutcome] = useState<string>('');
 
   useEffect(() => {
     async function load() {
@@ -42,10 +45,45 @@ export function AuditPage() {
             <p className="text-sm text-gray-500">Complete governance trail across all Atheon layers</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 transition-all">
-          <Filter size={14} /> Filters
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+        >
+          <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
         </button>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Layer</label>
+            <select className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
+              <option value="">All Layers</option>
+              <option value="apex">Apex</option>
+              <option value="pulse">Pulse</option>
+              <option value="catalysts">Catalysts</option>
+              <option value="mind">Mind</option>
+              <option value="memory">Memory</option>
+              <option value="control-plane">Control Plane</option>
+              <option value="erp">ERP</option>
+              <option value="iam">IAM</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Outcome</label>
+            <select className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
+              <option value="">All Outcomes</option>
+              <option value="success">Success</option>
+              <option value="pending">Pending</option>
+              <option value="failure">Failed</option>
+            </select>
+          </div>
+          {(filterLayer || filterOutcome) && (
+            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-indigo-600 hover:text-indigo-500 pb-1.5">Clear filters</button>
+          )}
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -81,7 +119,7 @@ export function AuditPage() {
               </tr>
             </thead>
             <tbody>
-              {entries.map((entry) => (
+              {entries.filter(e => (!filterLayer || e.layer === filterLayer) && (!filterOutcome || e.outcome === filterOutcome)).map((entry) => (
                 <tr key={entry.id} className="border-b border-gray-200 hover:bg-gray-100/20 transition-colors">
                   <td className="py-3 px-4 text-xs text-gray-500 font-mono whitespace-nowrap">
                     {new Date(entry.createdAt).toLocaleString()}

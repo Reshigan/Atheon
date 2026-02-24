@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import type { IAMPolicy, SSOConfig, IAMRole } from "@/lib/api";
 import {
   Shield, Key, Users, UserCheck, Lock, Unlock, Plus,
-  ShieldCheck, Globe, Loader2
+  ShieldCheck, Globe, Loader2, X
 } from "lucide-react";
 
 export function IAMPage() {
@@ -16,6 +16,8 @@ export function IAMPage() {
   const [ssoConfigs, setSsoConfigs] = useState<SSOConfig[]>([]);
   const [roles, setRoles] = useState<IAMRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNewPolicy, setShowNewPolicy] = useState(false);
+  const [policyForm, setPolicyForm] = useState({ name: '', description: '', type: 'rbac' });
 
   useEffect(() => {
     async function load() {
@@ -57,8 +59,32 @@ export function IAMPage() {
             <p className="text-sm text-gray-500">RBAC/ABAC policies, SSO federation, per-tenant isolation</p>
           </div>
         </div>
-        <Button variant="primary" size="sm"><Plus size={14} /> New Policy</Button>
+        <Button variant="primary" size="sm" onClick={() => setShowNewPolicy(true)}><Plus size={14} /> New Policy</Button>
       </div>
+
+      {/* New Policy Modal */}
+      {showNewPolicy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Create New Policy</h3>
+              <button onClick={() => setShowNewPolicy(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">Policy Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={policyForm.name} onChange={e => setPolicyForm(p => ({ ...p, name: e.target.value }))} placeholder="Read-only analysts" /></div>
+              <div><label className="text-xs text-gray-500">Description</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={policyForm.description} onChange={e => setPolicyForm(p => ({ ...p, description: e.target.value }))} placeholder="Policy description" /></div>
+              <div><label className="text-xs text-gray-500">Type</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={policyForm.type} onChange={e => setPolicyForm(p => ({ ...p, type: e.target.value }))}><option value="rbac">RBAC (Role-Based)</option><option value="abac">ABAC (Attribute-Based)</option></select></div>
+            </div>
+            <p className="text-[10px] text-gray-400">Rules can be added after creating the policy.</p>
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(false)}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={() => setShowNewPolicy(false)} disabled={!policyForm.name.trim()}>
+                <Plus size={14} /> Create Policy
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

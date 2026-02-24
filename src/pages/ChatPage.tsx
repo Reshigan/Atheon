@@ -89,7 +89,7 @@ export function ChatPage() {
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                   {msg.role === 'assistant' && (
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-gray-900" />
+                      <Sparkles className="w-4 h-4 text-white" />
                     </div>
                   )}
                   <div className={`max-w-2xl rounded-xl p-4 ${

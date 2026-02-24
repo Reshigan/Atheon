@@ -7,7 +7,7 @@ import type { ControlPlaneHealth, DeploymentItem } from "@/lib/api";
 import {
   Bot, Play, Square, RefreshCw, Plus, Server, Cloud, GitBranch,
   CheckCircle, XCircle, Activity, ChevronDown, ChevronUp,
-  Settings, Shield, Cpu, Loader2
+  Settings, Shield, Cpu, Loader2, X
 } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
@@ -39,6 +39,22 @@ export function ControlPlanePage() {
   const [deployments, setDeployments] = useState<DeploymentItem[]>([]);
   const [_health, setHealth] = useState<ControlPlaneHealth | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDeploy, setShowDeploy] = useState(false);
+  const [deployForm, setDeployForm] = useState({ name: '', agentType: 'catalyst', deploymentModel: 'saas', version: '1.0.0' });
+  const [deploying, setDeploying] = useState(false);
+
+  const handleDeploy = async () => {
+    if (!deployForm.name.trim()) return;
+    setDeploying(true);
+    try {
+      await api.controlplane.createDeployment(deployForm);
+      const [d] = await Promise.allSettled([api.controlplane.deployments()]);
+      if (d.status === 'fulfilled') setDeployments(d.value.deployments);
+      setShowDeploy(false);
+      setDeployForm({ name: '', agentType: 'catalyst', deploymentModel: 'saas', version: '1.0.0' });
+    } catch { /* silent */ }
+    setDeploying(false);
+  };
 
   useEffect(() => {
     async function load() {
@@ -89,8 +105,32 @@ export function ControlPlanePage() {
             <p className="text-sm text-gray-500">Deploy, manage, and monitor Catalyst agents per tenant</p>
           </div>
         </div>
-        <Button variant="primary" size="sm"><Plus size={14} /> Deploy Agent</Button>
+        <Button variant="primary" size="sm" onClick={() => setShowDeploy(true)}><Plus size={14} /> Deploy Agent</Button>
       </div>
+
+      {/* Deploy Modal */}
+      {showDeploy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Deploy New Agent</h3>
+              <button onClick={() => setShowDeploy(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">Agent Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
+              <div><label className="text-xs text-gray-500">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.agentType} onChange={e => setDeployForm(p => ({ ...p, agentType: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
+              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.deploymentModel} onChange={e => setDeployForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs text-gray-500">Version</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono" value={deployForm.version} onChange={e => setDeployForm(p => ({ ...p, version: e.target.value }))} /></div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setShowDeploy(false)}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleDeploy} disabled={deploying || !deployForm.name.trim()}>
+                {deploying ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Deploy
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
