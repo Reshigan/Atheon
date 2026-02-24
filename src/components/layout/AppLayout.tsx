@@ -47,7 +47,7 @@ export function AppLayout() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="card-dark rounded-2xl p-8">
-          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
         </div>
       </div>
     );

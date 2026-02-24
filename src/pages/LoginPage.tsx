@@ -129,7 +129,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
-      <div className="w-full max-w-5xl flex rounded-3xl overflow-hidden shadow-2xl shadow-cyan-500/10" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)' }}>
+      <div className="w-full max-w-5xl flex rounded-3xl overflow-hidden shadow-2xl shadow-amber-500/10" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)' }}>
         {/* Left - Branding with 3D Capsule Hero */}
         <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden">
           {/* Dark gradient background */}
@@ -156,7 +156,7 @@ export function LoginPage() {
           <div className="w-full max-w-sm">
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shadow-lg shadow-amber-500/10">
                 <AtheonCrystalIcon size={32} />
               </div>
               <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
@@ -227,7 +227,7 @@ export function LoginPage() {
                     <input type="checkbox" className="rounded bg-white/[0.04] border-white/[0.08]" />
                     Remember me
                   </label>
-                  <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-cyan-400 hover:text-cyan-300">Forgot password?</button>
+                  <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs text-amber-400 hover:text-amber-300">Forgot password?</button>
                 </div>
               )}
               <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
@@ -248,7 +248,7 @@ export function LoginPage() {
                   {forgotSent ? (
                     <div className="space-y-3">
                       <p className="text-sm text-gray-400">If an account exists for <strong className="text-gray-200">{forgotEmail}</strong>, a password reset link has been sent.</p>
-                      <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-sm hover:opacity-90 transition-opacity">Back to Login</button>
+                      <button onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }} className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm hover:opacity-90 transition-opacity">Back to Login</button>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -256,7 +256,7 @@ export function LoginPage() {
                       <input className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-gray-100 placeholder-gray-500 backdrop-blur-sm" type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
                       <div className="flex gap-3">
                         <button onClick={() => { setShowForgotPw(false); setForgotEmail(''); }} className="flex-1 px-4 py-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-sm text-gray-400 hover:bg-white/[0.1] transition-all">Cancel</button>
-                        <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-sm hover:opacity-90 transition-opacity disabled:opacity-50">Send Reset Link</button>
+                        <button onClick={handleForgotPassword} disabled={!forgotEmail.trim()} className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm hover:opacity-90 transition-opacity disabled:opacity-50">Send Reset Link</button>
                       </div>
                     </div>
                   )}
@@ -279,13 +279,13 @@ export function LoginPage() {
             <p className="text-xs text-gray-500 text-center mt-8">
               {mode === 'login' ? (
                 <>Don&apos;t have an account?{' '}
-                  <button onClick={() => { setMode('register'); setError(null); }} className="text-cyan-400 hover:text-cyan-300">
+                  <button onClick={() => { setMode('register'); setError(null); }} className="text-amber-400 hover:text-amber-300">
                     Create one
                   </button>
                 </>
               ) : (
                 <>Already have an account?{' '}
-                  <button onClick={() => { setMode('login'); setError(null); }} className="text-cyan-400 hover:text-cyan-300">
+                  <button onClick={() => { setMode('login'); setError(null); }} className="text-amber-400 hover:text-amber-300">
                     Sign in
                   </button>
                 </>

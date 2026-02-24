@@ -2,27 +2,27 @@
   <defs>
     <radialGradient id="fc" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="white" stop-opacity="1"/>
-      <stop offset="20%" stop-color="#a5f3fc" stop-opacity="0.9"/>
-      <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.5"/>
+      <stop offset="20%" stop-color="#fde68a" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#f5c542" stop-opacity="0.5"/>
       <stop offset="100%" stop-color="transparent"/>
     </radialGradient>
     <radialGradient id="fg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.3"/>
+      <stop offset="0%" stop-color="#f5c542" stop-opacity="0.3"/>
       <stop offset="100%" stop-color="transparent"/>
     </radialGradient>
     <linearGradient id="fr1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#67e8f9" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#f5c542" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#fbbf24" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#f5c542" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="fr2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#818cf8" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#a78bfa" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#fb923c" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#111333"/>
-      <stop offset="100%" stop-color="#0f1129"/>
+      <stop offset="0%" stop-color="#1a1a2a"/>
+      <stop offset="100%" stop-color="#16161e"/>
     </linearGradient>
     <filter id="gl">
       <feGaussianBlur stdDeviation="1" result="blur"/>
@@ -33,37 +33,37 @@
   <!-- Ambient glow -->
   <circle cx="32" cy="32" r="28" fill="url(#fg)" opacity="0.5"/>
   <!-- Hexagonal frame -->
-  <polygon points="32,6 54,17 54,47 32,58 10,47 10,17" fill="none" stroke="#22d3ee" stroke-width="0.4" opacity="0.15"/>
+  <polygon points="32,6 54,17 54,47 32,58 10,47 10,17" fill="none" stroke="#f5c542" stroke-width="0.4" opacity="0.15"/>
   <!-- Orbital rings -->
   <ellipse cx="32" cy="32" rx="26" ry="8" fill="none" stroke="url(#fr1)" stroke-width="0.7" transform="rotate(-18 32 32)"/>
   <ellipse cx="32" cy="32" rx="22" ry="6.5" fill="none" stroke="url(#fr2)" stroke-width="0.5" transform="rotate(30 32 32)"/>
   <!-- Neural pathways (cyan) -->
-  <path d="M 32 8 Q 28 20 32 32" stroke="#22d3ee" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <path d="M 32 56 Q 36 44 32 32" stroke="#22d3ee" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <path d="M 8 32 Q 20 28 32 32" stroke="#22d3ee" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <path d="M 56 32 Q 44 36 32 32" stroke="#22d3ee" stroke-width="0.6" fill="none" opacity="0.35"/>
+  <path d="M 32 8 Q 28 20 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
+  <path d="M 32 56 Q 36 44 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
+  <path d="M 8 32 Q 20 28 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
+  <path d="M 56 32 Q 44 36 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
   <!-- Neural pathways (indigo) -->
-  <path d="M 14 14 Q 22 20 32 32" stroke="#818cf8" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <path d="M 50 50 Q 42 44 32 32" stroke="#818cf8" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <path d="M 50 14 Q 42 20 32 32" stroke="#5eead4" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <path d="M 14 50 Q 22 44 32 32" stroke="#5eead4" stroke-width="0.5" fill="none" opacity="0.25"/>
+  <path d="M 14 14 Q 22 20 32 32" stroke="#f97316" stroke-width="0.5" fill="none" opacity="0.25"/>
+  <path d="M 50 50 Q 42 44 32 32" stroke="#f97316" stroke-width="0.5" fill="none" opacity="0.25"/>
+  <path d="M 50 14 Q 42 20 32 32" stroke="#f87171" stroke-width="0.5" fill="none" opacity="0.25"/>
+  <path d="M 14 50 Q 22 44 32 32" stroke="#f87171" stroke-width="0.5" fill="none" opacity="0.25"/>
   <!-- Endpoint nodes -->
-  <circle cx="32" cy="8" r="1.8" fill="#67e8f9" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="32" cy="56" r="1.8" fill="#67e8f9" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="8" cy="32" r="1.8" fill="#67e8f9" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="56" cy="32" r="1.8" fill="#67e8f9" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="14" cy="14" r="1.5" fill="#a78bfa" opacity="0.6"/>
-  <circle cx="50" cy="50" r="1.5" fill="#a78bfa" opacity="0.6"/>
-  <circle cx="50" cy="14" r="1.5" fill="#5eead4" opacity="0.6"/>
-  <circle cx="14" cy="50" r="1.5" fill="#5eead4" opacity="0.6"/>
+  <circle cx="32" cy="8" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
+  <circle cx="32" cy="56" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
+  <circle cx="8" cy="32" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
+  <circle cx="56" cy="32" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
+  <circle cx="14" cy="14" r="1.5" fill="#fb923c" opacity="0.6"/>
+  <circle cx="50" cy="50" r="1.5" fill="#fb923c" opacity="0.6"/>
+  <circle cx="50" cy="14" r="1.5" fill="#f87171" opacity="0.6"/>
+  <circle cx="14" cy="50" r="1.5" fill="#f87171" opacity="0.6"/>
   <!-- Core layers -->
   <circle cx="32" cy="32" r="8" fill="url(#fc)" opacity="0.7"/>
   <circle cx="32" cy="32" r="4.5" fill="white" opacity="0.85" filter="url(#gl)"/>
   <circle cx="32" cy="32" r="2.5" fill="white" opacity="1"/>
   <ellipse cx="30.5" cy="30.5" rx="1.5" ry="1" fill="white" opacity="0.6" transform="rotate(-30 30.5 30.5)"/>
   <!-- Particles -->
-  <circle cx="10" cy="22" r="0.8" fill="#67e8f9" opacity="0.5"/>
-  <circle cx="54" cy="20" r="0.7" fill="#a78bfa" opacity="0.4"/>
-  <circle cx="12" cy="46" r="0.6" fill="#67e8f9" opacity="0.35"/>
-  <circle cx="52" cy="48" r="0.8" fill="#5eead4" opacity="0.4"/>
+  <circle cx="10" cy="22" r="0.8" fill="#fbbf24" opacity="0.5"/>
+  <circle cx="54" cy="20" r="0.7" fill="#fb923c" opacity="0.4"/>
+  <circle cx="12" cy="46" r="0.6" fill="#fbbf24" opacity="0.35"/>
+  <circle cx="52" cy="48" r="0.8" fill="#f87171" opacity="0.4"/>
 </svg>

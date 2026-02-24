@@ -85,7 +85,7 @@ export function ApexPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
@@ -168,7 +168,7 @@ export function ApexPage() {
               {/* KPI Movements */}
               <Card>
                 <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-cyan-400" /> KPI Movements
+                  <TrendingUp className="w-4 h-4 text-amber-400" /> KPI Movements
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.kpiMovements || []).map((kpi) => (
@@ -244,14 +244,14 @@ export function ApexPage() {
                 key={risk.id}
                 hover
                 onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
-                className={expandedRisk === risk.id ? 'border-cyan-500/20' : ''}
+                className={expandedRisk === risk.id ? 'border-amber-500/20' : ''}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    risk.severity === 'critical' ? 'bg-red-500/10' : risk.severity === 'high' ? 'bg-amber-500/10' : 'bg-cyan-500/10'
+                    risk.severity === 'critical' ? 'bg-red-500/10' : risk.severity === 'high' ? 'bg-amber-500/10' : 'bg-amber-500/10'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-amber-400' : 'text-cyan-400'
+                      risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-amber-400' : 'text-amber-400'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -274,7 +274,7 @@ export function ApexPage() {
                         <div className="space-y-2">
                           {risk.recommendedActions.map((action, i) => (
                             <div key={i} className="flex items-start gap-2">
-                              <ArrowRight className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                              <ArrowRight className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-gray-400">{action}</span>
                             </div>
                           ))}

@@ -13,7 +13,7 @@ const variantClasses: Record<string, string> = {
   success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   danger: 'bg-red-500/10 text-red-400 border-red-500/20',
-  info: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  info: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   outline: 'bg-transparent border-white/[0.12] text-gray-400',
 };
 

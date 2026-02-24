@@ -118,7 +118,7 @@ export function Header() {
   return (
     <header
       className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6"
-      style={{ left: '0px', background: 'rgba(15, 17, 41, 0.7)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+      style={{ left: '0px', background: 'rgba(22, 22, 30, 0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
     >
       {/* Left: hamburger (mobile) + spacer (desktop) */}
       <div className="flex items-center gap-3 flex-1">
@@ -141,7 +141,7 @@ export function Header() {
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
-            className="appearance-none bg-white/[0.04] border border-white/[0.08] rounded-full pl-3 pr-7 py-1.5 text-xs text-gray-400 cursor-pointer hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-cyan-500/20 backdrop-blur-sm transition-all"
+            className="appearance-none bg-white/[0.04] border border-white/[0.08] rounded-full pl-3 pr-7 py-1.5 text-xs text-gray-400 cursor-pointer hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-amber-500/20 backdrop-blur-sm transition-all"
           >
             {industries.map(i => (
               <option key={i.value} value={i.value}>{i.label}</option>
@@ -155,7 +155,7 @@ export function Header() {
           {/* Messages → Chat page */}
           <button
             onClick={() => navigate('/chat')}
-            className="p-2 rounded-full text-gray-500 hover:text-cyan-400 hover:bg-white/[0.06] transition-all"
+            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
             title="Messages"
           >
             <MessageCircle size={17} />
@@ -165,7 +165,7 @@ export function Header() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={openNotifications}
-              className={`relative p-2 rounded-full transition-all ${showNotifications ? 'text-cyan-400 bg-white/[0.08]' : 'text-gray-500 hover:text-cyan-400 hover:bg-white/[0.06]'}`}
+              className={`relative p-2 rounded-full transition-all ${showNotifications ? 'text-amber-400 bg-white/[0.08]' : 'text-gray-500 hover:text-amber-400 hover:bg-white/[0.06]'}`}
               title="Notifications"
             >
               <Bell size={17} />
@@ -178,7 +178,7 @@ export function Header() {
 
             {/* Notifications dropdown panel */}
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#12122a]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-50">
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#1e1e2a]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-50">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
                   <h3 className="text-sm font-semibold text-gray-200">Notifications</h3>
@@ -186,7 +186,7 @@ export function Header() {
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllRead}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1"
+                        className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1"
                       >
                         <Check size={12} /> Mark all read
                       </button>
@@ -204,7 +204,7 @@ export function Header() {
                 <div className="max-h-80 overflow-y-auto">
                   {loadingNotifs ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
                     </div>
                   ) : notifications.length === 0 ? (
                     <div className="py-8 text-center">
@@ -221,7 +221,7 @@ export function Header() {
                           }
                           setShowNotifications(false);
                         }}
-                        className={`w-full text-left px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.04] transition-all ${!n.read ? 'bg-cyan-500/[0.04]' : ''}`}
+                        className={`w-full text-left px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.04] transition-all ${!n.read ? 'bg-amber-500/[0.04]' : ''}`}
                       >
                         <div className="flex items-start gap-3">
                           <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${severityColors[n.severity] || 'bg-gray-400'}`} />
@@ -246,7 +246,7 @@ export function Header() {
                         navigate('/audit');
                         setShowNotifications(false);
                       }}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 font-medium"
+                      className="text-xs text-amber-400 hover:text-amber-300 font-medium"
                     >
                       View all activity
                     </button>
@@ -259,7 +259,7 @@ export function Header() {
           {/* Settings → Settings page */}
           <button
             onClick={() => navigate('/settings')}
-            className="p-2 rounded-full text-gray-500 hover:text-cyan-400 hover:bg-white/[0.06] transition-all"
+            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
             title="Settings"
           >
             <Settings size={17} />
@@ -268,7 +268,7 @@ export function Header() {
 
         {/* User avatar */}
         <div className="flex items-center gap-2 ml-1">
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-cyan-500 via-indigo-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ring-2 ring-white/[0.1]">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ring-2 ring-white/[0.1]">
             {user?.name?.charAt(0) || 'A'}
           </div>
           <button

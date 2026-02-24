@@ -10,7 +10,7 @@ import { Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send, Chevr
 import type { AutonomyTier } from "@/types";
 
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
-  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-cyan-400' },
+  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-amber-400' },
   'assisted': { label: 'Assisted', icon: Wrench, color: 'text-amber-400' },
   'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-400' },
 };
@@ -18,9 +18,9 @@ const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color:
 const statusIcon = (status: string) => {
   if (status === 'completed') return <CheckCircle size={14} className="text-emerald-400" />;
   if (status === 'pending') return <Clock size={14} className="text-amber-400" />;
-  if (status === 'approved') return <CheckCircle size={14} className="text-cyan-400" />;
+  if (status === 'approved') return <CheckCircle size={14} className="text-amber-400" />;
   if (status === 'rejected' || status === 'failed') return <XCircle size={14} className="text-red-400" />;
-  return <Zap size={14} className="text-cyan-400" />;
+  return <Zap size={14} className="text-amber-400" />;
 };
 
 export function CatalystsPage() {
@@ -81,7 +81,7 @@ export function CatalystsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
@@ -89,8 +89,8 @@ export function CatalystsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-cyan-400" />
+        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+          <Zap className="w-5 h-5 text-amber-400" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Atheon Catalysts</h1>
@@ -110,8 +110,8 @@ export function CatalystsPage() {
                 <Card key={cluster.id} hover>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-cyan-400" />
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-amber-400" />
                       </div>
                       <div>
                         <h3 className="text-base font-semibold text-white">{cluster.name}</h3>
@@ -226,7 +226,7 @@ export function CatalystsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-cyan-400" /> Autonomy Tiers
+                <Eye className="w-4 h-4 text-amber-400" /> Autonomy Tiers
               </h3>
               <div className="space-y-3">
                 {Object.entries(tierConfig).map(([key, config]) => {
@@ -247,7 +247,7 @@ export function CatalystsPage() {
 
             <Card>
               <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-cyan-400" /> Trust Scores
+                <Shield className="w-4 h-4 text-amber-400" /> Trust Scores
               </h3>
               <div className="space-y-3">
                 {clusters.slice(0, 5).map((cluster) => (
@@ -269,7 +269,7 @@ export function CatalystsPage() {
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                   <span className="text-xs text-gray-400">Total Actions</span>
-                  <p className="text-lg font-bold text-cyan-400">{governance?.totalActions ?? 0}</p>
+                  <p className="text-lg font-bold text-amber-400">{governance?.totalActions ?? 0}</p>
                   <p className="text-[10px] text-gray-400">All catalyst executions</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">

@@ -7,13 +7,13 @@ import type { GraphStats, GraphEntity } from "@/lib/api";
 import { Database, Network, Search, BookOpen, ArrowRight, Loader2 } from "lucide-react";
 
 const entityColors: Record<string, string> = {
-    Organisation: 'bg-cyan-600',
-    Department: 'bg-cyan-500/100',
-    Person: 'bg-cyan-400',
+    Organisation: 'bg-amber-600',
+    Department: 'bg-amber-500/100',
+    Person: 'bg-amber-400',
   Process: 'bg-emerald-500/100',
   System: 'bg-amber-500/100',
   KPI: 'bg-sky-500',
-  Document: 'bg-cyan-500/100',
+  Document: 'bg-amber-500/100',
   Risk: 'bg-red-500/100',
   Asset: 'bg-orange-500',
 };
@@ -45,7 +45,7 @@ export function MemoryPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
@@ -62,8 +62,8 @@ export function MemoryPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl        bg-cyan-500/10 flex items-center justify-center">
-                  <Database className="w-5 h-5 text-cyan-400"/>
+        <div className="w-10 h-10 rounded-xl        bg-amber-500/10 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-amber-400"/>
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Atheon Memory</h1>
@@ -86,7 +86,7 @@ export function MemoryPage() {
         {/* Entity Types */}
         <Card>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Network className="w-4 h-4 text-cyan-400" /> Entity Distribution
+            <Network className="w-4 h-4 text-amber-400" /> Entity Distribution
           </h3>
           <div className="space-y-3">
             {entityTypes.map((entity) => (
@@ -110,7 +110,7 @@ export function MemoryPage() {
         {/* RAG Pipeline */}
         <Card>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-cyan-400" /> Recent Entities
+            <Search className="w-4 h-4 text-amber-400" /> Recent Entities
           </h3>
           <div className="space-y-3">
             {entities.slice(0, 6).map((entity) => (
@@ -132,7 +132,7 @@ export function MemoryPage() {
       {/* Industry Templates */}
       <Card>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-cyan-400" /> Industry Graph Templates
+          <BookOpen className="w-4 h-4 text-amber-400" /> Industry Graph Templates
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {industryTemplates.map((template) => (
@@ -148,9 +148,9 @@ export function MemoryPage() {
       </Card>
 
       {/* Architecture */}
-      <Card className="border-cyan-500/20">
+      <Card className="border-amber-500/20">
         <div className="flex items-start gap-3">
-          <Database className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+          <Database className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-semibold text-white">GraphRAG Architecture</h3>
             <p className="text-xs text-gray-500 mt-1">

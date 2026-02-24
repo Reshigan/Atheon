@@ -76,7 +76,7 @@ export function SettingsPage() {
   const accentOptions = [
     { class: 'bg-blue-600', name: 'Blue' },
     { class: 'bg-sky-500', name: 'Sky' },
-    { class: 'bg-cyan-500/100', name: 'Cyan' },
+    { class: 'bg-amber-500/100', name: 'Cyan' },
     { class: 'bg-emerald-500/100', name: 'Emerald' },
     { class: 'bg-amber-500/100', name: 'Amber' },
   ];
@@ -84,8 +84,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="        w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-                  <Settings className="w-5 h-5 text-cyan-400"/>
+        <div className="        w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <Settings className="w-5 h-5 text-amber-400"/>
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Settings</h1>
@@ -97,11 +97,11 @@ export function SettingsPage() {
         {/* Profile */}
         <Card>
           <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-cyan-400" /> Profile
+            <User className="w-4 h-4 text-amber-400" /> Profile
           </h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center text-2xl font-bold text-white">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl font-bold text-white">
                 {displayName?.charAt(0) || 'A'}
               </div>
               <div>
@@ -154,7 +154,7 @@ export function SettingsPage() {
                 </div>
                 <button
                   onClick={() => toggleNotification(index)}
-                  className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-cyan-500/100' : 'bg-gray-300'} relative`}
+                  className={`w-10 h-5 rounded-full transition-colors ${notif.enabled ? 'bg-amber-500/100' : 'bg-gray-300'} relative`}
                   aria-label={`Toggle ${notif.label}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-gray-300 transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`} />
@@ -167,7 +167,7 @@ export function SettingsPage() {
         {/* Appearance */}
         <Card>
           <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4 text-cyan-400" /> Appearance
+            <Palette className="w-4 h-4 text-amber-400" /> Appearance
           </h3>
           <div className="space-y-4">
             <div>
@@ -176,7 +176,7 @@ export function SettingsPage() {
                 <div className="w-20 h-14 rounded-lg bg-gray-800 border border-white/[0.08] flex items-center justify-center text-xs text-gray-300 cursor-not-allowed opacity-40" title="Dark theme not available">
                   Dark
                 </div>
-                <div className="w-20 h-14 rounded-lg bg-white/[0.1] border-2 border-cyan-500 flex items-center justify-center text-xs text-gray-400">
+                <div className="w-20 h-14 rounded-lg bg-white/[0.1] border-2 border-amber-500 flex items-center justify-center text-xs text-gray-400">
                   Light
                 </div>
               </div>
@@ -189,7 +189,7 @@ export function SettingsPage() {
                     key={c.class}
                     onClick={() => setAccentColor(c.class)}
                     title={c.name}
-                    className={`w-8 h-8 rounded-full ${c.class} transition-all ${c.class === accentColor ? 'ring-2 ring-offset-2 ring-offset-white ring-cyan-400 scale-110' : 'hover:scale-105'}`}
+                    className={`w-8 h-8 rounded-full ${c.class} transition-all ${c.class === accentColor ? 'ring-2 ring-offset-2 ring-offset-white ring-amber-400 scale-110' : 'hover:scale-105'}`}
                   />
                 ))}
               </div>
@@ -201,7 +201,7 @@ export function SettingsPage() {
         {/* Platform Info */}
         <Card>
           <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-cyan-400" /> Platform
+            <Cpu className="w-4 h-4 text-amber-400" /> Platform
           </h3>
           <div className="space-y-3">
             {[

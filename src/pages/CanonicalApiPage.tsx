@@ -9,19 +9,19 @@ import { Button } from "@/components/ui/button";
 
 const methodColor: Record<string, string> = {
   GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  POST: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  POST: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  PATCH: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  PATCH: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   DELETE: 'bg-red-500/10 text-red-400 border-red-500/20',
 };
 
 const domainColor: Record<string, string> = {
   finance: 'text-emerald-400',
-  procurement: 'text-cyan-400',
+  procurement: 'text-amber-400',
   'supply-chain': 'text-amber-400',
-  hr: 'text-cyan-400',
+  hr: 'text-amber-400',
   sales: 'text-pink-600',
-  inventory: 'text-cyan-400',
+  inventory: 'text-amber-400',
   crm: 'text-orange-400',
 };
 
@@ -48,7 +48,7 @@ export function CanonicalApiPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export function CanonicalApiPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-white">{ep.description || ep.path}</h3>
                     </div>
-                    <p className="text-xs font-mono text-cyan-400 mt-0.5">{ep.path}</p>
+                    <p className="text-xs font-mono text-amber-400 mt-0.5">{ep.path}</p>
                     <p className="text-xs text-gray-400 mt-1">{ep.description}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
@@ -196,7 +196,7 @@ export function CanonicalApiPage() {
                 <div className="space-y-1">
                   {entity.fields.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/100 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500/100 flex-shrink-0" />
                       <span className="font-mono text-gray-400">{f}</span>
                     </div>
                   ))}

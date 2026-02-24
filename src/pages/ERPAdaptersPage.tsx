@@ -75,7 +75,7 @@ export function ERPAdaptersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
@@ -171,7 +171,7 @@ export function ERPAdaptersPage() {
 
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-3                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                                      <span className="text-xs font-medium text-cyan-400 w-24">Operations</span>
+                                      <span className="text-xs font-medium text-amber-400 w-24">Operations</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.operations.map(op => (
                         <Badge key={op} variant={op === 'write' ? 'warning' : op === 'subscribe' ? 'info' : 'success'} size="sm">{op}</Badge>
@@ -179,7 +179,7 @@ export function ERPAdaptersPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                                      <span className="text-xs font-medium text-cyan-400 w-24">Auth</span>
+                                      <span className="text-xs font-medium text-amber-400 w-24">Auth</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.authMethods.map(m => (
                         <Badge key={m} variant="outline" size="sm">{m}</Badge>

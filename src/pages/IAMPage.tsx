@@ -67,7 +67,7 @@ export function IAMPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
   }
@@ -76,8 +76,8 @@ export function IAMPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="          w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-                      <ShieldCheck className="w-5 h-5 text-cyan-400"/>
+          <div className="          w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <ShieldCheck className="w-5 h-5 text-amber-400"/>
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Identity & Access Management</h1>
@@ -183,8 +183,8 @@ export function IAMPage() {
               <Card key={i}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="                    w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                                          <Globe className="w-5 h-5 text-cyan-400"/>
+                    <div className="                    w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                                          <Globe className="w-5 h-5 text-amber-400"/>
                     </div>
                     <div>
                       <h3 className="text-base font-semibold text-white">{sso.provider.replace('_', ' ').toUpperCase()}</h3>
@@ -222,7 +222,7 @@ export function IAMPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => {
               const Icon = role.name.toLowerCase().includes('admin') ? ShieldCheck : role.name.toLowerCase().includes('exec') ? Shield : role.name.toLowerCase().includes('manager') ? UserCheck : Users;
-              const color = role.name.toLowerCase().includes('admin') ? 'text-red-400' : role.name.toLowerCase().includes('exec') ? 'text-amber-400' : role.name.toLowerCase().includes('manager') ? 'text-cyan-400' : 'text-cyan-400';
+              const color = role.name.toLowerCase().includes('admin') ? 'text-red-400' : role.name.toLowerCase().includes('exec') ? 'text-amber-400' : role.name.toLowerCase().includes('manager') ? 'text-amber-400' : 'text-amber-400';
               return (
                 <Card key={role.id}>
                   <div className="flex items-center justify-between mb-2">
