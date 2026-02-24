@@ -1,16 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="f1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#67e8f9"/>
-      <stop offset="100%" stop-color="#0ea5e9"/>
+    <linearGradient id="al" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a5f3fc" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.8"/>
     </linearGradient>
-    <linearGradient id="f2" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#22d3ee"/>
-      <stop offset="100%" stop-color="#0284c7"/>
+    <linearGradient id="ar" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.65"/>
     </linearGradient>
-    <linearGradient id="f3" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="#a5f3fc"/>
-      <stop offset="100%" stop-color="#0369a1"/>
+    <linearGradient id="ac" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#67e8f9"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="ad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#0e7490" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#164e63" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="ab" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cffafe" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.7"/>
     </linearGradient>
     <linearGradient id="sh" x1="30%" y1="0%" x2="70%" y2="100%">
       <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
@@ -25,27 +34,34 @@
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <!-- Crystal polyhedron -->
-  <polygon points="32,8 18,26 22,42" fill="url(#f1)" stroke="#22d3ee" stroke-width="0.5" opacity="0.9"/>
-  <polygon points="32,8 46,26 42,42" fill="url(#f3)" stroke="#22d3ee" stroke-width="0.5" opacity="0.85"/>
-  <polygon points="32,8 22,42 42,42" fill="url(#f2)" stroke="#67e8f9" stroke-width="0.5" opacity="0.9"/>
-  <polygon points="22,42 32,56 42,42" fill="url(#f2)" stroke="#06b6d4" stroke-width="0.5" opacity="0.7"/>
-  <!-- Side faces -->
-  <polygon points="18,26 14,34 22,42" fill="url(#f2)" stroke="#22d3ee" stroke-width="0.3" opacity="0.6"/>
-  <polygon points="46,26 50,34 42,42" fill="url(#f1)" stroke="#22d3ee" stroke-width="0.3" opacity="0.5"/>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Atheon "A" — crystal facets -->
+  <polygon points="32,6 12,54 18,54" fill="url(#al)" stroke="#22d3ee" stroke-width="0.5" opacity="0.9"/>
+  <polygon points="32,6 18,54 24,38" fill="url(#ab)" stroke="#67e8f9" stroke-width="0.4" opacity="0.8"/>
+  <polygon points="32,6 52,54 46,54" fill="url(#ar)" stroke="#22d3ee" stroke-width="0.5" opacity="0.85"/>
+  <polygon points="32,6 46,54 40,38" fill="url(#ad)" stroke="#38bdf8" stroke-width="0.4" opacity="0.7"/>
+  <!-- Crossbar -->
+  <polygon points="21,38 24,38 40,38 43,38 41,42 23,42" fill="url(#ac)" stroke="#67e8f9" stroke-width="0.4" stroke-opacity="0.5"/>
+  <!-- Inner triangle -->
+  <polygon points="32,18 24,38 40,38" fill="url(#ad)" stroke="#22d3ee" stroke-width="0.3" opacity="0.5"/>
+  <!-- Foot bases -->
+  <polygon points="12,54 18,54 23,42 16,42" fill="url(#ad)" stroke="#0e7490" stroke-width="0.3" opacity="0.5"/>
+  <polygon points="52,54 46,54 41,42 48,42" fill="url(#ad)" stroke="#0e7490" stroke-width="0.3" opacity="0.45"/>
   <!-- Specular highlight -->
-  <polygon points="32,10 24,24 30,22" fill="url(#sh)" opacity="0.5"/>
+  <polygon points="32,8 25,28 30,25" fill="url(#sh)" opacity="0.45"/>
+  <!-- Apex crown -->
+  <polygon points="29,9 32,6 35,9 32,14" fill="url(#ab)" stroke="#67e8f9" stroke-width="0.3" opacity="0.8"/>
   <!-- Vertex glows -->
-  <circle cx="32" cy="8" r="2.5" fill="white" opacity="0.95" filter="url(#gl)"/>
-  <circle cx="32" cy="56" r="2" fill="white" opacity="0.8" filter="url(#gl)"/>
-  <circle cx="18" cy="26" r="1.5" fill="#a5f3fc" opacity="0.7"/>
-  <circle cx="46" cy="26" r="1.5" fill="#a5f3fc" opacity="0.7"/>
-  <!-- Orbital ring hint -->
-  <ellipse cx="32" cy="32" rx="28" ry="9" fill="none" stroke="#22d3ee" stroke-width="0.6" opacity="0.35" transform="rotate(-15 32 32)"/>
+  <circle cx="32" cy="6" r="2.5" fill="white" opacity="0.95" filter="url(#gl)"/>
+  <circle cx="12" cy="54" r="1.5" fill="#a5f3fc" opacity="0.7"/>
+  <circle cx="52" cy="54" r="1.5" fill="#a5f3fc" opacity="0.7"/>
+  <circle cx="24" cy="38" r="1.2" fill="#67e8f9" opacity="0.6"/>
+  <circle cx="40" cy="38" r="1.2" fill="#67e8f9" opacity="0.6"/>
+  <!-- Orbital ring -->
+  <ellipse cx="32" cy="34" rx="28" ry="8" fill="none" stroke="#22d3ee" stroke-width="0.6" opacity="0.3" transform="rotate(-12 32 34)"/>
   <!-- Particles -->
-  <circle cx="10" cy="22" r="1" fill="#67e8f9" opacity="0.6"/>
-  <circle cx="54" cy="20" r="0.8" fill="#67e8f9" opacity="0.5"/>
-  <circle cx="12" cy="44" r="0.7" fill="#a5f3fc" opacity="0.4"/>
-  <circle cx="52" cy="46" r="0.9" fill="#a5f3fc" opacity="0.5"/>
+  <circle cx="8" cy="24" r="0.9" fill="#67e8f9" opacity="0.5"/>
+  <circle cx="56" cy="22" r="0.7" fill="#67e8f9" opacity="0.4"/>
+  <circle cx="10" cy="46" r="0.6" fill="#a5f3fc" opacity="0.35"/>
+  <circle cx="54" cy="48" r="0.8" fill="#a5f3fc" opacity="0.4"/>
 </svg>
