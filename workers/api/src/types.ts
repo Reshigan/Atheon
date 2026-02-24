@@ -3,6 +3,7 @@ export interface Env {
   AI: Ai;
   VECTORIZE: VectorizeIndex;
   CACHE: KVNamespace;
+  STORAGE: R2Bucket;
   JWT_SECRET: string;
   ENVIRONMENT: string;
 }

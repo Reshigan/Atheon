@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
+import { executeTask, approveAction, rejectAction } from '../services/catalyst-engine';
 
 const catalysts = new Hono<{ Bindings: Env }>();
 
@@ -150,48 +151,61 @@ catalysts.get('/actions', async (c) => {
   return c.json({ actions: formatted, total: formatted.length });
 });
 
-// POST /api/catalysts/actions
+// POST /api/catalysts/actions - Submit action through execution engine
 catalysts.post('/actions', async (c) => {
   const body = await c.req.json<{
     cluster_id: string; tenant_id: string; catalyst_name: string; action: string;
-    confidence?: number; input_data?: unknown; reasoning?: string;
+    confidence?: number; input_data?: Record<string, unknown>; reasoning?: string;
+    risk_level?: string;
   }>();
 
-  const id = crypto.randomUUID();
-  await c.env.DB.prepare(
-    'INSERT INTO catalyst_actions (id, cluster_id, tenant_id, catalyst_name, action, status, confidence, input_data, reasoning) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.cluster_id, body.tenant_id, body.catalyst_name, body.action, 'pending', body.confidence || 0, body.input_data ? JSON.stringify(body.input_data) : null, body.reasoning || null).run();
+  // Get cluster info for autonomy tier and trust score
+  const cluster = await c.env.DB.prepare(
+    'SELECT * FROM catalyst_clusters WHERE id = ?'
+  ).bind(body.cluster_id).first();
+
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  // Execute through the catalyst engine
+  const result = await executeTask({
+    clusterId: body.cluster_id,
+    tenantId: body.tenant_id,
+    catalystName: body.catalyst_name,
+    action: body.action,
+    inputData: body.input_data || {},
+    riskLevel: (body.risk_level || 'medium') as 'high' | 'medium' | 'low',
+    autonomyTier: (cluster.autonomy_tier as string) || 'read-only',
+    trustScore: (cluster.trust_score as number) || 0.5,
+  }, c.env.DB, c.env.CACHE, c.env.AI);
 
   // Log audit
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(crypto.randomUUID(), body.tenant_id, 'catalyst.action.created', 'catalysts', body.cluster_id, JSON.stringify({ action_id: id, catalyst: body.catalyst_name, action: body.action }), 'success').run();
+  ).bind(
+    crypto.randomUUID(), body.tenant_id, 'catalyst.action.executed', 'catalysts', body.cluster_id,
+    JSON.stringify({ action_id: result.actionId, catalyst: body.catalyst_name, action: body.action, confidence: result.confidence, status: result.status }),
+    result.status === 'failed' ? 'failure' : 'success',
+  ).run();
 
-  return c.json({ id, status: 'pending' }, 201);
+  return c.json(result, 201);
 });
 
-// PUT /api/catalysts/actions/:id/approve
+// PUT /api/catalysts/actions/:id/approve - Approve via execution engine
 catalysts.put('/actions/:id/approve', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ approved_by?: string }>();
 
-  await c.env.DB.prepare(
-    'UPDATE catalyst_actions SET status = ?, approved_by = ?, completed_at = datetime(\'now\') WHERE id = ?'
-  ).bind('approved', body.approved_by || 'system', id).run();
-
-  return c.json({ success: true, status: 'approved' });
+  const result = await approveAction(id, body.approved_by || 'system', c.env.DB, c.env.CACHE);
+  return c.json(result);
 });
 
-// PUT /api/catalysts/actions/:id/reject
+// PUT /api/catalysts/actions/:id/reject - Reject via execution engine
 catalysts.put('/actions/:id/reject', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ approved_by?: string; reason?: string }>();
 
-  await c.env.DB.prepare(
-    'UPDATE catalyst_actions SET status = ?, approved_by = ?, completed_at = datetime(\'now\') WHERE id = ?'
-  ).bind('rejected', body.approved_by || 'system', id).run();
-
-  return c.json({ success: true, status: 'rejected' });
+  const result = await rejectAction(id, body.approved_by || 'system', body.reason || '', c.env.DB, c.env.CACHE);
+  return c.json(result);
 });
 
 // GET /api/catalysts/governance?tenant_id=
@@ -217,6 +231,55 @@ catalysts.get('/governance', async (c) => {
       domain: cl.domain,
       autonomyTier: cl.autonomy_tier,
       trustScore: cl.trust_score,
+    })),
+  });
+});
+
+// GET /api/catalysts/approvals?tenant_id= - Get pending approval requests
+catalysts.get('/approvals', async (c) => {
+  const tenantId = c.req.query('tenant_id') || 'vantax';
+
+  const results = await c.env.DB.prepare(
+    'SELECT ca.*, cc.name as cluster_name, cc.domain FROM catalyst_actions ca JOIN catalyst_clusters cc ON ca.cluster_id = cc.id WHERE ca.tenant_id = ? AND ca.status IN (?, ?) ORDER BY ca.created_at DESC'
+  ).bind(tenantId, 'pending_approval', 'escalated').all();
+
+  return c.json({
+    approvals: results.results.map((a: Record<string, unknown>) => ({
+      id: a.id,
+      clusterId: a.cluster_id,
+      clusterName: a.cluster_name,
+      domain: a.domain,
+      catalystName: a.catalyst_name,
+      action: a.action,
+      status: a.status,
+      confidence: a.confidence,
+      reasoning: a.reasoning,
+      inputData: a.input_data ? JSON.parse(a.input_data as string) : null,
+      createdAt: a.created_at,
+    })),
+    total: results.results.length,
+  });
+});
+
+// GET /api/catalysts/execution-stats?tenant_id= - Execution engine stats
+catalysts.get('/execution-stats', async (c) => {
+  const tenantId = c.req.query('tenant_id') || 'vantax';
+
+  const [total, byStatus, avgConfidence, recentExecutions] = await Promise.all([
+    c.env.DB.prepare('SELECT COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>(),
+    c.env.DB.prepare('SELECT status, COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ? GROUP BY status').bind(tenantId).all(),
+    c.env.DB.prepare('SELECT AVG(confidence) as avg_conf FROM catalyst_actions WHERE tenant_id = ? AND confidence IS NOT NULL').bind(tenantId).first<{ avg_conf: number }>(),
+    c.env.DB.prepare('SELECT * FROM catalyst_actions WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 10').bind(tenantId).all(),
+  ]);
+
+  return c.json({
+    totalExecutions: total?.count || 0,
+    statusBreakdown: byStatus.results.reduce((acc: Record<string, unknown>, r: Record<string, unknown>) => {
+      acc[r.status as string] = r.count; return acc;
+    }, {}),
+    averageConfidence: Math.round((avgConfidence?.avg_conf || 0) * 100) / 100,
+    recentExecutions: recentExecutions.results.map((a: Record<string, unknown>) => ({
+      id: a.id, action: a.action, status: a.status, confidence: a.confidence, createdAt: a.created_at,
     })),
   });
 });
