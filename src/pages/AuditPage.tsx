@@ -5,7 +5,6 @@ import { api } from "@/lib/api";
 import type { AuditEntry } from "@/lib/api";
 import { Shield, CheckCircle, XCircle, Clock, Filter, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { AtheonLayer } from "@/types";
 
 export function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -147,7 +146,7 @@ export function AuditPage() {
                   </td>
                   <td className="py-3 px-4 text-sm text-white">{entry.action}</td>
                   <td className="py-3 px-4">
-                    <LayerBadge layer={entry.layer as AtheonLayer} />
+                    <LayerBadge layer={entry.layer} />
                   </td>
                   <td className="py-3 px-4 text-xs text-gray-400 max-w-xs truncate">
                     {entry.details ? Object.entries(entry.details).map(([k, v]) => `${k}: ${v}`).join(', ') : '-'}

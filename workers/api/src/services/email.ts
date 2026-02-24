@@ -1,8 +1,10 @@
 /**
  * Email Notification Service
- * Sends transactional emails via MailChannels (free for Cloudflare Workers)
- * or falls back to storing email records for external pickup.
+ * Sends transactional emails via Microsoft Graph API (OAuth2 client credentials flow)
+ * using Azure AD app registration, or falls back to storing email records for external pickup.
  */
+
+import type { Env } from '../types';
 
 export interface EmailPayload {
   to: string[];
@@ -17,7 +19,7 @@ export interface EmailPayload {
 export interface EmailResult {
   id: string;
   sent: boolean;
-  channel: 'mailchannels' | 'queued';
+  channel: 'msgraph' | 'queued';
   error?: string;
 }
 
@@ -207,42 +209,84 @@ export function getPasswordResetEmailTemplate(
   return { html, text };
 }
 
-// ── Send Email via MailChannels (Cloudflare Workers native) ──
+// ── Get Microsoft Graph API access token via OAuth2 client credentials ──
 
-export async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
+async function getMsGraphToken(env: Env): Promise<string> {
+  const tenantId = env.AZURE_AD_TENANT_ID;
+  const clientId = env.AZURE_AD_CLIENT_ID;
+  const clientSecret = env.AZURE_AD_CLIENT_SECRET;
+
+  if (!tenantId || !clientId || !clientSecret) {
+    throw new Error('Missing Azure AD credentials (AZURE_AD_TENANT_ID, AZURE_AD_CLIENT_ID, AZURE_AD_CLIENT_SECRET)');
+  }
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'https://graph.microsoft.com/.default',
+    grant_type: 'client_credentials',
+  });
+
+  const resp = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+
+  if (!resp.ok) {
+    const errorText = await resp.text().catch(() => '');
+    throw new Error(`Azure AD token error (${resp.status}): ${errorText}`);
+  }
+
+  const data = await resp.json<{ access_token: string }>();
+  return data.access_token;
+}
+
+// ── Send Email via Microsoft Graph API ──
+
+export async function sendEmail(payload: EmailPayload, env: Env): Promise<EmailResult> {
   const id = crypto.randomUUID();
+  const senderEmail = payload.from || 'atheon@vantax.co.za';
 
   try {
-    // MailChannels API — free for Cloudflare Workers
-    // https://blog.cloudflare.com/sending-email-from-workers-with-mailchannels/
-    const resp = await fetch('https://api.mailchannels.net/tx/v1/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        personalizations: payload.to.map(email => ({
-          to: [{ email }],
-        })),
-        from: {
-          email: payload.from || 'notifications@atheon.vantax.co.za',
-          name: 'Atheon Platform',
-        },
-        reply_to: payload.replyTo ? { email: payload.replyTo } : undefined,
+    const accessToken = await getMsGraphToken(env);
+
+    // Build the Graph API sendMail payload
+    const graphPayload = {
+      message: {
         subject: payload.subject,
-        content: [
-          ...(payload.textBody ? [{ type: 'text/plain', value: payload.textBody }] : []),
-          { type: 'text/html', value: payload.htmlBody },
-        ],
-      }),
+        body: {
+          contentType: 'HTML',
+          content: payload.htmlBody,
+        },
+        toRecipients: payload.to.map(email => ({
+          emailAddress: { address: email },
+        })),
+        ...(payload.replyTo ? {
+          replyTo: [{ emailAddress: { address: payload.replyTo } }],
+        } : {}),
+      },
+      saveToSentItems: false,
+    };
+
+    const graphUrl = `https://graph.microsoft.com/v1.0/users/${senderEmail}/sendMail`;
+    const resp = await fetch(graphUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(graphPayload),
     });
 
     if (resp.ok || resp.status === 202) {
-      return { id, sent: true, channel: 'mailchannels' };
+      return { id, sent: true, channel: 'msgraph' };
     }
 
-    // MailChannels may not be enabled — queue for external pickup
     const errorText = await resp.text().catch(() => '');
-    console.error(`MailChannels error (${resp.status}):`, errorText);
-    return { id, sent: false, channel: 'queued', error: `MailChannels HTTP ${resp.status}` };
+    console.error(`MS Graph sendMail error (${resp.status}):`, errorText);
+    return { id, sent: false, channel: 'queued', error: `MS Graph HTTP ${resp.status}: ${errorText}` };
   } catch (err) {
     console.error('Email send error:', err);
     return { id, sent: false, channel: 'queued', error: (err as Error).message };
@@ -261,9 +305,9 @@ export async function queueEmail(db: D1Database, payload: EmailPayload): Promise
 
 // ── Send or queue email ──
 
-export async function sendOrQueueEmail(db: D1Database, payload: EmailPayload): Promise<EmailResult> {
-  // Try to send directly
-  const result = await sendEmail(payload);
+export async function sendOrQueueEmail(db: D1Database, payload: EmailPayload, env: Env): Promise<EmailResult> {
+  // Try to send directly via Microsoft Graph API
+  const result = await sendEmail(payload, env);
 
   if (!result.sent) {
     // Queue for later delivery
