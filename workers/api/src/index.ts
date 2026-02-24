@@ -17,9 +17,20 @@ import audit from './routes/audit';
 
 const app = new Hono<{ Bindings: Env }>();
 
-// CORS
+// CORS - restricted to production and preview domains
+const ALLOWED_ORIGINS = [
+  'https://atheon.vantax.co.za',
+  'https://atheon-33b.pages.dev',
+];
+
 app.use('*', cors({
-  origin: '*',
+  origin: (origin) => {
+    if (!origin) return 'https://atheon.vantax.co.za';
+    if (ALLOWED_ORIGINS.includes(origin)) return origin;
+    // Allow Cloudflare Pages preview deployments
+    if (origin.endsWith('.atheon-33b.pages.dev')) return origin;
+    return null as unknown as string;
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
   exposeHeaders: ['Content-Length', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],

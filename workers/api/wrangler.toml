@@ -3,7 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
 [vars]
-JWT_SECRET = "atheon-jwt-secret-change-in-production"
 ENVIRONMENT = "production"
 
 [[d1_databases]]
