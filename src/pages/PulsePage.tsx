@@ -49,11 +49,11 @@ export function PulsePage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-          <Activity className="w-5 h-5 text-emerald-600" />
+        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+          <Activity className="w-5 h-5 text-emerald-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Atheon Pulse</h1>
+          <h1 className="text-2xl font-bold text-white">Atheon Pulse</h1>
           <p className="text-sm text-gray-500">Process Intelligence - Operational Nervous System</p>
         </div>
       </div>
@@ -68,12 +68,12 @@ export function PulsePage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-400 truncate">{metric.name}</span>
                   <span className={`w-2.5 h-2.5 rounded-full ${
-                    metric.status === 'green' ? 'bg-emerald-500' : metric.status === 'amber' ? 'bg-amber-500' : 'bg-red-500'
+                    metric.status === 'green' ? 'bg-emerald-500/100' : metric.status === 'amber' ? 'bg-amber-500/100' : 'bg-red-500/100'
                   }`} />
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <span className="text-2xl font-bold text-gray-900">{metric.value}</span>
+                    <span className="text-2xl font-bold text-white">{metric.value}</span>
                     <span className="text-sm text-gray-400 ml-1">{metric.unit}</span>
                   </div>
                   <Sparkline
@@ -108,32 +108,32 @@ export function PulsePage() {
               <Card key={anom.id}>
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    anom.severity === 'critical' ? 'bg-red-50' : anom.severity === 'high' ? 'bg-amber-50' : 'bg-cyan-50'
+                    anom.severity === 'critical' ? 'bg-red-500/10' : anom.severity === 'high' ? 'bg-amber-500/10' : 'bg-cyan-500/10'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      anom.severity === 'critical' ? 'text-red-600' : anom.severity === 'high' ? 'text-amber-600' : 'text-cyan-600'
+                      anom.severity === 'critical' ? 'text-red-400' : anom.severity === 'high' ? 'text-amber-400' : 'text-cyan-400'
                     }`} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <h3 className="text-base font-semibold text-gray-900">{anom.metric}</h3>
+                      <h3 className="text-base font-semibold text-white">{anom.metric}</h3>
                       <Badge variant={anom.severity === 'critical' ? 'danger' : anom.severity === 'high' ? 'warning' : 'info'}>
                         +{anom.deviation}% deviation
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{anom.hypothesis}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-                      <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                      <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Expected</span>
-                        <p className="text-sm font-medium text-gray-600">{anom.expectedValue}</p>
+                        <p className="text-sm font-medium text-gray-400">{anom.expectedValue}</p>
                       </div>
-                      <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                      <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Actual</span>
-                        <p className="text-sm font-medium text-red-600">{anom.actualValue}</p>
+                        <p className="text-sm font-medium text-red-400">{anom.actualValue}</p>
                       </div>
-                      <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                      <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Detected</span>
-                        <p className="text-sm font-medium text-gray-600">{new Date(anom.detectedAt).toLocaleTimeString()}</p>
+                        <p className="text-sm font-medium text-gray-400">{new Date(anom.detectedAt).toLocaleTimeString()}</p>
                       </div>
                     </div>
                   </div>
@@ -151,7 +151,7 @@ export function PulsePage() {
               <Card key={flow.id}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{flow.name}</h3>
+                    <h3 className="text-lg font-semibold text-white">{flow.name}</h3>
                     <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
                       <span>{flow.variants} variants</span>
                       <span>Avg duration: {flow.avgDuration} days</span>
@@ -166,11 +166,11 @@ export function PulsePage() {
                   {flow.steps.map((step, i) => (
                     <div key={step.id} className="flex items-center gap-2">
                       <div className={`p-3 rounded-lg border min-w-32 ${
-                        step.status === 'bottleneck' ? 'bg-red-50 border-red-200' :
-                        step.status === 'degraded' ? 'bg-amber-50 border-amber-200' :
-                        'bg-white/40 border-white/50 backdrop-blur-sm'
+                        step.status === 'bottleneck' ? 'bg-red-500/10 border-red-500/20' :
+                        step.status === 'degraded' ? 'bg-amber-500/10 border-amber-500/20' :
+                        'bg-white/[0.04] border-white/[0.06] backdrop-blur-sm'
                       }`}>
-                        <span className="text-sm font-medium text-gray-800">{step.name}</span>
+                        <span className="text-sm font-medium text-white">{step.name}</span>
                         <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
                           <span>{step.avgDuration}d avg</span>
                           <span>{step.throughput}/day</span>
@@ -189,8 +189,8 @@ export function PulsePage() {
                 </div>
 
                 {flow.bottlenecks.length > 0 && (
-                  <div className="mt-3 p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-                    <span className="text-xs font-medium text-red-600">Bottlenecks: </span>
+                  <div className="mt-3 p-3 rounded-lg bg-red-500/100/5 border border-red-500/10">
+                    <span className="text-xs font-medium text-red-400">Bottlenecks: </span>
                     <span className="text-xs text-gray-500">{flow.bottlenecks.join(', ')}</span>
                   </div>
                 )}
@@ -207,29 +207,29 @@ export function PulsePage() {
               <Card key={event.id}>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="p-2 rounded-lg bg-cyan-50 text-center min-w-20">
-                      <span className="text-xs text-cyan-600 font-medium">{event.sourceSystem}</span>
+                    <div className="p-2 rounded-lg bg-cyan-500/10 text-center min-w-20">
+                      <span className="text-xs text-cyan-400 font-medium">{event.sourceSystem}</span>
                     </div>
                     <div className="flex-1 relative">
                       <div className="h-px bg-gradient-to-r from-cyan-500/40 to-blue-500/30" />
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white/70 border border-white/50 backdrop-blur-sm text-[10px] text-gray-500">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.06] backdrop-blur-sm text-[10px] text-gray-500">
                         {event.lagDays}d lag
                       </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-cyan-50 text-center min-w-20">
-                      <span className="text-xs text-cyan-600 font-medium">{event.targetSystem}</span>
+                    <div className="p-2 rounded-lg bg-cyan-500/10 text-center min-w-20">
+                      <span className="text-xs text-cyan-400 font-medium">{event.targetSystem}</span>
                     </div>
                   </div>
                   <Badge variant="info">{Math.round(event.confidence * 100)}%</Badge>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                     <span className="text-[10px] text-gray-400">Source Event</span>
-                    <p className="text-sm text-gray-600">{event.sourceEvent}</p>
+                    <p className="text-sm text-gray-400">{event.sourceEvent}</p>
                   </div>
-                  <div className="p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                     <span className="text-[10px] text-gray-400">Target Impact</span>
-                    <p className="text-sm text-gray-600">{event.targetImpact}</p>
+                    <p className="text-sm text-gray-400">{event.targetImpact}</p>
                   </div>
                 </div>
               </Card>

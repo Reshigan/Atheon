@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 
 const deploymentIcon = (model: string) => {
-  if (model === 'saas') return <Cloud size={14} className="text-cyan-600" />;
-  if (model === 'on-premise') return <Server size={14} className="text-amber-600" />;
-  return <GitBranch size={14} className="text-cyan-600" />;
+  if (model === 'saas') return <Cloud size={14} className="text-cyan-400" />;
+  if (model === 'on-premise') return <Server size={14} className="text-amber-400" />;
+  return <GitBranch size={14} className="text-cyan-400" />;
 };
 
 const deploymentColor = (model: string) => {
@@ -180,11 +180,11 @@ export function TenantsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="          w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-cyan-600"/>
+          <div className="          w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-cyan-400"/>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Client Access Layer</h1>
+            <h1 className="text-2xl font-bold text-white">Client Access Layer</h1>
             <p className="text-sm text-gray-500">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
           </div>
         </div>
@@ -196,16 +196,16 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Onboard New Tenant</h3>
-              <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Onboard New Tenant</h3>
+              <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
-              <div><label className="text-xs text-gray-500">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
-              <div><label className="text-xs text-gray-500">Industry</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="financial_services">Financial Services</option></select></div>
-              <div><label className="text-xs text-gray-500">Plan</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
-              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
-              <div><label className="text-xs text-gray-500">Region</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
+              <div><label className="text-xs text-gray-500">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
+              <div><label className="text-xs text-gray-500">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
+              <div><label className="text-xs text-gray-500">Industry</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="financial_services">Financial Services</option></select></div>
+              <div><label className="text-xs text-gray-500">Plan</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
+              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs text-gray-500">Region</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowOnboard(false)}>Cancel</Button>
@@ -221,22 +221,22 @@ export function TenantsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">Total Tenants</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{tenants.length}</p>
-          <span className="text-xs text-emerald-600">{tenants.filter(t => t.status === 'active').length} active</span>
+          <p className="text-2xl font-bold text-white mt-1">{tenants.length}</p>
+          <span className="text-xs text-emerald-400">{tenants.filter(t => t.status === 'active').length} active</span>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">SaaS</span>
-          <p className="text-2xl font-bold text-cyan-600 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
+          <p className="text-2xl font-bold text-cyan-400 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
           <span className="text-xs text-gray-400">cloud-hosted</span>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">On-Premise</span>
-          <p className="text-2xl font-bold text-amber-600 mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
+          <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
           <span className="text-xs text-gray-400">self-hosted</span>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Hybrid</span>
-          <p className="text-2xl font-bold text-cyan-600 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
+          <p className="text-2xl font-bold text-cyan-400 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
           <span className="text-xs text-gray-400">mixed deployment</span>
         </Card>
       </div>
@@ -254,11 +254,11 @@ export function TenantsPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-400/20 flex items-center justify-center text-lg font-bold text-cyan-600">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-400/20 flex items-center justify-center text-lg font-bold text-cyan-400">
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-gray-900">{tenant.name}</h3>
+                      <h3 className="text-base font-semibold text-white">{tenant.name}</h3>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         {deploymentIcon(tenant.deploymentModel)}
                         <Badge variant={deploymentColor(tenant.deploymentModel) as 'info' | 'warning' | 'default'} size="sm">
@@ -278,25 +278,25 @@ export function TenantsPage() {
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-                  <div className="text-center p-2 rounded bg-gray-100">
+                  <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Layers</span>
-                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.layers.length}/5</p>
+                    <p className="text-sm font-bold text-white">{tenant.entitlements.layers.length}/5</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-gray-100">
+                  <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Catalysts</span>
-                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.catalystClusters.length}</p>
+                    <p className="text-sm font-bold text-white">{tenant.entitlements.catalystClusters.length}</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-gray-100">
+                  <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Max Agents</span>
-                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.maxAgents}</p>
+                    <p className="text-sm font-bold text-white">{tenant.entitlements.maxAgents}</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-gray-100">
+                  <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Max Users</span>
-                    <p className="text-sm font-bold text-gray-900">{tenant.entitlements.maxUsers}</p>
+                    <p className="text-sm font-bold text-white">{tenant.entitlements.maxUsers}</p>
                   </div>
-                  <div className="text-center p-2 rounded bg-gray-100">
+                  <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Region</span>
-                    <p className="text-sm font-bold text-gray-900">{tenant.region}</p>
+                    <p className="text-sm font-bold text-white">{tenant.region}</p>
                   </div>
                 </div>
 
@@ -304,9 +304,9 @@ export function TenantsPage() {
                 {expandedTenant === tenant.id && (
                   <div className="mt-4 space-y-4 animate-fadeIn">
                     {/* Entitlements */}
-                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-cyan-600" /> Feature Entitlements
+                    <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <Shield size={14} className="text-cyan-400" /> Feature Entitlements
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
                         {tenant.entitlements.features.map((f) => (
@@ -333,13 +333,13 @@ export function TenantsPage() {
                         <div>
                           <span className="text-[10px] text-gray-400">Flags</span>
                           <div className="flex gap-2 mt-1 text-xs">
-                            <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-600' : 'text-gray-400'}>
+                            <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-400' : 'text-gray-400'}>
                               {tenant.entitlements.ssoEnabled ? '✓' : '✗'} SSO
                             </span>
-                            <span className={tenant.entitlements.apiAccess ? 'text-emerald-600' : 'text-gray-400'}>
+                            <span className={tenant.entitlements.apiAccess ? 'text-emerald-400' : 'text-gray-400'}>
                               {tenant.entitlements.apiAccess ? '✓' : '✗'} API
                             </span>
-                            <span className={tenant.entitlements.customBranding ? 'text-emerald-600' : 'text-gray-400'}>
+                            <span className={tenant.entitlements.customBranding ? 'text-emerald-400' : 'text-gray-400'}>
                               {tenant.entitlements.customBranding ? '✓' : '✗'} Branding
                             </span>
                           </div>
@@ -348,22 +348,22 @@ export function TenantsPage() {
                     </div>
 
                     {/* Infrastructure */}
-                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Server size={14} className="text-amber-600" /> Infrastructure
+                    <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <Server size={14} className="text-amber-400" /> Infrastructure
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="p-3 rounded bg-gray-100">
+                        <div className="p-3 rounded bg-white/[0.04]">
                           <span className="text-[10px] text-gray-400">Deployment</span>
-                          <p className="text-sm font-medium text-gray-800">{tenant.deploymentModel}</p>
+                          <p className="text-sm font-medium text-white">{tenant.deploymentModel}</p>
                         </div>
-                        <div className="p-3 rounded bg-gray-100">
+                        <div className="p-3 rounded bg-white/[0.04]">
                           <span className="text-[10px] text-gray-400">Plan</span>
-                          <p className="text-sm font-medium text-gray-800">{tenant.plan}</p>
+                          <p className="text-sm font-medium text-white">{tenant.plan}</p>
                         </div>
-                        <div className="p-3 rounded bg-gray-100">
+                        <div className="p-3 rounded bg-white/[0.04]">
                           <span className="text-[10px] text-gray-400">Region</span>
-                          <p className="text-sm font-medium text-gray-800">{tenant.region}</p>
+                          <p className="text-sm font-medium text-white">{tenant.region}</p>
                         </div>
                       </div>
                     </div>
@@ -384,18 +384,18 @@ export function TenantsPage() {
       {activeTab === 'entitlements' && (
         <TabPanel>
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan Comparison</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Plan Comparison</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
+                  <tr className="border-b border-white/[0.06]">
                     <th className="text-left py-3 text-gray-400 font-medium">Feature</th>
                     <th className="text-center py-3 text-gray-400 font-medium">Starter</th>
                     <th className="text-center py-3 text-gray-400 font-medium">Professional</th>
                     <th className="text-center py-3 text-gray-400 font-medium">Enterprise</th>
                   </tr>
                 </thead>
-                <tbody className="text-gray-600">
+                <tbody className="text-gray-400">
                   {[
                     { feature: 'Atheon Layers', starter: '2', pro: '4', enterprise: '5 (all)' },
                     { feature: 'Catalyst Clusters', starter: '1', pro: '5', enterprise: 'Unlimited' },
@@ -412,11 +412,11 @@ export function TenantsPage() {
                     { feature: 'Process Mining', starter: '—', pro: 'Yes', enterprise: 'Yes' },
                     { feature: 'GraphRAG Memory', starter: '—', pro: 'Yes', enterprise: 'Yes + Templates' },
                   ].map((row) => (
-                    <tr key={row.feature} className="border-b border-gray-200">
+                    <tr key={row.feature} className="border-b border-white/[0.06]">
                       <td className="py-2.5 font-medium">{row.feature}</td>
                       <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.starter}</td>
                       <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.pro}</td>
-                      <td className="py-2.5 text-center text-cyan-600">{row.enterprise}</td>
+                      <td className="py-2.5 text-center text-cyan-400">{row.enterprise}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -436,8 +436,8 @@ export function TenantsPage() {
             ].map((infra) => {
               const Icon = infra.icon;
               const colorMap: Record<string, { bg: string; text: string }> = {
-                blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
-                amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+                blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
+                amber: { bg: 'bg-amber-500/10', text: 'text-amber-400' },
                 sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
               };
               const colors = colorMap[infra.color] || colorMap.blue;
@@ -446,12 +446,12 @@ export function TenantsPage() {
                   <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center mb-3`}>
                     <Icon className={`w-5 h-5 ${colors.text}`} />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">{infra.model}</h3>
+                  <h3 className="text-base font-semibold text-white">{infra.model}</h3>
                   <p className="text-xs text-gray-500 mt-1">{infra.desc}</p>
                   <div className="mt-3 space-y-1.5">
                     {infra.features.map((f) => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
-                        <CheckCircle size={12} className="text-emerald-600" />
+                      <div key={f} className="flex items-center gap-2 text-xs text-gray-400">
+                        <CheckCircle size={12} className="text-emerald-400" />
                         {f}
                       </div>
                     ))}
@@ -468,8 +468,8 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Manage Users</h3>
-              <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Manage Users</h3>
+              <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
 
             {loadingUsers ? (
@@ -479,9 +479,9 @@ export function TenantsPage() {
                 <div className="space-y-2">
                   {tenantUsers.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">No users found for this tenant.</p>}
                   {tenantUsers.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{u.name}</p>
+                        <p className="text-sm font-medium text-white">{u.name}</p>
                         <p className="text-xs text-gray-500">{u.email}</p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -493,11 +493,11 @@ export function TenantsPage() {
                 </div>
 
                 {showAddUser ? (
-                  <div className="space-y-3 p-4 rounded-lg bg-gray-50 border border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900">Add New User</h4>
-                    <div><label className="text-xs text-gray-500">Email</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={addUserForm.email} onChange={e => setAddUserForm(p => ({ ...p, email: e.target.value }))} placeholder="user@company.com" /></div>
-                    <div><label className="text-xs text-gray-500">Full Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
-                    <div><label className="text-xs text-gray-500">Role</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
+                  <div className="space-y-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <h4 className="text-sm font-semibold text-white">Add New User</h4>
+                    <div><label className="text-xs text-gray-500">Email</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.email} onChange={e => setAddUserForm(p => ({ ...p, email: e.target.value }))} placeholder="user@company.com" /></div>
+                    <div><label className="text-xs text-gray-500">Full Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
+                    <div><label className="text-xs text-gray-500">Role</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
                     <div className="flex gap-3">
                       <Button variant="secondary" size="sm" onClick={() => setShowAddUser(false)}>Cancel</Button>
                       <Button variant="primary" size="sm" onClick={handleAddUser} disabled={!addUserForm.email.trim() || !addUserForm.name.trim() || addingUser}>
@@ -519,13 +519,13 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Deploy Catalyst Cluster</h3>
-              <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Deploy Catalyst Cluster</h3>
+              <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
-              <div><label className="text-xs text-gray-500">Domain</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
-              <div><label className="text-xs text-gray-500">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only (Monitor)</option><option value="assisted">Assisted (Suggest)</option><option value="supervised">Supervised (Act with approval)</option><option value="autonomous">Autonomous (Full execution)</option></select></div>
+              <div><label className="text-xs text-gray-500">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
+              <div><label className="text-xs text-gray-500">Domain</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
+              <div><label className="text-xs text-gray-500">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only (Monitor)</option><option value="assisted">Assisted (Suggest)</option><option value="supervised">Supervised (Act with approval)</option><option value="autonomous">Autonomous (Full execution)</option></select></div>
             </div>
             <p className="text-[10px] text-gray-400">The Catalyst cluster will be provisioned and deployed according to the tenant&apos;s deployment model.</p>
             <div className="flex gap-3 pt-2">
@@ -543,33 +543,33 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Entitlements</h3>
-              <button onClick={() => setShowEditEntitlements(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Edit Entitlements</h3>
+              <button onClick={() => setShowEditEntitlements(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Max Users</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={String(entitlementForm.maxUsers)} onChange={e => setEntitlementForm(p => ({ ...p, maxUsers: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
-              <div><label className="text-xs text-gray-500">Max Agents</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={String(entitlementForm.maxAgents)} onChange={e => setEntitlementForm(p => ({ ...p, maxAgents: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
-              <div><label className="text-xs text-gray-500">Data Retention (days)</label><input type="number" min={30} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={String(entitlementForm.dataRetentionDays)} onChange={e => setEntitlementForm(p => ({ ...p, dataRetentionDays: Math.max(30, parseInt(e.target.value || '90', 10) || 90) }))} /></div>
+              <div><label className="text-xs text-gray-500">Max Users</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.maxUsers)} onChange={e => setEntitlementForm(p => ({ ...p, maxUsers: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
+              <div><label className="text-xs text-gray-500">Max Agents</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.maxAgents)} onChange={e => setEntitlementForm(p => ({ ...p, maxAgents: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
+              <div><label className="text-xs text-gray-500">Data Retention (days)</label><input type="number" min={30} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.dataRetentionDays)} onChange={e => setEntitlementForm(p => ({ ...p, dataRetentionDays: Math.max(30, parseInt(e.target.value || '90', 10) || 90) }))} /></div>
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-700">Feature Flags</h4>
+              <h4 className="text-sm font-medium text-gray-300">Feature Flags</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { key: 'ssoEnabled' as const, label: 'SSO Enabled' },
                   { key: 'apiAccess' as const, label: 'API Access' },
                   { key: 'customBranding' as const, label: 'Custom Branding' },
                 ].map(({ key, label }) => (
-                  <label key={key} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200 cursor-pointer">
-                    <input type="checkbox" checked={entitlementForm[key]} onChange={() => setEntitlementForm(p => ({ ...p, [key]: !p[key] }))} className="rounded border-gray-300" />
-                    <span className="text-xs text-gray-700">{label}</span>
+                  <label key={key} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer">
+                    <input type="checkbox" checked={entitlementForm[key]} onChange={() => setEntitlementForm(p => ({ ...p, [key]: !p[key] }))} className="rounded border-white/[0.08]" />
+                    <span className="text-xs text-gray-300">{label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-700">Autonomy Tiers</h4>
+              <h4 className="text-sm font-medium text-gray-300">Autonomy Tiers</h4>
               <div className="flex flex-wrap gap-2">
                 {['read-only', 'assisted', 'supervised', 'autonomous'].map(tier => (
                   <button
@@ -580,7 +580,7 @@ export function TenantsPage() {
                         ? p.autonomyTiers.filter(t => t !== tier)
                         : [...p.autonomyTiers, tier],
                     }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-cyan-50 border-cyan-300 text-cyan-700' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-cyan-500/10 border-cyan-300 text-cyan-400' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
                   >
                     {tier}
                   </button>
@@ -589,7 +589,7 @@ export function TenantsPage() {
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-700">LLM Tiers</h4>
+              <h4 className="text-sm font-medium text-gray-300">LLM Tiers</h4>
               <div className="flex flex-wrap gap-2">
                 {['tier-1', 'tier-2', 'tier-3', 'custom-lora'].map(tier => (
                   <button
@@ -600,7 +600,7 @@ export function TenantsPage() {
                         ? p.llmTiers.filter(t => t !== tier)
                         : [...p.llmTiers, tier],
                     }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.llmTiers.includes(tier) ? 'bg-cyan-50 border-cyan-300 text-cyan-700' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.llmTiers.includes(tier) ? 'bg-cyan-500/10 border-cyan-300 text-cyan-400' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
                   >
                     {tier}
                   </button>

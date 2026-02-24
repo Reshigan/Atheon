@@ -17,7 +17,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
   return (
-    <div className={cn('flex gap-1 p-1 rounded-xl bg-white/40 border border-white/50 backdrop-blur-sm overflow-x-auto scrollbar-thin', className)}>
+    <div className={cn('flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm overflow-x-auto scrollbar-thin', className)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -25,8 +25,8 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
           className={cn(
             'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
             activeTab === tab.id
-              ? 'bg-white/80 text-cyan-700 border border-white/70 shadow-sm backdrop-blur-sm'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 border border-transparent'
+              ? 'bg-white/[0.08] text-cyan-400 border border-white/[0.1] shadow-sm backdrop-blur-sm'
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] border border-transparent'
           )}
         >
           {tab.icon}
@@ -35,7 +35,7 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
           {tab.count !== undefined && (
             <span className={cn(
               'ml-1 px-1.5 py-0.5 rounded-full text-xs',
-              activeTab === tab.id ? 'bg-cyan-100/70 text-cyan-700' : 'bg-white/40 text-gray-500'
+              activeTab === tab.id ? 'bg-cyan-500/15 text-cyan-400' : 'bg-white/[0.06] text-gray-500'
             )}>
               {tab.count}
             </span>

@@ -46,8 +46,8 @@ export function AppLayout() {
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-glass-strong rounded-2xl p-8 glow-cyan">
-          <Loader2 className="w-8 h-8 text-cyan-600 animate-spin" />
+        <div className="card-dark rounded-2xl p-8">
+          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
         </div>
       </div>
     );

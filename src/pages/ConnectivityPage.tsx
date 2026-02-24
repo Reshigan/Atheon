@@ -62,11 +62,11 @@ export function ConnectivityPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-cyan-500/100/15 flex items-center justify-center">
           <Link2 className="w-5 h-5 text-cyan-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Connectivity</h1>
+          <h1 className="text-2xl font-bold text-white">Connectivity</h1>
           <p className="text-sm text-gray-500">MCP (Model Context Protocol) + A2A (Agent-to-Agent) integration</p>
         </div>
       </div>
@@ -75,19 +75,19 @@ export function ConnectivityPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">MCP Servers</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mcpServers.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{mcpServers.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Connected</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{mcpServers.filter(s => s.status === 'connected').length}</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{mcpServers.filter(s => s.status === 'connected').length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Total Tools</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mcpServers.reduce((s, m) => s + m.tools.length, 0)}</p>
+          <p className="text-2xl font-bold text-white mt-1">{mcpServers.reduce((s, m) => s + m.tools.length, 0)}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Disconnected</span>
-          <p className="text-2xl font-bold text-red-600 mt-1">{mcpServers.filter(s => s.status !== 'connected').length}</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{mcpServers.filter(s => s.status !== 'connected').length}</p>
         </Card>
       </div>
 
@@ -101,16 +101,16 @@ export function ConnectivityPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      server.status === 'connected' ? 'bg-emerald-50' : 'bg-red-50'
+                      server.status === 'connected' ? 'bg-emerald-500/10' : 'bg-red-500/10'
                     }`}>
                       {server.status === 'connected' ? (
-                        <Wifi className="w-5 h-5 text-emerald-600" />
+                        <Wifi className="w-5 h-5 text-emerald-400" />
                       ) : (
-                        <WifiOff className="w-5 h-5 text-red-600" />
+                        <WifiOff className="w-5 h-5 text-red-400" />
                       )}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-gray-900">{server.name}</h3>
+                      <h3 className="text-base font-semibold text-white">{server.name}</h3>
                       <span className="text-xs text-gray-500">{server.system}</span>
                     </div>
                   </div>
@@ -125,9 +125,9 @@ export function ConnectivityPage() {
                   <span className="text-xs text-gray-400">Available Tools ({server.tools.length})</span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {server.tools.map((tool) => (
-                      <div key={tool.name} className="flex items-center justify-between                      p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                      <div key={tool.name} className="flex items-center justify-between                      p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                               <div>
-                                                <span className="text-xs font-mono text-gray-600">{tool.name}</span>
+                                                <span className="text-xs font-mono text-gray-400">{tool.name}</span>
                           <p className="text-[10px] text-gray-400">{tool.description}</p>
                         </div>
                         <div className="flex gap-1">
@@ -155,30 +155,30 @@ export function ConnectivityPage() {
             <div className="flex items-start gap-3">
               <Bot className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Agent-to-Agent (A2A) Protocol</h3>
+                <h3 className="text-sm font-semibold text-white">Agent-to-Agent (A2A) Protocol</h3>
                 <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                   The A2A protocol enables Atheon Catalysts to discover and communicate with each other across clusters.
-                  Each Catalyst publishes an <strong className="text-gray-800">Agent Card</strong> (JSON-LD) describing its capabilities,
+                  Each Catalyst publishes an <strong className="text-white">Agent Card</strong> (JSON-LD) describing its capabilities,
                   skills, and communication endpoints.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
-                  <span className="px-2 py-1 rounded bg-cyan-50 text-cyan-600 border border-cyan-200">Finance Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-200">Finance Catalyst</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">A2A Protocol</span>
+                  <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">A2A Protocol</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-cyan-50 text-cyan-600 border border-cyan-200">Supply Chain Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-200">Supply Chain Catalyst</span>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
-                                      <span className="text-xs font-semibold text-gray-800">Discovery</span>
+                  <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                      <span className="text-xs font-semibold text-white">Discovery</span>
                     <p className="text-[10px] text-gray-400 mt-1">Catalysts register Agent Cards at /.well-known/agent.json</p>
                   </div>
-                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
-                                      <span className="text-xs font-semibold text-gray-800">Communication</span>
+                  <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                      <span className="text-xs font-semibold text-white">Communication</span>
                     <p className="text-[10px] text-gray-400 mt-1">JSON-RPC over HTTP/2. Structured task/result protocol.</p>
                   </div>
-                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
-                                      <span className="text-xs font-semibold text-gray-800">Governance</span>
+                  <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                      <span className="text-xs font-semibold text-white">Governance</span>
                     <p className="text-[10px] text-gray-400 mt-1">All cross-cluster calls logged. Trust scores affect routing.</p>
                   </div>
                 </div>

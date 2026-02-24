@@ -8,13 +8,13 @@ import { Database, Network, Search, BookOpen, ArrowRight, Loader2 } from "lucide
 
 const entityColors: Record<string, string> = {
     Organisation: 'bg-cyan-600',
-    Department: 'bg-cyan-500',
+    Department: 'bg-cyan-500/100',
     Person: 'bg-cyan-400',
-  Process: 'bg-emerald-500',
-  System: 'bg-amber-500',
+  Process: 'bg-emerald-500/100',
+  System: 'bg-amber-500/100',
   KPI: 'bg-sky-500',
-  Document: 'bg-cyan-500',
-  Risk: 'bg-red-500',
+  Document: 'bg-cyan-500/100',
+  Risk: 'bg-red-500/100',
   Asset: 'bg-orange-500',
 };
 
@@ -62,11 +62,11 @@ export function MemoryPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl        bg-cyan-50 flex items-center justify-center">
-                  <Database className="w-5 h-5 text-cyan-600"/>
+        <div className="w-10 h-10 rounded-xl        bg-cyan-500/10 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-cyan-400"/>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Atheon Memory</h1>
+          <h1 className="text-2xl font-bold text-white">Atheon Memory</h1>
           <p className="text-sm text-gray-500">GraphRAG Knowledge Foundation - Organisational Intelligence</p>
         </div>
       </div>
@@ -76,8 +76,8 @@ export function MemoryPage() {
         {graphStats.map((stat) => (
           <Card key={stat.label}>
             <span className="text-xs text-gray-400">{stat.label}</span>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-            <span className="text-xs text-emerald-600">{stat.change}</span>
+            <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+            <span className="text-xs text-emerald-400">{stat.change}</span>
           </Card>
         ))}
       </div>
@@ -85,14 +85,14 @@ export function MemoryPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Entity Types */}
         <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Network className="w-4 h-4 text-cyan-600" /> Entity Distribution
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Network className="w-4 h-4 text-cyan-400" /> Entity Distribution
           </h3>
           <div className="space-y-3">
             {entityTypes.map((entity) => (
               <div key={entity.type} className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${entityColors[entity.type] || 'bg-gray-400'} flex-shrink-0`} />
-                <span className="text-sm text-gray-600 w-28">{entity.type}</span>
+                <span className="text-sm text-gray-400 w-28">{entity.type}</span>
                 <div className="flex-1">
                   <Progress
                     value={entity.count}
@@ -109,14 +109,14 @@ export function MemoryPage() {
 
         {/* RAG Pipeline */}
         <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-cyan-600" /> Recent Entities
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Search className="w-4 h-4 text-cyan-400" /> Recent Entities
           </h3>
           <div className="space-y-3">
             {entities.slice(0, 6).map((entity) => (
-              <div key={entity.id}              className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+              <div key={entity.id}              className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                               <div className="flex items-start justify-between">
-                                <p className="text-sm text-gray-800 font-medium">{entity.name}</p>
+                                <p className="text-sm text-white font-medium">{entity.name}</p>
                   <Badge variant="info" size="sm">{Math.round(entity.confidence * 100)}%</Badge>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-[10px] text-gray-400">
@@ -131,14 +131,14 @@ export function MemoryPage() {
 
       {/* Industry Templates */}
       <Card>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-cyan-600" /> Industry Graph Templates
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-cyan-400" /> Industry Graph Templates
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {industryTemplates.map((template) => (
-            <div key={template.name}            className="p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+            <div key={template.name}            className="p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-semibold text-gray-800">{template.name}</h4>
+                            <h4 className="text-sm font-semibold text-white">{template.name}</h4>
                 <Badge variant="success" size="sm">{template.status}</Badge>
               </div>
               <p className="text-xs text-gray-400">{template.entities}</p>
@@ -150,9 +150,9 @@ export function MemoryPage() {
       {/* Architecture */}
       <Card className="border-cyan-500/20">
         <div className="flex items-start gap-3">
-          <Database className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" />
+          <Database className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">GraphRAG Architecture</h3>
+            <h3 className="text-sm font-semibold text-white">GraphRAG Architecture</h3>
             <p className="text-xs text-gray-500 mt-1">
               Atheon Memory uses Cloudflare D1 (SQLite at edge) for the graph adjacency model and Cloudflare Vectorize
               for semantic search with BGE-large-en-v1.5 embeddings (1024 dimensions). Hybrid retrieval combines vector
@@ -160,13 +160,13 @@ export function MemoryPage() {
               ensuring full provenance from query to response.
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-gray-400">
-              <span className="px-2 py-1 rounded bg-white/40 border border-white/50">D1 Graph</span>
+              <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">D1 Graph</span>
               <ArrowRight className="w-3 h-3 flex-shrink-0" />
-              <span className="px-2 py-1 rounded bg-white/40 border border-white/50">Vectorize</span>
+              <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">Vectorize</span>
               <ArrowRight className="w-3 h-3 flex-shrink-0" />
-              <span className="px-2 py-1 rounded bg-white/40 border border-white/50">Hybrid RAG</span>
+              <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">Hybrid RAG</span>
               <ArrowRight className="w-3 h-3 flex-shrink-0" />
-              <span className="px-2 py-1 rounded bg-white/40 border border-white/50">Citation Injection</span>
+              <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">Citation Injection</span>
             </div>
           </div>
         </div>

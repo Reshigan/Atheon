@@ -14,9 +14,9 @@ export function Card({ children, className, hover, glow, onClick, style }: CardP
   return (
     <div
       className={cn(
-                        'card-glass p-6',
-                        hover && 'hover:bg-white/70 transition-all duration-200 cursor-pointer',
-                        glow && 'shadow-[0_0_20px_rgba(14,165,233,0.1)]',
+        'card-dark p-5',
+        hover && 'cursor-pointer',
+        glow && 'shadow-[0_0_20px_rgba(34,211,238,0.08)]',
         className
       )}
       onClick={onClick}
@@ -32,11 +32,11 @@ export function CardHeader({ children, className }: { children: ReactNode; class
 }
 
 export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h3 className={cn('text-lg font-semibold text-gray-900', className)}>{children}</h3>;
+  return <h3 className={cn('text-lg font-semibold text-white', className)}>{children}</h3>;
 }
 
 export function CardDescription({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn('text-sm text-gray-500 mt-1', className)}>{children}</p>;
+  return <p className={cn('text-sm text-gray-400 mt-1', className)}>{children}</p>;
 }
 
 export function CardContent({ children, className }: { children: ReactNode; className?: string }) {

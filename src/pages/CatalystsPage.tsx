@@ -10,17 +10,17 @@ import { Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send, Chevr
 import type { AutonomyTier } from "@/types";
 
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
-  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-cyan-600' },
-  'assisted': { label: 'Assisted', icon: Wrench, color: 'text-amber-600' },
-  'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-600' },
+  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-cyan-400' },
+  'assisted': { label: 'Assisted', icon: Wrench, color: 'text-amber-400' },
+  'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-400' },
 };
 
 const statusIcon = (status: string) => {
-  if (status === 'completed') return <CheckCircle size={14} className="text-emerald-600" />;
-  if (status === 'pending') return <Clock size={14} className="text-amber-600" />;
-  if (status === 'approved') return <CheckCircle size={14} className="text-cyan-600" />;
-  if (status === 'rejected' || status === 'failed') return <XCircle size={14} className="text-red-600" />;
-  return <Zap size={14} className="text-cyan-600" />;
+  if (status === 'completed') return <CheckCircle size={14} className="text-emerald-400" />;
+  if (status === 'pending') return <Clock size={14} className="text-amber-400" />;
+  if (status === 'approved') return <CheckCircle size={14} className="text-cyan-400" />;
+  if (status === 'rejected' || status === 'failed') return <XCircle size={14} className="text-red-400" />;
+  return <Zap size={14} className="text-cyan-400" />;
 };
 
 export function CatalystsPage() {
@@ -89,11 +89,11 @@ export function CatalystsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-cyan-600" />
+        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+          <Zap className="w-5 h-5 text-cyan-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Atheon Catalysts</h1>
+          <h1 className="text-2xl font-bold text-white">Atheon Catalysts</h1>
           <p className="text-sm text-gray-500">Autonomous Execution - Intelligent Workers</p>
         </div>
       </div>
@@ -110,11 +110,11 @@ export function CatalystsPage() {
                 <Card key={cluster.id} hover>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-cyan-600" />
+                      <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-cyan-400" />
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold text-gray-900">{cluster.name}</h3>
+                        <h3 className="text-base font-semibold text-white">{cluster.name}</h3>
                         <div className="flex items-center gap-2 mt-0.5">
                           <TierIcon size={12} className={tier.color} />
                           <span className={`text-xs ${tier.color}`}>{tier.label}</span>
@@ -132,21 +132,21 @@ export function CatalystsPage() {
                   <p className="text-xs text-gray-400 mt-3">{cluster.description}</p>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                    <div className="text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Trust Score</span>
-                      <p className="text-sm font-bold text-gray-900">{cluster.trustScore}%</p>
+                      <p className="text-sm font-bold text-white">{cluster.trustScore}%</p>
                     </div>
-                    <div className="text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Agents</span>
-                      <p className="text-sm font-bold text-gray-900">{cluster.agentCount}</p>
+                      <p className="text-sm font-bold text-white">{cluster.agentCount}</p>
                     </div>
-                    <div className="text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Completed</span>
-                      <p className="text-sm font-bold text-gray-900">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
+                      <p className="text-sm font-bold text-white">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
                     </div>
-                    <div className="text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Success Rate</span>
-                      <p className="text-sm font-bold text-emerald-600">{cluster.successRate}%</p>
+                      <p className="text-sm font-bold text-emerald-400">{cluster.successRate}%</p>
                     </div>
                   </div>
 
@@ -173,7 +173,7 @@ export function CatalystsPage() {
                   <div className="flex items-start gap-3">
                     {statusIcon(action.status)}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900">{action.action}</h3>
+                      <h3 className="text-sm font-semibold text-white">{action.action}</h3>
                       <p className="text-xs text-gray-400">{action.catalystName}</p>
                     </div>
                   </div>
@@ -189,8 +189,8 @@ export function CatalystsPage() {
 
                 {expandedAction === action.id && (
                   <div className="mt-4 space-y-3 animate-fadeIn">
-                    <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
-                      <h4 className="text-xs font-semibold text-gray-600 mb-1">Reasoning Chain</h4>
+                    <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                      <h4 className="text-xs font-semibold text-gray-400 mb-1">Reasoning Chain</h4>
                       <p className="text-xs text-gray-500">{action.reasoning || 'No reasoning provided'}</p>
                     </div>
                     {action.status === 'pending' && (
@@ -225,18 +225,18 @@ export function CatalystsPage() {
         <TabPanel>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-cyan-600" /> Autonomy Tiers
+              <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-cyan-400" /> Autonomy Tiers
               </h3>
               <div className="space-y-3">
                 {Object.entries(tierConfig).map(([key, config]) => {
                   const Icon = config.icon;
                   const count = clusters.filter(c => c.autonomyTier === key).length;
                   return (
-                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <div className="flex items-center gap-2">
                         <Icon size={14} className={config.color} />
-                        <span className="text-sm text-gray-600">{config.label}</span>
+                        <span className="text-sm text-gray-400">{config.label}</span>
                       </div>
                       <Badge variant="outline">{count} clusters</Badge>
                     </div>
@@ -246,16 +246,16 @@ export function CatalystsPage() {
             </Card>
 
             <Card>
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-cyan-600" /> Trust Scores
+              <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-cyan-400" /> Trust Scores
               </h3>
               <div className="space-y-3">
                 {clusters.slice(0, 5).map((cluster) => (
                   <div key={cluster.id} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 truncate">{cluster.name}</span>
+                    <span className="text-sm text-gray-400 truncate">{cluster.name}</span>
                     <div className="flex items-center gap-2">
                       <Progress value={cluster.trustScore} color={cluster.trustScore >= 90 ? 'emerald' : 'amber'} size="sm" className="w-20" />
-                      <span className="text-sm font-medium text-gray-900 w-10 text-right">{cluster.trustScore}%</span>
+                      <span className="text-sm font-medium text-white w-10 text-right">{cluster.trustScore}%</span>
                     </div>
                   </div>
                 ))}
@@ -263,24 +263,24 @@ export function CatalystsPage() {
             </Card>
 
             <Card>
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-600" /> Governance Metrics
+              <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-400" /> Governance Metrics
               </h3>
               <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                   <span className="text-xs text-gray-400">Total Actions</span>
-                  <p className="text-lg font-bold text-cyan-600">{governance?.totalActions ?? 0}</p>
+                  <p className="text-lg font-bold text-cyan-400">{governance?.totalActions ?? 0}</p>
                   <p className="text-[10px] text-gray-400">All catalyst executions</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                   <span className="text-xs text-gray-400">Pending Approvals</span>
-                  <p className="text-lg font-bold text-amber-600">{governance?.pendingApprovals ?? 0}</p>
+                  <p className="text-lg font-bold text-amber-400">{governance?.pendingApprovals ?? 0}</p>
                   <p className="text-[10px] text-gray-400">Awaiting human review</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                   <span className="text-xs text-gray-400">Approved / Rejected</span>
-                  <p className="text-lg font-bold text-gray-900">
-                    <span className="text-emerald-600">{governance?.approved ?? 0}</span>
+                  <p className="text-lg font-bold text-white">
+                    <span className="text-emerald-400">{governance?.approved ?? 0}</span>
                     {' / '}
                     <span className="text-red-500">{governance?.rejected ?? 0}</span>
                   </p>

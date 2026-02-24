@@ -8,18 +8,18 @@ import { Code, Layers, ArrowRight, Globe, BookOpen, Loader2, Play } from "lucide
 import { Button } from "@/components/ui/button";
 
 const methodColor: Record<string, string> = {
-  GET: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-  POST: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-  PUT: 'bg-amber-50 text-amber-600 border-amber-200',
-  PATCH: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-  DELETE: 'bg-red-50 text-red-600 border-red-200',
+  GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  POST: 'bg-cyan-500/10 text-cyan-400 border-cyan-200',
+  PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  PATCH: 'bg-cyan-500/10 text-cyan-400 border-cyan-200',
+  DELETE: 'bg-red-500/10 text-red-400 border-red-500/20',
 };
 
 const domainColor: Record<string, string> = {
-  finance: 'text-emerald-600',
-  procurement: 'text-cyan-600',
-  'supply-chain': 'text-amber-600',
-  hr: 'text-cyan-600',
+  finance: 'text-emerald-400',
+  procurement: 'text-cyan-400',
+  'supply-chain': 'text-amber-400',
+  hr: 'text-cyan-400',
   sales: 'text-pink-600',
   inventory: 'text-cyan-400',
   crm: 'text-orange-400',
@@ -68,7 +68,7 @@ export function CanonicalApiPage() {
           <Globe className="w-5 h-5 text-orange-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Canonical API</h1>
+          <h1 className="text-2xl font-bold text-white">Canonical API</h1>
           <p className="text-sm text-gray-500">Unified API layer abstracting all ERP systems into one schema</p>
         </div>
       </div>
@@ -77,19 +77,19 @@ export function CanonicalApiPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">Endpoints</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{endpoints.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{endpoints.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Domains</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{domains.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{domains.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Active</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{endpoints.length}</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{endpoints.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Version</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">v1.0</p>
+          <p className="text-2xl font-bold text-white mt-1">v1.0</p>
         </Card>
       </div>
 
@@ -106,9 +106,9 @@ export function CanonicalApiPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-gray-900">{ep.description || ep.path}</h3>
+                      <h3 className="text-sm font-semibold text-white">{ep.description || ep.path}</h3>
                     </div>
-                    <p className="text-xs font-mono text-cyan-600 mt-0.5">{ep.path}</p>
+                    <p className="text-xs font-mono text-cyan-400 mt-0.5">{ep.path}</p>
                     <p className="text-xs text-gray-400 mt-1">{ep.description}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
@@ -189,15 +189,15 @@ export function CanonicalApiPage() {
             ].map((entity) => (
               <Card key={entity.name}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-sm font-bold ${domainColor[entity.domain] || 'text-gray-600'}`}>{entity.name}</span>
+                  <span className={`text-sm font-bold ${domainColor[entity.domain] || 'text-gray-400'}`}>{entity.name}</span>
                   <Badge variant="outline" size="sm">{entity.domain}</Badge>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">{entity.desc}</p>
                 <div className="space-y-1">
                   {entity.fields.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
-                      <span className="font-mono text-gray-600">{f}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/100 flex-shrink-0" />
+                      <span className="font-mono text-gray-400">{f}</span>
                     </div>
                   ))}
                 </div>
@@ -213,26 +213,26 @@ export function CanonicalApiPage() {
             <div className="flex items-start gap-3">
               <BookOpen className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Canonical API Architecture</h3>
+                <h3 className="text-sm font-semibold text-white">Canonical API Architecture</h3>
                 <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                  The Atheon Canonical API provides a <strong className="text-gray-800">single, unified interface</strong> to interact with any connected ERP system.
+                  The Atheon Canonical API provides a <strong className="text-white">single, unified interface</strong> to interact with any connected ERP system.
                   Instead of calling SAP BAPIs, Salesforce REST, or Workday SOAP directly, Catalysts and user queries go through the Canonical API layer.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
-                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">Catalyst / Chat</span>
+                  <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">Catalyst / Chat</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-orange-500/15 text-orange-400 border border-orange-500/20">Canonical API</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">ERP Adapter</span>
+                  <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">ERP Adapter</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-white/40 border border-white/50">SAP / SF / WD / ...</span>
+                  <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">SAP / SF / WD / ...</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-4 leading-relaxed">
-                  <strong className="text-gray-800">Key benefits:</strong> ERP-agnostic Catalysts, hot-swap ERP backends without agent changes,
+                  <strong className="text-white">Key benefits:</strong> ERP-agnostic Catalysts, hot-swap ERP backends without agent changes,
                   consistent data models, automatic field mapping, and centralised audit logging.
                 </p>
                 <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                  <strong className="text-gray-800">Versioning:</strong> All endpoints are versioned (v1). Breaking changes get a new version.
+                  <strong className="text-white">Versioning:</strong> All endpoints are versioned (v1). Breaking changes get a new version.
                   Adapters implement the canonical schema and handle ERP-specific transformations internally.
                 </p>
               </div>

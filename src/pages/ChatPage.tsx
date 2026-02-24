@@ -76,10 +76,10 @@ export function ChatPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br        from-cyan-500/20 to-cyan-400/20 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-cyan-600"/>
+                  <MessageSquare className="w-5 h-5 text-cyan-400"/>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Atheon Chat</h1>
+          <h1 className="text-2xl font-bold text-white">Atheon Chat</h1>
           <p className="text-sm text-gray-500">Unified conversational interface across all intelligence layers</p>
         </div>
       </div>
@@ -91,7 +91,7 @@ export function ChatPage() {
           <Card hover className="border-cyan-500/20">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Current Thread</h3>
+                <h3 className="text-sm font-medium text-white">Current Thread</h3>
                 <span className="text-[10px] text-gray-400">{messages.length} messages</span>
               </div>
             </div>
@@ -112,22 +112,22 @@ export function ChatPage() {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                   {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-lg                  bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg                  bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
                                         <Sparkles className="w-4 h-4 text-white" />
                                       </div>
                                     )}
                                     <div className={`max-w-2xl rounded-xl p-4 ${
                                       msg.role === 'user'
-                                        ? 'bg-cyan-500/10 border border-cyan-500/20'
-                                        : 'bg-white/40 border border-white/50 backdrop-blur-sm'
+                                        ? 'bg-cyan-500/100/10 border border-cyan-500/20'
+                                        : 'bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm'
                   }`}>
-                    <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                    <div className="text-sm text-white whitespace-pre-wrap leading-relaxed">
                       {msg.content.split('\n').map((line, i) => {
                         if (line.startsWith('**') && line.endsWith('**')) {
-                          return <p key={i} className="font-semibold text-gray-900 mt-2 mb-1">{line.replace(/\*\*/g, '')}</p>;
+                          return <p key={i} className="font-semibold text-white mt-2 mb-1">{line.replace(/\*\*/g, '')}</p>;
                         }
                         if (line.startsWith('- ')) {
-                          return <p key={i} className="ml-3 text-gray-600">{line}</p>;
+                          return <p key={i} className="ml-3 text-gray-400">{line}</p>;
                         }
                         return <p key={i} className={line === '' ? 'h-2' : ''}>{line}</p>;
                       })}
@@ -137,9 +137,9 @@ export function ChatPage() {
                     {msg.citations && msg.citations.length > 0 && (
                       <div className="mt-3 space-y-1.5">
                         {msg.citations.map((cit) => (
-                          <div key={cit.id}                          className="flex items-center gap-2 p-2 rounded bg-white/40 border border-white/50 text-xs">
-                                                      <span className="text-cyan-600">📎</span>
-                            <span className="text-gray-600">{cit.source}</span>
+                          <div key={cit.id}                          className="flex items-center gap-2 p-2 rounded bg-white/[0.04] border border-white/[0.06] text-xs">
+                                                      <span className="text-cyan-400">📎</span>
+                            <span className="text-gray-400">{cit.source}</span>
                             <Badge variant="info" size="sm">{Math.round(cit.confidence * 100)}%</Badge>
                           </div>
                         ))}
@@ -150,17 +150,17 @@ export function ChatPage() {
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-gray-600" />
+                      <User className="w-4 h-4 text-gray-400" />
                     </div>
                   )}
                 </div>
               ))}
               {sending && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
                     <Loader2 className="w-4 h-4 text-white animate-spin" />
                   </div>
-                  <div className="rounded-xl p-4 bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="rounded-xl p-4 bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                     <span className="text-sm text-gray-500">Thinking...</span>
                   </div>
                 </div>
@@ -175,7 +175,7 @@ export function ChatPage() {
                   <button
                     key={i}
                     onClick={() => setInput(q.text)}
-                    className="px-3 py-1.5 rounded-lg bg-white/40 border border-white/50 text-xs text-gray-600 hover:bg-white/60 hover:border-white/70 backdrop-blur-sm transition-all"
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-gray-400 hover:bg-white/[0.04] hover:border-white/[0.08] backdrop-blur-sm transition-all"
                   >
                     {q.text}
                   </button>
@@ -192,7 +192,7 @@ export function ChatPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask Atheon anything across your enterprise..."
-                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-white/60 text-sm text-gray-800 placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/30 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/30 transition-all"
                 />
               </div>
               <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending}>

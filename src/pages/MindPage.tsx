@@ -60,39 +60,39 @@ export function MindPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-          <Brain className="w-5 h-5 text-cyan-600" />
+        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+          <Brain className="w-5 h-5 text-cyan-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Atheon Mind</h1>
+          <h1 className="text-2xl font-bold text-white">Atheon Mind</h1>
           <p className="text-sm text-gray-500">Proprietary Domain LLM - Enterprise Intelligence Engine</p>
         </div>
       </div>
 
       {/* Model Tiers */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Layers className="w-4 h-4 text-cyan-600" /> Inference Tiers
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Layers className="w-4 h-4 text-cyan-400" /> Inference Tiers
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {modelTiers.map((tier) => (
             <Card key={tier.name} hover>
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">{tier.name}</h3>
+                <h3 className="text-sm font-semibold text-white">{tier.name}</h3>
                 <Badge variant="outline">{Math.round((tier.usage / totalUsage) * 100)}% traffic</Badge>
               </div>
               <div className="space-y-2 mb-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Model</span>
-                  <span className="text-xs text-gray-600 font-mono">{tier.model}</span>
+                  <span className="text-xs text-gray-400 font-mono">{tier.model}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Context</span>
-                  <span className="text-xs text-gray-600">{tier.context}</span>
+                  <span className="text-xs text-gray-400">{tier.context}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Latency</span>
-                  <span className="text-xs text-gray-600">{tier.latency}</span>
+                  <span className="text-xs text-gray-400">{tier.latency}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Cost</span>
@@ -108,25 +108,25 @@ export function MindPage() {
 
       {/* Training Pipeline */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-cyan-600" /> Training Pipeline
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-cyan-400" /> Training Pipeline
         </h2>
         <Card>
           <div className="space-y-4">
             {trainingPhases.map((phase) => (
               <div key={phase.name} className="flex items-center gap-4">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  phase.status === 'completed' ? 'bg-emerald-50' : 'bg-amber-50'
+                  phase.status === 'completed' ? 'bg-emerald-500/10' : 'bg-amber-500/10'
                 }`}>
                   {phase.status === 'completed' ? (
-                    <Zap className="w-4 h-4 text-emerald-600" />
+                    <Zap className="w-4 h-4 text-emerald-400" />
                   ) : (
-                    <Gauge className="w-4 h-4 text-amber-600" />
+                    <Gauge className="w-4 h-4 text-amber-400" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-800">{phase.name}</span>
+                    <span className="text-sm font-medium text-white">{phase.name}</span>
                     <Badge variant={phase.status === 'completed' ? 'success' : 'warning'}>{phase.status}</Badge>
                   </div>
                   <div className="flex items-center gap-4 mt-1 text-[10px] text-gray-400">
@@ -143,8 +143,8 @@ export function MindPage() {
 
       {/* Evaluation Metrics */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-cyan-600" /> Evaluation Metrics
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-cyan-400" /> Evaluation Metrics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {evaluationMetrics.map((metric) => {
@@ -156,7 +156,7 @@ export function MindPage() {
                   <Badge variant={passing ? 'success' : 'warning'} size="sm">{passing ? 'Pass' : 'Below Target'}</Badge>
                 </div>
                 <div className="flex items-end gap-1">
-                  <span className="text-2xl font-bold text-gray-900">{metric.value}</span>
+                  <span className="text-2xl font-bold text-white">{metric.value}</span>
                   <span className="text-sm text-gray-400 mb-0.5">{metric.unit || '%'}</span>
                 </div>
                 <div className="text-[10px] text-gray-400 mt-1">Target: {metric.target}{metric.unit || '%'}</div>
@@ -176,11 +176,11 @@ export function MindPage() {
       {/* Architecture Note */}
       <Card className="border-cyan-500/20">
         <div className="flex items-start gap-3">
-          <Database className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" />
+          <Database className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Architecture Note</h3>
+            <h3 className="text-sm font-semibold text-white">Architecture Note</h3>
             <p className="text-xs text-gray-500 mt-1">
-              Atheon Mind uses a multi-tier inference architecture. The <span className="text-cyan-600">atheon-mind-proxy</span> Worker
+              Atheon Mind uses a multi-tier inference architecture. The <span className="text-cyan-400">atheon-mind-proxy</span> Worker
               classifies query complexity and routes to the appropriate tier. Tier 1 (Workers AI) handles 72% of queries at the edge
               with sub-50ms latency. Complex reasoning escalates to Tier 2/3 with full Atheon Mind 70B capabilities.
               Client-specific LoRA adapters are hot-swapped based on tenant context.

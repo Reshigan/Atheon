@@ -76,11 +76,11 @@ export function IAMPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="          w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-                      <ShieldCheck className="w-5 h-5 text-cyan-600"/>
+          <div className="          w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                      <ShieldCheck className="w-5 h-5 text-cyan-400"/>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Identity & Access Management</h1>
+            <h1 className="text-2xl font-bold text-white">Identity & Access Management</h1>
             <p className="text-sm text-gray-500">RBAC/ABAC policies, SSO federation, per-tenant isolation</p>
           </div>
         </div>
@@ -92,13 +92,13 @@ export function IAMPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Create New Policy</h3>
-              <button onClick={() => setShowNewPolicy(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Create New Policy</h3>
+              <button onClick={() => setShowNewPolicy(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Policy Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={policyForm.name} onChange={e => setPolicyForm(p => ({ ...p, name: e.target.value }))} placeholder="Read-only analysts" /></div>
-              <div><label className="text-xs text-gray-500">Description</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={policyForm.description} onChange={e => setPolicyForm(p => ({ ...p, description: e.target.value }))} placeholder="Policy description" /></div>
-              <div><label className="text-xs text-gray-500">Type</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={policyForm.type} onChange={e => setPolicyForm(p => ({ ...p, type: e.target.value }))}><option value="rbac">RBAC (Role-Based)</option><option value="abac">ABAC (Attribute-Based)</option></select></div>
+              <div><label className="text-xs text-gray-500">Policy Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={policyForm.name} onChange={e => setPolicyForm(p => ({ ...p, name: e.target.value }))} placeholder="Read-only analysts" /></div>
+              <div><label className="text-xs text-gray-500">Description</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={policyForm.description} onChange={e => setPolicyForm(p => ({ ...p, description: e.target.value }))} placeholder="Policy description" /></div>
+              <div><label className="text-xs text-gray-500">Type</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={policyForm.type} onChange={e => setPolicyForm(p => ({ ...p, type: e.target.value }))}><option value="rbac">RBAC (Role-Based)</option><option value="abac">ABAC (Attribute-Based)</option></select></div>
             </div>
             <p className="text-[10px] text-gray-400">Rules can be added after creating the policy.</p>
             <div className="flex gap-3 pt-2">
@@ -115,19 +115,19 @@ export function IAMPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">Active Policies</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{policies.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{policies.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">SSO Providers</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{ssoConfigs.filter(s => s.enabled).length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{ssoConfigs.filter(s => s.enabled).length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">User Roles</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{roles.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{roles.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Total Rules</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0)}</p>
+          <p className="text-2xl font-bold text-white mt-1">{policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0)}</p>
         </Card>
       </div>
 
@@ -141,7 +141,7 @@ export function IAMPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-gray-900">{policy.name}</h3>
+                      <h3 className="text-base font-semibold text-white">{policy.name}</h3>
                       <Badge variant={policy.type === 'rbac' ? 'info' : 'warning'} size="sm">{policy.type.toUpperCase()}</Badge>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">{policy.description}</p>
@@ -154,13 +154,13 @@ export function IAMPage() {
                   {(Array.isArray(policy.rules) ? policy.rules : []).map((rule, idx) => {
                     const r = rule as Record<string, unknown>;
                     return (
-                      <div key={idx} className="flex items-center gap-3                      p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                      <div key={idx} className="flex items-center gap-3                      p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                               {r.effect === 'allow' ? (
-                          <Unlock size={14} className="text-emerald-600" />
+                          <Unlock size={14} className="text-emerald-400" />
                         ) : (
-                          <Lock size={14} className="text-red-600" />
+                          <Lock size={14} className="text-red-400" />
                         )}
-                        <span className="text-xs font-mono text-gray-600">{String(r.resource || '')}</span>
+                        <span className="text-xs font-mono text-gray-400">{String(r.resource || '')}</span>
                         <div className="flex gap-1">
                           {(Array.isArray(r.actions) ? r.actions : []).map((a: unknown) => (
                             <Badge key={String(a)} variant={r.effect === 'allow' ? 'success' : 'danger'} size="sm">{String(a)}</Badge>
@@ -183,32 +183,32 @@ export function IAMPage() {
               <Card key={i}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="                    w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
-                                          <Globe className="w-5 h-5 text-cyan-600"/>
+                    <div className="                    w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                                          <Globe className="w-5 h-5 text-cyan-400"/>
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-gray-900">{sso.provider.replace('_', ' ').toUpperCase()}</h3>
+                      <h3 className="text-base font-semibold text-white">{sso.provider.replace('_', ' ').toUpperCase()}</h3>
                       <span className="text-xs text-gray-500">{sso.domainHint}</span>
                     </div>
                   </div>
                   <Badge variant={sso.enabled ? 'success' : 'default'}>{sso.enabled ? 'Active' : 'Disabled'}</Badge>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Client ID</span>
-                    <p className="text-xs text-gray-600 font-mono truncate">{sso.clientId}</p>
+                    <p className="text-xs text-gray-400 font-mono truncate">{sso.clientId}</p>
                   </div>
-                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Issuer URL</span>
-                    <p className="text-xs text-gray-600 font-mono truncate">{sso.issuerUrl}</p>
+                    <p className="text-xs text-gray-400 font-mono truncate">{sso.issuerUrl}</p>
                   </div>
-                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Auto-Provision</span>
-                    <p className="text-xs text-gray-600">{sso.autoProvision ? 'Yes' : 'No'}</p>
+                    <p className="text-xs text-gray-400">{sso.autoProvision ? 'Yes' : 'No'}</p>
                   </div>
-                  <div className="                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Default Role</span>
-                    <p className="text-xs text-gray-600">{sso.defaultRole}</p>
+                    <p className="text-xs text-gray-400">{sso.defaultRole}</p>
                   </div>
                 </div>
               </Card>
@@ -222,13 +222,13 @@ export function IAMPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => {
               const Icon = role.name.toLowerCase().includes('admin') ? ShieldCheck : role.name.toLowerCase().includes('exec') ? Shield : role.name.toLowerCase().includes('manager') ? UserCheck : Users;
-              const color = role.name.toLowerCase().includes('admin') ? 'text-red-600' : role.name.toLowerCase().includes('exec') ? 'text-amber-600' : role.name.toLowerCase().includes('manager') ? 'text-cyan-600' : 'text-cyan-600';
+              const color = role.name.toLowerCase().includes('admin') ? 'text-red-400' : role.name.toLowerCase().includes('exec') ? 'text-amber-400' : role.name.toLowerCase().includes('manager') ? 'text-cyan-400' : 'text-cyan-400';
               return (
                 <Card key={role.id}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <Icon className={`w-5 h-5 ${color}`} />
-                      <h3 className="text-base font-semibold text-gray-900">{role.name}</h3>
+                      <h3 className="text-base font-semibold text-white">{role.name}</h3>
                     </div>
                     <Badge variant="outline" size="sm">Level {role.level}</Badge>
                   </div>

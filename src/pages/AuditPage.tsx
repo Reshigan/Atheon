@@ -38,11 +38,11 @@ export function AuditPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="          w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-cyan-600"/>
+          <div className="          w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-cyan-400"/>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
+            <h1 className="text-2xl font-bold text-white">Audit Log</h1>
             <p className="text-sm text-gray-500">Complete governance trail across all Atheon layers</p>
           </div>
         </div>
@@ -67,7 +67,7 @@ export function AuditPage() {
           </Button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-cyan-50 border-cyan-200 text-cyan-600' : 'bg-white/40 border-white/50 text-gray-600 hover:bg-white/60'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-cyan-500/10 border-cyan-200 text-cyan-400' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:bg-white/[0.04]'}`}
           >
             <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
           </button>
@@ -76,10 +76,10 @@ export function AuditPage() {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-white/40 border border-white/50 backdrop-blur-sm">
+        <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
           <div>
             <label className="text-xs text-gray-500 block mb-1">Layer</label>
-            <select className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
+            <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
               <option value="">All Layers</option>
               <option value="apex">Apex</option>
               <option value="pulse">Pulse</option>
@@ -93,7 +93,7 @@ export function AuditPage() {
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Outcome</label>
-            <select className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
+            <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
               <option value="">All Outcomes</option>
               <option value="success">Success</option>
               <option value="pending">Pending</option>
@@ -101,7 +101,7 @@ export function AuditPage() {
             </select>
           </div>
           {(filterLayer || filterOutcome) && (
-            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-cyan-600 hover:text-cyan-500 pb-1.5">Clear filters</button>
+            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-cyan-400 hover:text-cyan-300 pb-1.5">Clear filters</button>
           )}
         </div>
       )}
@@ -110,19 +110,19 @@ export function AuditPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">Total Events (Today)</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{entries.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{entries.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Success</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{entries.filter(a => a.outcome === 'success').length}</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{entries.filter(a => a.outcome === 'success').length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Pending</span>
-          <p className="text-2xl font-bold text-amber-600 mt-1">{entries.filter(a => a.outcome === 'pending').length}</p>
+          <p className="text-2xl font-bold text-amber-400 mt-1">{entries.filter(a => a.outcome === 'pending').length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Failed</span>
-          <p className="text-2xl font-bold text-red-600 mt-1">{entries.filter(a => a.outcome === 'failure').length}</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{entries.filter(a => a.outcome === 'failure').length}</p>
         </Card>
       </div>
 
@@ -131,7 +131,7 @@ export function AuditPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-white/[0.06]">
                 <th className="text-left py-3 px-4 text-gray-400 font-medium">Timestamp</th>
                 <th className="text-left py-3 px-4 text-gray-400 font-medium">Action</th>
                 <th className="text-left py-3 px-4 text-gray-400 font-medium">Layer</th>
@@ -141,11 +141,11 @@ export function AuditPage() {
             </thead>
             <tbody>
               {entries.filter(e => (!filterLayer || e.layer === filterLayer) && (!filterOutcome || e.outcome === filterOutcome)).map((entry) => (
-                <tr key={entry.id} className="border-b border-gray-200 hover:bg-white/30 transition-colors">
+                <tr key={entry.id} className="border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors">
                   <td className="py-3 px-4 text-xs text-gray-500 font-mono whitespace-nowrap">
                     {new Date(entry.createdAt).toLocaleString()}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-800">{entry.action}</td>
+                  <td className="py-3 px-4 text-sm text-white">{entry.action}</td>
                   <td className="py-3 px-4">
                     <LayerBadge layer={entry.layer as AtheonLayer} />
                   </td>
@@ -155,20 +155,20 @@ export function AuditPage() {
                   <td className="py-3 px-4">
                     {entry.outcome === 'success' && (
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle size={14} className="text-emerald-600" />
-                        <span className="text-xs text-emerald-600">Success</span>
+                        <CheckCircle size={14} className="text-emerald-400" />
+                        <span className="text-xs text-emerald-400">Success</span>
                       </div>
                     )}
                     {entry.outcome === 'pending' && (
                       <div className="flex items-center gap-1.5">
-                        <Clock size={14} className="text-amber-600" />
-                        <span className="text-xs text-amber-600">Pending</span>
+                        <Clock size={14} className="text-amber-400" />
+                        <span className="text-xs text-amber-400">Pending</span>
                       </div>
                     )}
                     {entry.outcome === 'failure' && (
                       <div className="flex items-center gap-1.5">
-                        <XCircle size={14} className="text-red-600" />
-                        <span className="text-xs text-red-600">Failed</span>
+                        <XCircle size={14} className="text-red-400" />
+                        <span className="text-xs text-red-400">Failed</span>
                       </div>
                     )}
                   </td>

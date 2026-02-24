@@ -15,8 +15,8 @@ import {
 
 
 const trendIcon = (trend: string, size = 14) => {
-  if (trend === 'up') return <TrendingUp size={size} className="text-emerald-600" />;
-  if (trend === 'down') return <TrendingDown size={size} className="text-red-600" />;
+  if (trend === 'up') return <TrendingUp size={size} className="text-emerald-400" />;
+  if (trend === 'down') return <TrendingDown size={size} className="text-red-400" />;
   return <Minus size={size} className="text-gray-400" />;
 };
 
@@ -94,11 +94,11 @@ export function ApexPage() {
     <div className="space-y-6 animate-fadeIn">
       <div>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-amber-600" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Atheon Apex</h1>
+            <h1 className="text-2xl font-bold text-white">Atheon Apex</h1>
             <p className="text-sm text-gray-500">Executive Intelligence - C-Suite Command Centre</p>
           </div>
         </div>
@@ -114,17 +114,17 @@ export function ApexPage() {
               <ScoreRing score={overallScore} size="xl" label="Overall Health" sublabel="Composite Index" />
               <div className="flex items-center gap-2 mt-4">
                 {trendIcon('up')}
-                <span className="text-sm text-emerald-600">+2.3 points (7d)</span>
+                <span className="text-sm text-emerald-400">+2.3 points (7d)</span>
               </div>
             </Card>
 
             <Card className="lg:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Dimension Breakdown</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">Dimension Breakdown</h3>
               <div className="space-y-4">
                 {dimensions.map((dim) => (
                   <div key={dim.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="sm:w-36 flex-shrink-0">
-                      <span className="text-sm text-gray-600">{dim.name}</span>
+                      <span className="text-sm text-gray-400">{dim.name}</span>
                       <span className="block text-[10px] text-gray-400">Weight: {(dim.weight * 100).toFixed(0)}%</span>
                     </div>
                     <div className="flex-1">
@@ -132,11 +132,11 @@ export function ApexPage() {
                     </div>
                     <div className="flex items-center gap-3 sm:gap-0">
                       <div className="w-12 text-right">
-                        <span className="text-sm font-bold text-gray-900">{dim.score}</span>
+                        <span className="text-sm font-bold text-white">{dim.score}</span>
                       </div>
                       <div className="flex items-center gap-1 w-20">
                         {trendIcon(dim.trend, 12)}
-                        <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                           {dim.change > 0 ? '+' : ''}{dim.change}
                         </span>
                       </div>
@@ -157,25 +157,25 @@ export function ApexPage() {
             {/* Narrative */}
             <Card glow>
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-amber-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Daily Executive Briefing</h3>
+                <FileText className="w-4 h-4 text-amber-400" />
+                <h3 className="text-lg font-semibold text-white">Daily Executive Briefing</h3>
                 <Badge variant="info">Today</Badge>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">{briefing?.summary || 'No briefing available'}</p>
+              <p className="text-sm text-gray-400 leading-relaxed">{briefing?.summary || 'No briefing available'}</p>
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* KPI Movements */}
               <Card>
-                <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-cyan-600" /> KPI Movements
+                <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-cyan-400" /> KPI Movements
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.kpiMovements || []).map((kpi) => (
-                    <div key={kpi.kpi} className="flex items-center justify-between py-2 border-b border-white/40 last:border-0">
-                      <span className="text-sm text-gray-600">{kpi.kpi}</span>
+                    <div key={kpi.kpi} className="flex items-center justify-between py-2 border-b border-white/[0.06] last:border-0">
+                      <span className="text-sm text-gray-400">{kpi.kpi}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{kpi.movement}</span>
+                        <span className="text-sm font-medium text-white">{kpi.movement}</span>
                         <span className="text-xs text-gray-400">{kpi.period}</span>
                       </div>
                     </div>
@@ -185,14 +185,14 @@ export function ApexPage() {
 
               {/* Top Risks */}
               <Card>
-                <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600" /> Top Risks
+                <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400" /> Top Risks
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.risks || []).map((risk, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div key={i} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-medium text-gray-800">{risk}</h4>
+                        <h4 className="text-sm font-medium text-white">{risk}</h4>
                         <Badge variant="warning" size="sm">risk</Badge>
                       </div>
                     </div>
@@ -202,14 +202,14 @@ export function ApexPage() {
 
               {/* Top Opportunities */}
               <Card>
-                <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-emerald-600" /> Opportunities
+                <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-emerald-400" /> Opportunities
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.opportunities || []).map((opp, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                    <div key={i} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-medium text-gray-800">{opp}</h4>
+                        <h4 className="text-sm font-medium text-white">{opp}</h4>
                         <Badge variant="success" size="sm">opportunity</Badge>
                       </div>
                     </div>
@@ -221,11 +221,11 @@ export function ApexPage() {
             {/* Required Decisions */}
             {(briefing?.decisionsNeeded || []).length > 0 && (
               <Card className="border-amber-500/20">
-                <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-amber-600" /> Decisions Required
+                <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-amber-400" /> Decisions Required
                 </h3>
                 {(briefing?.decisionsNeeded || []).map((dec, i) => (
-                  <div key={i} className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                  <div key={i} className="p-4 rounded-lg bg-amber-500/100/5 border border-amber-500/10">
                     <h4 className="text-sm font-semibold text-amber-800">{dec}</h4>
                   </div>
                 ))}
@@ -248,15 +248,15 @@ export function ApexPage() {
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    risk.severity === 'critical' ? 'bg-red-50' : risk.severity === 'high' ? 'bg-amber-50' : 'bg-cyan-50'
+                    risk.severity === 'critical' ? 'bg-red-500/10' : risk.severity === 'high' ? 'bg-amber-500/10' : 'bg-cyan-500/10'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      risk.severity === 'critical' ? 'text-red-600' : risk.severity === 'high' ? 'text-amber-600' : 'text-cyan-600'
+                      risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-amber-400' : 'text-cyan-400'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-base font-semibold text-gray-900">{risk.title}</h3>
+                      <h3 className="text-base font-semibold text-white">{risk.title}</h3>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <Badge variant={severityColor(risk.severity)}>{risk.severity}</Badge>
                         <Badge variant="outline">{risk.category}</Badge>
@@ -269,13 +269,13 @@ export function ApexPage() {
                     </div>
 
                     {expandedRisk === risk.id && (
-                      <div className="mt-4 p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm animate-fadeIn">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-2">Recommended Actions</h4>
+                      <div className="mt-4 p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm animate-fadeIn">
+                        <h4 className="text-sm font-semibold text-white mb-2">Recommended Actions</h4>
                         <div className="space-y-2">
                           {risk.recommendedActions.map((action, i) => (
                             <div key={i} className="flex items-start gap-2">
-                              <ArrowRight className="w-3.5 h-3.5 text-cyan-600 mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-gray-600">{action}</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-gray-400">{action}</span>
                             </div>
                           ))}
                         </div>
@@ -294,14 +294,14 @@ export function ApexPage() {
         <TabPanel>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Scenario Analysis</h3>
+              <h3 className="text-lg font-semibold text-white">Scenario Analysis</h3>
               <Button variant="primary" size="sm" onClick={handleNewScenario}><Play size={14} /> New Scenario</Button>
             </div>
             {scenarios.map((scenario) => (
               <Card key={scenario.id}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900">{scenario.title}</h3>
+                    <h3 className="text-base font-semibold text-white">{scenario.title}</h3>
                     <p className="text-sm text-gray-500 mt-1">{scenario.description}</p>
                   </div>
                   <Badge variant={scenario.status === 'completed' ? 'success' : 'warning'}>{scenario.status}</Badge>
@@ -311,9 +311,9 @@ export function ApexPage() {
                   <div className="mt-4">
                     <div className="grid grid-cols-2 gap-3">
                       {Object.entries(scenario.results).slice(0, 4).map(([key, val]) => (
-                        <div key={key} className="p-3 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
+                        <div key={key} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                           <span className="text-xs text-gray-400">{key}</span>
-                          <p className="text-lg font-bold text-gray-900">{String(val)}</p>
+                          <p className="text-lg font-bold text-white">{String(val)}</p>
                         </div>
                       ))}
                     </div>

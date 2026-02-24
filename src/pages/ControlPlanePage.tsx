@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
-  running: { icon: CheckCircle, color: 'text-emerald-600', label: 'Running' },
-  deploying: { icon: RefreshCw, color: 'text-cyan-600', label: 'Deploying' },
+  running: { icon: CheckCircle, color: 'text-emerald-400', label: 'Running' },
+  deploying: { icon: RefreshCw, color: 'text-cyan-400', label: 'Deploying' },
   stopped: { icon: Square, color: 'text-gray-400', label: 'Stopped' },
-  error: { icon: XCircle, color: 'text-red-600', label: 'Error' },
-  pending: { icon: Activity, color: 'text-amber-600', label: 'Pending' },
+  error: { icon: XCircle, color: 'text-red-400', label: 'Error' },
+  pending: { icon: Activity, color: 'text-amber-400', label: 'Pending' },
 };
 
 interface DeploymentConfig {
@@ -191,11 +191,11 @@ export function ControlPlanePage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/100/15 flex items-center justify-center">
             <Cpu className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Agent Control Plane</h1>
+            <h1 className="text-2xl font-bold text-white">Agent Control Plane</h1>
             <p className="text-sm text-gray-500">Deploy, manage, and monitor Catalyst agents per tenant</p>
           </div>
         </div>
@@ -207,17 +207,17 @@ export function ControlPlanePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Deploy New Agent</h3>
-              <button onClick={() => setShowDeploy(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Deploy New Agent</h3>
+              <button onClick={() => setShowDeploy(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Agent Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
-              <div><label className="text-xs text-gray-500">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.agent_type} onChange={e => setDeployForm(p => ({ ...p, agent_type: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
-              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.deployment_model} onChange={e => setDeployForm(p => ({ ...p, deployment_model: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs text-gray-500">Agent Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
+              <div><label className="text-xs text-gray-500">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.agent_type} onChange={e => setDeployForm(p => ({ ...p, agent_type: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
+              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.deployment_model} onChange={e => setDeployForm(p => ({ ...p, deployment_model: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
               {clusters.length > 0 && (
-                <div><label className="text-xs text-gray-500">Cluster (optional)</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={deployForm.cluster_id} onChange={e => setDeployForm(p => ({ ...p, cluster_id: e.target.value }))}><option value="">No cluster</option>{clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                <div><label className="text-xs text-gray-500">Cluster (optional)</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.cluster_id} onChange={e => setDeployForm(p => ({ ...p, cluster_id: e.target.value }))}><option value="">No cluster</option>{clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
               )}
-              <div><label className="text-xs text-gray-500">Version</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono" value={deployForm.version} onChange={e => setDeployForm(p => ({ ...p, version: e.target.value }))} /></div>
+              <div><label className="text-xs text-gray-500">Version</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono" value={deployForm.version} onChange={e => setDeployForm(p => ({ ...p, version: e.target.value }))} /></div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowDeploy(false)}>Cancel</Button>
@@ -234,10 +234,10 @@ export function ControlPlanePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-xl mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Deployment Config</h3>
+              <h3 className="text-lg font-semibold text-white">Edit Deployment Config</h3>
               <button
                 onClick={() => { setShowEditConfig(false); setEditingDeployment(null); }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-400"
               >
                 <X size={18} />
               </button>
@@ -247,7 +247,7 @@ export function ControlPlanePage() {
               <div>
                 <label className="text-xs text-gray-500">Version</label>
                 <input
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono"
+                  className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono"
                   value={editVersion}
                   onChange={(e) => setEditVersion(e.target.value)}
                 />
@@ -257,7 +257,7 @@ export function ControlPlanePage() {
                 <input
                   type="number"
                   min={1}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm"
                   value={String(editConfig.replicas ?? 1)}
                   onChange={(e) => setEditConfig((p) => ({ ...p, replicas: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))}
                 />
@@ -267,7 +267,7 @@ export function ControlPlanePage() {
                 <input
                   type="number"
                   min={1}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm"
                   value={String(editConfig.maxConcurrentTasks ?? 10)}
                   onChange={(e) => setEditConfig((p) => ({ ...p, maxConcurrentTasks: Math.max(1, parseInt(e.target.value || '10', 10) || 10) }))}
                 />
@@ -278,7 +278,7 @@ export function ControlPlanePage() {
                   type="number"
                   min={0}
                   max={100}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm"
                   value={String(Math.round(((editConfig.confidenceThreshold ?? 0.85) as number) * 100))}
                   onChange={(e) => {
                     const pct = Math.min(100, Math.max(0, parseInt(e.target.value || '85', 10) || 0));
@@ -307,10 +307,10 @@ export function ControlPlanePage() {
 
       {/* Error Banner */}
       {actionError && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
           <AlertCircle size={16} />
           <span>{actionError}</span>
-          <button onClick={() => setActionError(null)} className="ml-auto text-red-400 hover:text-red-600"><X size={14} /></button>
+          <button onClick={() => setActionError(null)} className="ml-auto text-red-400 hover:text-red-400"><X size={14} /></button>
         </div>
       )}
 
@@ -319,13 +319,13 @@ export function ControlPlanePage() {
         <Card>
           <div className="flex items-center gap-3 mb-3">
             <Activity size={16} className="text-cyan-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Platform Health</h3>
+            <h3 className="text-sm font-semibold text-white">Platform Health</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div><span className="text-[10px] text-gray-400">Overall Health</span><p className="text-lg font-bold text-emerald-600">{health.overallHealth}%</p></div>
-            <div><span className="text-[10px] text-gray-400">Overall Uptime</span><p className="text-lg font-bold text-gray-900">{health.overallUptime}%</p></div>
+            <div><span className="text-[10px] text-gray-400">Overall Health</span><p className="text-lg font-bold text-emerald-400">{health.overallHealth}%</p></div>
+            <div><span className="text-[10px] text-gray-400">Overall Uptime</span><p className="text-lg font-bold text-white">{health.overallUptime}%</p></div>
             <div><span className="text-[10px] text-gray-400">Deployment Status</span><div className="flex gap-2 mt-0.5">{Object.entries(health.deploymentStatus || {}).map(([s, c]) => <Badge key={s} variant={s === 'running' ? 'success' : s === 'stopped' ? 'danger' : 'default'} size="sm">{s}: {c}</Badge>)}</div></div>
-            <div><span className="text-[10px] text-gray-400">Last Checked</span><p className="text-sm font-bold text-gray-900">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
+            <div><span className="text-[10px] text-gray-400">Last Checked</span><p className="text-sm font-bold text-white">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
           </div>
         </Card>
       )}
@@ -334,22 +334,22 @@ export function ControlPlanePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">Total Deployments</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{deployments.length}</p>
-          <span className="text-xs text-emerald-600">{computed.running} running</span>
+          <p className="text-2xl font-bold text-white mt-1">{deployments.length}</p>
+          <span className="text-xs text-emerald-400">{computed.running} running</span>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Total Replicas</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{computed.totalReplicas}</p>
+          <p className="text-2xl font-bold text-white mt-1">{computed.totalReplicas}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Avg Uptime</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">
+          <p className="text-2xl font-bold text-emerald-400 mt-1">
             {computed.avgUptime.toFixed(2)}%
           </p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Avg Health</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+          <p className="text-2xl font-bold text-white mt-1">
             {Math.round(computed.avgHealth)}%
           </p>
         </Card>
@@ -370,11 +370,11 @@ export function ControlPlanePage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500/15 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-cyan-500/100/15 flex items-center justify-center">
                     <Bot className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900">{dep.name || dep.clusterName || dep.id}</h3>
+                    <h3 className="text-base font-semibold text-white">{dep.name || dep.clusterName || dep.id}</h3>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-xs text-gray-500">{dep.tenantName || dep.tenantId}</span>
                       <Badge variant={dep.deploymentModel === 'saas' ? 'info' : dep.deploymentModel === 'on-premise' ? 'warning' : 'default'} size="sm">
@@ -399,25 +399,25 @@ export function ControlPlanePage() {
 
               {/* Quick Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Replicas</span>
-                  <p className="text-sm font-bold text-gray-900">{replicas}</p>
+                  <p className="text-sm font-bold text-white">{replicas}</p>
                 </div>
-                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Uptime</span>
-                  <p className="text-sm font-bold text-emerald-600">{dep.uptime.toFixed(1)}%</p>
+                  <p className="text-sm font-bold text-emerald-400">{dep.uptime.toFixed(1)}%</p>
                 </div>
-                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Version</span>
-                  <p className="text-sm font-bold text-gray-900">{dep.version}</p>
+                  <p className="text-sm font-bold text-white">{dep.version}</p>
                 </div>
-                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Tasks</span>
-                  <p className="text-sm font-bold text-gray-900">{dep.tasksExecuted.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-white">{dep.tasksExecuted.toLocaleString()}</p>
                 </div>
-                <div className="                text-center p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Heartbeat</span>
-                  <p className="text-sm font-bold text-gray-900">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
+                  <p className="text-sm font-bold text-white">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
                 </div>
               </div>
 
@@ -425,23 +425,23 @@ export function ControlPlanePage() {
                 <div className="mt-4 space-y-4 animate-fadeIn">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Config */}
-                    <div className="                    p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
-                                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                            <Settings size={14} className="text-cyan-600" /> Configuration
+                    <div className="                    p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                          <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                            <Settings size={14} className="text-cyan-400" /> Configuration
                       </h4>
                       <div className="space-y-2 text-xs">
-                        <div className="flex justify-between"><span className="text-gray-400">Replicas</span><span className="text-gray-800">{replicas}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Max Concurrent Tasks</span><span className="text-gray-800">{cfg.maxConcurrentTasks ?? 'N/A'}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Confidence Threshold</span><span className="text-gray-800">{typeof cfg.confidenceThreshold === 'number' ? `${Math.round(cfg.confidenceThreshold * 100)}%` : 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Replicas</span><span className="text-white">{replicas}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Max Concurrent Tasks</span><span className="text-white">{cfg.maxConcurrentTasks ?? 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Confidence Threshold</span><span className="text-white">{typeof cfg.confidenceThreshold === 'number' ? `${Math.round(cfg.confidenceThreshold * 100)}%` : 'N/A'}</span></div>
                         <div className="flex justify-between"><span className="text-gray-400">Escalation Policy</span><Badge variant="outline" size="sm">{cfg.escalationPolicy ?? 'N/A'}</Badge></div>
-                        <div className="flex justify-between"><span className="text-gray-400">CPU / Memory</span><span className="text-gray-800">{cfg.resourceLimits?.cpuMillicores ?? '?'}m / {cfg.resourceLimits?.memoryMb ?? '?'}MB</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">CPU / Memory</span><span className="text-white">{cfg.resourceLimits?.cpuMillicores ?? '?'}m / {cfg.resourceLimits?.memoryMb ?? '?'}MB</span></div>
                       </div>
                     </div>
 
                     {/* Permissions */}
-                    <div className="                    p-4 rounded-lg bg-white/40 border border-white/50 backdrop-blur-sm">
-                                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                            <Shield size={14} className="text-emerald-600" /> Action Permissions
+                    <div className="                    p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                          <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                            <Shield size={14} className="text-emerald-400" /> Action Permissions
                       </h4>
                       <div className="space-y-2">
                         <div>

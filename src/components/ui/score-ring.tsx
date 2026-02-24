@@ -58,10 +58,10 @@ export function ScoreRing({ score, maxScore = 100, size = 'lg', label, sublabel,
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn('font-bold text-gray-900', config.fontSize)}>{score}</span>
+          <span className={cn('font-bold text-white', config.fontSize)}>{score}</span>
         </div>
       </div>
-            {label && <span className="mt-2 text-sm font-medium text-gray-700">{label}</span>}
+            {label && <span className="mt-2 text-sm font-medium text-gray-300">{label}</span>}
             {sublabel && <span className="text-xs text-gray-500">{sublabel}</span>}
     </div>
   );

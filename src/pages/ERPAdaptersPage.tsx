@@ -93,7 +93,7 @@ export function ERPAdaptersPage() {
             <Plug className="w-5 h-5 text-teal-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">ERP Adapter Layer</h1>
+            <h1 className="text-2xl font-bold text-white">ERP Adapter Layer</h1>
             <p className="text-sm text-gray-500">Pluggable adapters for enterprise system connectivity</p>
           </div>
         </div>
@@ -105,13 +105,13 @@ export function ERPAdaptersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Connect ERP System</h3>
-              <button onClick={() => setShowConnect(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-white">Connect ERP System</h3>
+              <button onClick={() => setShowConnect(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">ERP Adapter</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={connectForm.adapterId} onChange={e => setConnectForm(p => ({ ...p, adapterId: e.target.value }))}><option value="">Select an adapter...</option>{adapters.map(a => <option key={a.id} value={a.id}>{a.name} ({a.system})</option>)}</select></div>
-              <div><label className="text-xs text-gray-500">Connection Name</label><input className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={connectForm.name} onChange={e => setConnectForm(p => ({ ...p, name: e.target.value }))} placeholder="Production SAP" /></div>
-              <div><label className="text-xs text-gray-500">Sync Frequency</label><select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" value={connectForm.syncFrequency} onChange={e => setConnectForm(p => ({ ...p, syncFrequency: e.target.value }))}><option value="realtime">Real-time</option><option value="hourly">Hourly</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></div>
+              <div><label className="text-xs text-gray-500">ERP Adapter</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={connectForm.adapterId} onChange={e => setConnectForm(p => ({ ...p, adapterId: e.target.value }))}><option value="">Select an adapter...</option>{adapters.map(a => <option key={a.id} value={a.id}>{a.name} ({a.system})</option>)}</select></div>
+              <div><label className="text-xs text-gray-500">Connection Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={connectForm.name} onChange={e => setConnectForm(p => ({ ...p, name: e.target.value }))} placeholder="Production SAP" /></div>
+              <div><label className="text-xs text-gray-500">Sync Frequency</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={connectForm.syncFrequency} onChange={e => setConnectForm(p => ({ ...p, syncFrequency: e.target.value }))}><option value="realtime">Real-time</option><option value="hourly">Hourly</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></div>
             </div>
             <p className="text-[10px] text-gray-400">OAuth authentication will be initiated after connection setup. You will be redirected to the ERP provider to authorise access.</p>
             <div className="flex gap-3 pt-2">
@@ -128,19 +128,19 @@ export function ERPAdaptersPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs text-gray-400">Available Adapters</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{adapters.length}</p>
+          <p className="text-2xl font-bold text-white mt-1">{adapters.length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Active Connections</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{connections.filter(c => c.status === 'connected').length}</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{connections.filter(c => c.status === 'connected').length}</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Entities Synced</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{(connections.reduce((s, c) => s + (c.recordsSynced || 0), 0) / 1000).toFixed(1)}K</p>
+          <p className="text-2xl font-bold text-white mt-1">{(connections.reduce((s, c) => s + (c.recordsSynced || 0), 0) / 1000).toFixed(1)}K</p>
         </Card>
         <Card>
           <span className="text-xs text-gray-400">Total Throughput</span>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{connections.length} active</p>
+          <p className="text-2xl font-bold text-white mt-1">{connections.length} active</p>
         </Card>
       </div>
 
@@ -153,11 +153,11 @@ export function ERPAdaptersPage() {
               <Card key={adapter.id} hover>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="                    w-12 h-12 rounded-xl bg-white/40 border border-white/50 flex items-center justify-center text-xl">
+                    <div className="                    w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-xl">
                                           {systemIcons[adapter.system]|| '🔌'}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-gray-900">{adapter.name}</h3>
+                      <h3 className="text-base font-semibold text-white">{adapter.name}</h3>
                       <div className="flex items-center gap-2 mt-0.5">
                         <Badge variant="outline" size="sm">v{adapter.version}</Badge>
                         <Badge variant="outline" size="sm">{adapter.protocol}</Badge>
@@ -170,16 +170,16 @@ export function ERPAdaptersPage() {
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  <div className="flex items-center gap-3                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
-                                      <span className="text-xs font-medium text-cyan-600 w-24">Operations</span>
+                  <div className="flex items-center gap-3                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                      <span className="text-xs font-medium text-cyan-400 w-24">Operations</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.operations.map(op => (
                         <Badge key={op} variant={op === 'write' ? 'warning' : op === 'subscribe' ? 'info' : 'success'} size="sm">{op}</Badge>
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3                  p-2 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
-                                      <span className="text-xs font-medium text-cyan-600 w-24">Auth</span>
+                  <div className="flex items-center gap-3                  p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
+                                      <span className="text-xs font-medium text-cyan-400 w-24">Auth</span>
                     <div className="flex flex-wrap gap-1">
                       {adapter.authMethods.map(m => (
                         <Badge key={m} variant="outline" size="sm">{m}</Badge>
@@ -204,11 +204,11 @@ export function ERPAdaptersPage() {
               <Card key={conn.id}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="                    w-10 h-10 rounded-lg bg-white/40 border border-white/50 flex items-center justify-center text-lg">
+                    <div className="                    w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-lg">
                                           {systemIcons[conn.adapterSystem]|| '🔌'}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-gray-900">{conn.name}</h3>
+                      <h3 className="text-base font-semibold text-white">{conn.name}</h3>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-gray-500">{conn.adapterName}</span>
                         <Badge variant="outline" size="sm">{conn.adapterProtocol}</Badge>
@@ -227,17 +227,17 @@ export function ERPAdaptersPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Records Synced</span>
-                    <p className="text-lg font-bold text-gray-900">{(conn.recordsSynced || 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-white">{(conn.recordsSynced || 0).toLocaleString()}</p>
                   </div>
-                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Sync Frequency</span>
-                    <p className="text-lg font-bold text-gray-900">{conn.syncFrequency}</p>
+                    <p className="text-lg font-bold text-white">{conn.syncFrequency}</p>
                   </div>
-                  <div className="                  p-3 rounded bg-white/40 border border-white/50 backdrop-blur-sm">
+                  <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                       <span className="text-[10px] text-gray-400">Last Sync</span>
-                    <p className="text-sm font-medium text-gray-600">{conn.lastSync ? new Date(conn.lastSync).toLocaleTimeString() : 'Never'}</p>
+                    <p className="text-sm font-medium text-gray-400">{conn.lastSync ? new Date(conn.lastSync).toLocaleTimeString() : 'Never'}</p>
                   </div>
                 </div>
 
