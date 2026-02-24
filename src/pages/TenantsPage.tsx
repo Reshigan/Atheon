@@ -294,10 +294,16 @@ export function TenantsPage() {
               { model: 'Hybrid', icon: GitBranch, color: 'violet', desc: 'Sensitive data on-premise, compute at the edge. Best of both worlds for regulated industries.', features: ['Edge compute + Local DB', 'Split data plane', 'Pinecone / Weaviate', 'Compliance-ready', 'Selective sync'] },
             ].map((infra) => {
               const Icon = infra.icon;
+              const colorMap: Record<string, { bg: string; text: string }> = {
+                blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+                amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+                violet: { bg: 'bg-violet-50', text: 'text-violet-600' },
+              };
+              const colors = colorMap[infra.color] || colorMap.blue;
               return (
                 <Card key={infra.model}>
-                  <div className={`w-10 h-10 rounded-lg bg-${infra.color}-500/15 flex items-center justify-center mb-3`}>
-                    <Icon className={`w-5 h-5 text-${infra.color}-400`} />
+                  <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center mb-3`}>
+                    <Icon className={`w-5 h-5 ${colors.text}`} />
                   </div>
                   <h3 className="text-base font-semibold text-gray-900">{infra.model}</h3>
                   <p className="text-xs text-gray-500 mt-1">{infra.desc}</p>
