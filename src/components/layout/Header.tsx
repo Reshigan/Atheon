@@ -1,5 +1,5 @@
 import { useAppStore } from "@/stores/appStore";
-import { Bell, ChevronDown, Menu, LogOut, MessageCircle, Settings, X, Check } from "lucide-react";
+import { Bell, ChevronDown, Menu, LogOut, MessageCircle, Settings, X, Check, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, setToken } from "@/lib/api";
 import type { NotificationItem } from "@/lib/api";
@@ -35,7 +35,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function Header() {
-  const { user, industry, setIndustry, setMobileSidebarOpen, setUser } = useAppStore();
+  const { user, industry, setIndustry, setMobileSidebarOpen, setUser, theme, toggleTheme } = useAppStore();
   const navigate = useNavigate();
 
   // Notifications state
@@ -255,6 +255,15 @@ export function Header() {
               </div>
             )}
           </div>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
 
           {/* Settings → Settings page */}
           <button

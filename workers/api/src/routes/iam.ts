@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import type { AppBindings, AuthContext } from '../types';
 import { getValidatedJsonBody } from '../middleware/validation';
+import { hashPassword } from '../middleware/auth';
+import { getWelcomeEmailTemplate, sendOrQueueEmail } from '../services/email';
 
 const iam = new Hono<AppBindings>();
 
@@ -104,7 +106,7 @@ iam.get('/users', async (c) => {
 iam.post('/users', async (c) => {
   const tenantId = getTenantId(c);
   const { data: body, errors } = await getValidatedJsonBody<{
-    email: string; name: string; role?: string; permissions?: string[];
+    email: string; name: string; role?: string; permissions?: string[]; send_welcome_email?: boolean;
   }>(c, [
     { field: 'email', type: 'email', required: true },
     { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 100 },
@@ -112,12 +114,50 @@ iam.post('/users', async (c) => {
   ]);
   if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
-  const id = crypto.randomUUID();
-  await c.env.DB.prepare(
-    'INSERT INTO users (id, tenant_id, email, name, role, permissions) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, tenantId, body.email, body.name, body.role || 'analyst', JSON.stringify(body.permissions || [])).run();
+  // Check if user already exists in this tenant
+  const existing = await c.env.DB.prepare(
+    'SELECT id FROM users WHERE email = ? AND tenant_id = ?'
+  ).bind(body.email, tenantId).first();
+  if (existing) return c.json({ error: 'User with this email already exists' }, 409);
 
-  return c.json({ id, email: body.email, name: body.name, role: body.role || 'analyst' }, 201);
+  // Generate temporary password
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  let tempPassword = '';
+  const randomBytes = new Uint8Array(12);
+  crypto.getRandomValues(randomBytes);
+  for (let i = 0; i < 12; i++) {
+    tempPassword += chars[randomBytes[i] % chars.length];
+  }
+
+  const passwordHash = await hashPassword(tempPassword);
+  const id = crypto.randomUUID();
+  const role = body.role || 'analyst';
+  const permissions = body.permissions || (role === 'admin' ? ['*'] : ['read']);
+
+  await c.env.DB.prepare(
+    'INSERT INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, tenantId, body.email, body.name, role, passwordHash, JSON.stringify(permissions), 'active').run();
+
+  // Send welcome email with temporary password
+  const shouldSendEmail = body.send_welcome_email !== false; // default true
+  if (shouldSendEmail) {
+    const loginUrl = 'https://atheon.vantax.co.za/login';
+    const template = getWelcomeEmailTemplate(body.name, body.email, tempPassword, loginUrl, 'dark');
+    await sendOrQueueEmail(c.env.DB, {
+      to: [body.email],
+      subject: 'Welcome to Atheon\u2122 — Your Account Has Been Created',
+      htmlBody: template.html,
+      textBody: template.text,
+      tenantId,
+    }).catch(() => {}); // Don't fail user creation if email fails
+  }
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), tenantId, 'user_created', 'iam', 'user', JSON.stringify({ email: body.email, role }), 'success').run().catch(() => {});
+
+  return c.json({ id, email: body.email, name: body.name, role, tempPassword: shouldSendEmail ? tempPassword : undefined }, 201);
 });
 
 // GET /api/iam/sso
