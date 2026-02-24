@@ -1,0 +1,187 @@
+/**
+ * Notifications & Webhooks Routes
+ */
+
+import { Hono } from 'hono';
+import type { Env } from '../types';
+import { dispatchNotification, getUnreadCount, markAsRead } from '../services/notifications';
+
+const notifications = new Hono<{ Bindings: Env }>();
+
+// GET /api/notifications?tenant_id=&type=&unread=
+notifications.get('/', async (c) => {
+  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const type = c.req.query('type');
+  const unreadOnly = c.req.query('unread') === 'true';
+  const limit = parseInt(c.req.query('limit') || '50');
+
+  let query = 'SELECT * FROM notifications WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+
+  if (type) { query += ' AND type = ?'; binds.push(type); }
+  if (unreadOnly) { query += ' AND read = 0'; }
+  query += ' ORDER BY created_at DESC LIMIT ?';
+  binds.push(limit);
+
+  const results = await c.env.DB.prepare(query).bind(...binds).all();
+  const unread = await getUnreadCount(c.env.DB, tenantId);
+
+  return c.json({
+    notifications: results.results.map((n: Record<string, unknown>) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      severity: n.severity,
+      actionUrl: n.action_url,
+      metadata: n.metadata ? JSON.parse(n.metadata as string) : null,
+      read: n.read === 1,
+      createdAt: n.created_at,
+    })),
+    total: results.results.length,
+    unreadCount: unread,
+  });
+});
+
+// POST /api/notifications - Create a notification
+notifications.post('/', async (c) => {
+  const body = await c.req.json<{
+    tenant_id: string; type: string; title: string; message: string;
+    severity?: string; action_url?: string; metadata?: Record<string, unknown>;
+  }>();
+
+  if (!body.tenant_id || !body.title || !body.message) {
+    return c.json({ error: 'tenant_id, title, and message are required' }, 400);
+  }
+
+  const results = await dispatchNotification(c.env.DB, c.env.CACHE, {
+    tenantId: body.tenant_id,
+    type: (body.type || 'system') as 'alert' | 'approval' | 'escalation' | 'system' | 'catalyst_notification' | 'webhook',
+    title: body.title,
+    message: body.message,
+    severity: (body.severity || 'info') as 'critical' | 'high' | 'medium' | 'low' | 'info',
+    actionUrl: body.action_url,
+    metadata: body.metadata,
+  });
+
+  return c.json({ results }, 201);
+});
+
+// PUT /api/notifications/read - Mark notifications as read
+notifications.put('/read', async (c) => {
+  const body = await c.req.json<{ ids: string[] }>();
+  if (!body.ids || body.ids.length === 0) {
+    return c.json({ error: 'ids array is required' }, 400);
+  }
+  await markAsRead(c.env.DB, body.ids);
+  return c.json({ success: true, marked: body.ids.length });
+});
+
+// GET /api/notifications/unread-count?tenant_id=
+notifications.get('/unread-count', async (c) => {
+  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const count = await getUnreadCount(c.env.DB, tenantId);
+  return c.json({ unreadCount: count });
+});
+
+// ── Webhook Management ──
+
+// GET /api/notifications/webhooks?tenant_id=
+notifications.get('/webhooks', async (c) => {
+  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const results = await c.env.DB.prepare(
+    'SELECT * FROM webhooks WHERE tenant_id = ? ORDER BY created_at DESC'
+  ).bind(tenantId).all();
+
+  return c.json({
+    webhooks: results.results.map((w: Record<string, unknown>) => ({
+      id: w.id,
+      url: w.url,
+      events: JSON.parse(w.events as string || '[]'),
+      active: w.active === 1,
+      retryCount: w.retry_count,
+      lastTriggered: w.last_triggered,
+      createdAt: w.created_at,
+    })),
+    total: results.results.length,
+  });
+});
+
+// POST /api/notifications/webhooks - Create a webhook
+notifications.post('/webhooks', async (c) => {
+  const body = await c.req.json<{
+    tenant_id: string; url: string; events?: string[];
+  }>();
+
+  if (!body.tenant_id || !body.url) {
+    return c.json({ error: 'tenant_id and url are required' }, 400);
+  }
+
+  // Validate URL
+  try { new URL(body.url); } catch {
+    return c.json({ error: 'Invalid webhook URL' }, 400);
+  }
+
+  const id = crypto.randomUUID();
+  // Generate a signing secret for the webhook
+  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = Array.from(secretBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  await c.env.DB.prepare(
+    'INSERT INTO webhooks (id, tenant_id, url, secret, events, active, retry_count, created_at) VALUES (?, ?, ?, ?, ?, 1, 0, datetime(\'now\'))'
+  ).bind(id, body.tenant_id, body.url, secret, JSON.stringify(body.events || ['*'])).run();
+
+  return c.json({ id, secret, message: 'Webhook created. Store the secret — it will not be shown again.' }, 201);
+});
+
+// PUT /api/notifications/webhooks/:id
+notifications.put('/webhooks/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{ url?: string; events?: string[]; active?: boolean }>();
+
+  const updates: string[] = [];
+  const values: unknown[] = [];
+  if (body.url) { updates.push('url = ?'); values.push(body.url); }
+  if (body.events) { updates.push('events = ?'); values.push(JSON.stringify(body.events)); }
+  if (body.active !== undefined) { updates.push('active = ?'); values.push(body.active ? 1 : 0); }
+
+  if (updates.length > 0) {
+    values.push(id);
+    await c.env.DB.prepare(`UPDATE webhooks SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run();
+  }
+
+  return c.json({ success: true });
+});
+
+// DELETE /api/notifications/webhooks/:id
+notifications.delete('/webhooks/:id', async (c) => {
+  const id = c.req.param('id');
+  await c.env.DB.prepare('DELETE FROM webhooks WHERE id = ?').bind(id).run();
+  return c.json({ success: true });
+});
+
+// POST /api/notifications/webhooks/:id/test - Test a webhook
+notifications.post('/webhooks/:id/test', async (c) => {
+  const id = c.req.param('id');
+  const webhook = await c.env.DB.prepare('SELECT * FROM webhooks WHERE id = ?').bind(id).first();
+  if (!webhook) return c.json({ error: 'Webhook not found' }, 404);
+
+  const { dispatchWebhook } = await import('../services/notifications');
+  const result = await dispatchWebhook(
+    {
+      id: webhook.id as string,
+      tenantId: webhook.tenant_id as string,
+      url: webhook.url as string,
+      secret: webhook.secret as string,
+      events: JSON.parse(webhook.events as string || '[]'),
+      active: true,
+      retryCount: 0,
+    },
+    'test',
+    { message: 'This is a test webhook from Atheon', timestamp: new Date().toISOString() },
+  );
+
+  return c.json(result);
+});
+
+export default notifications;

@@ -16,3 +16,7 @@ binding = "AI"
 [[kv_namespaces]]
 binding = "CACHE"
 id = "ea7decf85cc142099038ad593b7140ae"
+
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "atheon-storage"
