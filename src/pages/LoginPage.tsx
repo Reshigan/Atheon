@@ -118,6 +118,11 @@ export function LoginPage() {
 
   const handleForgotPassword = async () => {
     if (!forgotEmail.trim()) return;
+    try {
+      await api.auth.forgotPassword(forgotEmail);
+    } catch {
+      // Don't reveal errors — always show success
+    }
     setForgotSent(true);
   };
 
@@ -221,13 +226,6 @@ export function LoginPage() {
                 >
                   <div className="w-5 h-5 rounded bg-sky-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
                   Continue with Azure AD
-                </button>
-                <button
-                  onClick={() => handleSSO('okta')}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/60 border border-white/70 text-sm text-gray-600 hover:bg-white/80 transition-all backdrop-blur-sm"
-                >
-                  <div className="w-5 h-5 rounded bg-cyan-600 flex items-center justify-center text-[10px] font-bold text-white">O</div>
-                  Continue with Okta
                 </button>
               </div>
             )}

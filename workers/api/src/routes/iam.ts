@@ -1,11 +1,17 @@
 import { Hono } from 'hono';
-import type { AppBindings } from '../types';
+import type { AppBindings, AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const iam = new Hono<AppBindings>();
 
-// GET /api/iam/policies?tenant_id=
+function getTenantId(c: { get: (key: string) => unknown }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/iam/policies
 iam.get('/policies', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM iam_policies WHERE tenant_id = ? ORDER BY created_at DESC'
   ).bind(tenantId).all();
@@ -25,28 +31,35 @@ iam.get('/policies', async (c) => {
 
 // POST /api/iam/policies
 iam.post('/policies', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; name: string; description?: string; type?: string; rules?: unknown[];
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    name: string; description?: string; type?: string; rules?: unknown[];
+  }>(c, [
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 100 },
+    { field: 'description', type: 'string', required: false, maxLength: 500 },
+    { field: 'type', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO iam_policies (id, tenant_id, name, description, type, rules) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.name, body.description || '', body.type || 'rbac', JSON.stringify(body.rules || [])).run();
+  ).bind(id, tenantId, body.name, body.description || '', body.type || 'rbac', JSON.stringify(body.rules || [])).run();
 
   return c.json({ id, name: body.name }, 201);
 });
 
 // DELETE /api/iam/policies/:id
 iam.delete('/policies/:id', async (c) => {
+  const tenantId = getTenantId(c);
   const id = c.req.param('id');
-  await c.env.DB.prepare('DELETE FROM iam_policies WHERE id = ?').bind(id).run();
+  await c.env.DB.prepare('DELETE FROM iam_policies WHERE id = ? AND tenant_id = ?').bind(id, tenantId).run();
   return c.json({ success: true });
 });
 
-// GET /api/iam/roles?tenant_id=
+// GET /api/iam/roles
 iam.get('/roles', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT role, COUNT(*) as user_count FROM users WHERE tenant_id = ? GROUP BY role'
   ).bind(tenantId).all();
@@ -66,9 +79,9 @@ iam.get('/roles', async (c) => {
   return c.json({ roles });
 });
 
-// GET /api/iam/users?tenant_id=
+// GET /api/iam/users
 iam.get('/users', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT id, email, name, role, permissions, status, last_login, created_at FROM users WHERE tenant_id = ? ORDER BY created_at DESC'
   ).bind(tenantId).all();
@@ -89,21 +102,27 @@ iam.get('/users', async (c) => {
 
 // POST /api/iam/users
 iam.post('/users', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; email: string; name: string; role?: string; permissions?: string[];
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    email: string; name: string; role?: string; permissions?: string[];
+  }>(c, [
+    { field: 'email', type: 'email', required: true },
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 100 },
+    { field: 'role', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO users (id, tenant_id, email, name, role, permissions) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.email, body.name, body.role || 'analyst', JSON.stringify(body.permissions || [])).run();
+  ).bind(id, tenantId, body.email, body.name, body.role || 'analyst', JSON.stringify(body.permissions || [])).run();
 
   return c.json({ id, email: body.email, name: body.name, role: body.role || 'analyst' }, 201);
 });
 
-// GET /api/iam/sso?tenant_id=
+// GET /api/iam/sso
 iam.get('/sso', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM sso_configs WHERE tenant_id = ?'
   ).bind(tenantId).all();
@@ -124,15 +143,22 @@ iam.get('/sso', async (c) => {
 
 // POST /api/iam/sso
 iam.post('/sso', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; provider: string; client_id: string; issuer_url: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    provider: string; client_id: string; issuer_url: string;
     auto_provision?: boolean; default_role?: string; domain_hint?: string;
-  }>();
+  }>(c, [
+    { field: 'provider', type: 'string', required: true, minLength: 1, maxLength: 64 },
+    { field: 'client_id', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'issuer_url', type: 'url', required: true },
+    { field: 'default_role', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO sso_configs (id, tenant_id, provider, client_id, issuer_url, auto_provision, default_role, domain_hint) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.provider, body.client_id, body.issuer_url, body.auto_provision ? 1 : 0, body.default_role || 'analyst', body.domain_hint || '').run();
+  ).bind(id, tenantId, body.provider, body.client_id, body.issuer_url, body.auto_provision ? 1 : 0, body.default_role || 'analyst', body.domain_hint || '').run();
 
   return c.json({ id }, 201);
 });

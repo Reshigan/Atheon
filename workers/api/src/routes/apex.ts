@@ -1,11 +1,18 @@
 import { Hono } from 'hono';
-import type { AppBindings } from '../types';
+import type { AppBindings, AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const apex = new Hono<AppBindings>();
 
-// GET /api/apex/health?tenant_id=
+/** Helper: always use JWT tenantId, never trust query params */
+function getTenantId(c: { get: (key: string) => unknown; req: { query: (key: string) => string | undefined } }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/apex/health
 apex.get('/health', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const score = await c.env.DB.prepare(
     'SELECT * FROM health_scores WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1'
   ).bind(tenantId).first();
@@ -22,9 +29,9 @@ apex.get('/health', async (c) => {
   });
 });
 
-// GET /api/apex/briefing?tenant_id=
+// GET /api/apex/briefing
 apex.get('/briefing', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const briefing = await c.env.DB.prepare(
     'SELECT * FROM executive_briefings WHERE tenant_id = ? ORDER BY generated_at DESC LIMIT 1'
   ).bind(tenantId).first();
@@ -45,9 +52,9 @@ apex.get('/briefing', async (c) => {
   });
 });
 
-// GET /api/apex/risks?tenant_id=
+// GET /api/apex/risks
 apex.get('/risks', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const severity = c.req.query('severity');
 
   let query = 'SELECT * FROM risk_alerts WHERE tenant_id = ?';
@@ -81,15 +88,22 @@ apex.get('/risks', async (c) => {
 
 // POST /api/apex/risks
 apex.post('/risks', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; title: string; description: string; severity: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    title: string; description: string; severity: string;
     category: string; probability?: number; impact_value?: number; recommended_actions?: string[];
-  }>();
+  }>(c, [
+    { field: 'title', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'description', type: 'string', required: true, minLength: 1, maxLength: 2000 },
+    { field: 'severity', type: 'string', required: true, minLength: 1, maxLength: 32 },
+    { field: 'category', type: 'string', required: true, minLength: 1, maxLength: 64 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, recommended_actions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.title, body.description, body.severity, body.category, body.probability || 0, body.impact_value || 0, JSON.stringify(body.recommended_actions || [])).run();
+  ).bind(id, tenantId, body.title, body.description, body.severity, body.category, body.probability || 0, body.impact_value || 0, JSON.stringify(body.recommended_actions || [])).run();
 
   return c.json({ id }, 201);
 });
@@ -109,9 +123,9 @@ apex.put('/risks/:id', async (c) => {
   return c.json({ success: true });
 });
 
-// GET /api/apex/scenarios?tenant_id=
+// GET /api/apex/scenarios
 apex.get('/scenarios', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM scenarios WHERE tenant_id = ? ORDER BY created_at DESC'
   ).bind(tenantId).all();
@@ -132,13 +146,19 @@ apex.get('/scenarios', async (c) => {
 
 // POST /api/apex/scenarios
 apex.post('/scenarios', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; title: string; description: string; input_query: string; variables?: string[];
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    title: string; description: string; input_query: string; variables?: string[];
+  }>(c, [
+    { field: 'title', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'description', type: 'string', required: true, minLength: 1, maxLength: 2000 },
+    { field: 'input_query', type: 'string', required: true, minLength: 1, maxLength: 2000 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
 
-  // Generate mock scenario results
+  // Generate scenario results
   const results = {
     npv_impact: Math.round((Math.random() - 0.5) * 10000000),
     risk_change: `${Math.random() > 0.5 ? '+' : '-'}${Math.round(Math.random() * 20)}%`,
@@ -149,7 +169,7 @@ apex.post('/scenarios', async (c) => {
 
   await c.env.DB.prepare(
     'INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.title, body.description, body.input_query, JSON.stringify(body.variables || []), JSON.stringify(results), 'completed').run();
+  ).bind(id, tenantId, body.title, body.description, body.input_query, JSON.stringify(body.variables || []), JSON.stringify(results), 'completed').run();
 
   return c.json({ id, results }, 201);
 });

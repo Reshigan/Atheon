@@ -3,10 +3,12 @@ import { cors } from 'hono/cors';
 import type { Env, AppBindings } from './types';
 import { seedDatabase } from './services/seed';
 import { seedSampleCompany } from './services/seed-sample-company';
-import { apiRateLimiter, authRateLimiter, aiRateLimiter } from './middleware/ratelimit';
+import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter } from './middleware/ratelimit';
 import { auditEnrichment, requestSizeLimiter } from './middleware/validation';
 import { tenantIsolation } from './middleware/tenant';
 import { DashboardRoom } from './services/realtime';
+import { handleScheduled, handleQueueMessage } from './services/scheduled';
+import type { CatalystQueueMessage } from './services/scheduled';
 import auth from './routes/auth';
 import tenants from './routes/tenants';
 import iam from './routes/iam';
@@ -56,14 +58,17 @@ app.use('/api/*', requestSizeLimiter(1048576));
 app.use('/api/*', auditEnrichment());
 
 // Rate limiting
+app.use('/api/auth/demo-login', demoAuthRateLimiter);
 app.use('/api/auth/*', authRateLimiter);
 app.use('/api/mind/*', aiRateLimiter);
 app.use('/api/*', apiRateLimiter);
 
-// Auto-seed database on first request
-let seeded = false;
+// Auto-seed database on first request (KV-backed to survive isolate restarts)
+const MIGRATION_VERSION = 'v4';
 app.use('*', async (c, next) => {
-  if (!seeded) {
+  const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
+  const alreadyMigrated = await c.env.CACHE.get(migrationKey);
+  if (!alreadyMigrated) {
     try {
       // Run migrations inline (create tables if not exist)
       const migrationSQL = `
@@ -178,43 +183,45 @@ app.use('*', async (c, next) => {
       // Seed sample test company (Protea Manufacturing)
       await seedSampleCompany(c.env.DB);
 
-      seeded = true;
+      // Mark as migrated in KV (TTL 24h — re-checks daily)
+      await c.env.CACHE.put(migrationKey, 'true', { expirationTtl: 86400 });
     } catch (e) {
       console.error('Migration/seed error:', e);
-      // Still mark as seeded to avoid repeated attempts
-      seeded = true;
+      // Mark in KV anyway to avoid thundering herd retries
+      await c.env.CACHE.put(migrationKey, 'error', { expirationTtl: 300 });
     }
   }
   await next();
 });
 
-// Root endpoint
+// Root endpoint — versioned
 app.get('/', (c) => {
   return c.json({
     name: 'Atheon™ Enterprise Intelligence Platform API',
-    version: '3.0.0',
+    version: '4.0.0',
+    apiVersion: 'v1',
     status: 'operational',
     endpoints: {
-      auth: '/api/auth',
-      tenants: '/api/tenants',
-      iam: '/api/iam',
-      apex: '/api/apex',
-      pulse: '/api/pulse',
-      catalysts: '/api/catalysts',
-      memory: '/api/memory',
-      mind: '/api/mind',
-      erp: '/api/erp',
-      controlplane: '/api/controlplane',
-      audit: '/api/audit',
-      connectivity: '/api/connectivity',
-      notifications: '/api/notifications',
-      storage: '/api/storage',
-      realtime: '/api/realtime',
+      auth: '/api/v1/auth',
+      tenants: '/api/v1/tenants',
+      iam: '/api/v1/iam',
+      apex: '/api/v1/apex',
+      pulse: '/api/v1/pulse',
+      catalysts: '/api/v1/catalysts',
+      memory: '/api/v1/memory',
+      mind: '/api/v1/mind',
+      erp: '/api/v1/erp',
+      controlplane: '/api/v1/controlplane',
+      audit: '/api/v1/audit',
+      connectivity: '/api/v1/connectivity',
+      notifications: '/api/v1/notifications',
+      storage: '/api/v1/storage',
+      realtime: '/api/v1/realtime',
     },
     protocols: {
-      mcp: '/api/connectivity/mcp',
-      a2a: '/api/connectivity/a2a',
-      websocket: '/api/realtime/ws',
+      mcp: '/api/v1/connectivity/mcp',
+      a2a: '/api/v1/connectivity/a2a',
+      websocket: '/api/v1/realtime/ws',
     },
     documentation: 'https://atheon.vantax.co.za',
   });
@@ -225,48 +232,47 @@ app.get('/healthz', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Tenant isolation middleware for protected routes
+// Tenant isolation middleware for protected routes (supports both /api/ and /api/v1/ prefixes)
 // Auth routes are excluded (login/register don't have JWT yet)
-app.use('/api/tenants/*', tenantIsolation());
-app.use('/api/iam/*', tenantIsolation());
-app.use('/api/apex/*', tenantIsolation());
-app.use('/api/pulse/*', tenantIsolation());
-app.use('/api/catalysts/*', tenantIsolation());
-app.use('/api/memory/*', tenantIsolation());
-app.use('/api/mind/*', tenantIsolation());
-app.use('/api/erp/*', tenantIsolation());
-app.use('/api/controlplane/*', tenantIsolation());
-app.use('/api/audit/*', tenantIsolation());
-app.use('/api/connectivity/*', tenantIsolation());
-app.use('/api/notifications/*', tenantIsolation());
-app.use('/api/storage/*', tenantIsolation());
+const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime'];
+for (const prefix of protectedPrefixes) {
+  app.use(`/api/${prefix}/*`, tenantIsolation());
+  app.use(`/api/v1/${prefix}/*`, tenantIsolation());
+}
 
-// Mount route modules
-app.route('/api/auth', auth);
-app.route('/api/tenants', tenants);
-app.route('/api/iam', iam);
-app.route('/api/apex', apex);
-app.route('/api/pulse', pulse);
-app.route('/api/catalysts', catalysts);
-app.route('/api/memory', memory);
-app.route('/api/mind', mind);
-app.route('/api/erp', erp);
-app.route('/api/controlplane', controlplane);
-app.route('/api/audit', audit);
-app.route('/api/connectivity', connectivity);
-app.route('/api/notifications', notifications);
-app.route('/api/storage', storage);
-app.route('/api/realtime', realtime);
+// Mount route modules (both /api/ and /api/v1/ for backward compatibility)
+const routeModules: [string, typeof auth][] = [
+  ['auth', auth], ['tenants', tenants], ['iam', iam], ['apex', apex],
+  ['pulse', pulse], ['catalysts', catalysts], ['memory', memory], ['mind', mind],
+  ['erp', erp], ['controlplane', controlplane], ['audit', audit],
+  ['connectivity', connectivity], ['notifications', notifications],
+  ['storage', storage], ['realtime', realtime],
+];
+for (const [name, handler] of routeModules) {
+  app.route(`/api/${name}`, handler);
+  app.route(`/api/v1/${name}`, handler);
+}
 
 // 404 handler
 app.notFound((c) => {
   return c.json({ error: 'Not found', path: c.req.path }, 404);
 });
 
-// Error handler
+// Error handler — consistent format, no stack traces in production
 app.onError((err, c) => {
   console.error('Unhandled error:', err);
-  return c.json({ error: 'Internal server error', message: err.message }, 500);
+  const isDev = c.env?.ENVIRONMENT !== 'production';
+  return c.json({
+    error: 'Internal server error',
+    message: isDev ? err.message : 'An unexpected error occurred',
+    ...(isDev ? { stack: err.stack } : {}),
+  }, 500);
 });
 
-export default app;
+// Export the app as the default fetch handler
+// Also export scheduled handler (Cron Triggers) and queue consumer
+export default {
+  fetch: app.fetch,
+  scheduled: handleScheduled,
+  queue: handleQueueMessage,
+} satisfies ExportedHandler<Env & { CATALYST_QUEUE?: Queue<CatalystQueueMessage> }>;

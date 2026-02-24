@@ -4,7 +4,7 @@
  */
 
 import { Context, Next } from 'hono';
-import type { Env } from '../types';
+import type { Env, AppBindings } from '../types';
 
 // ── Sanitization Helpers ──
 
@@ -34,7 +34,7 @@ export function sanitizeObject(obj: Record<string, unknown>): Record<string, unk
 
 // ── Validation Rules ──
 
-interface ValidationRule {
+export interface ValidationRule {
   field: string;
   type: 'string' | 'number' | 'boolean' | 'email' | 'uuid' | 'url';
   required?: boolean;
@@ -102,6 +102,24 @@ export function validateInput(data: Record<string, unknown>, rules: ValidationRu
   return errors;
 }
 
+export async function getValidatedJsonBody<T extends Record<string, unknown>>(
+  c: Context<AppBindings>,
+  rules: ValidationRule[],
+): Promise<{ data: T | null; errors: string[] }> {
+  try {
+    const raw = await c.req.json<unknown>();
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return { data: null, errors: ['Request body must be a JSON object'] };
+    }
+
+    const sanitized = sanitizeObject(raw as Record<string, unknown>);
+    const errors = validateInput(sanitized, rules);
+    return { data: sanitized as T, errors };
+  } catch {
+    return { data: null, errors: ['Invalid JSON body'] };
+  }
+}
+
 // ── Request Size Limiter Middleware ──
 
 export function requestSizeLimiter(maxBytes: number = 1048576) {
@@ -133,11 +151,17 @@ export function auditEnrichment() {
     await next();
     const duration = Date.now() - start;
 
-    // Log to audit for mutation operations
-    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(c.req.method)) {
+    // 4.6: Audit dedup — skip middleware audit logging for routes that already audit themselves
+    // (auth, catalysts, iam routes all INSERT INTO audit_log in their handlers)
+    const selfAuditedPrefixes = ['/api/auth/', '/api/v1/auth/', '/api/audit/', '/api/v1/audit/'];
+    const isSelfAudited = selfAuditedPrefixes.some(p => c.req.path.startsWith(p));
+
+    if (!isSelfAudited && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(c.req.method)) {
       try {
-        const tenantId = c.req.query('tenant_id') || 'system';
-        const userId: string | null = null;
+        // Use auth context tenantId instead of query param (tenant isolation fix)
+        const auth = (c as unknown as { get: (k: string) => unknown }).get?.('auth') as { tenantId?: string; userId?: string } | undefined;
+        const tenantId = auth?.tenantId || 'system';
+        const userId = auth?.userId || null;
 
         await c.env.DB.prepare(
           'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'

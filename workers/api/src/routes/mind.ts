@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import type { AppBindings } from '../types';
+import type { AppBindings, AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const mind = new Hono<AppBindings>();
 
@@ -72,13 +73,23 @@ async function getTenantContext(db: D1Database, tenantId: string): Promise<strin
   return context;
 }
 
+function getTenantId(c: { get: (key: string) => unknown }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
 // POST /api/mind/query
 mind.post('/query', async (c) => {
-  const body = await c.req.json<{
-    tenant_id?: string; query: string; tier?: string; context?: string;
-  }>();
+  const { data: body, errors } = await getValidatedJsonBody<{
+    query: string; tier?: string; context?: string;
+  }>(c, [
+    { field: 'query', type: 'string', required: true, minLength: 1, maxLength: 2000 },
+    { field: 'tier', type: 'string', required: false, maxLength: 16 },
+    { field: 'context', type: 'string', required: false, maxLength: 4000 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
-  const tenantId = body.tenant_id || 'vantax';
+  const tenantId = getTenantId(c);
   const tierKey = body.tier || 'tier-1';
   const tierConfig = MODEL_TIERS[tierKey] || MODEL_TIERS['tier-1'];
 
@@ -194,9 +205,9 @@ mind.get('/models', async (c) => {
   });
 });
 
-// GET /api/mind/history?tenant_id=
+// GET /api/mind/history
 mind.get('/history', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const limit = parseInt(c.req.query('limit') || '20');
 
   const results = await c.env.DB.prepare(
@@ -218,9 +229,9 @@ mind.get('/history', async (c) => {
   return c.json({ queries: formatted, total: formatted.length });
 });
 
-// GET /api/mind/stats?tenant_id=
+// GET /api/mind/stats
 mind.get('/stats', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const totalQueries = await c.env.DB.prepare('SELECT COUNT(*) as count FROM mind_queries WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>();
   const avgLatency = await c.env.DB.prepare('SELECT AVG(latency_ms) as avg FROM mind_queries WHERE tenant_id = ?').bind(tenantId).first<{ avg: number }>();

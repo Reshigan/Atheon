@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
-import type { AppBindings } from '../types';
+import type { AppBindings, AuthContext } from '../types';
 import { executeTask, approveAction, rejectAction } from '../services/catalyst-engine';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const catalysts = new Hono<AppBindings>();
 
@@ -15,9 +16,14 @@ function safeJsonParse(value: unknown): unknown {
   }
 }
 
-// GET /api/catalysts/clusters?tenant_id=
+function getTenantId(c: { get: (key: string) => unknown }): string {
+  const auth = c.get('auth') as AuthContext | undefined;
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/catalysts/clusters
 catalysts.get('/clusters', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const results = await c.env.DB.prepare(
     'SELECT * FROM catalyst_clusters WHERE tenant_id = ? ORDER BY domain ASC'
   ).bind(tenantId).all();
@@ -96,14 +102,21 @@ catalysts.get('/clusters/:id', async (c) => {
 
 // POST /api/catalysts/clusters
 catalysts.post('/clusters', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; name: string; domain: string; description?: string; autonomy_tier?: string;
-  }>();
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    name: string; domain: string; description?: string; autonomy_tier?: string;
+  }>(c, [
+    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 100 },
+    { field: 'domain', type: 'string', required: true, minLength: 1, maxLength: 64 },
+    { field: 'description', type: 'string', required: false, maxLength: 500 },
+    { field: 'autonomy_tier', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
   await c.env.DB.prepare(
     'INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, autonomy_tier) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.tenant_id, body.name, body.domain, body.description || '', body.autonomy_tier || 'read-only').run();
+  ).bind(id, tenantId, body.name, body.domain, body.description || '', body.autonomy_tier || 'read-only').run();
 
   return c.json({ id, name: body.name, domain: body.domain }, 201);
 });
@@ -126,9 +139,9 @@ catalysts.put('/clusters/:id', async (c) => {
   return c.json({ success: true });
 });
 
-// GET /api/catalysts/actions?tenant_id=&cluster_id=
+// GET /api/catalysts/actions
 catalysts.get('/actions', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
   const clusterId = c.req.query('cluster_id');
   const status = c.req.query('status');
   const limit = parseInt(c.req.query('limit') || '50');
@@ -164,11 +177,18 @@ catalysts.get('/actions', async (c) => {
 
 // POST /api/catalysts/actions - Submit action through execution engine
 catalysts.post('/actions', async (c) => {
-  const body = await c.req.json<{
-    cluster_id: string; tenant_id: string; catalyst_name: string; action: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    cluster_id: string; catalyst_name: string; action: string;
     confidence?: number; input_data?: Record<string, unknown>; reasoning?: string;
     risk_level?: string;
-  }>();
+  }>(c, [
+    { field: 'cluster_id', type: 'string', required: true, minLength: 1 },
+    { field: 'catalyst_name', type: 'string', required: true, minLength: 1, maxLength: 100 },
+    { field: 'action', type: 'string', required: true, minLength: 1, maxLength: 200 },
+    { field: 'risk_level', type: 'string', required: false, maxLength: 32 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   // Get cluster info for autonomy tier and trust score
   const cluster = await c.env.DB.prepare(
@@ -180,7 +200,7 @@ catalysts.post('/actions', async (c) => {
   // Execute through the catalyst engine
   const result = await executeTask({
     clusterId: body.cluster_id,
-    tenantId: body.tenant_id,
+    tenantId: tenantId,
     catalystName: body.catalyst_name,
     action: body.action,
     inputData: body.input_data || {},
@@ -193,7 +213,7 @@ catalysts.post('/actions', async (c) => {
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), body.tenant_id, 'catalyst.action.executed', 'catalysts', body.cluster_id,
+    crypto.randomUUID(), tenantId, 'catalyst.action.executed', 'catalysts', body.cluster_id,
     JSON.stringify({ action_id: result.actionId, catalyst: body.catalyst_name, action: body.action, confidence: result.confidence, status: result.status }),
     result.status === 'failed' ? 'failure' : 'success',
   ).run();
@@ -219,9 +239,9 @@ catalysts.put('/actions/:id/reject', async (c) => {
   return c.json(result);
 });
 
-// GET /api/catalysts/governance?tenant_id=
+// GET /api/catalysts/governance
 catalysts.get('/governance', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const totalActions = await c.env.DB.prepare('SELECT COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>();
   const pendingActions = await c.env.DB.prepare('SELECT COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ? AND status = ?').bind(tenantId, 'pending').first<{ count: number }>();
@@ -246,9 +266,9 @@ catalysts.get('/governance', async (c) => {
   });
 });
 
-// GET /api/catalysts/approvals?tenant_id= - Get pending approval requests
+// GET /api/catalysts/approvals - Get pending approval requests
 catalysts.get('/approvals', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const results = await c.env.DB.prepare(
     'SELECT ca.*, cc.name as cluster_name, cc.domain FROM catalyst_actions ca JOIN catalyst_clusters cc ON ca.cluster_id = cc.id WHERE ca.tenant_id = ? AND ca.status IN (?, ?) ORDER BY ca.created_at DESC'
@@ -272,9 +292,9 @@ catalysts.get('/approvals', async (c) => {
   });
 });
 
-// GET /api/catalysts/execution-stats?tenant_id= - Execution engine stats
+// GET /api/catalysts/execution-stats - Execution engine stats
 catalysts.get('/execution-stats', async (c) => {
-  const tenantId = c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const [total, byStatus, avgConfidence, recentExecutions] = await Promise.all([
     c.env.DB.prepare('SELECT COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>(),

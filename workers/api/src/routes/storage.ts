@@ -5,13 +5,18 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
 import type { AuthContext } from '../types';
+import { getValidatedJsonBody } from '../middleware/validation';
 
 const storage = new Hono<AppBindings>();
 
-// GET /api/storage/documents?tenant_id=&type=
-storage.get('/documents', async (c) => {
+function getTenantId(c: { get: (key: string) => unknown }): string {
   const auth = c.get('auth') as AuthContext | undefined;
-  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'vantax';
+  return auth?.tenantId || 'vantax';
+}
+
+// GET /api/storage/documents
+storage.get('/documents', async (c) => {
+  const tenantId = getTenantId(c);
   const docType = c.req.query('type');
   const limit = parseInt(c.req.query('limit') || '50');
 
@@ -46,7 +51,7 @@ storage.post('/documents', async (c) => {
   let fileName: string;
   let fileData: ArrayBuffer;
   let mimeType: string;
-  let tenantId: string;
+  const tenantId = getTenantId(c);
   let docType: string;
   let uploadedBy: string | null = null;
 
@@ -58,13 +63,12 @@ storage.post('/documents', async (c) => {
     fileName = file.name;
     fileData = await file.arrayBuffer();
     mimeType = file.type || 'application/octet-stream';
-    tenantId = (formData.get('tenant_id') as string) || 'vantax';
     docType = (formData.get('type') as string) || 'document';
     uploadedBy = formData.get('uploaded_by') as string | null;
   } else {
     // JSON body with base64 encoded file
     const body = await c.req.json<{
-      tenant_id: string; name: string; type?: string; mime_type?: string;
+      name: string; type?: string; mime_type?: string;
       data: string; uploaded_by?: string;
     }>();
 
@@ -72,7 +76,6 @@ storage.post('/documents', async (c) => {
 
     fileName = body.name;
     mimeType = body.mime_type || 'application/octet-stream';
-    tenantId = body.tenant_id || 'vantax';
     docType = body.type || 'document';
     uploadedBy = body.uploaded_by || null;
 
@@ -173,13 +176,16 @@ storage.delete('/documents/:id', async (c) => {
 
 // POST /api/storage/reports/generate - Generate a report and store in R2
 storage.post('/reports/generate', async (c) => {
-  const body = await c.req.json<{
-    tenant_id: string; report_type: string; format?: string;
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    report_type: string; format?: string;
     date_range?: { start: string; end: string };
-  }>();
-
-  if (!body.tenant_id || !body.report_type) {
-    return c.json({ error: 'tenant_id and report_type are required' }, 400);
+  }>(c, [
+    { field: 'report_type', type: 'string', required: true, minLength: 1, maxLength: 64 },
+    { field: 'format', type: 'string', required: false, maxLength: 16 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
   const reportId = crypto.randomUUID();
@@ -190,10 +196,10 @@ storage.post('/reports/generate', async (c) => {
   switch (body.report_type) {
     case 'executive_summary': {
       const [health, risks, briefings, metrics] = await Promise.all([
-        c.env.DB.prepare('SELECT * FROM health_scores WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1').bind(body.tenant_id).first(),
-        c.env.DB.prepare('SELECT * FROM risk_alerts WHERE tenant_id = ? AND status = ? ORDER BY detected_at DESC LIMIT 10').bind(body.tenant_id, 'active').all(),
-        c.env.DB.prepare('SELECT * FROM executive_briefings WHERE tenant_id = ? ORDER BY generated_at DESC LIMIT 3').bind(body.tenant_id).all(),
-        c.env.DB.prepare('SELECT * FROM process_metrics WHERE tenant_id = ? ORDER BY measured_at DESC LIMIT 20').bind(body.tenant_id).all(),
+        c.env.DB.prepare('SELECT * FROM health_scores WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1').bind(tenantId).first(),
+        c.env.DB.prepare('SELECT * FROM risk_alerts WHERE tenant_id = ? AND status = ? ORDER BY detected_at DESC LIMIT 10').bind(tenantId, 'active').all(),
+        c.env.DB.prepare('SELECT * FROM executive_briefings WHERE tenant_id = ? ORDER BY generated_at DESC LIMIT 3').bind(tenantId).all(),
+        c.env.DB.prepare('SELECT * FROM process_metrics WHERE tenant_id = ? ORDER BY measured_at DESC LIMIT 20').bind(tenantId).all(),
       ]);
       reportData = {
         type: 'executive_summary', generatedAt: new Date().toISOString(),
@@ -204,20 +210,24 @@ storage.post('/reports/generate', async (c) => {
       break;
     }
     case 'audit_trail': {
-      const dateFilter = body.date_range
-        ? ` AND created_at BETWEEN '${body.date_range.start}' AND '${body.date_range.end}'`
-        : '';
-      const entries = await c.env.DB.prepare(
-        `SELECT * FROM audit_log WHERE tenant_id = ?${dateFilter} ORDER BY created_at DESC LIMIT 1000`
-      ).bind(body.tenant_id).all();
+      let entries;
+      if (body.date_range) {
+        entries = await c.env.DB.prepare(
+          'SELECT * FROM audit_log WHERE tenant_id = ? AND created_at BETWEEN ? AND ? ORDER BY created_at DESC LIMIT 1000'
+        ).bind(tenantId, body.date_range.start, body.date_range.end).all();
+      } else {
+        entries = await c.env.DB.prepare(
+          'SELECT * FROM audit_log WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 1000'
+        ).bind(tenantId).all();
+      }
       reportData = { type: 'audit_trail', generatedAt: new Date().toISOString(), entries: entries.results, totalEntries: entries.results.length };
       break;
     }
     case 'catalyst_performance': {
       const [clusters, actions, governance] = await Promise.all([
-        c.env.DB.prepare('SELECT * FROM catalyst_clusters WHERE tenant_id = ?').bind(body.tenant_id).all(),
-        c.env.DB.prepare('SELECT status, COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ? GROUP BY status').bind(body.tenant_id).all(),
-        c.env.DB.prepare('SELECT autonomy_tier, AVG(trust_score) as avg_trust FROM catalyst_clusters WHERE tenant_id = ? GROUP BY autonomy_tier').bind(body.tenant_id).all(),
+        c.env.DB.prepare('SELECT * FROM catalyst_clusters WHERE tenant_id = ?').bind(tenantId).all(),
+        c.env.DB.prepare('SELECT status, COUNT(*) as count FROM catalyst_actions WHERE tenant_id = ? GROUP BY status').bind(tenantId).all(),
+        c.env.DB.prepare('SELECT autonomy_tier, AVG(trust_score) as avg_trust FROM catalyst_clusters WHERE tenant_id = ? GROUP BY autonomy_tier').bind(tenantId).all(),
       ]);
       reportData = {
         type: 'catalyst_performance', generatedAt: new Date().toISOString(),
@@ -227,9 +237,9 @@ storage.post('/reports/generate', async (c) => {
     }
     case 'risk_assessment': {
       const [activeRisks, resolvedRisks, scenarios] = await Promise.all([
-        c.env.DB.prepare('SELECT * FROM risk_alerts WHERE tenant_id = ? AND status = ? ORDER BY severity DESC').bind(body.tenant_id, 'active').all(),
-        c.env.DB.prepare('SELECT * FROM risk_alerts WHERE tenant_id = ? AND status = ? ORDER BY resolved_at DESC LIMIT 20').bind(body.tenant_id, 'resolved').all(),
-        c.env.DB.prepare('SELECT * FROM scenarios WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 10').bind(body.tenant_id).all(),
+        c.env.DB.prepare('SELECT * FROM risk_alerts WHERE tenant_id = ? AND status = ? ORDER BY severity DESC').bind(tenantId, 'active').all(),
+        c.env.DB.prepare('SELECT * FROM risk_alerts WHERE tenant_id = ? AND status = ? ORDER BY resolved_at DESC LIMIT 20').bind(tenantId, 'resolved').all(),
+        c.env.DB.prepare('SELECT * FROM scenarios WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 10').bind(tenantId).all(),
       ]);
       reportData = {
         type: 'risk_assessment', generatedAt: new Date().toISOString(),
@@ -244,7 +254,7 @@ storage.post('/reports/generate', async (c) => {
   // Store report
   const reportName = `${body.report_type}_${new Date().toISOString().split('T')[0]}.${format}`;
   const reportContent = JSON.stringify(reportData, null, 2);
-  const r2Key = `${body.tenant_id}/reports/${reportId}/${reportName}`;
+  const r2Key = `${tenantId}/reports/${reportId}/${reportName}`;
 
   // Upload to R2 if available
   let stored = false;
@@ -252,7 +262,7 @@ storage.post('/reports/generate', async (c) => {
     try {
       await c.env.STORAGE.put(r2Key, reportContent, {
         httpMetadata: { contentType: 'application/json' },
-        customMetadata: { tenantId: body.tenant_id, reportType: body.report_type },
+        customMetadata: { tenantId, reportType: body.report_type },
       });
       stored = true;
     } catch (err) {
@@ -263,7 +273,7 @@ storage.post('/reports/generate', async (c) => {
   // Store metadata
   await c.env.DB.prepare(
     'INSERT INTO documents (id, tenant_id, name, type, mime_type, size, r2_key, uploaded_by, stored_in_r2, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-  ).bind(reportId, body.tenant_id, reportName, 'report', 'application/json', reportContent.length, r2Key, 'system', stored ? 1 : 0).run();
+  ).bind(reportId, tenantId, reportName, 'report', 'application/json', reportContent.length, r2Key, 'system', stored ? 1 : 0).run();
 
   return c.json({
     id: reportId, name: reportName, type: body.report_type,
@@ -272,10 +282,9 @@ storage.post('/reports/generate', async (c) => {
   }, 201);
 });
 
-// GET /api/storage/stats?tenant_id=
+// GET /api/storage/stats
 storage.get('/stats', async (c) => {
-  const auth = c.get('auth') as AuthContext | undefined;
-  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'vantax';
+  const tenantId = getTenantId(c);
 
   const [totalDocs, totalSize, byType] = await Promise.all([
     c.env.DB.prepare('SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>(),

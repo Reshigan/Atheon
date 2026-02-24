@@ -33,3 +33,7 @@ bindings = [
 [[migrations]]
 tag = "v1"
 new_classes = ["DashboardRoom"]
+
+# Cron Triggers — scheduled tasks (health recalc, briefings, memory auto-population, process mining)
+[triggers]
+crons = ["*/15 * * * *"]
