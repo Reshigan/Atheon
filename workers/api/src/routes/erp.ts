@@ -356,4 +356,260 @@ erp.get('/systems', (c) => {
   return c.json({ systems });
 });
 
+// ══════════════════════════════════════════════════════════
+// Canonical ERP Data APIs — Query synced data across all ERP systems
+// ══════════════════════════════════════════════════════════
+
+// GET /api/erp/data/customers
+erp.get('/data/customers', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const source = c.req.query('source_system');
+  const group = c.req.query('customer_group');
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  let query = 'SELECT * FROM erp_customers WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (source) { query += ' AND source_system = ?'; binds.push(source); }
+  if (group) { query += ' AND customer_group = ?'; binds.push(group); }
+  query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+  binds.push(limit, offset);
+
+  const results = await c.env.DB.prepare(query).bind(...binds).all();
+  const countQuery = source
+    ? await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_customers WHERE tenant_id = ? AND source_system = ?').bind(tenantId, source).first<{ total: number }>()
+    : await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_customers WHERE tenant_id = ?').bind(tenantId).first<{ total: number }>();
+
+  return c.json({ customers: results.results, total: countQuery?.total || 0, limit, offset });
+});
+
+// GET /api/erp/data/suppliers
+erp.get('/data/suppliers', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const source = c.req.query('source_system');
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  let query = 'SELECT * FROM erp_suppliers WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (source) { query += ' AND source_system = ?'; binds.push(source); }
+  query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+  binds.push(limit, offset);
+
+  const results = await c.env.DB.prepare(query).bind(...binds).all();
+  const total = await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_suppliers WHERE tenant_id = ?').bind(tenantId).first<{ total: number }>();
+
+  return c.json({ suppliers: results.results, total: total?.total || 0, limit, offset });
+});
+
+// GET /api/erp/data/products
+erp.get('/data/products', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const category = c.req.query('category');
+  const warehouse = c.req.query('warehouse');
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  let query = 'SELECT * FROM erp_products WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (category) { query += ' AND category = ?'; binds.push(category); }
+  if (warehouse) { query += ' AND warehouse = ?'; binds.push(warehouse); }
+  query += ' ORDER BY sku ASC LIMIT ? OFFSET ?';
+  binds.push(limit, offset);
+
+  const results = await c.env.DB.prepare(query).bind(...binds).all();
+  const total = await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_products WHERE tenant_id = ?').bind(tenantId).first<{ total: number }>();
+
+  return c.json({ products: results.results, total: total?.total || 0, limit, offset });
+});
+
+// GET /api/erp/data/invoices
+erp.get('/data/invoices', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const status = c.req.query('status');
+  const source = c.req.query('source_system');
+  const customerId = c.req.query('customer_id');
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  let query = 'SELECT * FROM erp_invoices WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (status) { query += ' AND status = ?'; binds.push(status); }
+  if (source) { query += ' AND source_system = ?'; binds.push(source); }
+  if (customerId) { query += ' AND customer_id = ?'; binds.push(customerId); }
+  query += ' ORDER BY invoice_date DESC LIMIT ? OFFSET ?';
+  binds.push(limit, offset);
+
+  const results = await c.env.DB.prepare(query).bind(...binds).all();
+  const total = await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_invoices WHERE tenant_id = ?').bind(tenantId).first<{ total: number }>();
+
+  // Summary stats
+  const stats = await c.env.DB.prepare(`
+    SELECT 
+      COUNT(*) as invoice_count,
+      SUM(total) as total_value,
+      SUM(amount_paid) as total_paid,
+      SUM(amount_due) as total_outstanding,
+      SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
+      SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
+      SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft_count,
+      SUM(CASE WHEN status = 'partial' THEN 1 ELSE 0 END) as partial_count
+    FROM erp_invoices WHERE tenant_id = ?
+  `).bind(tenantId).first();
+
+  return c.json({ invoices: results.results, total: total?.total || 0, stats, limit, offset });
+});
+
+// GET /api/erp/data/purchase-orders
+erp.get('/data/purchase-orders', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const status = c.req.query('status');
+  const supplierId = c.req.query('supplier_id');
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  let query = 'SELECT * FROM erp_purchase_orders WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (status) { query += ' AND status = ?'; binds.push(status); }
+  if (supplierId) { query += ' AND supplier_id = ?'; binds.push(supplierId); }
+  query += ' ORDER BY order_date DESC LIMIT ? OFFSET ?';
+  binds.push(limit, offset);
+
+  const results = await c.env.DB.prepare(query).bind(...binds).all();
+  const total = await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_purchase_orders WHERE tenant_id = ?').bind(tenantId).first<{ total: number }>();
+
+  return c.json({ purchaseOrders: results.results, total: total?.total || 0, limit, offset });
+});
+
+// GET /api/erp/data/gl-accounts
+erp.get('/data/gl-accounts', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const accountType = c.req.query('account_type');
+
+  let query = 'SELECT * FROM erp_gl_accounts WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (accountType) { query += ' AND account_type = ?'; binds.push(accountType); }
+  query += ' ORDER BY account_code ASC';
+
+  const results = binds.length > 1
+    ? await c.env.DB.prepare(query).bind(...binds).all()
+    : await c.env.DB.prepare(query).bind(tenantId).all();
+
+  // Calculate totals by type
+  const summary = await c.env.DB.prepare(`
+    SELECT account_type, COUNT(*) as count, SUM(balance) as total_balance
+    FROM erp_gl_accounts WHERE tenant_id = ?
+    GROUP BY account_type ORDER BY account_type
+  `).bind(tenantId).all();
+
+  return c.json({ accounts: results.results, total: results.results.length, summary: summary.results });
+});
+
+// GET /api/erp/data/journal-entries
+erp.get('/data/journal-entries', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  const results = await c.env.DB.prepare(
+    'SELECT * FROM erp_journal_entries WHERE tenant_id = ? ORDER BY journal_date DESC LIMIT ? OFFSET ?'
+  ).bind(tenantId, limit, offset).all();
+  const total = await c.env.DB.prepare('SELECT COUNT(*) as total FROM erp_journal_entries WHERE tenant_id = ?').bind(tenantId).first<{ total: number }>();
+
+  return c.json({ journalEntries: results.results, total: total?.total || 0, limit, offset });
+});
+
+// GET /api/erp/data/employees
+erp.get('/data/employees', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const department = c.req.query('department');
+
+  let query = 'SELECT * FROM erp_employees WHERE tenant_id = ?';
+  const binds: unknown[] = [tenantId];
+  if (department) { query += ' AND department = ?'; binds.push(department); }
+  query += ' ORDER BY last_name, first_name ASC';
+
+  const results = binds.length > 1
+    ? await c.env.DB.prepare(query).bind(...binds).all()
+    : await c.env.DB.prepare(query).bind(tenantId).all();
+
+  // Department summary
+  const deptSummary = await c.env.DB.prepare(`
+    SELECT department, COUNT(*) as headcount, SUM(gross_salary) as total_salary, AVG(gross_salary) as avg_salary
+    FROM erp_employees WHERE tenant_id = ? AND status = 'active'
+    GROUP BY department ORDER BY department
+  `).bind(tenantId).all();
+
+  return c.json({ employees: results.results, total: results.results.length, departmentSummary: deptSummary.results });
+});
+
+// GET /api/erp/data/bank-transactions
+erp.get('/data/bank-transactions', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+  const limit = parseInt(c.req.query('limit') || '50');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  const results = await c.env.DB.prepare(
+    'SELECT * FROM erp_bank_transactions WHERE tenant_id = ? ORDER BY transaction_date DESC LIMIT ? OFFSET ?'
+  ).bind(tenantId, limit, offset).all();
+
+  const summary = await c.env.DB.prepare(`
+    SELECT SUM(debit) as total_debits, SUM(credit) as total_credits,
+    (SELECT balance FROM erp_bank_transactions WHERE tenant_id = ? ORDER BY transaction_date DESC, id DESC LIMIT 1) as closing_balance
+    FROM erp_bank_transactions WHERE tenant_id = ?
+  `).bind(tenantId, tenantId).first();
+
+  return c.json({ transactions: results.results, total: results.results.length, summary, limit, offset });
+});
+
+// GET /api/erp/data/tax
+erp.get('/data/tax', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+
+  const results = await c.env.DB.prepare(
+    'SELECT * FROM erp_tax_entries WHERE tenant_id = ? ORDER BY tax_period DESC'
+  ).bind(tenantId).all();
+
+  return c.json({ taxEntries: results.results, total: results.results.length });
+});
+
+// GET /api/erp/data/summary - Financial summary across all ERP data
+erp.get('/data/summary', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  const tenantId = auth?.tenantId || c.req.query('tenant_id') || 'protea';
+
+  const [customers, suppliers, products, invoices, pos, employees, bankBalance] = await Promise.all([
+    c.env.DB.prepare('SELECT COUNT(*) as count FROM erp_customers WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as count FROM erp_suppliers WHERE tenant_id = ?').bind(tenantId).first<{ count: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as count, SUM(stock_on_hand * cost_price) as inventory_value FROM erp_products WHERE tenant_id = ?').bind(tenantId).first<{ count: number; inventory_value: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as count, SUM(total) as total_value, SUM(amount_due) as total_outstanding FROM erp_invoices WHERE tenant_id = ?').bind(tenantId).first<{ count: number; total_value: number; total_outstanding: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as count, SUM(total) as total_value FROM erp_purchase_orders WHERE tenant_id = ?').bind(tenantId).first<{ count: number; total_value: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as count, SUM(gross_salary) as monthly_payroll FROM erp_employees WHERE tenant_id = ? AND status = ?').bind(tenantId, 'active').first<{ count: number; monthly_payroll: number }>(),
+    c.env.DB.prepare('SELECT balance FROM erp_bank_transactions WHERE tenant_id = ? ORDER BY transaction_date DESC, id DESC LIMIT 1').bind(tenantId).first<{ balance: number }>(),
+  ]);
+
+  return c.json({
+    tenantId,
+    summary: {
+      customers: { count: customers?.count || 0 },
+      suppliers: { count: suppliers?.count || 0 },
+      products: { count: products?.count || 0, inventoryValue: products?.inventory_value || 0 },
+      invoices: { count: invoices?.count || 0, totalValue: invoices?.total_value || 0, outstanding: invoices?.total_outstanding || 0 },
+      purchaseOrders: { count: pos?.count || 0, totalValue: pos?.total_value || 0 },
+      employees: { count: employees?.count || 0, monthlyPayroll: employees?.monthly_payroll || 0 },
+      bankBalance: bankBalance?.balance || 0,
+    },
+  });
+});
+
 export default erp;

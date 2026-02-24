@@ -1,6 +1,6 @@
 /**
  * ERP Connector Service
- * Real OAuth flows, connection testing, and data sync for SAP, Salesforce, Workday, Oracle
+ * Real OAuth flows, connection testing, and data sync for SAP, Salesforce, Workday, Oracle, Xero, Sage, Pastel
  */
 
 export interface ERPCredentials {
@@ -375,12 +375,306 @@ const oracleAdapter: ERPAdapter = {
   },
 };
 
+// ── Xero Adapter ──
+const xeroAdapter: ERPAdapter = {
+  name: 'Xero',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      scope: credentials.scope || 'openid profile email accounting.transactions accounting.contacts accounting.settings offline_access',
+      state,
+    });
+    return `https://login.xero.com/identity/connect/authorize?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    const resp = await fetch('https://identity.xero.com/connect/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${credentials.clientId}:${credentials.clientSecret}`)}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      }),
+    });
+    if (!resp.ok) throw new Error(`Xero token exchange failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const resp = await fetch('https://api.xero.com/connections', {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (resp.ok) {
+        const connections = await resp.json() as { tenantId?: string; tenantName?: string }[];
+        return {
+          connected: true,
+          version: '2.0',
+          message: `Connected to Xero. ${connections.length} organisation(s) linked.`,
+        };
+      }
+      return { connected: false, message: `Connection failed: ${resp.status}` };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Xero-Tenant-Id': credentials.apiKey || '' };
+
+    for (const entity of entities) {
+      try {
+        const apiMap: Record<string, string> = {
+          'invoices': '/api.xro/2.0/Invoices?page=1',
+          'contacts': '/api.xro/2.0/Contacts?page=1',
+          'accounts': '/api.xro/2.0/Accounts',
+          'bank_transactions': '/api.xro/2.0/BankTransactions?page=1',
+          'payments': '/api.xro/2.0/Payments?page=1',
+          'purchase_orders': '/api.xro/2.0/PurchaseOrders?page=1',
+          'credit_notes': '/api.xro/2.0/CreditNotes?page=1',
+          'items': '/api.xro/2.0/Items?page=1',
+          'journals': '/api.xro/2.0/Journals',
+          'manual_journals': '/api.xro/2.0/ManualJournals?page=1',
+          'employees': '/api.xro/2.0/Employees',
+          'tax_rates': '/api.xro/2.0/TaxRates',
+          'tracking_categories': '/api.xro/2.0/TrackingCategories',
+        };
+        const path = apiMap[entity] || `/api.xro/2.0/${entity}`;
+        const resp = await fetch(`https://api.xero.com${path}`, { headers });
+        if (resp.ok) {
+          const data = await resp.json() as Record<string, unknown[]>;
+          const key = Object.keys(data).find(k => Array.isArray(data[k]));
+          const count = key ? (data[key] as unknown[]).length : 0;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
+// ── Sage Business Cloud Accounting Adapter ──
+const sageAdapter: ERPAdapter = {
+  name: 'Sage Business Cloud',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    const authUrl = credentials.authUrl || 'https://oauth.accounting.sage.com/authorize';
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      scope: credentials.scope || 'full_access',
+      state,
+    });
+    return `${authUrl}?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    const tokenUrl = credentials.tokenUrl || 'https://oauth.accounting.sage.com/token';
+    const resp = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: credentials.clientId,
+        client_secret: credentials.clientSecret,
+        code,
+        redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      }),
+    });
+    if (!resp.ok) throw new Error(`Sage token exchange failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const baseApi = credentials.baseUrl || 'https://api.accounting.sage.com/v3.1';
+      const resp = await fetch(`${baseApi}/me`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { displayed_as?: string };
+        return { connected: true, version: 'v3.1', message: `Connected to Sage: ${data.displayed_as || 'OK'}` };
+      }
+      return { connected: false, message: `Connection failed: ${resp.status}` };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const baseApi = credentials.baseUrl || 'https://api.accounting.sage.com/v3.1';
+    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+
+    for (const entity of entities) {
+      try {
+        const apiMap: Record<string, string> = {
+          'contacts': '/contacts?items_per_page=200',
+          'sales_invoices': '/sales_invoices?items_per_page=200',
+          'purchase_invoices': '/purchase_invoices?items_per_page=200',
+          'ledger_accounts': '/ledger_accounts?items_per_page=200',
+          'bank_accounts': '/bank_accounts',
+          'tax_rates': '/tax_rates',
+          'products': '/products?items_per_page=200',
+          'services': '/services?items_per_page=200',
+          'journals': '/journals?items_per_page=200',
+          'payments': '/contact_payments?items_per_page=200',
+          'bank_transfers': '/bank_transfers?items_per_page=200',
+          'stock_items': '/stock_items?items_per_page=200',
+        };
+        const path = apiMap[entity] || `/${entity}?items_per_page=200`;
+        const resp = await fetch(`${baseApi}${path}`, { headers });
+        if (resp.ok) {
+          const data = await resp.json() as { $total?: number; $items?: unknown[] };
+          const count = data.$total || data.$items?.length || 0;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
+// ── Sage Pastel (Sage 50cloud / Pastel Partner/Xpress) Adapter ──
+const pastelAdapter: ERPAdapter = {
+  name: 'Sage Pastel',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    // Pastel uses API key authentication, but for on-premise we generate a config URL
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      state,
+    });
+    const authUrl = credentials.authUrl || `${credentials.baseUrl}/auth`;
+    return `${authUrl}?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    // Pastel SDK uses API key; this returns a session-based token
+    const resp = await fetch(`${credentials.baseUrl}/api/auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: credentials.apiKey || credentials.clientSecret,
+        username: credentials.username,
+        password: credentials.password,
+        code,
+      }),
+    });
+    if (!resp.ok) throw new Error(`Pastel auth failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const resp = await fetch(`${credentials.baseUrl}/api/v1/company`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-API-Key': credentials.apiKey || '',
+          'Accept': 'application/json',
+        },
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { CompanyName?: string; Version?: string };
+        return {
+          connected: true,
+          version: data.Version || '2024',
+          message: `Connected to Pastel: ${data.CompanyName || 'OK'}`,
+        };
+      }
+      return { connected: false, message: `Connection failed: ${resp.status}` };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'X-API-Key': credentials.apiKey || '',
+      'Accept': 'application/json',
+    };
+
+    for (const entity of entities) {
+      try {
+        const apiMap: Record<string, string> = {
+          'customers': '/api/v1/customers?limit=500',
+          'suppliers': '/api/v1/suppliers?limit=500',
+          'invoices': '/api/v1/invoices?limit=500',
+          'purchase_orders': '/api/v1/purchase-orders?limit=500',
+          'inventory': '/api/v1/inventory-items?limit=500',
+          'gl_accounts': '/api/v1/general-ledger/accounts?limit=500',
+          'gl_transactions': '/api/v1/general-ledger/transactions?limit=500',
+          'bank_accounts': '/api/v1/bank-accounts',
+          'employees': '/api/v1/employees?limit=500',
+          'tax_types': '/api/v1/tax-types',
+          'quotes': '/api/v1/quotes?limit=500',
+          'credit_notes': '/api/v1/credit-notes?limit=500',
+        };
+        const path = apiMap[entity] || `/api/v1/${entity}?limit=500`;
+        const resp = await fetch(`${credentials.baseUrl}${path}`, { headers });
+        if (resp.ok) {
+          const data = await resp.json() as { TotalResults?: number; Results?: unknown[] };
+          const count = data.TotalResults || data.Results?.length || 0;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
 // ── Adapter Registry ──
 const adapters: Record<string, ERPAdapter> = {
   sap: sapAdapter,
   salesforce: salesforceAdapter,
   workday: workdayAdapter,
   oracle: oracleAdapter,
+  xero: xeroAdapter,
+  sage: sageAdapter,
+  pastel: pastelAdapter,
 };
 
 export function getERPAdapter(system: string): ERPAdapter | null {
