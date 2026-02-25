@@ -49,8 +49,8 @@ const savedOnboarding = typeof window !== 'undefined' ? localStorage.getItem('at
 
 // Apply saved theme to body on initial load
 if (typeof document !== 'undefined') {
-  if (savedTheme === 'light') {
-    document.body.classList.add('atheon-light');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('atheon-dark');
   }
   if (savedAccent && ACCENT_CSS_MAP[savedAccent]) {
     applyAccentColor(savedAccent);
@@ -62,7 +62,7 @@ export const useAppStore = create<AppState>((set) => ({
   currentLayer: 'apex',
   sidebarOpen: true,
   industry: 'general',
-  theme: savedTheme || 'dark',
+  theme: savedTheme || 'light',
   accentColor: savedAccent || 'amber',
   onboardingDismissed: savedOnboarding,
   setUser: (user) => set({ user }),
@@ -74,7 +74,7 @@ export const useAppStore = create<AppState>((set) => ({
   setTheme: (theme) => {
     localStorage.setItem('atheon-theme', theme);
     if (typeof document !== 'undefined') {
-      document.body.classList.toggle('atheon-light', theme === 'light');
+      document.body.classList.toggle('atheon-dark', theme === 'dark');
     }
     set({ theme });
   },
@@ -82,7 +82,7 @@ export const useAppStore = create<AppState>((set) => ({
     const next = s.theme === 'dark' ? 'light' : 'dark';
     localStorage.setItem('atheon-theme', next);
     if (typeof document !== 'undefined') {
-      document.body.classList.toggle('atheon-light', next === 'light');
+      document.body.classList.toggle('atheon-dark', next === 'dark');
     }
     return { theme: next };
   }),

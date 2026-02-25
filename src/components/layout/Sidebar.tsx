@@ -66,7 +66,7 @@ export function Sidebar() {
     return item.roles.includes(userRole);
   });
 
-  const isLight = theme === 'light';
+  const isDark = theme === 'dark';
   let lastSection = '';
 
   return (
@@ -74,7 +74,7 @@ export function Sidebar() {
       {/* Mobile overlay backdrop */}
       {mobileSidebarOpen && (
         <div
-          className={cn("fixed inset-0 z-40 backdrop-blur-sm lg:hidden", isLight ? "bg-black/20" : "bg-black/50")}
+          className={cn("fixed inset-0 z-40 backdrop-blur-sm lg:hidden", isDark ? "bg-black/50" : "bg-black/20")}
           onClick={closeMobile}
         />
       )}
