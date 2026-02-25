@@ -41,7 +41,7 @@ export function PulsePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
       </div>
     );
   }
@@ -108,10 +108,10 @@ export function PulsePage() {
               <Card key={anom.id}>
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    anom.severity === 'critical' ? 'bg-red-500/10' : anom.severity === 'high' ? 'bg-[#2a7c8c]/10' : 'bg-[#2a7c8c]/10'
+                    anom.severity === 'critical' ? 'bg-red-500/10' : anom.severity === 'high' ? 'bg-[var(--accent)]/10' : 'bg-[var(--accent)]/10'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      anom.severity === 'critical' ? 'text-red-400' : anom.severity === 'high' ? 'text-[#2a7c8c]' : 'text-[#2a7c8c]'
+                      anom.severity === 'critical' ? 'text-red-400' : anom.severity === 'high' ? 'text-[var(--accent)]' : 'text-[var(--accent)]'
                     }`} />
                   </div>
                   <div className="flex-1">
@@ -167,7 +167,7 @@ export function PulsePage() {
                     <div key={step.id} className="flex items-center gap-2">
                       <div className={`p-3 rounded-lg border min-w-32 ${
                         step.status === 'bottleneck' ? 'bg-red-500/10 border-red-500/20' :
-                        step.status === 'degraded' ? 'bg-[#2a7c8c]/10 border-[#2a7c8c]/20' :
+                        step.status === 'degraded' ? 'bg-[var(--accent)]/10 border-[var(--accent)]/20' :
                         'bg-white/[0.04] border-white/[0.06] backdrop-blur-sm'
                       }`}>
                         <span className="text-sm font-medium t-primary">{step.name}</span>
@@ -207,17 +207,17 @@ export function PulsePage() {
               <Card key={event.id}>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="p-2 rounded-lg bg-[#2a7c8c]/10 text-center min-w-20">
-                      <span className="text-xs text-[#2a7c8c] font-medium">{event.sourceSystem}</span>
+                    <div className="p-2 rounded-lg bg-[var(--accent)]/10 text-center min-w-20">
+                      <span className="text-xs text-[var(--accent)] font-medium">{event.sourceSystem}</span>
                     </div>
                     <div className="flex-1 relative">
-                      <div className="h-px bg-gradient-to-r from-[#2a7c8c]/40 to-blue-500/30" />
+                      <div className="h-px bg-gradient-to-r from-[var(--accent)]/40 to-blue-500/30" />
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.06] backdrop-blur-sm text-[10px] text-gray-500">
                         {event.lagDays}d lag
                       </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-[#2a7c8c]/10 text-center min-w-20">
-                      <span className="text-xs text-[#2a7c8c] font-medium">{event.targetSystem}</span>
+                    <div className="p-2 rounded-lg bg-[var(--accent)]/10 text-center min-w-20">
+                      <span className="text-xs text-[var(--accent)] font-medium">{event.targetSystem}</span>
                     </div>
                   </div>
                   <Badge variant="info">{Math.round(event.confidence * 100)}%</Badge>

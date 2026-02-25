@@ -1,6 +1,7 @@
 /**
- * Hero3D — Atheon enterprise geometric mark
- * Clean, sophisticated SVG with subtle animation.
+ * Hero3D — Atheon glass-morphism 3D crystalline mark
+ * Stunning animated SVG with glass reflections, orbital rings,
+ * floating particles, and prismatic light effects.
  */
 
 interface Hero3DProps {
@@ -17,50 +18,131 @@ export function Hero3D({ size = 'lg', className = '' }: Hero3DProps) {
 
   return (
     <div className={`relative ${className}`} style={{ width: dimensions.w, height: dimensions.h }}>
-      <div className="absolute inset-0 animate-pulse-glow" style={{ background: 'radial-gradient(ellipse at 50% 50%, var(--accent-glow) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+      {/* Outer ambient glow */}
+      <div className="absolute inset-0 animate-pulse-glow" style={{
+        background: 'radial-gradient(ellipse at 50% 45%, rgba(78, 124, 246, 0.25) 0%, rgba(139, 92, 246, 0.08) 40%, transparent 70%)',
+        filter: 'blur(50px)',
+      }} />
+
+      {/* Secondary prismatic glow */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse at 35% 55%, rgba(59, 130, 246, 0.12) 0%, transparent 50%), radial-gradient(ellipse at 65% 40%, rgba(139, 92, 246, 0.10) 0%, transparent 50%)',
+        filter: 'blur(30px)',
+        animation: 'shimmer 4s ease-in-out infinite',
+      }} />
+
       <div className="animate-float" style={{ transformStyle: 'preserve-3d' }}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox={dimensions.vb} fill="none" width={dimensions.w} height={dimensions.h}>
           <defs>
-            <linearGradient id="h-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.3" />
+            {/* Primary glass gradient */}
+            <linearGradient id="h-glass1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#6b93ff" stopOpacity="0.95" />
+              <stop offset="40%" stopColor="#4e7cf6" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#3d6ce6" stopOpacity="0.50" />
             </linearGradient>
-            <linearGradient id="h-grad2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.15" />
+            {/* Reflection highlight gradient */}
+            <linearGradient id="h-reflect" x1="30%" y1="0%" x2="70%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.45" />
+              <stop offset="50%" stopColor="#ffffff" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.02" />
             </linearGradient>
-            <linearGradient id="h-grad3" x1="50%" y1="0%" x2="50%" y2="100%">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.05" />
+            {/* Orbital ring gradient */}
+            <linearGradient id="h-ring" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#6b93ff" stopOpacity="0" />
+              <stop offset="30%" stopColor="#6b93ff" stopOpacity="0.5" />
+              <stop offset="70%" stopColor="#4e7cf6" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#4e7cf6" stopOpacity="0" />
             </linearGradient>
+            {/* Radial glass fill */}
+            <radialGradient id="h-radial" cx="50%" cy="40%" r="50%">
+              <stop offset="0%" stopColor="#8bb5ff" stopOpacity="0.20" />
+              <stop offset="100%" stopColor="#4e7cf6" stopOpacity="0.02" />
+            </radialGradient>
+            {/* Glass blur filter */}
+            <filter id="h-glow">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="h-soft">
+              <feGaussianBlur stdDeviation="1.5" />
+            </filter>
+            {/* Glass drop shadow */}
+            <filter id="h-shadow">
+              <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#4e7cf6" floodOpacity="0.25" />
+            </filter>
           </defs>
 
-          {/* Outer ring */}
-          <circle cx="200" cy="200" r="160" stroke="url(#h-grad3)" strokeWidth="1" fill="none" opacity="0.5">
-            <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="60s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="200" cy="200" r="130" stroke="url(#h-grad3)" strokeWidth="0.5" fill="none" opacity="0.3">
-            <animateTransform attributeName="transform" type="rotate" from="360 200 200" to="0 200 200" dur="45s" repeatCount="indefinite" />
-          </circle>
+          {/* Background ambient circle */}
+          <circle cx="200" cy="200" r="180" fill="url(#h-radial)" />
 
-          {/* Geometric A shape */}
-          <g opacity="0.85">
-            <path d="M200 80L120 300h30l15-35h70l15 35h30L200 80zm0 50l25 100h-50l25-100z" fill="url(#h-grad1)" />
+          {/* Outer orbital ring 1 */}
+          <ellipse cx="200" cy="200" rx="170" ry="60" stroke="url(#h-ring)" strokeWidth="0.8" fill="none" opacity="0.4" transform="rotate(-15 200 200)">
+            <animateTransform attributeName="transform" type="rotate" from="-15 200 200" to="345 200 200" dur="40s" repeatCount="indefinite" />
+          </ellipse>
+          {/* Outer orbital ring 2 */}
+          <ellipse cx="200" cy="200" rx="155" ry="50" stroke="url(#h-ring)" strokeWidth="0.6" fill="none" opacity="0.3" transform="rotate(60 200 200)">
+            <animateTransform attributeName="transform" type="rotate" from="60 200 200" to="-300 200 200" dur="35s" repeatCount="indefinite" />
+          </ellipse>
+          {/* Inner orbital ring 3 */}
+          <ellipse cx="200" cy="200" rx="130" ry="42" stroke="url(#h-ring)" strokeWidth="0.5" fill="none" opacity="0.25" transform="rotate(120 200 200)">
+            <animateTransform attributeName="transform" type="rotate" from="120 200 200" to="480 200 200" dur="25s" repeatCount="indefinite" />
+          </ellipse>
+
+          {/* Glass hexagonal frame */}
+          <g filter="url(#h-shadow)">
+            <path d="M200 55 L310 110 L310 285 L200 340 L90 285 L90 110 Z" fill="url(#h-glass1)" opacity="0.12" stroke="rgba(107, 147, 255, 0.25)" strokeWidth="1" />
           </g>
 
-          {/* Orbital dots */}
-          <circle cx="200" cy="40" r="3" fill="var(--accent)" opacity="0.6">
-            <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="20s" repeatCount="indefinite" />
+          {/* Glass A letter */}
+          <g filter="url(#h-glow)">
+            <path d="M200 85 L125 305 h32 l18-42 h50 l18 42 h32 L200 85z M200 145 l30 80 h-60 l30-80z" fill="url(#h-glass1)" />
+          </g>
+          {/* Reflection overlay */}
+          <path d="M200 85 L125 305 h32 l18-42 h50 l18 42 h32 L200 85z M200 145 l30 80 h-60 l30-80z" fill="url(#h-reflect)" />
+          {/* Inner A glow stroke */}
+          <path d="M200 85 L125 305 h32 l18-42 h50 l18 42 h32 L200 85z" fill="none" stroke="rgba(139, 185, 255, 0.35)" strokeWidth="1.5" />
+
+          {/* Prismatic light streak */}
+          <rect x="130" y="195" width="140" height="2" rx="1" fill="white" opacity="0.15">
+            <animate attributeName="opacity" values="0.05;0.20;0.05" dur="3s" repeatCount="indefinite" />
+            <animate attributeName="y" values="190;200;190" dur="5s" repeatCount="indefinite" />
+          </rect>
+
+          {/* Floating orbital particles */}
+          <circle r="3" fill="#6b93ff" opacity="0.7">
+            <animateMotion dur="18s" repeatCount="indefinite" path="M200,30 A170,170 0 1,1 199,30 Z" />
+            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite" />
           </circle>
-          <circle cx="360" cy="200" r="2" fill="var(--accent)" opacity="0.4">
-            <animateTransform attributeName="transform" type="rotate" from="120 200 200" to="480 200 200" dur="25s" repeatCount="indefinite" />
+          <circle r="2.5" fill="#8bb5ff" opacity="0.6">
+            <animateMotion dur="22s" repeatCount="indefinite" path="M370,200 A170,170 0 1,1 369,200 Z" />
+            <animate attributeName="opacity" values="0.2;0.7;0.2" dur="4s" repeatCount="indefinite" />
           </circle>
-          <circle cx="200" cy="360" r="2.5" fill="var(--accent)" opacity="0.5">
-            <animateTransform attributeName="transform" type="rotate" from="240 200 200" to="600 200 200" dur="30s" repeatCount="indefinite" />
+          <circle r="2" fill="#a5c4ff" opacity="0.5">
+            <animateMotion dur="15s" repeatCount="indefinite" path="M200,370 A170,170 0 1,0 201,370 Z" />
+            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          <circle r="1.5" fill="#4e7cf6" opacity="0.5">
+            <animateMotion dur="28s" repeatCount="indefinite" path="M30,200 A170,170 0 1,0 31,200 Z" />
           </circle>
 
-          {/* Inner glow */}
-          <circle cx="200" cy="180" r="40" fill="var(--accent)" opacity="0.04" />
+          {/* Sparkle dots */}
+          <circle cx="140" cy="120" r="1.5" fill="white" opacity="0.4">
+            <animate attributeName="opacity" values="0.1;0.5;0.1" dur="2s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="270" cy="150" r="1" fill="white" opacity="0.3">
+            <animate attributeName="opacity" values="0.1;0.4;0.1" dur="3s" repeatCount="indefinite" begin="0.5s" />
+          </circle>
+          <circle cx="250" cy="300" r="1.2" fill="white" opacity="0.35">
+            <animate attributeName="opacity" values="0.1;0.45;0.1" dur="2.5s" repeatCount="indefinite" begin="1s" />
+          </circle>
+          <circle cx="160" cy="280" r="1" fill="white" opacity="0.25">
+            <animate attributeName="opacity" values="0.1;0.35;0.1" dur="3.5s" repeatCount="indefinite" begin="1.5s" />
+          </circle>
+
+          {/* Center glow sphere */}
+          <circle cx="200" cy="190" r="35" fill="url(#h-radial)" opacity="0.15" filter="url(#h-soft)">
+            <animate attributeName="r" values="32;38;32" dur="4s" repeatCount="indefinite" />
+          </circle>
         </svg>
       </div>
     </div>
@@ -71,7 +153,13 @@ export function AtheonTextMark({ className = '' }: { className?: string }) {
   return (
     <span
       className={`font-bold tracking-tight ${className}`}
-      style={{ color: 'var(--accent)', fontFamily: "'Inter', system-ui, sans-serif" }}
+      style={{
+        background: 'linear-gradient(135deg, #6b93ff, #4e7cf6)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}
     >
       A
     </span>
@@ -82,7 +170,13 @@ export function AtheonLogoInline({ className = '' }: { className?: string }) {
   return (
     <span
       className={`font-bold tracking-tight ${className}`}
-      style={{ color: 'var(--accent)', fontFamily: "'Inter', system-ui, sans-serif" }}
+      style={{
+        background: 'linear-gradient(135deg, #6b93ff, #4e7cf6)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}
     >
       A
     </span>

@@ -8,12 +8,12 @@ import { Database, Network, Search, BookOpen, ArrowRight, Loader2 } from "lucide
 
 const entityColors: Record<string, string> = {
     Organisation: 'bg-[#1a5c68]',
-    Department: 'bg-[#2a7c8c]/100',
-    Person: 'bg-[#2a7c8c]',
+    Department: 'bg-[var(--accent)]/100',
+    Person: 'bg-[var(--accent)]',
   Process: 'bg-emerald-500/100',
-  System: 'bg-[#2a7c8c]/100',
+  System: 'bg-[var(--accent)]/100',
   KPI: 'bg-sky-500',
-  Document: 'bg-[#2a7c8c]/100',
+  Document: 'bg-[var(--accent)]/100',
   Risk: 'bg-red-500/100',
   Asset: 'bg-orange-500'};
 
@@ -44,7 +44,7 @@ export function MemoryPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
       </div>
     );
   }
@@ -61,8 +61,8 @@ export function MemoryPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl        bg-[#2a7c8c]/10 flex items-center justify-center">
-                  <Database className="w-5 h-5 text-[#2a7c8c]"/>
+        <div className="w-10 h-10 rounded-xl        bg-[var(--accent)]/10 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-[var(--accent)]"/>
         </div>
         <div>
           <h1 className="text-2xl font-bold t-primary">Atheon Memory</h1>
@@ -85,7 +85,7 @@ export function MemoryPage() {
         {/* Entity Types */}
         <Card>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Network className="w-4 h-4 text-[#2a7c8c]" /> Entity Distribution
+            <Network className="w-4 h-4 text-[var(--accent)]" /> Entity Distribution
           </h3>
           <div className="space-y-3">
             {entityTypes.map((entity) => (
@@ -109,7 +109,7 @@ export function MemoryPage() {
         {/* RAG Pipeline */}
         <Card>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-[#2a7c8c]" /> Recent Entities
+            <Search className="w-4 h-4 text-[var(--accent)]" /> Recent Entities
           </h3>
           <div className="space-y-3">
             {entities.slice(0, 6).map((entity) => (
@@ -131,7 +131,7 @@ export function MemoryPage() {
       {/* Industry Templates */}
       <Card>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-[#2a7c8c]" /> Industry Graph Templates
+          <BookOpen className="w-4 h-4 text-[var(--accent)]" /> Industry Graph Templates
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {industryTemplates.map((template) => (
@@ -147,9 +147,9 @@ export function MemoryPage() {
       </Card>
 
       {/* Architecture */}
-      <Card className="border-[#2a7c8c]/20">
+      <Card className="border-[var(--accent)]/20">
         <div className="flex items-start gap-3">
-          <Database className="w-5 h-5 text-[#2a7c8c] mt-0.5 flex-shrink-0" />
+          <Database className="w-5 h-5 text-[var(--accent)] mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-semibold t-primary">GraphRAG Architecture</h3>
             <p className="text-xs t-muted mt-1">

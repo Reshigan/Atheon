@@ -38,11 +38,24 @@ const navItems: NavItem[] = [
   { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: ADMIN_ROLES },
 ];
 
-/** Atheon logo mark — geometric A */
+/** Atheon logo mark — glass 3D crystal A */
 function AtheonSidebarLogo() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L3 20h3.5l1.5-3.5h8L17.5 20H21L12 2zm0 5.5L15.5 15h-7L12 7.5z" fill="var(--accent)" />
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="logoGrad" x1="4" y1="4" x2="28" y2="28">
+          <stop offset="0%" stopColor="#6b93ff" />
+          <stop offset="50%" stopColor="#4e7cf6" />
+          <stop offset="100%" stopColor="#3d6ce6" />
+        </linearGradient>
+        <filter id="logoGlow">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#logoGrad)" opacity="0.12" />
+      <path d="M16 5L6 26h4l1.8-4.2h8.4L22 26h4L16 5zm0 6.5l3.8 8.5h-7.6L16 11.5z" fill="url(#logoGrad)" filter="url(#logoGlow)" />
+      <path d="M16 5L6 26h4l1.8-4.2h8.4L22 26h4L16 5zm0 6.5l3.8 8.5h-7.6L16 11.5z" fill="url(#logoGrad)" opacity="0.4" />
     </svg>
   );
 }
@@ -74,7 +87,7 @@ export function Sidebar() {
       {/* Desktop sidebar — icon-only 56px bar */}
       <aside
         className="fixed left-0 top-0 h-full z-40 w-14 hidden lg:flex flex-col items-center py-3 transition-colors duration-200"
-        style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-card)' }}
+        style={{ background: 'var(--bg-sidebar)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', borderRight: '1px solid var(--border-card)', boxShadow: '2px 0 12px rgba(100, 120, 180, 0.06)' }}
       >
         <div className="mb-5 mt-0.5">
           <Link to="/dashboard" className="block">
@@ -136,7 +149,7 @@ export function Sidebar() {
       <aside className={cn(
         'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-64 lg:hidden',
         mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
-      )} style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border-card)' }}>
+      )} style={{ background: 'var(--bg-modal)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid var(--border-card)', boxShadow: '4px 0 24px rgba(100, 120, 180, 0.10)' }}>
         <div className="flex items-center justify-between px-4 h-14" style={{ borderBottom: '1px solid var(--border-card)' }}>
           <div className="flex items-center gap-2.5">
             <AtheonSidebarLogo />
