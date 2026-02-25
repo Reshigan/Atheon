@@ -73,12 +73,12 @@ export function SettingsPage() {
     setChangingPw(false);
   };
 
-  const accentOptions: { key: AccentColor; label: string; color: string }[] = [
-    { key: 'amber', label: 'Amber', color: '#f5c542' },
-    { key: 'blue', label: 'Blue', color: '#3b82f6' },
-    { key: 'sky', label: 'Sky', color: '#0ea5e9' },
-    { key: 'emerald', label: 'Emerald', color: '#10b981' },
-    { key: 'rose', label: 'Rose', color: '#f43f5e' },
+  const accentOptions: { key: AccentColor; label: string; lightColor: string; darkColor: string }[] = [
+    { key: 'amber', label: 'Amber', lightColor: '#e8a000', darkColor: '#f5c542' },
+    { key: 'blue', label: 'Blue', lightColor: '#2563eb', darkColor: '#3b82f6' },
+    { key: 'sky', label: 'Sky', lightColor: '#0284c7', darkColor: '#0ea5e9' },
+    { key: 'emerald', label: 'Emerald', lightColor: '#059669', darkColor: '#10b981' },
+    { key: 'rose', label: 'Rose', lightColor: '#e11d48', darkColor: '#f43f5e' },
   ];
 
   return (
@@ -209,20 +209,23 @@ export function SettingsPage() {
             <div>
               <span className="text-sm t-muted">Accent Colour</span>
               <div className="flex gap-3 mt-2">
-                {accentOptions.map(c => (
-                  <button
-                    key={c.key}
-                    onClick={() => setAccentColor(c.key)}
-                    title={c.label}
-                    className="w-8 h-8 rounded-full transition-all"
-                    style={{
-                      background: c.color,
-                      outline: c.key === accentColor ? `2px solid ${c.color}` : 'none',
-                      outlineOffset: '3px',
-                      transform: c.key === accentColor ? 'scale(1.15)' : 'scale(1)',
-                    }}
-                  />
-                ))}
+                {accentOptions.map(c => {
+                  const swatchColor = theme === 'dark' ? c.darkColor : c.lightColor;
+                  return (
+                    <button
+                      key={c.key}
+                      onClick={() => setAccentColor(c.key)}
+                      title={c.label}
+                      className="w-8 h-8 rounded-full transition-all"
+                      style={{
+                        background: swatchColor,
+                        outline: c.key === accentColor ? `2px solid ${swatchColor}` : 'none',
+                        outlineOffset: '3px',
+                        transform: c.key === accentColor ? 'scale(1.15)' : 'scale(1)',
+                      }}
+                    />
+                  );
+                })}
               </div>
               <p className="text-[10px] t-muted mt-2">
                 Selected: {accentOptions.find(c => c.key === accentColor)?.label || 'Amber'}
