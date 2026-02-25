@@ -1,73 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <linearGradient id="fi-body" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
-      <stop offset="35%" stop-color="#f97316" stop-opacity="0.85"/>
-      <stop offset="65%" stop-color="#ef4444" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6"/>
-    </linearGradient>
-    <linearGradient id="fi-fire" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.95"/>
-      <stop offset="25%" stop-color="#fbbf24" stop-opacity="0.9"/>
-      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.8"/>
-      <stop offset="80%" stop-color="#be185d" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.5"/>
-    </linearGradient>
-    <linearGradient id="fi-highlight" x1="30%" y1="0%" x2="70%" y2="100%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
-      <stop offset="30%" stop-color="#fef3c7" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="transparent"/>
-    </linearGradient>
-    <linearGradient id="fi-edge" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.7"/>
-      <stop offset="50%" stop-color="#ec4899" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#f97316" stop-opacity="0.3"/>
-    </linearGradient>
-    <linearGradient id="fi-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1a1a2a"/>
-      <stop offset="100%" stop-color="#16161e"/>
-    </linearGradient>
-    <radialGradient id="fi-glow" cx="42%" cy="38%" r="45%">
-      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
-      <stop offset="30%" stop-color="#fef3c7" stop-opacity="0.5"/>
-      <stop offset="70%" stop-color="#f59e0b" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="transparent"/>
-    </radialGradient>
-    <filter id="fi-gl">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <pattern id="fi-ribs" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
-      <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(255,255,255,0.12)" stroke-width="0.4"/>
-    </pattern>
-  </defs>
-  <!-- Background -->
-  <rect width="64" height="64" rx="14" fill="url(#fi-bg)"/>
-  <!-- Ambient glow -->
-  <ellipse cx="34" cy="30" rx="20" ry="24" fill="#f97316" opacity="0.1" filter="url(#fi-gl)"/>
-  <!-- Shadow layer -->
-  <path d="M 32 8 C 45 7, 54 20, 52 33 C 50 46, 44 54, 38 57 C 32 60, 24 58, 19 50 C 14 42, 12 30, 17 19 C 22 8, 28 8, 32 8 Z" fill="url(#fi-body)" opacity="0.5" filter="url(#fi-gl)"/>
-  <!-- Main fluid body -->
-  <path d="M 32 10 C 44 9, 52 21, 50 33 C 48 45, 42 53, 37 56 C 32 59, 24 57, 20 50 C 16 43, 14 31, 18 21 C 22 10, 28 10, 32 10 Z" fill="url(#fi-fire)" opacity="0.85"/>
-  <!-- Ribbed texture -->
-  <path d="M 32 10 C 44 9, 52 21, 50 33 C 48 45, 42 53, 37 56 C 32 59, 24 57, 20 50 C 16 43, 14 31, 18 21 C 22 10, 28 10, 32 10 Z" fill="url(#fi-ribs)" opacity="0.5"/>
-  <!-- Cool purple edge -->
-  <path d="M 28 12 C 21 15, 15 26, 15 36 C 15 46, 20 54, 28 57" stroke="url(#fi-edge)" stroke-width="2.5" fill="none" opacity="0.5" stroke-linecap="round"/>
-  <!-- Warm specular highlight -->
-  <path d="M 36 12 C 44 15, 50 24, 49 34 C 48 42, 44 50, 38 54" stroke="url(#fi-highlight)" stroke-width="1.8" fill="none" opacity="0.65" stroke-linecap="round" filter="url(#fi-gl)"/>
-  <!-- Rib lines -->
-  <path d="M 29 14 C 37 20, 41 30, 39 42" stroke="rgba(255,255,255,0.12)" stroke-width="0.5" fill="none"/>
-  <path d="M 31 13 C 40 22, 44 33, 40 46" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none"/>
-  <path d="M 34 13 C 42 24, 46 36, 42 48" stroke="rgba(255,255,255,0.08)" stroke-width="0.4" fill="none"/>
-  <path d="M 27 16 C 34 18, 38 28, 36 40" stroke="rgba(253,230,138,0.1)" stroke-width="0.4" fill="none"/>
-  <!-- Core bright spot -->
-  <ellipse cx="37" cy="28" rx="7" ry="9" fill="url(#fi-glow)" opacity="0.45" filter="url(#fi-gl)"/>
-  <!-- Specular dots -->
-  <circle cx="38" cy="22" r="2" fill="white" opacity="0.75" filter="url(#fi-gl)"/>
-  <circle cx="42" cy="32" r="1.2" fill="white" opacity="0.4" filter="url(#fi-gl)"/>
-  <!-- Ambient particles -->
-  <circle cx="10" cy="20" r="0.8" fill="#fbbf24" opacity="0.4"/>
-  <circle cx="54" cy="18" r="0.7" fill="#c084fc" opacity="0.35"/>
-  <circle cx="8" cy="46" r="0.6" fill="#f97316" opacity="0.3"/>
-  <circle cx="56" cy="48" r="0.7" fill="#ef4444" opacity="0.35"/>
+  <rect width="64" height="64" rx="14" fill="#1a1a1a"/>
+  <!-- Bold serif "A" -->
+  <path d="M 20 48 L 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 27 40 L 24.5 48 Z M 28.2 36.5 L 35.8 36.5 L 32 22.5 Z" fill="white"/>
+  <!-- Amber dot accent -->
+  <circle cx="48" cy="46" r="4.5" fill="#e8a000"/>
 </svg>

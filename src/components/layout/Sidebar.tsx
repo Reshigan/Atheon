@@ -7,7 +7,7 @@ import {
   IconChat, IconClients, IconIAM, IconControlPlane, IconCanonicalApi,
   IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
 } from "@/components/icons/AtheonIcons";
-import { AtheonCrystalIcon } from "@/components/common/Hero3D";
+import { AtheonLogoInline } from "@/components/common/Hero3D";
 import type { UserRole } from "@/types";
 
 /** Roles that can see each menu item. If omitted, all roles can see it. */
@@ -44,13 +44,8 @@ const navItems: NavItem[] = [
 
 /** Logo component used in both desktop and mobile sidebar */
 function AtheonLogo({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
-  const s = size === 'lg' ? 'w-9 h-9' : 'w-8 h-8';
-  const iconSize = size === 'lg' ? 36 : 32;
-  return (
-    <div className={cn(s, 'rounded-xl bg-gradient-to-br from-amber-500/15 to-orange-500/15 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/5')}>
-      <AtheonCrystalIcon size={iconSize} />
-    </div>
-  );
+  const textSize = size === 'lg' ? 'text-3xl' : 'text-2xl';
+  return <AtheonLogoInline className={textSize} />;
 }
 
 export function Sidebar() {
@@ -136,8 +131,8 @@ export function Sidebar() {
           <div className="flex items-center gap-3">
             <AtheonLogo size="lg" />
             <div>
-              <h1 className="text-lg font-bold text-gradient">Atheon</h1>
-              <p className="text-[10px] t-muted -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
+                <h1 className="text-lg font-bold t-primary">Atheon</h1>
+                <p className="text-[10px] t-muted -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
             </div>
           </div>
           <button

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { api, setToken, getToken } from "@/lib/api";
-import { Hero3D, AtheonCrystalIcon } from "@/components/common/Hero3D";
+import { Hero3D, AtheonLogoInline } from "@/components/common/Hero3D";
 
 type AuthMode = 'login' | 'register' | 'demo';
 
@@ -140,7 +140,10 @@ export function LoginPage() {
             <div className="mb-6 flex justify-center">
               <Hero3D size="md" />
             </div>
-            <h1 className="text-4xl font-bold text-gradient mb-3">Atheon</h1>
+            <div className="flex items-baseline justify-center gap-1 mb-3">
+              <AtheonLogoInline className="text-5xl" />
+              <span className="text-4xl font-bold t-primary" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>theon</span>
+            </div>
             <p className="text-lg text-gray-400 mb-2">Enterprise Intelligence Platform</p>
             <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
               AI-powered executive intelligence, process monitoring,
@@ -154,10 +157,8 @@ export function LoginPage() {
           <div className="w-full max-w-sm">
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shadow-lg shadow-amber-500/10">
-                <AtheonCrystalIcon size={32} />
-              </div>
-              <h1 className="text-2xl font-bold text-gradient">Atheon</h1>
+              <AtheonLogoInline className="text-4xl" />
+              <h1 className="text-2xl font-bold t-primary">theon</h1>
             </div>
 
             <h2 className="text-2xl font-bold t-primary mb-1">
