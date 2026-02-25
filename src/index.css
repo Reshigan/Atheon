@@ -31,6 +31,7 @@
     --text-muted: #8892b0;
     --text-on-accent: #ffffff;
     --accent: #4e7cf6;
+    --accent-rgb: 78, 124, 246;
     --accent-hover: #3d6ce6;
     --accent-glow: rgba(78, 124, 246, 0.18);
     --accent-subtle: rgba(78, 124, 246, 0.08);
@@ -77,6 +78,7 @@
     --text-muted: #64748b;
     --text-on-accent: #ffffff;
     --accent: #6b93ff;
+    --accent-rgb: 107, 147, 255;
     --accent-hover: #5a82f0;
     --accent-glow: rgba(107, 147, 255, 0.15);
     --accent-subtle: rgba(107, 147, 255, 0.08);
@@ -140,7 +142,7 @@
     box-shadow: var(--shadow-glass);
     transition: all 0.2s ease;
   }
-  .card-glass:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
+  .card-glass:hover { box-shadow: var(--shadow-card-hover); }
 
   .card-dark {
     background: var(--bg-card);

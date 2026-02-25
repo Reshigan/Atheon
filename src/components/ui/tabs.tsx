@@ -25,7 +25,7 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
           className={cn(
             'flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all duration-150 whitespace-nowrap border-b-2 -mb-px',
             activeTab === tab.id
-              ? 'border-[var(--accent)] text-[var(--accent)]'
+              ? 'border-accent text-accent'
               : 'border-transparent t-muted hover:t-secondary hover:border-[var(--border-card)]'
           )}
         >
@@ -34,7 +34,7 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
           {tab.count !== undefined && (
             <span className={cn(
               'ml-1 px-1.5 py-0.5 rounded text-[10px]',
-              activeTab === tab.id ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'bg-[var(--bg-secondary)] t-muted'
+              activeTab === tab.id ? 'bg-[var(--accent-subtle)] text-accent' : 'bg-[var(--bg-secondary)] t-muted'
             )}>
               {tab.count}
             </span>

@@ -117,7 +117,7 @@ export function Sidebar() {
                   )}
                   style={isActive ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
                 >
-                  <Icon size={17} className={cn(isActive ? 'text-[var(--accent)]' : 't-muted group-hover:t-secondary')} />
+                  <Icon size={17} className={cn(isActive ? 'text-accent' : 't-muted group-hover:t-secondary')} />
                   <div
                     className="absolute left-full ml-2.5 px-2.5 py-1 text-[11px] font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50"
                     style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-dropdown)' }}
@@ -140,7 +140,7 @@ export function Sidebar() {
             )}
             style={location.pathname === '/settings' ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
           >
-            <IconSettings size={17} className={location.pathname === '/settings' ? 'text-[var(--accent)]' : 't-muted'} />
+            <IconSettings size={17} className={location.pathname === '/settings' ? 'text-accent' : 't-muted'} />
           </Link>
         </div>
       </aside>
@@ -192,7 +192,7 @@ export function Sidebar() {
                     )}
                     style={isActive ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
                   >
-                    <Icon className={cn('flex-shrink-0', isActive ? 'text-[var(--accent)]' : 't-muted group-hover:t-secondary')} size={16} />
+                    <Icon className={cn('flex-shrink-0', isActive ? 'text-accent' : 't-muted group-hover:t-secondary')} size={16} />
                     <div className="min-w-0">
                       <span className={isActive ? 'font-medium' : ''}>{item.label}</span>
                       {item.sublabel && (

@@ -73,8 +73,8 @@ export function ChatPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br        from-[var(--accent)]/20 to-[var(--accent)]/10 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-[var(--accent)]"/>
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br        from-accent/20 to-accent/10 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-accent"/>
         </div>
         <div>
           <h1 className="text-2xl font-bold t-primary">Atheon Chat</h1>
@@ -86,7 +86,7 @@ export function ChatPage() {
         {/* Sidebar - Thread List */}
         <div className="space-y-3">
           <Button variant="primary" size="sm" className="w-full" onClick={() => { setMessages([]); setLoadingHistory(false); }}><Plus size={14} /> New Thread</Button>
-          <Card hover className="border-[var(--accent)]/20">
+          <Card hover className="border-accent/20">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-sm font-medium t-primary">Current Thread</h3>
@@ -110,13 +110,13 @@ export function ChatPage() {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                   {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-lg                                      bg-gradient-to-br from-[var(--accent)] to-[#3d6ce6] flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg                                      bg-gradient-to-br from-accent to-[#3d6ce6] flex items-center justify-center flex-shrink-0">
                                                             <Sparkles className="w-4 h-4 text-white" />
                                       </div>
                                     )}
                                     <div className={`max-w-2xl rounded-xl p-4 ${
                                       msg.role === 'user'
-                                        ? 'bg-[var(--accent)]/100/10 border border-[var(--accent)]/20'
+                                        ? 'bg-accent/10 border border-accent/20'
                                         : 'bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm'
                   }`}>
                     <div className="text-sm text-white whitespace-pre-wrap leading-relaxed">
@@ -136,7 +136,7 @@ export function ChatPage() {
                       <div className="mt-3 space-y-1.5">
                         {msg.citations.map((cit) => (
                           <div key={cit.id}                          className="flex items-center gap-2 p-2 rounded bg-white/[0.04] border border-white/[0.06] text-xs">
-                                                      <span className="text-[var(--accent)]">📎</span>
+                                                      <span className="text-accent">📎</span>
                             <span className="text-gray-400">{cit.source}</span>
                             <Badge variant="info" size="sm">{Math.round(cit.confidence * 100)}%</Badge>
                           </div>
@@ -155,7 +155,7 @@ export function ChatPage() {
               ))}
               {sending && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-lg                  bg-gradient-to-br from-[var(--accent)] to-[#3d6ce6] flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg                  bg-gradient-to-br from-accent to-[#3d6ce6] flex items-center justify-center flex-shrink-0">
                                       <Loader2 className="w-4 h-4 text-white animate-spin" />
                   </div>
                   <div className="rounded-xl p-4 bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
@@ -190,7 +190,7 @@ export function ChatPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask Atheon anything across your enterprise..."
-                  className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 focus:border-[var(--accent)]/30 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-gray-400 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all"
                 />
               </div>
               <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending}>
