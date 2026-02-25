@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { api, setToken, getToken } from "@/lib/api";
-import { Hero3D } from "@/components/common/Hero3D";
 
-type AuthMode = 'login' | 'register';
+type AuthMode= 'login' | 'register';
 
 export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -86,23 +85,27 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
-      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c1222 0%, #1a2340 50%, #0c1222 100%)' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgb(var(--accent-rgb) / 0.12), transparent 70%), radial-gradient(ellipse at 30% 70%, rgba(139, 92, 246, 0.06), transparent 60%)' }} />
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #dbeafe 50%, #ede9fe 100%)' }}>
+        <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(78, 124, 246, 0.15), transparent 70%)' }} />
         <div className="relative z-10 text-center max-w-sm">
-          <div className="mb-8 flex justify-center"><Hero3D size="md" /></div>
-          <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ background: 'linear-gradient(135deg, #ffffff, rgb(var(--accent-rgb) / 0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Atheon</h1>
-          <p className="text-sm mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>Enterprise Intelligence Platform</p>
-          <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: 'rgba(255,255,255,0.35)' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
+          <div className="mb-8 flex justify-center">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4e7cf6, #6b93ff)', boxShadow: '0 8px 32px rgba(78, 124, 246, 0.3)' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 22h4l1.5-3.5h9L18 22h4L12 2zm0 5.5l3.2 7.5H8.8L12 7.5z" fill="white" /></svg>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ color: '#1e293b' }}>Atheon</h1>
+          <p className="text-sm mb-2" style={{ color: '#64748b' }}>Enterprise Intelligence Platform</p>
+          <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: '#94a3b8' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
           <div className="mt-10 space-y-2.5 text-left max-w-xs mx-auto">
             {['Real-time executive health scoring', 'Autonomous catalyst execution', 'Multi-tenant SaaS architecture', 'Universal ERP integration layer'].map((f) => (
-              <div key={f} className="flex items-center gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}><div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.7))' }} />{f}</div>
+              <div key={f} className="flex items-center gap-2.5 text-xs" style={{ color: '#64748b' }}><div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#4e7cf6' }} />{f}</div>
             ))}
           </div>
         </div>
       </div>
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8"><h1 className="text-2xl font-bold t-primary tracking-tight" style={{ background: 'linear-gradient(135deg, var(--accent), #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Atheon</h1><p className="text-xs t-muted">Enterprise Intelligence Platform</p></div>
+          <div className="lg:hidden mb-8"><h1 className="text-2xl font-bold tracking-tight" style={{ color: '#4e7cf6' }}>Atheon</h1><p className="text-xs t-muted">Enterprise Intelligence Platform</p></div>
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>
           {error && <div className="mb-4 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">{error}</div>}
@@ -134,7 +137,7 @@ export function LoginPage() {
             </Button>
           </form>
           {showForgotPw && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
               <div className="rounded-xl p-5 w-full max-w-sm space-y-3" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-modal)' }}>
                 <h3 className="text-sm font-semibold t-primary">Reset Password</h3>
                 {forgotSent ? (

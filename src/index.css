@@ -3,28 +3,28 @@
 @tailwind utilities;
 
 /* ============================================================
-   ATHEON GLASS DESIGN SYSTEM v4.0
-   Premium glass-morphism with 3D depth.
-   Soft blue, airy, modern.
+   ATHEON CLEAN DESIGN SYSTEM v5.0
+   Clean analytics dashboard — white cards, soft blue shadows.
+   Light backgrounds, blue accents, no glass-morphism.
    ============================================================ */
 
 @layer base {
   :root {
     --radius: 0.75rem;
-    --bg-primary: #e8edf5;
-    --bg-secondary: #dfe5f0;
-    --bg-card: rgba(255, 255, 255, 0.72);
+    --bg-primary: #f0f4f8;
+    --bg-secondary: #e8edf5;
+    --bg-card: #ffffff;
     --bg-card-solid: #ffffff;
-    --bg-card-hover: rgba(255, 255, 255, 0.88);
-    --bg-sidebar: rgba(255, 255, 255, 0.60);
-    --bg-header: rgba(235, 240, 250, 0.70);
-    --bg-input: rgba(255, 255, 255, 0.55);
-    --bg-input-focus: rgba(255, 255, 255, 0.80);
-    --bg-modal: rgba(255, 255, 255, 0.92);
-    --bg-elevated: rgba(255, 255, 255, 0.85);
-    --border-primary: rgba(255, 255, 255, 0.50);
-    --border-subtle: rgba(255, 255, 255, 0.35);
-    --border-card: rgba(255, 255, 255, 0.55);
+    --bg-card-hover: #f8fafc;
+    --bg-sidebar: #ffffff;
+    --bg-header: #ffffff;
+    --bg-input: #f8fafc;
+    --bg-input-focus: #ffffff;
+    --bg-modal: #ffffff;
+    --bg-elevated: #ffffff;
+    --border-primary: #e2e8f0;
+    --border-subtle: #edf2f7;
+    --border-card: #e2e8f0;
     --divider: rgba(200, 210, 230, 0.35);
     --text-primary: #1a1f36;
     --text-secondary: #4a5578;
@@ -41,7 +41,7 @@
     --shadow-card-hover: 0 8px 24px rgba(100, 120, 180, 0.12), 0 0 0 1px rgba(255,255,255,0.6);
     --shadow-dropdown: 0 12px 36px rgba(80, 100, 160, 0.15), 0 0 0 1px rgba(255,255,255,0.5);
     --shadow-modal: 0 24px 48px rgba(80, 100, 160, 0.18);
-    --shadow-glass: 0 4px 16px rgba(100, 120, 180, 0.10), inset 0 1px 0 rgba(255,255,255,0.5);
+    --shadow-glass: 0 2px 8px rgba(100, 120, 180, 0.08);
     --placeholder: #a0aac4;
     --option-bg: #ffffff;
     --scrollbar-thumb: rgba(78, 124, 246, 0.12);
@@ -230,8 +230,6 @@
 
   input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     background-color: var(--bg-input);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
   }
   input::placeholder, textarea::placeholder { color: var(--placeholder); }
