@@ -55,7 +55,7 @@ export function AppLayout() {
   if (!user) return null;
 
   return (
-    <div className={cn('min-h-screen transition-colors duration-200', theme === 'dark' ? 'atheon-dark' : '')} style={{ background: 'var(--bg-primary)' }}>
+    <div className={cn('min-h-screen transition-colors duration-200', theme === 'dark' ? 'atheon-dark' : '')} style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
       <Sidebar />
       <Header />
       <main

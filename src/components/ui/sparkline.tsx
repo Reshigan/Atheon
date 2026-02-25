@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { cn } from "@/lib/utils";
 
 interface SparklineProps {
@@ -9,6 +10,7 @@ interface SparklineProps {
 }
 
 export function Sparkline({ data, color = '#6366f1', width = 80, height = 24, className }: SparklineProps) {
+  const gradId = useId();
   if (data.length < 2) return null;
 
   const min = Math.min(...data);
@@ -26,12 +28,12 @@ export function Sparkline({ data, color = '#6366f1', width = 80, height = 24, cl
   return (
     <svg width={width} height={height} className={cn('inline-block', className)}>
       <defs>
-        <linearGradient id={`spark-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.3" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon points={areaPoints} fill={`url(#spark-${color.replace('#', '')})`} />
+      <polygon points={areaPoints} fill={`url(#${gradId})`} />
       <polyline
         points={points}
         fill="none"

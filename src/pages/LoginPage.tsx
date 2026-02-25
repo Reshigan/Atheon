@@ -85,24 +85,24 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
-      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: '#09090b' }}>
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(79, 70, 229, 0.08), transparent 70%)' }} />
+    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0c1222 0%, #1a2340 50%, #0c1222 100%)' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgb(var(--accent-rgb) / 0.12), transparent 70%), radial-gradient(ellipse at 30% 70%, rgba(139, 92, 246, 0.06), transparent 60%)' }} />
         <div className="relative z-10 text-center max-w-sm">
           <div className="mb-8 flex justify-center"><Hero3D size="md" /></div>
-          <h1 className="text-4xl font-bold text-white tracking-tight mb-3">Atheon</h1>
-          <p className="text-sm text-zinc-400 mb-2">Enterprise Intelligence Platform</p>
-          <p className="text-xs text-zinc-600 leading-relaxed max-w-xs mx-auto">AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ background: 'linear-gradient(135deg, #ffffff, rgb(var(--accent-rgb) / 0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Atheon</h1>
+          <p className="text-sm mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>Enterprise Intelligence Platform</p>
+          <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: 'rgba(255,255,255,0.35)' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
           <div className="mt-10 space-y-2.5 text-left max-w-xs mx-auto">
             {['Real-time executive health scoring', 'Autonomous catalyst execution', 'Multi-tenant SaaS architecture', 'Universal ERP integration layer'].map((f) => (
-              <div key={f} className="flex items-center gap-2.5 text-xs text-zinc-500"><div className="w-1 h-1 rounded-full flex-shrink-0 bg-indigo-500" />{f}</div>
+              <div key={f} className="flex items-center gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}><div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--accent-rgb) / 0.7))' }} />{f}</div>
             ))}
           </div>
         </div>
       </div>
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8"><h1 className="text-2xl font-bold t-primary tracking-tight">Atheon</h1><p className="text-xs t-muted">Enterprise Intelligence Platform</p></div>
+          <div className="lg:hidden mb-8"><h1 className="text-2xl font-bold t-primary tracking-tight" style={{ background: 'linear-gradient(135deg, var(--accent), #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Atheon</h1><p className="text-xs t-muted">Enterprise Intelligence Platform</p></div>
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>
           {error && <div className="mb-4 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">{error}</div>}

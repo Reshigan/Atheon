@@ -20,6 +20,14 @@ const ACCENT_DARK: Record<AccentColor, AccentVars> = {
   rose:    { accent: '#f43f5e', hover: '#e11d48', glow: 'rgba(244, 63, 94, 0.12)', subtle: 'rgba(244, 63, 94, 0.06)' },
 };
 
+function hexToRgb(hex: string): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
 function applyAccentColor(color: AccentColor, theme?: Theme) {
   const currentTheme = theme || (typeof document !== 'undefined' && document.body.classList.contains('atheon-dark') ? 'dark' : 'light');
   const map = currentTheme === 'dark' ? ACCENT_DARK : ACCENT_LIGHT;
@@ -27,6 +35,7 @@ function applyAccentColor(color: AccentColor, theme?: Theme) {
   if (!vars || typeof document === 'undefined') return;
   const root = document.documentElement;
   root.style.setProperty('--accent', vars.accent);
+  root.style.setProperty('--accent-rgb', hexToRgb(vars.accent));
   root.style.setProperty('--accent-hover', vars.hover);
   root.style.setProperty('--accent-glow', vars.glow);
   root.style.setProperty('--accent-subtle', vars.subtle);

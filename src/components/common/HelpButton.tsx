@@ -47,7 +47,7 @@ export function HelpButton() {
       {/* Floating help button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[#2a7c8c] hover:bg-[#3a9cac] text-white shadow-lg shadow-[#2a7c8c]/20 flex items-center justify-center transition-all hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-accent hover:bg-accent/80 text-white shadow-lg shadow-accent/20 flex items-center justify-center transition-all hover:scale-105"
         title="Help & Documentation"
       >
         <HelpCircle size={22} />
@@ -64,7 +64,7 @@ export function HelpButton() {
             {/* Header */}
             <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4" style={{ background: "rgba(18,18,42,0.98)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center gap-2">
-                <Book className="w-5 h-5 text-[#2a7c8c]" />
+                <Book className="w-5 h-5 text-accent" />
                 <h2 className="text-base font-semibold text-white">Help & Documentation</h2>
               </div>
               <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors">
@@ -79,8 +79,8 @@ export function HelpButton() {
                 return (
                   <details key={i} className="group">
                     <summary className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors list-none">
-                                            <div className="w-8 h-8 rounded-lg bg-[#2a7c8c]/10 flex items-center justify-center flex-shrink-0">
-                                              <Icon size={16} className="text-[#2a7c8c]" />
+                                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                                              <Icon size={16} className="text-accent" />
                       </div>
                       <span className="text-sm font-medium text-gray-200">{topic.title}</span>
                     </summary>

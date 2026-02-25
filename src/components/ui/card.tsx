@@ -12,21 +12,21 @@ export interface CardProps {
 }
 
 const variantClass: Record<string, string> = {
-  default: 'card-dark',
+  default: 'card-glass',
   black: 'card-black',
   mint: 'card-mint',
   accent: 'card-teal',
   glass: 'card-glass',
-  outline: 'card-dark',
+  outline: 'card-glass',
 };
 
 export function Card({ children, className, hover, glow, variant = 'default', onClick, style }: CardProps) {
   return (
     <div
       className={cn(
-        variantClass[variant] || 'card-dark',
-        'p-5 rounded-xl',
-        hover && 'cursor-pointer hover:shadow-[var(--shadow-card-hover)]',
+        variantClass[variant] || 'card-glass',
+        'p-5 rounded-2xl',
+        hover && 'cursor-pointer hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5',
         glow && 'animate-glow-pulse',
         className
       )}

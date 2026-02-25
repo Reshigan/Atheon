@@ -85,7 +85,7 @@ export function SettingsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-subtle)' }}>
-          <Settings className="w-5 h-5 text-[var(--accent)]" />
+          <Settings className="w-5 h-5 text-accent" />
         </div>
         <div>
           <h1 className="text-2xl font-bold t-primary">Settings</h1>
@@ -97,7 +97,7 @@ export function SettingsPage() {
         {/* Profile */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-[var(--accent)]" /> Profile
+            <User className="w-4 h-4 text-accent" /> Profile
           </h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -143,7 +143,7 @@ export function SettingsPage() {
         {/* Notifications */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-[var(--accent)]" /> Notifications
+            <Bell className="w-4 h-4 text-accent" /> Notifications
           </h3>
           <div className="space-y-3">
             {notifications.map((notif, index) => (
@@ -174,7 +174,7 @@ export function SettingsPage() {
         {/* Appearance */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4 text-[var(--accent)]" /> Appearance
+            <Palette className="w-4 h-4 text-accent" /> Appearance
           </h3>
           <div className="space-y-4">
             <div>
@@ -234,7 +234,7 @@ export function SettingsPage() {
         {/* Platform Info */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-[var(--accent)]" /> Platform
+            <Cpu className="w-4 h-4 text-accent" /> Platform
           </h3>
           <div className="space-y-3">
             {[

@@ -10,6 +10,7 @@ export default {
         sm: 'calc(var(--radius) - 4px)'
       },
       colors: {
+        accent: 'rgb(var(--accent-rgb) / <alpha-value>)',
         atheon: {
           50: '#eef2ff',
           100: '#e0e7ff',
@@ -37,3 +38,4 @@ export default {
   },
   plugins: [import("tailwindcss-animate")],
 }
+

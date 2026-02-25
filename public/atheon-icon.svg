@@ -1,7 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#1a2332"/>
-  <!-- Bold serif "A" -->
-  <path d="M 20 48 L 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 27 40 L 24.5 48 Z M 28.2 36.5 L 35.8 36.5 L 32 22.5 Z" fill="white"/>
-    <!-- Teal dot accent -->
-    <circle cx="48" cy="46" r="4.5" fill="#2a7c8c"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64">
+      <stop offset="0%" stop-color="#0c1222"/>
+      <stop offset="100%" stop-color="#1a2340"/>
+    </linearGradient>
+    <linearGradient id="a-grad" x1="20" y1="14" x2="44" y2="48">
+      <stop offset="0%" stop-color="#8bb5ff"/>
+      <stop offset="50%" stop-color="#6b93ff"/>
+      <stop offset="100%" stop-color="#4e7cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Glass A with gradient -->
+  <path d="M 20 48 L 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 27 40 L 24.5 48 Z M 28.2 36.5 L 35.8 36.5 L 32 22.5 Z" fill="url(#a-grad)"/>
+  <!-- Glass reflection -->
+  <path d="M 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 32 22.5 Z" fill="white" opacity="0.15"/>
+  <!-- Accent orbital dot -->
+  <circle cx="48" cy="16" r="3.5" fill="#6b93ff" opacity="0.7"/>
 </svg>

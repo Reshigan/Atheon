@@ -41,11 +41,11 @@ export function MarketingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
       {/* NAVBAR */}
-      <nav className="sticky top-0 z-50" style={{ background: 'var(--bg-header)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-card)' }}>
+      <nav className="sticky top-0 z-50" style={{ background: 'var(--bg-header)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', borderBottom: '1px solid var(--border-card)', boxShadow: '0 2px 12px rgba(100, 120, 180, 0.06)' }}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold tracking-tight" style={{ color: 'var(--accent)' }}>Atheon</span>
+          <span className="text-lg font-bold tracking-tight" style={{ background: 'linear-gradient(135deg, #6b93ff, #4e7cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Atheon</span>
           <div className="hidden md:flex items-center gap-6 text-xs font-medium t-secondary">
             <a href="#features" className="hover:t-primary transition-colors">Features</a>
             <a href="#how" className="hover:t-primary transition-colors">How It Works</a>
@@ -96,7 +96,7 @@ export function MarketingPage() {
             {layers.map((layer) => {
               const Icon = layer.icon;
               return (
-                <div key={layer.title} className="rounded-xl p-5 transition-all hover:-translate-y-0.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
+                <div key={layer.title} className="rounded-xl p-5 transition-all hover:-translate-y-0.5" style={{ background: 'var(--bg-card)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-glass)' }}>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-4" style={{ background: 'var(--accent-subtle)' }}>
                     <Icon size={16} style={{ color: layer.color }} />
                   </div>
@@ -124,7 +124,7 @@ export function MarketingPage() {
               { step: '03', title: 'Decide', desc: 'Executive briefings surface what matters. AI recommends the best actions.' },
               { step: '04', title: 'Execute', desc: 'Catalysts autonomously execute approved actions with full compliance trails.' },
             ].map(s => (
-              <div key={s.step} className="rounded-xl p-5 text-center transition-all hover:-translate-y-0.5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
+              <div key={s.step} className="rounded-xl p-5 text-center transition-all hover:-translate-y-0.5" style={{ background: 'var(--bg-card)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-glass)' }}>
                 <div className="text-3xl font-bold mb-3" style={{ color: 'var(--accent)', opacity: 0.2 }}>{s.step}</div>
                 <h3 className="text-sm font-semibold t-primary mb-1.5">{s.title}</h3>
                 <p className="text-xs t-secondary leading-relaxed">{s.desc}</p>
@@ -142,7 +142,7 @@ export function MarketingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {testimonials.map(t => (
-              <div key={t.name} className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
+              <div key={t.name} className="rounded-xl p-5" style={{ background: 'var(--bg-card)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-glass)' }}>
                 <div className="flex items-center gap-0.5 mb-3">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} size={12} fill="var(--accent)" stroke="none" />
@@ -162,7 +162,7 @@ export function MarketingPage() {
       {/* SECURITY */}
       <section id="security" className="py-16 lg:py-24">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="rounded-xl p-8 lg:p-12" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
+          <div className="rounded-xl p-8 lg:p-12" style={{ background: 'var(--bg-card)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-glass)' }}>
             <div className="flex flex-col lg:flex-row items-start gap-8">
               <div className="flex-1">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: 'var(--accent-subtle)' }}>
@@ -187,7 +187,7 @@ export function MarketingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 lg:py-24" style={{ background: '#09090b' }}>
+      <section className="py-16 lg:py-24" style={{ background: 'linear-gradient(135deg, #0c1222 0%, #1a2340 50%, #0c1222 100%)' }}>
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 tracking-tight">Ready to transform your enterprise?</h2>
           <p className="text-sm text-zinc-400 mb-8">Join industry leaders who use Atheon to turn operational data into strategic advantage.</p>
@@ -203,7 +203,7 @@ export function MarketingPage() {
       {/* FOOTER */}
       <footer className="py-8" style={{ background: 'var(--bg-primary)', borderTop: '1px solid var(--border-card)' }}>
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="text-sm font-bold tracking-tight" style={{ color: 'var(--accent)' }}>Atheon</span>
+          <span className="text-sm font-bold tracking-tight" style={{ background: 'linear-gradient(135deg, #6b93ff, #4e7cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Atheon</span>
           <div className="flex items-center gap-6 text-xs t-muted">
             <a href="#features" className="hover:t-primary transition-colors">Features</a>
             <a href="#how" className="hover:t-primary transition-colors">How It Works</a>

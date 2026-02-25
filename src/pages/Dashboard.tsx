@@ -135,7 +135,7 @@ export function Dashboard() {
         </div>
 
         <div className="hidden md:block">
-          <div className="rounded-xl p-4 max-w-[260px]"          style={{ background: '#09090b', border: '1px solid var(--border-card)' }}>
+          <div className="rounded-xl p-4 max-w-[260px]" style={{ background: 'linear-gradient(135deg, rgba(26, 31, 54, 0.92), rgba(12, 18, 34, 0.96))', backdropFilter: 'blur(16px)', border: '1px solid rgba(78, 124, 246, 0.12)', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)' }}>
                       <p className="text-xs text-gray-400 mb-1">system health score</p>
                       <p className="text-sm text-white font-medium mb-2">
                         {cpHealth ? `${cpHealth.overallUptime.toFixed(1)}% uptime` : 'All systems operational'}
@@ -365,7 +365,7 @@ export function Dashboard() {
                 style={{ background: 'var(--accent-subtle)', border: '1px solid var(--border-card)' }}
               >
                 <div className="flex items-center justify-between mb-2">
-                                    <Sparkline data={metric.trend || []} width={50} height={22} color="#2a7c8c" />
+                                    <Sparkline data={metric.trend || []} width={50} height={22} color="var(--accent)" />
                                     <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
                 </div>
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{metric.name}</p>
@@ -405,7 +405,7 @@ export function Dashboard() {
             </div>
           </Card>
 
-          <div className="mt-4 rounded-xl p-5"          style={{ background: '#09090b', border: '1px solid var(--border-card)' }}>
+          <div className="mt-4 rounded-xl p-5" style={{ background: 'linear-gradient(135deg, rgba(26, 31, 54, 0.92), rgba(12, 18, 34, 0.96))', backdropFilter: 'blur(16px)', border: '1px solid rgba(78, 124, 246, 0.12)', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)' }}>
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
                           <Brain size={16} style={{ color: 'var(--accent)' }} />

@@ -9,18 +9,18 @@ import { Button } from "@/components/ui/button";
 
 const methodColor: Record<string, string> = {
   GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  POST: 'bg-[#2a7c8c]/10 text-[#2a7c8c] border-[#2a7c8c]/20',
-  PUT: 'bg-[#2a7c8c]/10 text-[#2a7c8c] border-[#2a7c8c]/20',
-  PATCH: 'bg-[#2a7c8c]/10 text-[#2a7c8c] border-[#2a7c8c]/20',
+  POST: 'bg-accent/10 text-accent border-accent/20',
+  PUT: 'bg-accent/10 text-accent border-accent/20',
+  PATCH: 'bg-accent/10 text-accent border-accent/20',
   DELETE: 'bg-red-500/10 text-red-400 border-red-500/20'};
 
 const domainColor: Record<string, string> = {
   finance: 'text-emerald-400',
-  procurement: 'text-[#2a7c8c]',
-  'supply-chain': 'text-[#2a7c8c]',
-  hr: 'text-[#2a7c8c]',
+  procurement: 'text-accent',
+  'supply-chain': 'text-accent',
+  hr: 'text-accent',
   sales: 'text-pink-600',
-  inventory: 'text-[#2a7c8c]',
+  inventory: 'text-accent',
   crm: 'text-orange-400'};
 
 export function CanonicalApiPage() {
@@ -46,7 +46,7 @@ export function CanonicalApiPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
+        <Loader2 className="w-8 h-8 text-accent animate-spin" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export function CanonicalApiPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold t-primary">{ep.description || ep.path}</h3>
                     </div>
-                    <p className="text-xs font-mono text-[#2a7c8c] mt-0.5">{ep.path}</p>
+                    <p className="text-xs font-mono text-accent mt-0.5">{ep.path}</p>
                     <p className="text-xs t-secondary mt-1">{ep.description}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
@@ -193,7 +193,7 @@ export function CanonicalApiPage() {
                 <div className="space-y-1">
                   {entity.fields.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#2a7c8c]/100 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
                       <span className="font-mono text-gray-400">{f}</span>
                     </div>
                   ))}
