@@ -53,8 +53,8 @@ export function PulsePage() {
           <Activity className="w-5 h-5 text-emerald-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Atheon Pulse</h1>
-          <p className="text-sm text-gray-500">Process Intelligence - Operational Nervous System</p>
+          <h1 className="text-2xl font-bold t-primary">Atheon Pulse</h1>
+          <p className="text-sm t-muted">Process Intelligence - Operational Nervous System</p>
         </div>
       </div>
 
@@ -66,15 +66,15 @@ export function PulsePage() {
             {metrics.map((metric) => (
               <Card key={metric.id} hover>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-400 truncate">{metric.name}</span>
+                  <span className="text-xs t-secondary truncate">{metric.name}</span>
                   <span className={`w-2.5 h-2.5 rounded-full ${
                     metric.status === 'green' ? 'bg-emerald-500/100' : metric.status === 'amber' ? 'bg-amber-500/100' : 'bg-red-500/100'
                   }`} />
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <span className="text-2xl font-bold text-white">{metric.value}</span>
-                    <span className="text-sm text-gray-400 ml-1">{metric.unit}</span>
+                    <span className="text-2xl font-bold t-primary">{metric.value}</span>
+                    <span className="text-sm t-secondary ml-1">{metric.unit}</span>
                   </div>
                   <Sparkline
                     data={metric.trend || []}
@@ -116,12 +116,12 @@ export function PulsePage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <h3 className="text-base font-semibold text-white">{anom.metric}</h3>
+                      <h3 className="text-base font-semibold t-primary">{anom.metric}</h3>
                       <Badge variant={anom.severity === 'critical' ? 'danger' : anom.severity === 'high' ? 'warning' : 'info'}>
                         +{anom.deviation}% deviation
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{anom.hypothesis}</p>
+                    <p className="text-sm t-muted mt-1">{anom.hypothesis}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                       <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                         <span className="text-[10px] text-gray-400">Expected</span>
@@ -151,7 +151,7 @@ export function PulsePage() {
               <Card key={flow.id}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{flow.name}</h3>
+                    <h3 className="text-lg font-semibold t-primary">{flow.name}</h3>
                     <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
                       <span>{flow.variants} variants</span>
                       <span>Avg duration: {flow.avgDuration} days</span>
@@ -170,7 +170,7 @@ export function PulsePage() {
                         step.status === 'degraded' ? 'bg-amber-500/10 border-amber-500/20' :
                         'bg-white/[0.04] border-white/[0.06] backdrop-blur-sm'
                       }`}>
-                        <span className="text-sm font-medium text-white">{step.name}</span>
+                        <span className="text-sm font-medium t-primary">{step.name}</span>
                         <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
                           <span>{step.avgDuration}d avg</span>
                           <span>{step.throughput}/day</span>
@@ -191,7 +191,7 @@ export function PulsePage() {
                 {flow.bottlenecks.length > 0 && (
                   <div className="mt-3 p-3 rounded-lg bg-red-500/100/5 border border-red-500/10">
                     <span className="text-xs font-medium text-red-400">Bottlenecks: </span>
-                    <span className="text-xs text-gray-500">{flow.bottlenecks.join(', ')}</span>
+                    <span className="text-xs t-muted">{flow.bottlenecks.join(', ')}</span>
                   </div>
                 )}
               </Card>
@@ -225,11 +225,11 @@ export function PulsePage() {
                 <div className="grid grid-cols-2 gap-4 mt-3">
                   <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                     <span className="text-[10px] text-gray-400">Source Event</span>
-                    <p className="text-sm text-gray-400">{event.sourceEvent}</p>
+                    <p className="text-sm t-secondary">{event.sourceEvent}</p>
                   </div>
                   <div className="p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                     <span className="text-[10px] text-gray-400">Target Impact</span>
-                    <p className="text-sm text-gray-400">{event.targetImpact}</p>
+                    <p className="text-sm t-secondary">{event.targetImpact}</p>
                   </div>
                 </div>
               </Card>

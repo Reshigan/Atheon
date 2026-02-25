@@ -195,8 +195,8 @@ export function ControlPlanePage() {
             <Cpu className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Agent Control Plane</h1>
-            <p className="text-sm text-gray-500">Deploy, manage, and monitor Catalyst agents per tenant</p>
+            <h1 className="text-2xl font-bold t-primary">Agent Control Plane</h1>
+            <p className="text-sm t-muted">Deploy, manage, and monitor Catalyst agents per tenant</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={() => setShowDeploy(true)}><Plus size={14} /> Deploy Agent</Button>
@@ -207,17 +207,17 @@ export function ControlPlanePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Deploy New Agent</h3>
+              <h3 className="text-lg font-semibold t-primary">Deploy New Agent</h3>
               <button onClick={() => setShowDeploy(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Agent Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
-              <div><label className="text-xs text-gray-500">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.agent_type} onChange={e => setDeployForm(p => ({ ...p, agent_type: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
-              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.deployment_model} onChange={e => setDeployForm(p => ({ ...p, deployment_model: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs t-muted">Agent Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
+              <div><label className="text-xs t-muted">Agent Type</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.agent_type} onChange={e => setDeployForm(p => ({ ...p, agent_type: e.target.value }))}><option value="catalyst">Catalyst</option><option value="monitor">Monitor</option><option value="orchestrator">Orchestrator</option></select></div>
+              <div><label className="text-xs t-muted">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.deployment_model} onChange={e => setDeployForm(p => ({ ...p, deployment_model: e.target.value }))}><option value="saas">SaaS</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
               {clusters.length > 0 && (
-                <div><label className="text-xs text-gray-500">Cluster (optional)</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.cluster_id} onChange={e => setDeployForm(p => ({ ...p, cluster_id: e.target.value }))}><option value="">No cluster</option>{clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                <div><label className="text-xs t-muted">Cluster (optional)</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={deployForm.cluster_id} onChange={e => setDeployForm(p => ({ ...p, cluster_id: e.target.value }))}><option value="">No cluster</option>{clusters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
               )}
-              <div><label className="text-xs text-gray-500">Version</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono" value={deployForm.version} onChange={e => setDeployForm(p => ({ ...p, version: e.target.value }))} /></div>
+              <div><label className="text-xs t-muted">Version</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono" value={deployForm.version} onChange={e => setDeployForm(p => ({ ...p, version: e.target.value }))} /></div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowDeploy(false)}>Cancel</Button>
@@ -234,7 +234,7 @@ export function ControlPlanePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Edit Deployment Config</h3>
+              <h3 className="text-lg font-semibold t-primary">Edit Deployment Config</h3>
               <button
                 onClick={() => { setShowEditConfig(false); setEditingDeployment(null); }}
                 className="text-gray-400 hover:text-gray-400"
@@ -245,7 +245,7 @@ export function ControlPlanePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500">Version</label>
+                <label className="text-xs t-muted">Version</label>
                 <input
                   className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono"
                   value={editVersion}
@@ -253,7 +253,7 @@ export function ControlPlanePage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Replicas</label>
+                <label className="text-xs t-muted">Replicas</label>
                 <input
                   type="number"
                   min={1}
@@ -263,7 +263,7 @@ export function ControlPlanePage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Max Concurrent Tasks</label>
+                <label className="text-xs t-muted">Max Concurrent Tasks</label>
                 <input
                   type="number"
                   min={1}
@@ -273,7 +273,7 @@ export function ControlPlanePage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Confidence Threshold (%)</label>
+                <label className="text-xs t-muted">Confidence Threshold (%)</label>
                 <input
                   type="number"
                   min={0}
@@ -319,13 +319,13 @@ export function ControlPlanePage() {
         <Card>
           <div className="flex items-center gap-3 mb-3">
             <Activity size={16} className="text-amber-500" />
-            <h3 className="text-sm font-semibold text-white">Platform Health</h3>
+            <h3 className="text-sm font-semibold t-primary">Platform Health</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div><span className="text-[10px] text-gray-400">Overall Health</span><p className="text-lg font-bold text-emerald-400">{health.overallHealth}%</p></div>
-            <div><span className="text-[10px] text-gray-400">Overall Uptime</span><p className="text-lg font-bold text-white">{health.overallUptime}%</p></div>
+            <div><span className="text-[10px] text-gray-400">Overall Uptime</span><p className="text-lg font-bold t-primary">{health.overallUptime}%</p></div>
             <div><span className="text-[10px] text-gray-400">Deployment Status</span><div className="flex gap-2 mt-0.5">{Object.entries(health.deploymentStatus || {}).map(([s, c]) => <Badge key={s} variant={s === 'running' ? 'success' : s === 'stopped' ? 'danger' : 'default'} size="sm">{s}: {c}</Badge>)}</div></div>
-            <div><span className="text-[10px] text-gray-400">Last Checked</span><p className="text-sm font-bold text-white">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
+            <div><span className="text-[10px] text-gray-400">Last Checked</span><p className="text-sm font-bold t-primary">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
           </div>
         </Card>
       )}
@@ -333,22 +333,22 @@ export function ControlPlanePage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs text-gray-400">Total Deployments</span>
+          <span className="text-xs t-secondary">Total Deployments</span>
           <p className="text-2xl font-bold text-white mt-1">{deployments.length}</p>
           <span className="text-xs text-emerald-400">{computed.running} running</span>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Total Replicas</span>
+          <span className="text-xs t-secondary">Total Replicas</span>
           <p className="text-2xl font-bold text-white mt-1">{computed.totalReplicas}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Avg Uptime</span>
+          <span className="text-xs t-secondary">Avg Uptime</span>
           <p className="text-2xl font-bold text-emerald-400 mt-1">
             {computed.avgUptime.toFixed(2)}%
           </p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Avg Health</span>
+          <span className="text-xs t-secondary">Avg Health</span>
           <p className="text-2xl font-bold text-white mt-1">
             {Math.round(computed.avgHealth)}%
           </p>
@@ -374,9 +374,9 @@ export function ControlPlanePage() {
                     <Bot className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-white">{dep.name || dep.clusterName || dep.id}</h3>
+                    <h3 className="text-base font-semibold t-primary">{dep.name || dep.clusterName || dep.id}</h3>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500">{dep.tenantName || dep.tenantId}</span>
+                      <span className="text-xs t-muted">{dep.tenantName || dep.tenantId}</span>
                       <Badge variant={dep.deploymentModel === 'saas' ? 'info' : dep.deploymentModel === 'on-premise' ? 'warning' : 'default'} size="sm">
                         {dep.deploymentModel === 'saas' && <Cloud size={10} className="mr-1" />}
                         {dep.deploymentModel === 'on-premise' && <Server size={10} className="mr-1" />}
@@ -401,7 +401,7 @@ export function ControlPlanePage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
                 <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Replicas</span>
-                  <p className="text-sm font-bold text-white">{replicas}</p>
+                  <p className="text-sm font-bold t-primary">{replicas}</p>
                 </div>
                 <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Uptime</span>
@@ -409,15 +409,15 @@ export function ControlPlanePage() {
                 </div>
                 <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Version</span>
-                  <p className="text-sm font-bold text-white">{dep.version}</p>
+                  <p className="text-sm font-bold t-primary">{dep.version}</p>
                 </div>
                 <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Tasks</span>
-                  <p className="text-sm font-bold text-white">{dep.tasksExecuted.toLocaleString()}</p>
+                  <p className="text-sm font-bold t-primary">{dep.tasksExecuted.toLocaleString()}</p>
                 </div>
                 <div className="                text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                   <span className="text-[10px] text-gray-400">Heartbeat</span>
-                  <p className="text-sm font-bold text-white">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
+                  <p className="text-sm font-bold t-primary">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
                 </div>
               </div>
 
@@ -426,7 +426,7 @@ export function ControlPlanePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Config */}
                     <div className="                    p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                                          <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                          <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
                                             <Settings size={14} className="text-amber-400" /> Configuration
                       </h4>
                       <div className="space-y-2 text-xs">
@@ -440,7 +440,7 @@ export function ControlPlanePage() {
 
                     {/* Permissions */}
                     <div className="                    p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                                          <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                          <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
                                             <Shield size={14} className="text-emerald-400" /> Action Permissions
                       </h4>
                       <div className="space-y-2">
@@ -451,7 +451,7 @@ export function ControlPlanePage() {
                               <Badge key={a} variant="success" size="sm">{a}</Badge>
                             ))}
                             {(!cfg.allowedActions || (Array.isArray(cfg.allowedActions) && cfg.allowedActions.length === 0)) && (
-                              <span className="text-xs text-gray-400">None</span>
+                              <span className="text-xs t-secondary">None</span>
                             )}
                           </div>
                         </div>
@@ -462,7 +462,7 @@ export function ControlPlanePage() {
                               <Badge key={a} variant="danger" size="sm">{a}</Badge>
                             ))}
                             {(!cfg.blockedActions || (Array.isArray(cfg.blockedActions) && cfg.blockedActions.length === 0)) && (
-                              <span className="text-xs text-gray-400">None</span>
+                              <span className="text-xs t-secondary">None</span>
                             )}
                           </div>
                         </div>

@@ -88,8 +88,8 @@ export function Dashboard() {
     <div className="space-y-6 animate-fadeIn">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Today&apos;s Performance Summary</p>
+        <h1 className="text-2xl font-bold t-primary">Dashboard</h1>
+        <p className="text-sm t-muted mt-1">Today&apos;s Performance Summary</p>
       </div>
 
       {/* Top KPI Row */}
@@ -99,8 +99,8 @@ export function Dashboard() {
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Business Health</p>
-                <p className="text-3xl font-bold text-white mt-1">{overallScore}</p>
+                <p className="text-xs t-secondary uppercase tracking-wider">Business Health</p>
+                <p className="text-3xl font-bold t-primary mt-1">{overallScore}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   {trendIcon(healthTrend)}
                   <span className={`text-xs ${avgDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)} pts</span>
@@ -116,8 +116,8 @@ export function Dashboard() {
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Active Risks</p>
-                <p className="text-3xl font-bold text-white mt-1">{risks.length}</p>
+                <p className="text-xs t-secondary uppercase tracking-wider">Active Risks</p>
+                <p className="text-3xl font-bold t-primary mt-1">{risks.length}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                   <span className="text-xs text-red-400">{criticalRisks} critical</span>
@@ -135,8 +135,8 @@ export function Dashboard() {
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Active Catalysts</p>
-                <p className="text-3xl font-bold text-white mt-1">{activeCatalysts}</p>
+                <p className="text-xs t-secondary uppercase tracking-wider">Active Catalysts</p>
+                <p className="text-3xl font-bold t-primary mt-1">{activeCatalysts}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Zap className="w-3.5 h-3.5 text-blue-400" />
                   <span className="text-xs text-blue-400">{totalTasks} tasks in progress</span>
@@ -154,8 +154,8 @@ export function Dashboard() {
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">System Health</p>
-                <p className="text-3xl font-bold text-white mt-1">{cpHealth ? `${cpHealth.overallUptime.toFixed(2)}%` : '--'}</p>
+                <p className="text-xs t-secondary uppercase tracking-wider">System Health</p>
+                <p className="text-3xl font-bold t-primary mt-1">{cpHealth ? `${cpHealth.overallUptime.toFixed(2)}%` : '--'}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Activity className={`w-3.5 h-3.5 ${(cpHealth?.overallHealth ?? 0) >= 80 ? 'text-emerald-400' : 'text-amber-400'}`} />
                   <span className={`text-xs ${(cpHealth?.overallHealth ?? 0) >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>{(cpHealth?.overallHealth ?? 0) >= 80 ? 'All systems operational' : 'Degraded performance'}</span>
@@ -175,8 +175,8 @@ export function Dashboard() {
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-white">Revenue Trend</h3>
-              <p className="text-xs text-gray-400">Last 6 months (M ZAR)</p>
+              <h3 className="text-lg font-semibold t-primary">Revenue Trend</h3>
+              <p className="text-xs t-secondary">Last 6 months (M ZAR)</p>
             </div>
             <Badge variant="success">{metrics.length > 0 ? `+${((metrics[0].value / (metrics[0].value * 0.96) - 1) * 100).toFixed(1)}%` : '--'}</Badge>
           </div>
@@ -211,7 +211,7 @@ export function Dashboard() {
         {/* Health Dimensions */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Health Dimensions</h3>
+            <h3 className="text-lg font-semibold t-primary">Health Dimensions</h3>
             <Link to="/apex" className="text-xs text-amber-400 hover:text-amber-300">View all</Link>
           </div>
           <div className="space-y-3">
@@ -219,9 +219,9 @@ export function Dashboard() {
               <div key={dim.key} className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400 truncate">{dim.name}</span>
+                    <span className="text-sm t-secondary truncate">{dim.name}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white">{dim.score}</span>
+                      <span className="text-sm font-medium t-primary">{dim.score}</span>
                       {trendIcon(dim.trend)}
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Crown className="w-4 h-4 text-amber-400" />
-              <h3 className="text-base font-semibold text-white">Risk Alerts</h3>
+              <h3 className="text-base font-semibold t-primary">Risk Alerts</h3>
             </div>
             <Link to="/apex" className="text-xs text-amber-400 hover:text-amber-300">View all</Link>
           </div>
@@ -254,12 +254,12 @@ export function Dashboard() {
             {risks.slice(0, 3).map((risk) => (
               <div key={risk.id} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-medium text-white line-clamp-1">{risk.title}</h4>
+                  <h4 className="text-sm font-medium t-primary line-clamp-1">{risk.title}</h4>
                   <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'default'}>
                     {risk.severity}
                   </Badge>
                 </div>
-                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{risk.description}</p>
+                <p className="text-xs t-secondary mt-1 line-clamp-2">{risk.description}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] text-gray-400">{Math.round(risk.probability * 100)}% confidence</span>
                   <LayerBadge layer="apex" />
@@ -274,7 +274,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-base font-semibold text-white">Anomalies</h3>
+              <h3 className="text-base font-semibold t-primary">Anomalies</h3>
             </div>
             <Link to="/pulse" className="text-xs text-amber-400 hover:text-amber-300">View all</Link>
           </div>
@@ -282,12 +282,12 @@ export function Dashboard() {
             {anomalies.slice(0, 3).map((anom) => (
               <div key={anom.id} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-medium text-white line-clamp-1">{anom.metric}</h4>
+                  <h4 className="text-sm font-medium t-primary line-clamp-1">{anom.metric}</h4>
                   <Badge variant={anom.severity === 'critical' ? 'danger' : anom.severity === 'high' ? 'warning' : 'default'}>
                     +{anom.deviation}%
                   </Badge>
                 </div>
-                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{anom.hypothesis}</p>
+                <p className="text-xs t-secondary mt-1 line-clamp-2">{anom.hypothesis}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <LayerBadge layer="pulse" />
                 </div>
@@ -301,7 +301,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-blue-400" />
-              <h3 className="text-base font-semibold text-white">Catalyst Activity</h3>
+              <h3 className="text-base font-semibold t-primary">Catalyst Activity</h3>
             </div>
             <Link to="/catalysts" className="text-xs text-amber-400 hover:text-amber-300">View all</Link>
           </div>
@@ -309,12 +309,12 @@ export function Dashboard() {
             {actions.slice(0, 3).map((action) => (
               <div key={action.id} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-medium text-white line-clamp-1">{action.action}</h4>
+                  <h4 className="text-sm font-medium t-primary line-clamp-1">{action.action}</h4>
                   <Badge variant={action.status === 'completed' ? 'success' : action.status === 'pending' ? 'warning' : 'info'}>
                     {action.status}
                   </Badge>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{action.catalystName}</p>
+                <p className="text-xs t-secondary mt-1">{action.catalystName}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] text-gray-400">{Math.round(action.confidence * 100)}% confidence</span>
                   <LayerBadge layer="catalysts" />
@@ -330,7 +330,7 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-blue-400" />
-            <h3 className="text-base font-semibold text-white">Process Metrics</h3>
+            <h3 className="text-base font-semibold t-primary">Process Metrics</h3>
           </div>
           <Link to="/pulse" className="text-xs text-amber-400 hover:text-amber-300">View all</Link>
         </div>
@@ -338,11 +338,11 @@ export function Dashboard() {
           {metrics.slice(0, 8).map((metric) => (
             <div key={metric.id} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400 truncate">{metric.name}</span>
+                <span className="text-xs t-secondary truncate">{metric.name}</span>
                 <span className={`w-2 h-2 rounded-full ${metric.status === 'green' ? 'bg-emerald-500/100' : metric.status === 'amber' ? 'bg-amber-500/100' : 'bg-red-500/100'}`} />
               </div>
               <div className="flex items-end justify-between mt-1">
-                <span className="text-lg font-bold text-white">{metric.value}<span className="text-xs text-gray-400 ml-1">{metric.unit}</span></span>
+                <span className="text-lg font-bold t-primary">{metric.value}<span className="text-xs t-secondary ml-1">{metric.unit}</span></span>
                 <Sparkline data={metric.trend || []} width={50} height={18} color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'} />
               </div>
             </div>

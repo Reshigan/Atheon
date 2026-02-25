@@ -17,16 +17,16 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
   return (
-    <div className={cn('flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm overflow-x-auto scrollbar-thin', className)}>
+    <div className={cn('flex gap-1 p-1 rounded-xl backdrop-blur-sm overflow-x-auto scrollbar-thin', className)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
           className={cn(
             'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
-            activeTab === tab.id
-              ? 'bg-white/[0.08] text-amber-400 border border-white/[0.1] shadow-sm backdrop-blur-sm'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] border border-transparent'
+                        activeTab === tab.id
+                          ? 'text-amber-400 shadow-sm backdrop-blur-sm'
+                          : 't-muted hover:t-secondary border border-transparent'
           )}
         >
           {tab.icon}
@@ -35,7 +35,7 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
           {tab.count !== undefined && (
             <span className={cn(
               'ml-1 px-1.5 py-0.5 rounded-full text-xs',
-              activeTab === tab.id ? 'bg-amber-500/15 text-amber-400' : 'bg-white/[0.06] text-gray-500'
+              activeTab === tab.id ? 'bg-amber-500/15 text-amber-400' : 't-muted'
             )}>
               {tab.count}
             </span>

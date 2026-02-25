@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
   { path: '/settings', label: 'Settings', icon: IconSettings, section: 'system' },
 ];
 
-/** Logo component used in both desktop and mobile sidebar — 3D crystal design */
+/** Logo component used in both desktop and mobile sidebar */
 function AtheonLogo({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   const s = size === 'lg' ? 'w-9 h-9' : 'w-8 h-8';
   const iconSize = size === 'lg' ? 36 : 32;
@@ -54,7 +54,7 @@ function AtheonLogo({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
 }
 
 export function Sidebar() {
-  const { mobileSidebarOpen, setMobileSidebarOpen, user } = useAppStore();
+  const { mobileSidebarOpen, setMobileSidebarOpen, user, theme } = useAppStore();
   const location = useLocation();
   const closeMobile = () => setMobileSidebarOpen(false);
   const userRole = user?.role as UserRole | undefined;
@@ -66,6 +66,7 @@ export function Sidebar() {
     return item.roles.includes(userRole);
   });
 
+  const isLight = theme === 'light';
   let lastSection = '';
 
   return (
@@ -73,13 +74,16 @@ export function Sidebar() {
       {/* Mobile overlay backdrop */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className={cn("fixed inset-0 z-40 backdrop-blur-sm lg:hidden", isLight ? "bg-black/20" : "bg-black/50")}
           onClick={closeMobile}
         />
       )}
 
-      {/* Desktop sidebar — icon-only narrow glass bar */}
-      <aside className="fixed left-0 top-0 h-full z-40 w-16 hidden lg:flex flex-col items-center py-5" style={{ background: 'rgba(26, 26, 46, 0.97)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+      {/* Desktop sidebar -- icon-only narrow bar */}
+      <aside
+        className="fixed left-0 top-0 h-full z-40 w-16 hidden lg:flex flex-col items-center py-5 transition-colors duration-300"
+        style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--divider)' }}
+      >
         {/* Logo */}
         <div className="mb-8">
           <AtheonLogo />
@@ -96,20 +100,24 @@ export function Sidebar() {
 
             return (
               <div key={item.path} className="w-full flex flex-col items-center">
-                {showDivider && <div className="w-6 h-px bg-white/[0.06] my-2" />}
+                {showDivider && <div className="w-6 h-px my-2" style={{ background: 'var(--divider)' }} />}
                 <Link
                   to={item.path}
                   title={item.label}
                   className={cn(
                     'w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group relative',
                     isActive
-                      ? 'bg-white/[0.08] shadow-sm shadow-amber-500/5 text-amber-400'
-                      : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.05]'
+                      ? 'shadow-sm text-amber-500'
+                      : 'hover:bg-[var(--accent-subtle)]'
                   )}
+                  style={isActive ? { background: 'var(--accent-subtle)' } : undefined}
                 >
-                  <Icon size={19} className={cn(isActive ? 'text-amber-400' : 'text-gray-500 group-hover:text-gray-300')} />
+                  <Icon size={19} className={cn(isActive ? 'text-amber-500' : 't-muted group-hover:t-secondary')} />
                   {/* Tooltip */}
-                  <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900/95 text-gray-200 text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 backdrop-blur-sm shadow-lg border border-white/[0.08]">
+                  <div
+                    className="absolute left-full ml-3 px-3 py-1.5 text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 backdrop-blur-sm shadow-lg"
+                    style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+                  >
                     {item.label}
                   </div>
                 </Link>
@@ -119,22 +127,23 @@ export function Sidebar() {
         </nav>
       </aside>
 
-      {/* Mobile sidebar — full expanded with labels */}
+      {/* Mobile sidebar -- full expanded with labels */}
       <aside className={cn(
         'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-72 lg:hidden',
         mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
-      )} style={{ background: 'rgba(26, 26, 46, 0.98)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.06]">
+      )} style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--divider)' }}>
+        <div className="flex items-center justify-between px-4 h-16" style={{ borderBottom: '1px solid var(--divider)' }}>
           <div className="flex items-center gap-3">
             <AtheonLogo size="lg" />
             <div>
               <h1 className="text-lg font-bold text-gradient">Atheon</h1>
-              <p className="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
+              <p className="text-[10px] t-muted -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
             </div>
           </div>
           <button
             onClick={closeMobile}
-            className="p-2 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
+            className="p-2 rounded-xl t-muted hover:t-primary transition-all"
+            style={{ background: 'transparent' }}
           >
             <X size={20} />
           </button>
@@ -154,7 +163,7 @@ export function Sidebar() {
               return (
                 <div key={item.path}>
                   {showSectionHeader && (
-                    <span className="block px-3 mt-4 mb-1.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider first:mt-0">
+                    <span className="block px-3 mt-4 mb-1.5 text-[10px] font-semibold t-muted uppercase tracking-wider first:mt-0">
                       {sectionLabels[item.section]}
                     </span>
                   )}
@@ -164,15 +173,16 @@ export function Sidebar() {
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group',
                       isActive
-                        ? 'bg-white/[0.08] text-amber-400 shadow-sm shadow-amber-500/10'
-                        : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-200'
+                        ? 'text-amber-500 shadow-sm'
+                        : 't-secondary hover:t-primary'
                     )}
+                    style={isActive ? { background: 'var(--accent-subtle)' } : undefined}
                   >
-                    <Icon className={cn('flex-shrink-0', isActive ? 'text-amber-400' : 'text-gray-500 group-hover:text-gray-300')} size={18} />
+                    <Icon className={cn('flex-shrink-0', isActive ? 'text-amber-500' : 't-muted group-hover:t-secondary')} size={18} />
                     <div className="min-w-0">
                       <span className="font-medium">{item.label}</span>
                       {item.sublabel && (
-                        <span className="block text-[10px] text-gray-400 truncate">{item.sublabel}</span>
+                        <span className="block text-[10px] t-muted truncate">{item.sublabel}</span>
                       )}
                     </div>
                   </Link>

@@ -66,8 +66,8 @@ export function MemoryPage() {
                   <Database className="w-5 h-5 text-amber-400"/>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Atheon Memory</h1>
-          <p className="text-sm text-gray-500">GraphRAG Knowledge Foundation - Organisational Intelligence</p>
+          <h1 className="text-2xl font-bold t-primary">Atheon Memory</h1>
+          <p className="text-sm t-muted">GraphRAG Knowledge Foundation - Organisational Intelligence</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export function MemoryPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {graphStats.map((stat) => (
           <Card key={stat.label}>
-            <span className="text-xs text-gray-400">{stat.label}</span>
+            <span className="text-xs t-secondary">{stat.label}</span>
             <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
             <span className="text-xs text-emerald-400">{stat.change}</span>
           </Card>
@@ -92,7 +92,7 @@ export function MemoryPage() {
             {entityTypes.map((entity) => (
               <div key={entity.type} className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${entityColors[entity.type] || 'bg-gray-400'} flex-shrink-0`} />
-                <span className="text-sm text-gray-400 w-28">{entity.type}</span>
+                <span className="text-sm t-secondary w-28">{entity.type}</span>
                 <div className="flex-1">
                   <Progress
                     value={entity.count}
@@ -101,7 +101,7 @@ export function MemoryPage() {
                     size="sm"
                   />
                 </div>
-                <span className="text-xs text-gray-500 w-16 text-right">{entity.count.toLocaleString()}</span>
+                <span className="text-xs t-muted w-16 text-right">{entity.count.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -138,10 +138,10 @@ export function MemoryPage() {
           {industryTemplates.map((template) => (
             <div key={template.name}            className="p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-semibold text-white">{template.name}</h4>
+                            <h4 className="text-sm font-semibold t-primary">{template.name}</h4>
                 <Badge variant="success" size="sm">{template.status}</Badge>
               </div>
-              <p className="text-xs text-gray-400">{template.entities}</p>
+              <p className="text-xs t-secondary">{template.entities}</p>
             </div>
           ))}
         </div>
@@ -152,8 +152,8 @@ export function MemoryPage() {
         <div className="flex items-start gap-3">
           <Database className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-white">GraphRAG Architecture</h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <h3 className="text-sm font-semibold t-primary">GraphRAG Architecture</h3>
+            <p className="text-xs t-muted mt-1">
               Atheon Memory uses Cloudflare D1 (SQLite at edge) for the graph adjacency model and Cloudflare Vectorize
               for semantic search with BGE-large-en-v1.5 embeddings (1024 dimensions). Hybrid retrieval combines vector
               similarity with structured graph traversal. Every fact carries a confidence score and source citation,

@@ -64,13 +64,13 @@ export function Header() {
       const data = await api.notifications.unreadCount();
       setUnreadCount(data.unreadCount);
     } catch {
-      // Silently fail — notifications aren't critical
+      // Silently fail
     }
   }, []);
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // poll every 30s
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
@@ -117,63 +117,68 @@ export function Header() {
 
   return (
     <header
-      className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6"
-      style={{ left: '0px', background: 'rgba(26, 26, 46, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6 transition-colors duration-300"
+      style={{ left: '0px', background: 'var(--bg-header)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--divider)' }}
     >
       {/* Left: hamburger (mobile) + company name */}
       <div className="flex items-center gap-3 flex-1">
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileSidebarOpen(true)}
-          className="lg:hidden p-2 -ml-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-white/[0.06] transition-all"
+          className="lg:hidden p-2 -ml-2 rounded-xl t-muted hover:t-primary transition-all"
         >
           <Menu size={22} />
         </button>
 
-        {/* Spacer for desktop sidebar (always 16 = w-16 sidebar) */}
+        {/* Spacer for desktop sidebar */}
         <div className="hidden lg:block flex-shrink-0 w-10" />
 
         {/* Company / Tenant name */}
         {user?.tenantName && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm">
-            <Building2 size={14} className="text-amber-400 flex-shrink-0" />
-            <span className="text-xs font-medium text-gray-300 truncate max-w-[180px]">{user.tenantName}</span>
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm"
+            style={{ background: 'var(--accent-subtle)', border: '1px solid var(--border-card)' }}
+          >
+            <Building2 size={14} className="text-amber-500 flex-shrink-0" />
+            <span className="text-xs font-medium t-secondary truncate max-w-[180px]">{user.tenantName}</span>
           </div>
         )}
       </div>
 
-      {/* Right: action icons + user — compact like reference */}
+      {/* Right: action icons + user */}
       <div className="flex items-center gap-1 sm:gap-2">
-        {/* Industry Selector - compact */}
+        {/* Industry Selector */}
         <div className="relative hidden md:block">
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
-            className="appearance-none bg-white/[0.04] border border-white/[0.08] rounded-full pl-3 pr-7 py-1.5 text-xs text-gray-400 cursor-pointer hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-amber-500/20 backdrop-blur-sm transition-all"
+            className="appearance-none rounded-full pl-3 pr-7 py-1.5 text-xs t-muted cursor-pointer focus:outline-none transition-all"
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
           >
             {industries.map(i => (
               <option key={i.value} value={i.value}>{i.label}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500 pointer-events-none" />
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 t-muted pointer-events-none" />
         </div>
 
-        {/* Action icons — small rounded buttons */}
+        {/* Action icons */}
         <div className="flex items-center gap-0.5">
-          {/* Messages → Chat page */}
+          {/* Messages */}
           <button
             onClick={() => navigate('/chat')}
-            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
+            className="p-2 rounded-full t-muted hover:text-amber-500 transition-all"
             title="Messages"
           >
             <MessageCircle size={17} />
           </button>
 
-          {/* Notifications → Dropdown with real API data */}
+          {/* Notifications */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={openNotifications}
-              className={`relative p-2 rounded-full transition-all ${showNotifications ? 'text-amber-400 bg-white/[0.08]' : 'text-gray-500 hover:text-amber-400 hover:bg-white/[0.06]'}`}
+              className={`relative p-2 rounded-full transition-all ${showNotifications ? 'text-amber-500' : 't-muted hover:text-amber-500'}`}
+              style={showNotifications ? { background: 'var(--accent-subtle)' } : undefined}
               title="Notifications"
             >
               <Bell size={17} />
@@ -184,24 +189,27 @@ export function Header() {
               )}
             </button>
 
-            {/* Notifications dropdown panel */}
+            {/* Notifications dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#1e1e2a]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-50">
+              <div
+                className="absolute right-0 top-full mt-2 w-80 sm:w-96 backdrop-blur-xl rounded-2xl overflow-hidden z-50"
+                style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-dropdown)' }}
+              >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-                  <h3 className="text-sm font-semibold text-gray-200">Notifications</h3>
+                <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--divider)' }}>
+                  <h3 className="text-sm font-semibold t-primary">Notifications</h3>
                   <div className="flex items-center gap-2">
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllRead}
-                        className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1"
+                        className="text-xs text-amber-500 hover:text-amber-400 font-medium flex items-center gap-1"
                       >
                         <Check size={12} /> Mark all read
                       </button>
                     )}
                     <button
                       onClick={() => setShowNotifications(false)}
-                      className="p-1 rounded-full text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
+                      className="p-1 rounded-full t-muted hover:t-primary transition-all"
                     >
                       <X size={14} />
                     </button>
@@ -216,8 +224,8 @@ export function Header() {
                     </div>
                   ) : notifications.length === 0 ? (
                     <div className="py-8 text-center">
-                      <Bell size={24} className="mx-auto mb-2 text-gray-600" />
-                      <p className="text-sm text-gray-500">No notifications yet</p>
+                      <Bell size={24} className="mx-auto mb-2 t-muted" />
+                      <p className="text-sm t-muted">No notifications yet</p>
                     </div>
                   ) : (
                     notifications.map((n) => (
@@ -229,16 +237,17 @@ export function Header() {
                           }
                           setShowNotifications(false);
                         }}
-                        className={`w-full text-left px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.04] transition-all ${!n.read ? 'bg-amber-500/[0.04]' : ''}`}
+                        className="w-full text-left px-4 py-3 transition-all"
+                        style={{ borderBottom: '1px solid var(--divider)', background: !n.read ? 'var(--accent-subtle)' : 'transparent' }}
                       >
                         <div className="flex items-start gap-3">
                           <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${severityColors[n.severity] || 'bg-gray-400'}`} />
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm leading-tight ${!n.read ? 'font-semibold text-gray-200' : 'text-gray-400'}`}>
+                            <p className={`text-sm leading-tight ${!n.read ? 'font-semibold t-primary' : 't-secondary'}`}>
                               {n.title}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
-                            <p className="text-[10px] text-gray-600 mt-1">{timeAgo(n.createdAt)}</p>
+                            <p className="text-xs t-muted mt-0.5 line-clamp-2">{n.message}</p>
+                            <p className="text-[10px] t-muted mt-1">{timeAgo(n.createdAt)}</p>
                           </div>
                         </div>
                       </button>
@@ -248,13 +257,13 @@ export function Header() {
 
                 {/* Footer */}
                 {notifications.length > 0 && (
-                  <div className="px-4 py-2 border-t border-white/[0.06] bg-white/[0.02]">
+                  <div className="px-4 py-2" style={{ borderTop: '1px solid var(--divider)', background: 'var(--accent-subtle)' }}>
                     <button
                       onClick={() => {
                         navigate('/audit');
                         setShowNotifications(false);
                       }}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+                      className="text-xs text-amber-500 hover:text-amber-400 font-medium"
                     >
                       View all activity
                     </button>
@@ -267,16 +276,16 @@ export function Header() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
+            className="p-2 rounded-full t-muted hover:text-amber-500 transition-all"
             title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
           </button>
 
-          {/* Settings → Settings page */}
+          {/* Settings */}
           <button
             onClick={() => navigate('/settings')}
-            className="p-2 rounded-full text-gray-500 hover:text-amber-400 hover:bg-white/[0.06] transition-all"
+            className="p-2 rounded-full t-muted hover:text-amber-500 transition-all"
             title="Settings"
           >
             <Settings size={17} />
@@ -291,7 +300,7 @@ export function Header() {
           <button
             onClick={handleLogout}
             title="Sign out"
-            className="p-1.5 rounded-full text-gray-500 hover:text-red-400 hover:bg-white/[0.06] transition-all"
+            className="p-1.5 rounded-full t-muted hover:text-red-400 transition-all"
           >
             <LogOut size={15} />
           </button>

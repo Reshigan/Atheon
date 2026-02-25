@@ -79,8 +79,8 @@ export function ChatPage() {
                   <MessageSquare className="w-5 h-5 text-amber-400"/>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Atheon Chat</h1>
-          <p className="text-sm text-gray-500">Unified conversational interface across all intelligence layers</p>
+          <h1 className="text-2xl font-bold t-primary">Atheon Chat</h1>
+          <p className="text-sm t-muted">Unified conversational interface across all intelligence layers</p>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export function ChatPage() {
           <Card hover className="border-amber-500/20">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-medium text-white">Current Thread</h3>
+                <h3 className="text-sm font-medium t-primary">Current Thread</h3>
                 <span className="text-[10px] text-gray-400">{messages.length} messages</span>
               </div>
             </div>
@@ -161,7 +161,7 @@ export function ChatPage() {
                     <Loader2 className="w-4 h-4 text-white animate-spin" />
                   </div>
                   <div className="rounded-xl p-4 bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                    <span className="text-sm text-gray-500">Thinking...</span>
+                    <span className="text-sm t-muted">Thinking...</span>
                   </div>
                 </div>
               )}

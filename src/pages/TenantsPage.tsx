@@ -184,8 +184,8 @@ export function TenantsPage() {
                       <Building2 className="w-5 h-5 text-amber-400"/>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Client Access Layer</h1>
-            <p className="text-sm text-gray-500">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
+            <h1 className="text-2xl font-bold t-primary">Client Access Layer</h1>
+            <p className="text-sm t-muted">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)}><Plus size={14} /> Onboard Tenant</Button>
@@ -196,16 +196,16 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Onboard New Tenant</h3>
+              <h3 className="text-lg font-semibold t-primary">Onboard New Tenant</h3>
               <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
-              <div><label className="text-xs text-gray-500">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
-              <div><label className="text-xs text-gray-500">Industry</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="financial_services">Financial Services</option></select></div>
-              <div><label className="text-xs text-gray-500">Plan</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
-              <div><label className="text-xs text-gray-500">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
-              <div><label className="text-xs text-gray-500">Region</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
+              <div><label className="text-xs t-muted">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
+              <div><label className="text-xs t-muted">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
+              <div><label className="text-xs t-muted">Industry</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="financial_services">Financial Services</option></select></div>
+              <div><label className="text-xs t-muted">Plan</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
+              <div><label className="text-xs t-muted">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+              <div><label className="text-xs t-muted">Region</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowOnboard(false)}>Cancel</Button>
@@ -220,24 +220,24 @@ export function TenantsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs text-gray-400">Total Tenants</span>
+          <span className="text-xs t-secondary">Total Tenants</span>
           <p className="text-2xl font-bold text-white mt-1">{tenants.length}</p>
           <span className="text-xs text-emerald-400">{tenants.filter(t => t.status === 'active').length} active</span>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">SaaS</span>
+          <span className="text-xs t-secondary">SaaS</span>
           <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
-          <span className="text-xs text-gray-400">cloud-hosted</span>
+          <span className="text-xs t-secondary">cloud-hosted</span>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">On-Premise</span>
+          <span className="text-xs t-secondary">On-Premise</span>
           <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
-          <span className="text-xs text-gray-400">self-hosted</span>
+          <span className="text-xs t-secondary">self-hosted</span>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Hybrid</span>
+          <span className="text-xs t-secondary">Hybrid</span>
           <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
-          <span className="text-xs text-gray-400">mixed deployment</span>
+          <span className="text-xs t-secondary">mixed deployment</span>
         </Card>
       </div>
 
@@ -258,7 +258,7 @@ export function TenantsPage() {
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-white">{tenant.name}</h3>
+                      <h3 className="text-base font-semibold t-primary">{tenant.name}</h3>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         {deploymentIcon(tenant.deploymentModel)}
                         <Badge variant={deploymentColor(tenant.deploymentModel) as 'info' | 'warning' | 'default'} size="sm">
@@ -266,7 +266,7 @@ export function TenantsPage() {
                         </Badge>
                         <Badge variant="outline" size="sm">{tenant.plan}</Badge>
                         <Badge variant="outline" size="sm">{tenant.industry}</Badge>
-                        <span className="text-xs text-gray-400">{tenant.region}</span>
+                        <span className="text-xs t-secondary">{tenant.region}</span>
                       </div>
                     </div>
                   </div>
@@ -280,23 +280,23 @@ export function TenantsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
                   <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Layers</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.layers.length}/5</p>
+                    <p className="text-sm font-bold t-primary">{tenant.entitlements.layers.length}/5</p>
                   </div>
                   <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Catalysts</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.catalystClusters.length}</p>
+                    <p className="text-sm font-bold t-primary">{tenant.entitlements.catalystClusters.length}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Max Agents</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.maxAgents}</p>
+                    <p className="text-sm font-bold t-primary">{tenant.entitlements.maxAgents}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Max Users</span>
-                    <p className="text-sm font-bold text-white">{tenant.entitlements.maxUsers}</p>
+                    <p className="text-sm font-bold t-primary">{tenant.entitlements.maxUsers}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-white/[0.04]">
                     <span className="text-[10px] text-gray-400">Region</span>
-                    <p className="text-sm font-bold text-white">{tenant.region}</p>
+                    <p className="text-sm font-bold t-primary">{tenant.region}</p>
                   </div>
                 </div>
 
@@ -305,7 +305,7 @@ export function TenantsPage() {
                   <div className="mt-4 space-y-4 animate-fadeIn">
                     {/* Entitlements */}
                     <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
                         <Shield size={14} className="text-amber-400" /> Feature Entitlements
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
@@ -349,21 +349,21 @@ export function TenantsPage() {
 
                     {/* Infrastructure */}
                     <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
                         <Server size={14} className="text-amber-400" /> Infrastructure
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="p-3 rounded bg-white/[0.04]">
                           <span className="text-[10px] text-gray-400">Deployment</span>
-                          <p className="text-sm font-medium text-white">{tenant.deploymentModel}</p>
+                          <p className="text-sm font-medium t-primary">{tenant.deploymentModel}</p>
                         </div>
                         <div className="p-3 rounded bg-white/[0.04]">
                           <span className="text-[10px] text-gray-400">Plan</span>
-                          <p className="text-sm font-medium text-white">{tenant.plan}</p>
+                          <p className="text-sm font-medium t-primary">{tenant.plan}</p>
                         </div>
                         <div className="p-3 rounded bg-white/[0.04]">
                           <span className="text-[10px] text-gray-400">Region</span>
-                          <p className="text-sm font-medium text-white">{tenant.region}</p>
+                          <p className="text-sm font-medium t-primary">{tenant.region}</p>
                         </div>
                       </div>
                     </div>
@@ -446,8 +446,8 @@ export function TenantsPage() {
                   <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center mb-3`}>
                     <Icon className={`w-5 h-5 ${colors.text}`} />
                   </div>
-                  <h3 className="text-base font-semibold text-white">{infra.model}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{infra.desc}</p>
+                  <h3 className="text-base font-semibold t-primary">{infra.model}</h3>
+                  <p className="text-xs t-muted mt-1">{infra.desc}</p>
                   <div className="mt-3 space-y-1.5">
                     {infra.features.map((f) => (
                       <div key={f} className="flex items-center gap-2 text-xs text-gray-400">
@@ -468,7 +468,7 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Manage Users</h3>
+              <h3 className="text-lg font-semibold t-primary">Manage Users</h3>
               <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
 
@@ -477,12 +477,12 @@ export function TenantsPage() {
             ) : (
               <>
                 <div className="space-y-2">
-                  {tenantUsers.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">No users found for this tenant.</p>}
+                  {tenantUsers.length === 0 && <p className="text-sm t-secondary py-4 text-center">No users found for this tenant.</p>}
                   {tenantUsers.map((u) => (
                     <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                       <div>
-                        <p className="text-sm font-medium text-white">{u.name}</p>
-                        <p className="text-xs text-gray-500">{u.email}</p>
+                        <p className="text-sm font-medium t-primary">{u.name}</p>
+                        <p className="text-xs t-muted">{u.email}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={u.status === 'active' ? 'success' : 'default'} size="sm">{u.status}</Badge>
@@ -494,10 +494,10 @@ export function TenantsPage() {
 
                 {showAddUser ? (
                   <div className="space-y-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    <h4 className="text-sm font-semibold text-white">Add New User</h4>
-                    <div><label className="text-xs text-gray-500">Email</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.email} onChange={e => setAddUserForm(p => ({ ...p, email: e.target.value }))} placeholder="user@company.com" /></div>
-                    <div><label className="text-xs text-gray-500">Full Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
-                    <div><label className="text-xs text-gray-500">Role</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
+                    <h4 className="text-sm font-semibold t-primary">Add New User</h4>
+                    <div><label className="text-xs t-muted">Email</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.email} onChange={e => setAddUserForm(p => ({ ...p, email: e.target.value }))} placeholder="user@company.com" /></div>
+                    <div><label className="text-xs t-muted">Full Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
+                    <div><label className="text-xs t-muted">Role</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
                     <div className="flex gap-3">
                       <Button variant="secondary" size="sm" onClick={() => setShowAddUser(false)}>Cancel</Button>
                       <Button variant="primary" size="sm" onClick={handleAddUser} disabled={!addUserForm.email.trim() || !addUserForm.name.trim() || addingUser}>
@@ -519,13 +519,13 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Deploy Catalyst Cluster</h3>
+              <h3 className="text-lg font-semibold t-primary">Deploy Catalyst Cluster</h3>
               <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
-              <div><label className="text-xs text-gray-500">Domain</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
-              <div><label className="text-xs text-gray-500">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only (Monitor)</option><option value="assisted">Assisted (Suggest)</option><option value="supervised">Supervised (Act with approval)</option><option value="autonomous">Autonomous (Full execution)</option></select></div>
+              <div><label className="text-xs t-muted">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
+              <div><label className="text-xs t-muted">Domain</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
+              <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only (Monitor)</option><option value="assisted">Assisted (Suggest)</option><option value="supervised">Supervised (Act with approval)</option><option value="autonomous">Autonomous (Full execution)</option></select></div>
             </div>
             <p className="text-[10px] text-gray-400">The Catalyst cluster will be provisioned and deployed according to the tenant&apos;s deployment model.</p>
             <div className="flex gap-3 pt-2">
@@ -543,13 +543,13 @@ export function TenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Edit Entitlements</h3>
+              <h3 className="text-lg font-semibold t-primary">Edit Entitlements</h3>
               <button onClick={() => setShowEditEntitlements(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Max Users</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.maxUsers)} onChange={e => setEntitlementForm(p => ({ ...p, maxUsers: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
-              <div><label className="text-xs text-gray-500">Max Agents</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.maxAgents)} onChange={e => setEntitlementForm(p => ({ ...p, maxAgents: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
-              <div><label className="text-xs text-gray-500">Data Retention (days)</label><input type="number" min={30} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.dataRetentionDays)} onChange={e => setEntitlementForm(p => ({ ...p, dataRetentionDays: Math.max(30, parseInt(e.target.value || '90', 10) || 90) }))} /></div>
+              <div><label className="text-xs t-muted">Max Users</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.maxUsers)} onChange={e => setEntitlementForm(p => ({ ...p, maxUsers: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
+              <div><label className="text-xs t-muted">Max Agents</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.maxAgents)} onChange={e => setEntitlementForm(p => ({ ...p, maxAgents: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
+              <div><label className="text-xs t-muted">Data Retention (days)</label><input type="number" min={30} className="w-full px-3 py-2 rounded-lg border border-white/[0.06] text-sm" value={String(entitlementForm.dataRetentionDays)} onChange={e => setEntitlementForm(p => ({ ...p, dataRetentionDays: Math.max(30, parseInt(e.target.value || '90', 10) || 90) }))} /></div>
             </div>
 
             <div className="space-y-3">

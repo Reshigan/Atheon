@@ -67,8 +67,8 @@ export function MindPage() {
           <Brain className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Atheon Mind</h1>
-          <p className="text-sm text-gray-500">Proprietary Domain LLM - Enterprise Intelligence Engine</p>
+          <h1 className="text-2xl font-bold t-primary">Atheon Mind</h1>
+          <p className="text-sm t-muted">Proprietary Domain LLM - Enterprise Intelligence Engine</p>
         </div>
       </div>
 
@@ -81,32 +81,32 @@ export function MindPage() {
           {modelTiers.map((tier) => (
             <Card key={tier.name} hover>
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-sm font-semibold text-white">{tier.name}</h3>
+                <h3 className="text-sm font-semibold t-primary">{tier.name}</h3>
                 <Badge variant="outline">{Math.round((tier.usage / totalUsage) * 100)}% traffic</Badge>
               </div>
               <div className="space-y-2 mb-3">
                 {isAdmin && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">Model</span>
-                    <span className="text-xs text-gray-400 font-mono">{tier.model}</span>
+                    <span className="text-xs t-secondary">Model</span>
+                    <span className="text-xs t-secondary font-mono">{tier.model}</span>
                   </div>
                 )}
                 {isAdmin && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">Context</span>
-                    <span className="text-xs text-gray-400">{tier.context}</span>
+                    <span className="text-xs t-secondary">Context</span>
+                    <span className="text-xs t-secondary">{tier.context}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Latency</span>
-                  <span className="text-xs text-gray-400">{tier.latency}</span>
+                  <span className="text-xs t-secondary">Latency</span>
+                  <span className="text-xs t-secondary">{tier.latency}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Cost</span>
+                  <span className="text-xs t-secondary">Cost</span>
                   <Badge variant={tier.cost === 'Low' ? 'success' : tier.cost === 'Medium' ? 'warning' : 'danger'} size="sm">{tier.cost}</Badge>
                 </div>
               </div>
-              <p className="text-xs text-gray-400">{tier.description}</p>
+              <p className="text-xs t-secondary">{tier.description}</p>
               <Progress value={Math.round((tier.usage / totalUsage) * 100)} color="blue" size="sm" className="mt-3" />
             </Card>
           ))}
@@ -133,7 +133,7 @@ export function MindPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">{phase.name}</span>
+                    <span className="text-sm font-medium t-primary">{phase.name}</span>
                     <Badge variant={phase.status === 'completed' ? 'success' : 'warning'}>{phase.status}</Badge>
                   </div>
                   <div className="flex items-center gap-4 mt-1 text-[10px] text-gray-400">
@@ -159,12 +159,12 @@ export function MindPage() {
             return (
               <Card key={metric.name}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-400">{metric.name}</span>
+                  <span className="text-xs t-secondary">{metric.name}</span>
                   <Badge variant={passing ? 'success' : 'warning'} size="sm">{passing ? 'Pass' : 'Below Target'}</Badge>
                 </div>
                 <div className="flex items-end gap-1">
-                  <span className="text-2xl font-bold text-white">{metric.value}</span>
-                  <span className="text-sm text-gray-400 mb-0.5">{metric.unit || '%'}</span>
+                  <span className="text-2xl font-bold t-primary">{metric.value}</span>
+                  <span className="text-sm t-secondary mb-0.5">{metric.unit || '%'}</span>
                 </div>
                 <div className="text-[10px] text-gray-400 mt-1">Target: {metric.target}{metric.unit || '%'}</div>
                 <Progress
@@ -185,8 +185,8 @@ export function MindPage() {
         <div className="flex items-start gap-3">
           <Database className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-white">Architecture Note</h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <h3 className="text-sm font-semibold t-primary">Architecture Note</h3>
+            <p className="text-xs t-muted mt-1">
               Atheon Mind uses a multi-tier inference architecture. The <span className="text-amber-400">atheon-mind-proxy</span> Worker
               classifies query complexity and routes to the appropriate tier. Tier 1 (Workers AI) handles 72% of queries at the edge
               with sub-50ms latency. Complex reasoning escalates to Tier 2/3 with full Atheon Mind 70B capabilities.

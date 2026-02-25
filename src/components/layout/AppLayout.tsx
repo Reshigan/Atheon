@@ -59,10 +59,10 @@ export function AppLayout() {
   if (!user) return null;
 
   return (
-    <div className={cn('min-h-screen relative', theme === 'light' ? 'atheon-light' : '')}>
-      {/* Global 3D Crystal Background — visible on all pages */}
+    <div className={cn('min-h-screen relative transition-colors duration-300', theme === 'light' ? 'atheon-light' : '')}>
+      {/* Global 3D Crystal Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-start justify-center" style={{ paddingTop: '4vh' }}>
-        <div className="opacity-30">
+        <div style={{ opacity: theme === 'light' ? 0.15 : 0.3 }}>
           <Hero3D size="lg" />
         </div>
       </div>

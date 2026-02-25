@@ -66,27 +66,27 @@ export function ConnectivityPage() {
           <Link2 className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Connectivity</h1>
-          <p className="text-sm text-gray-500">MCP (Model Context Protocol) + A2A (Agent-to-Agent) integration</p>
+          <h1 className="text-2xl font-bold t-primary">Connectivity</h1>
+          <p className="text-sm t-muted">MCP (Model Context Protocol) + A2A (Agent-to-Agent) integration</p>
         </div>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs text-gray-400">MCP Servers</span>
+          <span className="text-xs t-secondary">MCP Servers</span>
           <p className="text-2xl font-bold text-white mt-1">{mcpServers.length}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Connected</span>
+          <span className="text-xs t-secondary">Connected</span>
           <p className="text-2xl font-bold text-emerald-400 mt-1">{mcpServers.filter(s => s.status === 'connected').length}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Total Tools</span>
+          <span className="text-xs t-secondary">Total Tools</span>
           <p className="text-2xl font-bold text-white mt-1">{mcpServers.reduce((s, m) => s + m.tools.length, 0)}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Disconnected</span>
+          <span className="text-xs t-secondary">Disconnected</span>
           <p className="text-2xl font-bold text-red-400 mt-1">{mcpServers.filter(s => s.status !== 'connected').length}</p>
         </Card>
       </div>
@@ -110,8 +110,8 @@ export function ConnectivityPage() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-white">{server.name}</h3>
-                      <span className="text-xs text-gray-500">{server.system}</span>
+                      <h3 className="text-base font-semibold t-primary">{server.name}</h3>
+                      <span className="text-xs t-muted">{server.system}</span>
                     </div>
                   </div>
                   <Badge variant={server.status === 'connected' ? 'success' : 'danger'}>
@@ -122,7 +122,7 @@ export function ConnectivityPage() {
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  <span className="text-xs text-gray-400">Available Tools ({server.tools.length})</span>
+                  <span className="text-xs t-secondary">Available Tools ({server.tools.length})</span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {server.tools.map((tool) => (
                       <div key={tool.name} className="flex items-center justify-between                      p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
@@ -155,8 +155,8 @@ export function ConnectivityPage() {
             <div className="flex items-start gap-3">
               <Bot className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="text-sm font-semibold text-white">Agent-to-Agent (A2A) Protocol</h3>
-                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                <h3 className="text-sm font-semibold t-primary">Agent-to-Agent (A2A) Protocol</h3>
+                <p className="text-xs t-muted mt-2 leading-relaxed">
                   The A2A protocol enables Atheon Catalysts to discover and communicate with each other across clusters.
                   Each Catalyst publishes an <strong className="text-white">Agent Card</strong> (JSON-LD) describing its capabilities,
                   skills, and communication endpoints.

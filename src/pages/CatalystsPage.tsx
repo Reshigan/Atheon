@@ -187,9 +187,9 @@ export function CatalystsPage() {
           <div className="flex items-start gap-3">
             {statusIcon(action.status)}
             <div>
-              <h3 className="text-sm font-semibold text-white">{action.action}</h3>
+              <h3 className="text-sm font-semibold t-primary">{action.action}</h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-gray-400">{action.catalystName}</p>
+                <p className="text-xs t-secondary">{action.catalystName}</p>
                 {isManual && <Badge variant="outline" size="sm">Manual</Badge>}
               </div>
             </div>
@@ -198,17 +198,17 @@ export function CatalystsPage() {
             <Badge variant={statusBadgeVariant(action.status)}>
               {action.status}
             </Badge>
-            <span className="text-xs text-gray-400">{Math.round(action.confidence * 100)}%</span>
+            <span className="text-xs t-secondary">{Math.round(action.confidence * 100)}%</span>
             {expandedAction === action.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{action.reasoning || ''}</p>
+        <p className="text-xs t-muted mt-1 line-clamp-2">{action.reasoning || ''}</p>
 
         {expandedAction === action.id && (
           <div className="mt-4 space-y-3 animate-fadeIn">
             <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
               <h4 className="text-xs font-semibold text-gray-400 mb-1">Reasoning Chain</h4>
-              <p className="text-xs text-gray-500">{action.reasoning || 'No reasoning provided'}</p>
+              <p className="text-xs t-muted">{action.reasoning || 'No reasoning provided'}</p>
             </div>
 
             {isException && outputData && (
@@ -274,8 +274,8 @@ export function CatalystsPage() {
             <Zap className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Atheon Catalysts</h1>
-            <p className="text-sm text-gray-500">Autonomous Execution - Intelligent Workers</p>
+            <h1 className="text-2xl font-bold t-primary">Atheon Catalysts</h1>
+            <p className="text-sm t-muted">Autonomous Execution - Intelligent Workers</p>
           </div>
         </div>
         {isAdmin && (
@@ -310,32 +310,32 @@ export function CatalystsPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-gray-500">Catalyst Cluster</label>
+                <label className="text-xs t-muted">Catalyst Cluster</label>
                 <select className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={manualForm.cluster_id} onChange={e => setManualForm(p => ({ ...p, cluster_id: e.target.value }))}>
                   <option value="">Select a cluster...</option>
                   {clusters.map(c => <option key={c.id} value={c.id}>{c.name} ({c.domain})</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Catalyst Name</label>
+                <label className="text-xs t-muted">Catalyst Name</label>
                 <input className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={manualForm.catalyst_name} onChange={e => setManualForm(p => ({ ...p, catalyst_name: e.target.value }))} placeholder="e.g. Invoice Reconciliation" />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Action</label>
+                <label className="text-xs t-muted">Action</label>
                 <input className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={manualForm.action} onChange={e => setManualForm(p => ({ ...p, action: e.target.value }))} placeholder="e.g. Reconcile Feb 2026 invoices" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 flex items-center gap-1"><Calendar size={10} /> Start Date/Time</label>
+                  <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> Start Date/Time</label>
                   <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={manualForm.start_datetime} onChange={e => setManualForm(p => ({ ...p, start_datetime: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 flex items-center gap-1"><Calendar size={10} /> End Date/Time</label>
+                  <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> End Date/Time</label>
                   <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={manualForm.end_datetime} onChange={e => setManualForm(p => ({ ...p, end_datetime: e.target.value }))} />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Upload File (optional)</label>
+                <label className="text-xs t-muted">Upload File (optional)</label>
                 <div className="mt-1 p-4 border-2 border-dashed border-white/[0.1] rounded-lg text-center cursor-pointer hover:border-amber-500/30 transition-colors" onClick={() => fileInputRef.current?.click()}>
                   {manualFile ? (
                     <div className="flex items-center justify-center gap-2">
@@ -344,13 +344,13 @@ export function CatalystsPage() {
                       <button onClick={(e) => { e.stopPropagation(); setManualFile(null); }} className="text-gray-500 hover:text-red-400"><X size={14} /></button>
                     </div>
                   ) : (
-                    <div><Upload size={20} className="mx-auto text-gray-500 mb-1" /><p className="text-xs text-gray-500">Click to upload CSV, Excel, or PDF file</p></div>
+                    <div><Upload size={20} className="mx-auto text-gray-500 mb-1" /><p className="text-xs t-muted">Click to upload CSV, Excel, or PDF file</p></div>
                   )}
                   <input ref={fileInputRef} type="file" className="hidden" accept=".csv,.xlsx,.xls,.pdf,.json,.txt" onChange={e => setManualFile(e.target.files?.[0] || null)} />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Reasoning (optional)</label>
+                <label className="text-xs t-muted">Reasoning (optional)</label>
                 <textarea className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200 resize-none" rows={2} value={manualForm.reasoning} onChange={e => setManualForm(p => ({ ...p, reasoning: e.target.value }))} placeholder="Why is this being run manually?" />
               </div>
             </div>
@@ -374,14 +374,14 @@ export function CatalystsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Deploy New Catalyst</h3>
+              <h3 className="text-lg font-semibold t-primary">Deploy New Catalyst</h3>
               <button onClick={() => setShowDeployCatalyst(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
             </div>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Finance Catalyst" /></div>
-              <div><label className="text-xs text-gray-500">Domain</label><select className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={deployForm.domain} onChange={e => setDeployForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">HR</option><option value="sales">Sales</option><option value="operations">Operations</option><option value="compliance">Compliance</option></select></div>
-              <div><label className="text-xs text-gray-500">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={deployForm.autonomy_tier} onChange={e => setDeployForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="transactional">Transactional</option></select></div>
-              <div><label className="text-xs text-gray-500">Description (optional)</label><textarea className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200 resize-none" rows={2} value={deployForm.description} onChange={e => setDeployForm(p => ({ ...p, description: e.target.value }))} placeholder="What does this catalyst do?" /></div>
+              <div><label className="text-xs t-muted">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Finance Catalyst" /></div>
+              <div><label className="text-xs t-muted">Domain</label><select className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={deployForm.domain} onChange={e => setDeployForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">HR</option><option value="sales">Sales</option><option value="operations">Operations</option><option value="compliance">Compliance</option></select></div>
+              <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200" value={deployForm.autonomy_tier} onChange={e => setDeployForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="transactional">Transactional</option></select></div>
+              <div><label className="text-xs t-muted">Description (optional)</label><textarea className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-gray-200 resize-none" rows={2} value={deployForm.description} onChange={e => setDeployForm(p => ({ ...p, description: e.target.value }))} placeholder="What does this catalyst do?" /></div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setShowDeployCatalyst(false)}>Cancel</Button>
@@ -409,7 +409,7 @@ export function CatalystsPage() {
                         <Bot className="w-5 h-5 text-amber-400" />
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold text-white">{cluster.name}</h3>
+                        <h3 className="text-base font-semibold t-primary">{cluster.name}</h3>
                         <div className="flex items-center gap-2 mt-0.5">
                           <TierIcon size={12} className={tier.color} />
                           <span className={`text-xs ${tier.color}`}>{tier.label}</span>
@@ -424,20 +424,20 @@ export function CatalystsPage() {
                     </Badge>
                   </div>
 
-                  <p className="text-xs text-gray-400 mt-3">{cluster.description}</p>
+                  <p className="text-xs t-secondary mt-3">{cluster.description}</p>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                     <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Trust Score</span>
-                      <p className="text-sm font-bold text-white">{cluster.trustScore}%</p>
+                      <p className="text-sm font-bold t-primary">{cluster.trustScore}%</p>
                     </div>
                     <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Agents</span>
-                      <p className="text-sm font-bold text-white">{cluster.agentCount}</p>
+                      <p className="text-sm font-bold t-primary">{cluster.agentCount}</p>
                     </div>
                     <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Completed</span>
-                      <p className="text-sm font-bold text-white">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
+                      <p className="text-sm font-bold t-primary">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
                     </div>
                     <div className="text-center p-2 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <span className="text-[10px] text-gray-400">Success Rate</span>
@@ -496,7 +496,7 @@ export function CatalystsPage() {
                     <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                       <div className="flex items-center gap-2">
                         <Icon size={14} className={config.color} />
-                        <span className="text-sm text-gray-400">{config.label}</span>
+                        <span className="text-sm t-secondary">{config.label}</span>
                       </div>
                       <Badge variant="outline">{count} clusters</Badge>
                     </div>
@@ -512,10 +512,10 @@ export function CatalystsPage() {
               <div className="space-y-3">
                 {clusters.slice(0, 5).map((cluster) => (
                   <div key={cluster.id} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400 truncate">{cluster.name}</span>
+                    <span className="text-sm t-secondary truncate">{cluster.name}</span>
                     <div className="flex items-center gap-2">
                       <Progress value={cluster.trustScore} color={cluster.trustScore >= 90 ? 'emerald' : 'amber'} size="sm" className="w-20" />
-                      <span className="text-sm font-medium text-white w-10 text-right">{cluster.trustScore}%</span>
+                      <span className="text-sm font-medium t-primary w-10 text-right">{cluster.trustScore}%</span>
                     </div>
                   </div>
                 ))}
@@ -528,18 +528,18 @@ export function CatalystsPage() {
               </h3>
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                  <span className="text-xs text-gray-400">Total Actions</span>
+                  <span className="text-xs t-secondary">Total Actions</span>
                   <p className="text-lg font-bold text-amber-400">{governance?.totalActions ?? 0}</p>
                   <p className="text-[10px] text-gray-400">All catalyst executions</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                  <span className="text-xs text-gray-400">Pending Approvals</span>
+                  <span className="text-xs t-secondary">Pending Approvals</span>
                   <p className="text-lg font-bold text-amber-400">{governance?.pendingApprovals ?? 0}</p>
                   <p className="text-[10px] text-gray-400">Awaiting human review</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
-                  <span className="text-xs text-gray-400">Approved / Rejected</span>
-                  <p className="text-lg font-bold text-white">
+                  <span className="text-xs t-secondary">Approved / Rejected</span>
+                  <p className="text-lg font-bold t-primary">
                     <span className="text-emerald-400">{governance?.approved ?? 0}</span>
                     {' / '}
                     <span className="text-red-500">{governance?.rejected ?? 0}</span>

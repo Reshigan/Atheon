@@ -41,8 +41,8 @@ export function AuditPage() {
                       <Shield className="w-5 h-5 text-amber-400"/>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Audit Log</h1>
-            <p className="text-sm text-gray-500">Complete governance trail across all Atheon layers</p>
+            <h1 className="text-2xl font-bold t-primary">Audit Log</h1>
+            <p className="text-sm t-muted">Complete governance trail across all Atheon layers</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export function AuditPage() {
       {showFilters && (
         <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Layer</label>
+            <label className="text-xs t-muted block mb-1">Layer</label>
             <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white/[0.04] text-gray-200" value={filterLayer} onChange={e => setFilterLayer(e.target.value)}>
               <option value="">All Layers</option>
               <option value="apex">Apex</option>
@@ -91,7 +91,7 @@ export function AuditPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Outcome</label>
+            <label className="text-xs t-muted block mb-1">Outcome</label>
             <select className="px-3 py-1.5 rounded-lg border border-white/[0.06] text-sm bg-white/[0.04] text-gray-200" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
               <option value="">All Outcomes</option>
               <option value="success">Success</option>
@@ -108,19 +108,19 @@ export function AuditPage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs text-gray-400">Total Events (Today)</span>
+          <span className="text-xs t-secondary">Total Events (Today)</span>
           <p className="text-2xl font-bold text-white mt-1">{entries.length}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Success</span>
+          <span className="text-xs t-secondary">Success</span>
           <p className="text-2xl font-bold text-emerald-400 mt-1">{entries.filter(a => a.outcome === 'success').length}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Pending</span>
+          <span className="text-xs t-secondary">Pending</span>
           <p className="text-2xl font-bold text-amber-400 mt-1">{entries.filter(a => a.outcome === 'pending').length}</p>
         </Card>
         <Card>
-          <span className="text-xs text-gray-400">Failed</span>
+          <span className="text-xs t-secondary">Failed</span>
           <p className="text-2xl font-bold text-red-400 mt-1">{entries.filter(a => a.outcome === 'failure').length}</p>
         </Card>
       </div>
