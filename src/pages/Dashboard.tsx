@@ -157,11 +157,13 @@ export function Dashboard() {
 
       {/* TIMELINE PROGRESS BAR */}
       <div>
-        <div className="relative h-2 rounded-full overflow-hidden mb-4" style={{ background: 'var(--bg-secondary)' }}>
-          <div
-            className="absolute left-0 top-0 h-full rounded-full transition-all"
-            style={{ width: `${Math.min(overallScore, 100)}%`, background: 'var(--accent)' }}
-          />
+        <div className="relative h-2 mb-4">
+          <div className="absolute inset-0 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+            <div
+              className="absolute left-0 top-0 h-full rounded-full transition-all"
+              style={{ width: `${Math.min(overallScore, 100)}%`, background: 'var(--accent)' }}
+            />
+          </div>
           <div
             className="absolute top-1/2 w-3 h-3 rounded-full border-2"
             style={{ left: `${Math.min(overallScore, 100)}%`, transform: 'translateX(-50%) translateY(-50%)', background: 'var(--bg-primary)', borderColor: 'var(--accent)' }}
