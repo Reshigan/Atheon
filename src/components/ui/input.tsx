@@ -20,13 +20,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             'focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1',
             'transition-all duration-150',
             'placeholder:text-[var(--placeholder)]',
-            error && 'border-red-300 focus:ring-red-200',
+            error && 'focus:ring-red-500/20',
             className
           )}
-          style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
+          style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: error ? '1px solid rgb(239, 68, 68)' : '1px solid var(--border-card)' }}
           {...props}
         />
-        {error && <p className="text-[10px] text-red-600">{error}</p>}
+        {error && <p className="text-[10px] text-red-500">{error}</p>}
       </div>
     );
   }
