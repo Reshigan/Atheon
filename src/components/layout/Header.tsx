@@ -117,7 +117,7 @@ export function Header() {
 
   return (
     <header
-      className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6 transition-colors duration-300"
+      className="fixed top-0 right-0 z-30 h-14 flex items-center justify-between px-4 sm:px-6 transition-colors duration-300"
       style={{ left: '0px', background: 'var(--bg-header)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--divider)' }}
     >
       {/* Left: hamburger (mobile) + company name */}
@@ -127,7 +127,7 @@ export function Header() {
           onClick={() => setMobileSidebarOpen(true)}
           className="lg:hidden p-2 -ml-2 rounded-xl t-muted hover:t-primary transition-all"
         >
-          <Menu size={22} />
+          <Menu size={20} />
         </button>
 
         {/* Spacer for desktop sidebar */}
@@ -136,10 +136,10 @@ export function Header() {
         {/* Company / Tenant name */}
         {user?.tenantName && (
           <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm"
-            style={{ background: 'var(--accent-subtle)', border: '1px solid var(--border-card)' }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
           >
-            <Building2 size={14} className="text-amber-500 flex-shrink-0" />
+            <Building2 size={13} className="flex-shrink-0" style={{ color: 'var(--accent)' }} />
             <span className="text-xs font-medium t-secondary truncate max-w-[180px]">{user.tenantName}</span>
           </div>
         )}
@@ -153,7 +153,7 @@ export function Header() {
             value={industry}
             onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
             className="appearance-none rounded-full pl-3 pr-7 py-1.5 text-xs t-muted cursor-pointer focus:outline-none transition-all"
-            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
           >
             {industries.map(i => (
               <option key={i.value} value={i.value}>{i.label}</option>
@@ -167,23 +167,23 @@ export function Header() {
           {/* Messages */}
           <button
             onClick={() => navigate('/chat')}
-            className="p-2 rounded-full t-muted hover:text-amber-500 transition-all"
+            className="p-2 rounded-full t-muted hover:t-primary transition-all"
             title="Messages"
           >
-            <MessageCircle size={17} />
+            <MessageCircle size={16} />
           </button>
 
           {/* Notifications */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={openNotifications}
-              className={`relative p-2 rounded-full transition-all ${showNotifications ? 'text-amber-500' : 't-muted hover:text-amber-500'}`}
+              className={`relative p-2 rounded-full transition-all ${showNotifications ? 't-primary' : 't-muted hover:t-primary'}`}
               style={showNotifications ? { background: 'var(--accent-subtle)' } : undefined}
               title="Notifications"
             >
-              <Bell size={17} />
+              <Bell size={16} />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none">
+                <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none" style={{ background: 'var(--accent)' }}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -192,8 +192,8 @@ export function Header() {
             {/* Notifications dropdown */}
             {showNotifications && (
               <div
-                className="absolute right-0 top-full mt-2 w-80 sm:w-96 backdrop-blur-xl rounded-2xl overflow-hidden z-50"
-                style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-dropdown)' }}
+                className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl overflow-hidden z-50"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-dropdown)' }}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--divider)' }}>
@@ -202,7 +202,8 @@ export function Header() {
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllRead}
-                        className="text-xs text-amber-500 hover:text-amber-400 font-medium flex items-center gap-1"
+                        className="text-xs font-medium flex items-center gap-1"
+                        style={{ color: 'var(--accent)' }}
                       >
                         <Check size={12} /> Mark all read
                       </button>
@@ -220,7 +221,7 @@ export function Header() {
                 <div className="max-h-80 overflow-y-auto">
                   {loadingNotifs ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
                     </div>
                   ) : notifications.length === 0 ? (
                     <div className="py-8 text-center">
@@ -263,7 +264,8 @@ export function Header() {
                         navigate('/audit');
                         setShowNotifications(false);
                       }}
-                      className="text-xs text-amber-500 hover:text-amber-400 font-medium"
+                      className="text-xs font-medium"
+                      style={{ color: 'var(--accent)' }}
                     >
                       View all activity
                     </button>
@@ -276,25 +278,25 @@ export function Header() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-full t-muted hover:text-amber-500 transition-all"
+            className="p-2 rounded-full t-muted hover:t-primary transition-all"
             title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
-            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
 
           {/* Settings */}
           <button
             onClick={() => navigate('/settings')}
-            className="p-2 rounded-full t-muted hover:text-amber-500 transition-all"
+            className="p-2 rounded-full t-muted hover:t-primary transition-all"
             title="Settings"
           >
-            <Settings size={17} />
+            <Settings size={16} />
           </button>
         </div>
 
-        {/* User avatar */}
+        {/* User avatar + logout */}
         <div className="flex items-center gap-2 ml-1">
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ring-2 ring-white/[0.1]">
+          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-hover))' }}>
             {user?.name?.charAt(0) || 'A'}
           </div>
           <button
@@ -302,7 +304,7 @@ export function Header() {
             title="Sign out"
             className="p-1.5 rounded-full t-muted hover:text-red-400 transition-all"
           >
-            <LogOut size={15} />
+            <LogOut size={14} />
           </button>
         </div>
       </div>

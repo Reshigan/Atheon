@@ -50,7 +50,7 @@ export function AppLayout() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="card-dark rounded-2xl p-8">
-          <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
         </div>
       </div>
     );
@@ -72,7 +72,7 @@ export function AppLayout() {
       <main
         className={cn(
           'pt-16 min-h-screen transition-all duration-300 relative z-10',
-          'pl-0 lg:pl-16'
+          'pl-0 lg:pl-[60px]'
         )}
       >
         <div className="p-4 sm:p-6">

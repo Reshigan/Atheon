@@ -65,7 +65,7 @@ export function OnboardingModal() {
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === currentStep ? 'w-6 bg-amber-400' : i < currentStep ? 'w-3 bg-amber-400/40' : 'w-3 bg-white/10'
+                  i === currentStep ? 'w-6 bg-[#2a7c8c]' : i < currentStep ? 'w-3 bg-[#2a7c8c]/40' : 'w-3 bg-white/10'
                 }`}
               />
             ))}
@@ -80,8 +80,8 @@ export function OnboardingModal() {
 
         {/* Content */}
         <div className="px-6 py-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
-            <StepIcon className="w-7 h-7 text-amber-400" />
+                    <div className="w-14 h-14 rounded-2xl bg-[#2a7c8c]/10 flex items-center justify-center mx-auto mb-4">
+                      <StepIcon className="w-7 h-7 text-[#2a7c8c]" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">{step.title}</h2>
           <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>

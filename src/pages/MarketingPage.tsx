@@ -10,7 +10,7 @@ import {
 const SERIF = "Georgia, 'Times New Roman', serif";
 
 const layers = [
-  { icon: BarChart3, title: 'Apex', subtitle: 'Executive Intelligence', desc: 'Real-time health scoring with AI-generated briefings that distill thousands of data points into action.', color: '#e8a000' },
+  { icon: BarChart3, title: 'Apex', subtitle: 'Executive Intelligence', desc: 'Real-time health scoring with AI-generated briefings that distill thousands of data points into action.', color: '#2a7c8c' },
   { icon: Activity, title: 'Pulse', subtitle: 'Process Monitoring', desc: 'Continuous KPI monitoring with intelligent anomaly detection and automated exception alerts.', color: '#2563eb' },
   { icon: Zap, title: 'Catalysts', subtitle: 'Autonomous Execution', desc: 'AI workers that execute tasks, remediate issues, and optimise processes with full audit trails.', color: '#059669' },
   { icon: Brain, title: 'Mind', subtitle: 'Domain LLM Engine', desc: 'Industry-specific language models with multi-tier inference and intelligent routing.', color: '#7c3aed' },
@@ -44,14 +44,14 @@ export function MarketingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen" style={{ background: '#f0f0ee' }}>
+    <div className="min-h-screen" style={{ background: '#e8eff6' }}>
 
       {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl" style={{ background: 'rgba(240, 240, 238, 0.85)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+      <nav className="sticky top-0 z-50 backdrop-blur-xl" style={{ background: 'rgba(232, 239, 246, 0.85)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-baseline gap-0.5">
             <AtheonLogoInline className="text-3xl" />
-            <span className="text-2xl font-bold" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>theon</span>
+            <span className="text-2xl font-bold" style={{ fontFamily: SERIF, color: '#1a2332' }}>theon</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium" style={{ color: '#555' }}>
             <a href="#features" className="hover:text-[#1a1a1a] transition-colors">Features</a>
@@ -72,12 +72,12 @@ export function MarketingPage() {
       {/* HERO */}
       <section className="pt-20 pb-24 lg:pt-28 lg:pb-32">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-8" style={{ background: '#ffffff', color: '#e8a000', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-8" style={{ background: '#ffffff', color: '#2a7c8c', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <Zap size={12} /> Enterprise Intelligence Platform
           </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>
-            Intelligence that<br />
-            <span style={{ color: '#e8a000' }}>moves your business</span>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6"          style={{ fontFamily: SERIF, color: '#1a2332' }}>
+                      Intelligence that<br />
+                      <span style={{ color: '#2a7c8c' }}>moves your business</span>
           </h1>
           <p className="text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto mb-10" style={{ color: '#666' }}>
             Six AI layers working as one — from executive health scoring to autonomous execution. Transform raw ERP data into strategic advantage.
@@ -102,10 +102,10 @@ export function MarketingPage() {
       </section>
 
       {/* PLATFORM LAYERS */}
-      <section id="features" className="py-20 lg:py-28" style={{ background: '#e8e8e4' }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>Six layers of intelligence</h2>
+      <section id="features" className="py-20 lg:py-28"      style={{ background: '#dce6f0' }}>
+              <div className="max-w-6xl mx-auto px-6">
+                <div className="text-center mb-16">
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: '#1a2332' }}>Six layers of intelligence</h2>
             <p className="text-base max-w-xl mx-auto" style={{ color: '#666' }}>Each layer works independently and as a unified system — from data ingestion to autonomous action.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -141,7 +141,7 @@ export function MarketingPage() {
               { step: '04', title: 'Execute', desc: 'Catalysts autonomously execute approved actions with full compliance trails.' },
             ].map(s => (
               <div key={s.step} className="rounded-2xl p-6 text-center transition-all hover:-translate-y-1" style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <div className="text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: 'rgba(232,160,0,0.2)' }}>{s.step}</div>
+                <div className="text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: 'rgba(42,124,140,0.2)' }}>{s.step}</div>
                 <h3 className="text-lg font-bold mb-2" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>{s.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: '#666' }}>{s.desc}</p>
               </div>
@@ -151,17 +151,17 @@ export function MarketingPage() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="py-20 lg:py-28" style={{ background: '#e8e8e4' }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>Trusted by industry leaders</h2>
+      <section className="py-20 lg:py-28"      style={{ background: '#dce6f0' }}>
+              <div className="max-w-6xl mx-auto px-6">
+                <div className="text-center mb-16">
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: '#1a2332' }}>Trusted by industry leaders</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map(t => (
               <div key={t.name} className="rounded-2xl p-6" style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
                 <div className="flex items-center gap-1 mb-4">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} size={14} fill="#e8a000" stroke="none" />
+                    <Star key={i} size={14} fill="#2a7c8c" stroke="none" />
                   ))}
                 </div>
                 <p className="text-sm leading-relaxed mb-5" style={{ color: '#444' }}>{`\u201C${t.quote}\u201D`}</p>
@@ -181,8 +181,8 @@ export function MarketingPage() {
           <div className="rounded-3xl p-10 lg:p-16" style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <div className="flex flex-col lg:flex-row items-start gap-12">
               <div className="flex-1">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6" style={{ background: 'rgba(232,160,0,0.08)' }}>
-                  <Shield size={24} style={{ color: '#e8a000' }} />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"                style={{ background: 'rgba(42,124,140,0.08)' }}>
+                                  <Shield size={24} style={{ color: '#2a7c8c' }} />
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>Enterprise-grade security</h2>
                 <p className="text-base leading-relaxed" style={{ color: '#666' }}>Every layer is built with zero-trust principles, end-to-end encryption, and comprehensive audit logging.</p>
@@ -191,7 +191,7 @@ export function MarketingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {securityFeatures.map(f => (
                     <div key={f} className="flex items-center gap-3">
-                      <CheckCircle2 size={18} style={{ color: '#e8a000' }} className="flex-shrink-0" />
+                      <CheckCircle2 size={18} style={{ color: '#2a7c8c' }} className="flex-shrink-0" />
                       <span className="text-sm font-medium" style={{ color: '#444' }}>{f}</span>
                     </div>
                   ))}
@@ -203,9 +203,9 @@ export function MarketingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 lg:py-28" style={{ background: '#1a1a1a' }}>
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ fontFamily: SERIF, color: '#f0f0f2' }}>Ready to transform your enterprise?</h2>
+      <section className="py-20 lg:py-28"      style={{ background: '#1a2332' }}>
+              <div className="max-w-3xl mx-auto px-6 text-center">
+                <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ fontFamily: SERIF, color: '#e8ecf0' }}>Ready to transform your enterprise?</h2>
           <p className="text-lg mb-10" style={{ color: '#a0a0b0' }}>Join industry leaders who use Atheon to turn operational data into strategic advantage.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="primary" size="lg" onClick={() => navigate('/login')}>
@@ -219,7 +219,7 @@ export function MarketingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="py-10" style={{ background: '#f0f0ee', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+      <footer className="py-10" style={{ background: '#e8eff6', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-baseline gap-0.5">

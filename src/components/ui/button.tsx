@@ -28,7 +28,7 @@ export function Button({ children, variant = 'primary', size = 'md', className, 
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90',
+        'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90',
         variants[variant],
         sizes[size],
         className

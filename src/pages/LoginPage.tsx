@@ -116,11 +116,11 @@ export function LoginPage() {
     <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
       {/* Left - Branding panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-16 relative overflow-hidden"
-        style={{ background: '#0a0a0f' }}
-      >
-        {/* Subtle gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-transparent to-purple-900/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.08),transparent_70%)]" />
+              style={{ background: '#1a2332' }}
+            >
+              {/* Subtle gradient overlays */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2a7c8c]/20 via-transparent to-[#6366f1]/10" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(42,124,140,0.08),transparent_70%)]" />
 
         <div className="relative z-10 text-center max-w-md">
           <div className="mb-8 flex justify-center">
@@ -147,7 +147,7 @@ export function LoginPage() {
               'ERP integration layer',
             ].map((f) => (
               <div key={f} className="flex items-center gap-3 text-sm text-gray-400">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#2a7c8c' }} />
                 {f}
               </div>
             ))}

@@ -138,16 +138,16 @@ export function Dashboard() {
         </div>
 
         <div className="hidden md:block">
-          <div className="rounded-2xl p-4 max-w-[260px]" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <p className="text-xs text-gray-400 mb-1">system health score</p>
-            <p className="text-sm text-white font-medium mb-2">
-              {cpHealth ? `${cpHealth.overallUptime.toFixed(1)}% uptime` : 'All systems operational'}
-            </p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">
-                {activeCatalysts} active catalysts
-              </span>
-              <Link to="/control-plane" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#e8a000', color: '#1a1a1a' }}>
+          <div className="rounded-2xl p-4 max-w-[260px]"          style={{ background: '#1a2332', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <p className="text-xs text-gray-400 mb-1">system health score</p>
+                      <p className="text-sm text-white font-medium mb-2">
+                        {cpHealth ? `${cpHealth.overallUptime.toFixed(1)}% uptime` : 'All systems operational'}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                          {activeCatalysts} active catalysts
+                        </span>
+                        <Link to="/control-plane" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: 'var(--accent)', color: '#fff' }}>
                 view now
               </Link>
             </div>
@@ -349,15 +349,15 @@ export function Dashboard() {
                 })()}>
                   <defs>
                     <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#e8a000" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="#e8a000" stopOpacity={0} />
+                                            <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.25} />
+                                            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <Tooltip
                     contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '12px', boxShadow: 'var(--shadow-dropdown)' }}
                     labelStyle={{ color: 'var(--text-secondary)' }}
                   />
-                  <Area type="monotone" dataKey="value" stroke="#e8a000" strokeWidth={2} fill="url(#revenueGrad)" />
+                  <Area type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2} fill="url(#revenueGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -368,11 +368,11 @@ export function Dashboard() {
               <div
                 key={metric.id}
                 className="rounded-2xl p-4 transition-all hover:-translate-y-0.5"
-                style={{ background: 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)', border: '1px solid rgba(139, 92, 246, 0.1)' }}
+                style={{ background: 'linear-gradient(135deg, #e6f3f5 0%, #d4eef2 100%)', border: '1px solid rgba(42, 124, 140, 0.1)' }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <Sparkline data={metric.trend || []} width={50} height={22} color="#8b5cf6" />
-                  <ArrowRight size={14} style={{ color: '#8b5cf6' }} />
+                                    <Sparkline data={metric.trend || []} width={50} height={22} color="#2a7c8c" />
+                                    <ArrowRight size={14} style={{ color: '#2a7c8c' }} />
                 </div>
                 <p className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{metric.name}</p>
                 <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>{metric.value} {metric.unit}</p>
@@ -411,10 +411,10 @@ export function Dashboard() {
             </div>
           </Card>
 
-          <div className="mt-4 rounded-2xl p-5" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(232,160,0,0.15)' }}>
-                <Brain size={16} style={{ color: '#e8a000' }} />
+          <div className="mt-4 rounded-2xl p-5"          style={{ background: '#1a2332', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(42,124,140,0.15)' }}>
+                          <Brain size={16} style={{ color: '#2a7c8c' }} />
               </div>
               <div>
                 <p className="text-sm text-white font-medium">Hey there!</p>
@@ -427,7 +427,7 @@ export function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2 mt-3">
-              <Link to="/chat" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#e8a000', color: '#1a1a1a' }}>
+              <Link to="/chat" className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: 'var(--accent)', color: '#fff' }}>
                 ask Atheon
               </Link>
               <span className="text-[10px] text-gray-500">Powered by Mind</span>
@@ -441,10 +441,10 @@ export function Dashboard() {
         <Card variant="black">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Shield size={16} style={{ color: '#e8a000' }} />
-              <h3 className="text-base font-bold" style={{ fontFamily: SERIF, color: '#f0f0f2' }}>Risk Alerts</h3>
-            </div>
-            <Link to="/apex" className="text-xs font-medium" style={{ color: '#e8a000' }}>View all</Link>
+                          <Shield size={16} style={{ color: 'var(--accent)' }} />
+                          <h3 className="text-base font-bold" style={{ fontFamily: SERIF, color: '#e8ecf0' }}>Risk Alerts</h3>
+                        </div>
+                        <Link to="/apex" className="text-xs font-medium" style={{ color: 'var(--accent)' }}>View all</Link>
           </div>
           <div className="space-y-3">
             {risks.slice(0, 3).map((risk) => (
@@ -540,7 +540,7 @@ export function Dashboard() {
       {/* LAYER QUICK LINKS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: BarChart3, label: 'Apex', desc: 'Executive intelligence', to: '/apex', color: '#e8a000' },
+          { icon: BarChart3, label: 'Apex', desc: 'Executive intelligence', to: '/apex', color: '#2a7c8c' },
           { icon: Activity, label: 'Pulse', desc: 'Process monitoring', to: '/pulse', color: '#10b981' },
           { icon: Database, label: 'Memory', desc: 'Knowledge base', to: '/memory', color: '#3b82f6' },
           { icon: Brain, label: 'Mind', desc: 'AI models', to: '/mind', color: '#8b5cf6' },

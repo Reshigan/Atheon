@@ -12,10 +12,10 @@ import {
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
   running: { icon: CheckCircle, color: 'text-emerald-400', label: 'Running' },
-  deploying: { icon: RefreshCw, color: 'text-amber-400', label: 'Deploying' },
+  deploying: { icon: RefreshCw, color: 'text-[#2a7c8c]', label: 'Deploying' },
   stopped: { icon: Square, color: 'text-gray-400', label: 'Stopped' },
   error: { icon: XCircle, color: 'text-red-400', label: 'Error' },
-  pending: { icon: Activity, color: 'text-amber-400', label: 'Pending' },
+  pending: { icon: Activity, color: 'text-[#2a7c8c]', label: 'Pending' },
 };
 
 interface DeploymentConfig {
@@ -182,7 +182,7 @@ export function ControlPlanePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -191,8 +191,8 @@ export function ControlPlanePage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/100/15 flex items-center justify-center">
-            <Cpu className="w-5 h-5 text-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-[#2a7c8c]/100/15 flex items-center justify-center">
+            <Cpu className="w-5 h-5 text-[#2a7c8c]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold t-primary">Agent Control Plane</h1>
@@ -318,7 +318,7 @@ export function ControlPlanePage() {
       {health && (
         <Card>
           <div className="flex items-center gap-3 mb-3">
-            <Activity size={16} className="text-amber-500" />
+            <Activity size={16} className="text-[#2a7c8c]" />
             <h3 className="text-sm font-semibold t-primary">Platform Health</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -370,8 +370,8 @@ export function ControlPlanePage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/100/15 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-amber-400" />
+                  <div className="w-10 h-10 rounded-lg bg-[#2a7c8c]/100/15 flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-[#2a7c8c]" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold t-primary">{dep.name || dep.clusterName || dep.id}</h3>
@@ -427,7 +427,7 @@ export function ControlPlanePage() {
                     {/* Config */}
                     <div className="                    p-4 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                                           <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
-                                            <Settings size={14} className="text-amber-400" /> Configuration
+                                            <Settings size={14} className="text-[#2a7c8c]" /> Configuration
                       </h4>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between"><span className="text-gray-400">Replicas</span><span className="text-white">{replicas}</span></div>

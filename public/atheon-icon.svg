@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#1a1a1a"/>
+  <rect width="64" height="64" rx="14" fill="#1a2332"/>
   <!-- Bold serif "A" -->
   <path d="M 20 48 L 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 27 40 L 24.5 48 Z M 28.2 36.5 L 35.8 36.5 L 32 22.5 Z" fill="white"/>
-  <!-- Amber dot accent -->
-  <circle cx="48" cy="46" r="4.5" fill="#e8a000"/>
+    <!-- Teal dot accent -->
+    <circle cx="48" cy="46" r="4.5" fill="#2a7c8c"/>
 </svg>

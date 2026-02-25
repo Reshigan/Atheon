@@ -85,7 +85,7 @@ export function ApexPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -150,7 +150,7 @@ export function ApexPage() {
             {/* Narrative */}
             <Card variant="black">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-amber-400" />
+                <FileText className="w-4 h-4 text-[#2a7c8c]" />
                 <h3 className="text-lg font-semibold">Daily Executive Briefing</h3>
                 <Badge variant="info">Today</Badge>
               </div>
@@ -161,7 +161,7 @@ export function ApexPage() {
               {/* KPI Movements */}
               <Card>
                 <h3 className="text-base font-semibold t-primary mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-amber-400" /> KPI Movements
+                  <TrendingUp className="w-4 h-4 text-[#2a7c8c]" /> KPI Movements
                 </h3>
                 <div className="space-y-3">
                   {(briefing?.kpiMovements || []).map((kpi) => (
@@ -215,10 +215,10 @@ export function ApexPage() {
             {(briefing?.decisionsNeeded || []).length > 0 && (
               <Card variant="black">
                 <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-amber-400" /> Decisions Required
+                  <Shield className="w-4 h-4 text-[#2a7c8c]" /> Decisions Required
                 </h3>
                 {(briefing?.decisionsNeeded || []).map((dec, i) => (
-                  <div key={i} className="p-4 rounded-lg bg-amber-500/100/5 border border-amber-500/10">
+                  <div key={i} className="p-4 rounded-lg bg-[#2a7c8c]/100/5 border border-[#2a7c8c]/10">
                     <h4 className="text-sm font-semibold text-amber-800">{dec}</h4>
                   </div>
                 ))}
@@ -237,14 +237,14 @@ export function ApexPage() {
                 key={risk.id}
                 hover
                 onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
-                className={expandedRisk === risk.id ? 'border-amber-500/20' : ''}
+                className={expandedRisk === risk.id ? 'border-[#2a7c8c]/20' : ''}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    risk.severity === 'critical' ? 'bg-red-500/10' : risk.severity === 'high' ? 'bg-amber-500/10' : 'bg-amber-500/10'
+                    risk.severity === 'critical' ? 'bg-red-500/10' : risk.severity === 'high' ? 'bg-[#2a7c8c]/10' : 'bg-[#2a7c8c]/10'
                   }`}>
                     <AlertTriangle className={`w-5 h-5 ${
-                      risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-amber-400' : 'text-amber-400'
+                      risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-[#2a7c8c]' : 'text-[#2a7c8c]'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -267,7 +267,7 @@ export function ApexPage() {
                         <div className="space-y-2">
                           {risk.recommendedActions.map((action, i) => (
                             <div key={i} className="flex items-start gap-2">
-                              <ArrowRight className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                              <ArrowRight className="w-3.5 h-3.5 text-[#2a7c8c] mt-0.5 flex-shrink-0" />
                               <span className="text-sm t-secondary">{action}</span>
                             </div>
                           ))}

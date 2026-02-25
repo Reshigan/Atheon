@@ -10,12 +10,12 @@ interface ProgressProps {
 }
 
 const colorClasses: Record<string, string> = {
-  indigo: 'bg-amber-500',
+  indigo: 'bg-[#2a7c8c]',
   emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
+  amber: 'bg-[#2a7c8c]',
   red: 'bg-red-500',
-  blue: 'bg-amber-500',
-  cyan: 'bg-amber-500',
+  blue: 'bg-[#2a7c8c]',
+  cyan: 'bg-[#2a7c8c]',
 };
 
 const sizeClasses: Record<string, string> = {

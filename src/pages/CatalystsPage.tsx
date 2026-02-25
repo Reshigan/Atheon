@@ -15,18 +15,18 @@ import type { AutonomyTier } from "@/types";
 import { useAppStore } from "@/stores/appStore";
 
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
-  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-amber-400' },
-  'assisted': { label: 'Assisted', icon: Wrench, color: 'text-amber-400' },
+  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-[#2a7c8c]' },
+  'assisted': { label: 'Assisted', icon: Wrench, color: 'text-[#2a7c8c]' },
   'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-400' },
 };
 
 const statusIcon = (status: string) => {
   if (status === 'completed') return <CheckCircle size={14} className="text-emerald-400" />;
-  if (status === 'pending') return <Clock size={14} className="text-amber-400" />;
-  if (status === 'approved') return <CheckCircle size={14} className="text-amber-400" />;
+  if (status === 'pending') return <Clock size={14} className="text-[#2a7c8c]" />;
+  if (status === 'approved') return <CheckCircle size={14} className="text-[#2a7c8c]" />;
   if (status === 'exception') return <AlertTriangle size={14} className="text-red-400" />;
   if (status === 'rejected' || status === 'failed') return <XCircle size={14} className="text-red-400" />;
-  return <Zap size={14} className="text-amber-400" />;
+  return <Zap size={14} className="text-[#2a7c8c]" />;
 };
 
 const statusBadgeVariant = (status: string): 'success' | 'warning' | 'danger' | 'info' => {
@@ -165,7 +165,7 @@ export function CatalystsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -222,7 +222,7 @@ export function CatalystsPage() {
                 )}
                 <p className="text-xs text-red-300/80 mt-1">{outputData.exception_detail || ''}</p>
                 {outputData.suggested_action && (
-                  <div className="mt-2 p-2 rounded bg-amber-500/[0.06] border border-amber-500/20">
+                  <div className="mt-2 p-2 rounded bg-amber-500/[0.06] border border-[#2a7c8c]/20">
                     <p className="text-xs text-amber-300"><strong>Suggested Action:</strong> {outputData.suggested_action}</p>
                   </div>
                 )}
@@ -300,7 +300,7 @@ export function CatalystsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2"><Play size={18} className="text-amber-400" /> Manual Catalyst Execution</h3>
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2"><Play size={18} className="text-[#2a7c8c]" /> Manual Catalyst Execution</h3>
               <button onClick={() => { setShowManualExec(false); setExecError(null); setExecSuccess(null); }} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
             </div>
             <div className="space-y-3">
@@ -334,7 +334,7 @@ export function CatalystsPage() {
                 <div className="mt-1 p-4 border-2 border-dashed border-white/[0.1] rounded-lg text-center cursor-pointer hover:border-amber-500/30 transition-colors" onClick={() => fileInputRef.current?.click()}>
                   {manualFile ? (
                     <div className="flex items-center justify-center gap-2">
-                      <FileText size={16} className="text-amber-400" />
+                      <FileText size={16} className="text-[#2a7c8c]" />
                       <span className="text-sm text-gray-300">{manualFile.name}</span>
                       <button onClick={(e) => { e.stopPropagation(); setManualFile(null); }} className="text-gray-500 hover:text-red-400"><X size={14} /></button>
                     </div>
@@ -400,8 +400,8 @@ export function CatalystsPage() {
                 <Card key={cluster.id} hover>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-amber-400" />
+                      <div className="w-10 h-10 rounded-lg bg-[#2a7c8c]/10 flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-[#2a7c8c]" />
                       </div>
                       <div>
                         <h3 className="text-base font-semibold t-primary">{cluster.name}</h3>
@@ -481,7 +481,7 @@ export function CatalystsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-amber-400" /> Autonomy Tiers
+                <Eye className="w-4 h-4 text-[#2a7c8c]" /> Autonomy Tiers
               </h3>
               <div className="space-y-3">
                 {Object.entries(tierConfig).map(([key, config]) => {
@@ -502,7 +502,7 @@ export function CatalystsPage() {
 
             <Card>
               <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-amber-400" /> Trust Scores
+                <Shield className="w-4 h-4 text-[#2a7c8c]" /> Trust Scores
               </h3>
               <div className="space-y-3">
                 {clusters.slice(0, 5).map((cluster) => (
@@ -519,17 +519,17 @@ export function CatalystsPage() {
 
             <Card>
               <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-400" /> Governance Metrics
+                <Zap className="w-4 h-4 text-[#2a7c8c]" /> Governance Metrics
               </h3>
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                   <span className="text-xs t-secondary">Total Actions</span>
-                  <p className="text-lg font-bold text-amber-400">{governance?.totalActions ?? 0}</p>
+                  <p className="text-lg font-bold text-[#2a7c8c]">{governance?.totalActions ?? 0}</p>
                   <p className="text-[10px] text-gray-400">All catalyst executions</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                   <span className="text-xs t-secondary">Pending Approvals</span>
-                  <p className="text-lg font-bold text-amber-400">{governance?.pendingApprovals ?? 0}</p>
+                  <p className="text-lg font-bold text-[#2a7c8c]">{governance?.pendingApprovals ?? 0}</p>
                   <p className="text-[10px] text-gray-400">Awaiting human review</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">

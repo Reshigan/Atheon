@@ -30,7 +30,7 @@ export function MindPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -70,7 +70,7 @@ export function MindPage() {
       {/* Model Tiers — admin sees full detail, users see summary */}
       <div>
         <h2 className="text-lg font-semibold t-primary mb-4 flex items-center gap-2">
-          <Layers className="w-4 h-4 text-amber-400" /> {isAdmin ? 'Inference Tiers' : 'AI Models'}
+          <Layers className="w-4 h-4 text-[#2a7c8c]" /> {isAdmin ? 'Inference Tiers' : 'AI Models'}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {modelTiers.map((tier) => (
@@ -111,19 +111,19 @@ export function MindPage() {
       {/* Training Pipeline — admin only */}
       {isAdmin && <div>
         <h2 className="text-lg font-semibold t-primary mb-4 flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-amber-400" /> Training Pipeline
+          <Cpu className="w-4 h-4 text-[#2a7c8c]" /> Training Pipeline
         </h2>
         <Card>
           <div className="space-y-4">
             {trainingPhases.map((phase) => (
               <div key={phase.name} className="flex items-center gap-4">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  phase.status === 'completed' ? 'bg-emerald-500/10' : 'bg-amber-500/10'
+                  phase.status === 'completed' ? 'bg-emerald-500/10' : 'bg-[#2a7c8c]/10'
                 }`}>
                   {phase.status === 'completed' ? (
                     <Zap className="w-4 h-4 text-emerald-400" />
                   ) : (
-                    <Gauge className="w-4 h-4 text-amber-400" />
+                    <Gauge className="w-4 h-4 text-[#2a7c8c]" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -146,7 +146,7 @@ export function MindPage() {
       {/* Evaluation Metrics */}
       <div>
         <h2 className="text-lg font-semibold t-primary mb-4 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-amber-400" /> Evaluation Metrics
+          <BarChart3 className="w-4 h-4 text-[#2a7c8c]" /> Evaluation Metrics
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {evaluationMetrics.map((metric) => {
@@ -178,11 +178,11 @@ export function MindPage() {
       {/* Architecture Note — admin only */}
       {isAdmin && <Card variant="black">
         <div className="flex items-start gap-3">
-          <Database className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+          <Database className="w-5 h-5 text-[#2a7c8c] mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-semibold t-primary">Architecture Note</h3>
             <p className="text-xs t-muted mt-1">
-              Atheon Mind uses a multi-tier inference architecture. The <span className="text-amber-400">atheon-mind-proxy</span> Worker
+              Atheon Mind uses a multi-tier inference architecture. The <span className="text-[#2a7c8c]">atheon-mind-proxy</span> Worker
               classifies query complexity and routes to the appropriate tier. Tier 1 (Workers AI) handles 72% of queries at the edge
               with sub-50ms latency. Complex reasoning escalates to Tier 2/3 with full Atheon Mind 70B capabilities.
               Client-specific LoRA adapters are hot-swapped based on tenant context.

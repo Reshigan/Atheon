@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 
 const deploymentIcon = (model: string) => {
-  if (model === 'saas') return <Cloud size={14} className="text-amber-400" />;
-  if (model === 'on-premise') return <Server size={14} className="text-amber-400" />;
-  return <GitBranch size={14} className="text-amber-400" />;
+  if (model === 'saas') return <Cloud size={14} className="text-[#2a7c8c]" />;
+  if (model === 'on-premise') return <Server size={14} className="text-[#2a7c8c]" />;
+  return <GitBranch size={14} className="text-[#2a7c8c]" />;
 };
 
 const deploymentColor = (model: string) => {
@@ -171,7 +171,7 @@ export function TenantsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -180,8 +180,8 @@ export function TenantsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="          w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-amber-400"/>
+          <div className="          w-10 h-10 rounded-xl bg-[#2a7c8c]/10 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-[#2a7c8c]"/>
           </div>
           <div>
             <h1 className="text-2xl font-bold t-primary">Client Access Layer</h1>
@@ -226,17 +226,17 @@ export function TenantsPage() {
         </Card>
         <Card>
           <span className="text-xs t-secondary">SaaS</span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
+          <p className="text-2xl font-bold text-[#2a7c8c] mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
           <span className="text-xs t-secondary">cloud-hosted</span>
         </Card>
         <Card>
           <span className="text-xs t-secondary">On-Premise</span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
+          <p className="text-2xl font-bold text-[#2a7c8c] mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
           <span className="text-xs t-secondary">self-hosted</span>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Hybrid</span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
+          <p className="text-2xl font-bold text-[#2a7c8c] mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
           <span className="text-xs t-secondary">mixed deployment</span>
         </Card>
       </div>
@@ -254,7 +254,7 @@ export function TenantsPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-400/20 flex items-center justify-center text-lg font-bold text-amber-400">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2a7c8c]/20 to-[#2a7c8c]/10 flex items-center justify-center text-lg font-bold text-[#2a7c8c]">
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
@@ -306,7 +306,7 @@ export function TenantsPage() {
                     {/* Entitlements */}
                     <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                       <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
-                        <Shield size={14} className="text-amber-400" /> Feature Entitlements
+                        <Shield size={14} className="text-[#2a7c8c]" /> Feature Entitlements
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
                         {tenant.entitlements.features.map((f) => (
@@ -350,7 +350,7 @@ export function TenantsPage() {
                     {/* Infrastructure */}
                     <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                       <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
-                        <Server size={14} className="text-amber-400" /> Infrastructure
+                        <Server size={14} className="text-[#2a7c8c]" /> Infrastructure
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="p-3 rounded bg-white/[0.04]">
@@ -416,7 +416,7 @@ export function TenantsPage() {
                       <td className="py-2.5 font-medium">{row.feature}</td>
                       <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.starter}</td>
                       <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.pro}</td>
-                      <td className="py-2.5 text-center text-amber-400">{row.enterprise}</td>
+                      <td className="py-2.5 text-center text-[#2a7c8c]">{row.enterprise}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -437,7 +437,7 @@ export function TenantsPage() {
               const Icon = infra.icon;
               const colorMap: Record<string, { bg: string; text: string }> = {
                 blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
-                amber: { bg: 'bg-amber-500/10', text: 'text-amber-400' },
+                amber: { bg: 'bg-[#2a7c8c]/10', text: 'text-[#2a7c8c]' },
                 sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
               };
               const colors = colorMap[infra.color] || colorMap.blue;
@@ -473,7 +473,7 @@ export function TenantsPage() {
             </div>
 
             {loadingUsers ? (
-              <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 text-amber-500 animate-spin" /></div>
+              <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 text-[#2a7c8c] animate-spin" /></div>
             ) : (
               <>
                 <div className="space-y-2">
@@ -580,7 +580,7 @@ export function TenantsPage() {
                         ? p.autonomyTiers.filter(t => t !== tier)
                         : [...p.autonomyTiers, tier],
                     }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-amber-500/10 border-amber-300 text-amber-400' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-[#2a7c8c]/10 border-[#2a7c8c] text-[#2a7c8c]' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
                   >
                     {tier}
                   </button>
@@ -600,7 +600,7 @@ export function TenantsPage() {
                         ? p.llmTiers.filter(t => t !== tier)
                         : [...p.llmTiers, tier],
                     }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.llmTiers.includes(tier) ? 'bg-amber-500/10 border-amber-300 text-amber-400' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.llmTiers.includes(tier) ? 'bg-[#2a7c8c]/10 border-[#2a7c8c] text-[#2a7c8c]' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
                   >
                     {tier}
                   </button>

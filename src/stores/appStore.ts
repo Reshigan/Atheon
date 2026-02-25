@@ -2,18 +2,18 @@ import { create } from 'zustand';
 import type { User, AtheonLayer, IndustryVertical } from '@/types';
 
 export type Theme = 'dark' | 'light';
-export type AccentColor = 'amber' | 'blue' | 'sky' | 'emerald' | 'rose';
+export type AccentColor = 'teal' | 'blue' | 'sky' | 'emerald' | 'rose';
 
 type AccentVars = { accent: string; hover: string; glow: string; subtle: string };
 const ACCENT_LIGHT: Record<AccentColor, AccentVars> = {
-  amber:   { accent: '#e8a000', hover: '#d49200', glow: 'rgba(232, 160, 0, 0.12)', subtle: 'rgba(232, 160, 0, 0.06)' },
+  teal:    { accent: '#2a7c8c', hover: '#1f6672', glow: 'rgba(42, 124, 140, 0.12)', subtle: 'rgba(42, 124, 140, 0.06)' },
   blue:    { accent: '#2563eb', hover: '#1d4ed8', glow: 'rgba(37, 99, 235, 0.12)', subtle: 'rgba(37, 99, 235, 0.06)' },
   sky:     { accent: '#0284c7', hover: '#0369a1', glow: 'rgba(2, 132, 199, 0.12)', subtle: 'rgba(2, 132, 199, 0.06)' },
   emerald: { accent: '#059669', hover: '#047857', glow: 'rgba(5, 150, 105, 0.12)', subtle: 'rgba(5, 150, 105, 0.06)' },
   rose:    { accent: '#e11d48', hover: '#be123c', glow: 'rgba(225, 29, 72, 0.12)', subtle: 'rgba(225, 29, 72, 0.06)' },
 };
 const ACCENT_DARK: Record<AccentColor, AccentVars> = {
-  amber:   { accent: '#f5c542', hover: '#f0b429', glow: 'rgba(245, 197, 66, 0.12)', subtle: 'rgba(245, 197, 66, 0.08)' },
+  teal:    { accent: '#3a9cac', hover: '#2a7c8c', glow: 'rgba(58, 156, 172, 0.12)', subtle: 'rgba(58, 156, 172, 0.08)' },
   blue:    { accent: '#3b82f6', hover: '#2563eb', glow: 'rgba(59, 130, 246, 0.12)', subtle: 'rgba(59, 130, 246, 0.08)' },
   sky:     { accent: '#0ea5e9', hover: '#0284c7', glow: 'rgba(14, 165, 233, 0.12)', subtle: 'rgba(14, 165, 233, 0.08)' },
   emerald: { accent: '#10b981', hover: '#059669', glow: 'rgba(16, 185, 129, 0.12)', subtle: 'rgba(16, 185, 129, 0.08)' },
@@ -54,7 +54,10 @@ interface AppState {
 }
 
 const savedTheme = (typeof window !== 'undefined' ? localStorage.getItem('atheon-theme') : null) as Theme | null;
-const savedAccent = (typeof window !== 'undefined' ? localStorage.getItem('atheon-accent') : null) as AccentColor | null;
+// Migrate legacy 'amber' accent to 'teal'
+const rawAccent = typeof window !== 'undefined' ? localStorage.getItem('atheon-accent') : null;
+if (rawAccent === 'amber' && typeof window !== 'undefined') { localStorage.setItem('atheon-accent', 'teal'); }
+const savedAccent = (rawAccent === 'amber' ? 'teal' : rawAccent) as AccentColor | null;
 const savedOnboarding = typeof window !== 'undefined' ? localStorage.getItem('atheon-onboarding-dismissed') === 'true' : false;
 
 // Apply saved theme to body on initial load
@@ -73,7 +76,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarOpen: true,
   industry: 'general',
   theme: savedTheme || 'light',
-  accentColor: savedAccent || 'amber',
+  accentColor: savedAccent || 'teal',
   onboardingDismissed: savedOnboarding,
   setUser: (user) => set({ user }),
   setCurrentLayer: (layer) => set({ currentLayer: layer }),
@@ -87,7 +90,7 @@ export const useAppStore = create<AppState>((set) => ({
       document.body.classList.toggle('atheon-dark', theme === 'dark');
     }
     // Re-apply accent color for new theme
-    const accent = (localStorage.getItem('atheon-accent') as AccentColor) || 'amber';
+    const accent = (localStorage.getItem('atheon-accent') as AccentColor) || 'teal';
     applyAccentColor(accent, theme);
     set({ theme });
   },

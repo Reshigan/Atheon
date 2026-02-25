@@ -28,7 +28,7 @@ export function AuditPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -37,8 +37,8 @@ export function AuditPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="          w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-amber-400"/>
+          <div className="          w-10 h-10 rounded-xl bg-[#2a7c8c]/10 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-[#2a7c8c]"/>
           </div>
           <div>
             <h1 className="text-2xl font-bold t-primary">Audit Log</h1>
@@ -66,7 +66,7 @@ export function AuditPage() {
           </Button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:bg-white/[0.04]'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-[#2a7c8c]/10 border-[#2a7c8c]/20 text-[#2a7c8c]' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:bg-white/[0.04]'}`}
           >
             <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
           </button>
@@ -100,7 +100,7 @@ export function AuditPage() {
             </select>
           </div>
           {(filterLayer || filterOutcome) && (
-            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-amber-400 hover:text-amber-300 pb-1.5">Clear filters</button>
+            <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-[#2a7c8c] hover:text-[#3a9cac] pb-1.5">Clear filters</button>
           )}
         </div>
       )}
@@ -117,7 +117,7 @@ export function AuditPage() {
         </Card>
         <Card>
           <span className="text-xs t-secondary">Pending</span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{entries.filter(a => a.outcome === 'pending').length}</p>
+          <p className="text-2xl font-bold text-[#2a7c8c] mt-1">{entries.filter(a => a.outcome === 'pending').length}</p>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Failed</span>
@@ -160,8 +160,8 @@ export function AuditPage() {
                     )}
                     {entry.outcome === 'pending' && (
                       <div className="flex items-center gap-1.5">
-                        <Clock size={14} className="text-amber-400" />
-                        <span className="text-xs text-amber-400">Pending</span>
+                        <Clock size={14} className="text-[#2a7c8c]" />
+                        <span className="text-xs text-[#2a7c8c]">Pending</span>
                       </div>
                     )}
                     {entry.outcome === 'failure' && (

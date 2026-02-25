@@ -49,7 +49,7 @@ export function ConnectivityPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#2a7c8c] animate-spin" />
       </div>
     );
   }
@@ -62,8 +62,8 @@ export function ConnectivityPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-amber-500/100/15 flex items-center justify-center">
-          <Link2 className="w-5 h-5 text-amber-400" />
+        <div className="w-10 h-10 rounded-xl bg-[#2a7c8c]/100/15 flex items-center justify-center">
+          <Link2 className="w-5 h-5 text-[#2a7c8c]" />
         </div>
         <div>
           <h1 className="text-2xl font-bold t-primary">Connectivity</h1>
@@ -151,9 +151,9 @@ export function ConnectivityPage() {
 
       {activeTab === 'a2a' && (
         <TabPanel>
-          <Card className="border-amber-500/20">
+          <Card className="border-[#2a7c8c]/20">
             <div className="flex items-start gap-3">
-              <Bot className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+              <Bot className="w-5 h-5 text-[#2a7c8c] mt-0.5 flex-shrink-0" />
               <div>
                 <h3 className="text-sm font-semibold t-primary">Agent-to-Agent (A2A) Protocol</h3>
                 <p className="text-xs t-muted mt-2 leading-relaxed">
@@ -162,11 +162,11 @@ export function ConnectivityPage() {
                   skills, and communication endpoints.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-gray-400">
-                  <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Finance Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-[#2a7c8c]/10 text-[#2a7c8c] border border-[#2a7c8c]/20">Finance Catalyst</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
                   <span className="px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">A2A Protocol</span>
                   <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Supply Chain Catalyst</span>
+                  <span className="px-2 py-1 rounded bg-[#2a7c8c]/10 text-[#2a7c8c] border border-[#2a7c8c]/20">Supply Chain Catalyst</span>
                 </div>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="                  p-3 rounded bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">

@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import type { AtheonLayer } from "@/types";
 
 const layerConfig: Record<string, { label: string; color: string; bg: string }> = {
-  apex: { label: 'Apex', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+  apex: { label: 'Apex', color: 'text-teal-700', bg: 'bg-teal-50 border-teal-200' },
   pulse: { label: 'Pulse', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
   catalysts: { label: 'Catalysts', color: 'text-cyan-700', bg: 'bg-cyan-50 border-cyan-200' },
   mind: { label: 'Mind', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-200' },
