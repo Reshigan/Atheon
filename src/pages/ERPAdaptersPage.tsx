@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 
 const systemIcons: Record<string, string> = {
-  SAP: '🔷', SF: '☁️', WD: '🟣', ORC: '🔴', D365: '🟢', NS: '🟠', SG: '🟤', API: '🔌',
-};
+  SAP: '🔷', SF: '☁️', WD: '🟣', ORC: '🔴', D365: '🟢', NS: '🟠', SG: '🟤', API: '🔌'};
 
 export function ERPAdaptersPage() {
   const { activeTab, setActiveTab } = useTabState('adapters');
@@ -43,8 +42,7 @@ export function ERPAdaptersPage() {
         adapter_id: connectForm.adapterId,
         name: connectForm.name.trim(),
         sync_frequency: connectForm.syncFrequency,
-        tenant_id: 'vantax',
-      });
+        tenant_id: 'vantax'});
       const c = await api.erp.connections();
       setConnections(c.connections);
       setShowConnect(false);
@@ -103,7 +101,7 @@ export function ERPAdaptersPage() {
       {/* Connect ERP Modal */}
       {showConnect && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Connect ERP System</h3>
               <button onClick={() => setShowConnect(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>

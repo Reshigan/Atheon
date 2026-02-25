@@ -15,8 +15,7 @@ const entityColors: Record<string, string> = {
   KPI: 'bg-sky-500',
   Document: 'bg-[#2a7c8c]/100',
   Risk: 'bg-red-500/100',
-  Asset: 'bg-orange-500',
-};
+  Asset: 'bg-orange-500'};
 
 const industryTemplates = [
   { name: 'FMCG Graph Template', entities: 'SKU, Retailer, Distributor, Promotion, Route, Shelf', status: 'active' },

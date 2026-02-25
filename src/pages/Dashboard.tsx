@@ -9,12 +9,11 @@ import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, C
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity,
   Shield, Loader2, CheckCircle2, Circle, ArrowRight, BarChart3,
-  Brain, Database, ChevronRight, Plus,
-} from "lucide-react";
+  Brain, Database, ChevronRight, Plus} from "lucide-react";
 import { Link } from "react-router-dom";
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 
-const SERIF = "Georgia, 'Times New Roman', serif";
+
 
 const trendIcon = (trend: string) => {
   if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
@@ -34,8 +33,7 @@ function buildCalendarDays() {
       date: d.getDate(),
       day: DAY_NAMES[d.getDay()],
       isToday: i === 0,
-      month: d.getMonth(),
-    });
+      month: d.getMonth()});
   }
   return days;
 }
@@ -89,8 +87,7 @@ export function Dashboard() {
         score: val.score,
         trend: val.trend as 'up' | 'down' | 'stable',
         change: val.delta,
-        sparkline: [val.score - 6, val.score - 4, val.score - 3, val.score - 2, val.score - 1, val.score],
-      }))
+        sparkline: [val.score - 6, val.score - 4, val.score - 3, val.score - 2, val.score - 1, val.score]}))
     : [];
   const activeCatalysts = clusters.filter(c => c.status === 'active').length;
   const totalTasks = clusters.reduce((sum, c) => sum + (c.tasksInProgress || 0), 0);
@@ -131,14 +128,14 @@ export function Dashboard() {
             </span>
             <span className="text-xs t-muted">Overview</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold t-primary leading-tight" style={{ fontFamily: SERIF }}>
+          <h1 className="text-4xl sm:text-5xl font-bold t-primary leading-tight" >
             Level<br />
             <span style={{ color: 'var(--accent)' }}>{String(overallScore).padStart(2, '0')}</span>: {healthTrend === 'up' ? 'Growth' : healthTrend === 'down' ? 'Attention' : 'Stable'}
           </h1>
         </div>
 
         <div className="hidden md:block">
-          <div className="rounded-2xl p-4 max-w-[260px]"          style={{ background: '#1a2332', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="rounded-xl p-4 max-w-[260px]"          style={{ background: '#09090b', border: '1px solid var(--border-card)' }}>
                       <p className="text-xs text-gray-400 mb-1">system health score</p>
                       <p className="text-sm text-white font-medium mb-2">
                         {cpHealth ? `${cpHealth.overallUptime.toFixed(1)}% uptime` : 'All systems operational'}
@@ -179,10 +176,8 @@ export function Dashboard() {
               key={m}
               className="text-sm whitespace-nowrap"
               style={{
-                fontFamily: SERIF,
                 color: i === currentMonth ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: i === currentMonth ? 600 : 400,
-              }}
+                fontWeight: i === currentMonth ? 600 : 400}}
             >
               {m}
             </span>
@@ -208,14 +203,14 @@ export function Dashboard() {
 
       {/* CURRENT OBJECTIVES */}
       <div>
-        <h2 className="text-xl font-bold t-primary mb-1" style={{ fontFamily: SERIF }}>
+        <h2 className="text-xl font-bold t-primary mb-1" >
           current objectives<br />to resolve
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
           {objectives.map((obj, i) => (
             <div
               key={obj.id}
-              className="rounded-2xl p-4 flex flex-col justify-between min-h-[100px] transition-all hover:-translate-y-0.5"
+              className="rounded-xl p-4 flex flex-col justify-between min-h-[100px] transition-all hover:-translate-y-0.5"
               style={
                 obj.completed
                   ? { background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }
@@ -228,8 +223,7 @@ export function Dashboard() {
                 className="text-sm font-medium leading-snug"
                 style={{
                   textDecoration: obj.completed ? 'line-through' : 'none',
-                  color: obj.completed ? 'var(--text-muted)' : 'var(--text-primary)',
-                }}
+                  color: obj.completed ? 'var(--text-muted)' : 'var(--text-primary)'}}
               >
                 {obj.text}
               </p>
@@ -252,8 +246,8 @@ export function Dashboard() {
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider" style={{ color: '#a0a0b0' }}>Business Health</p>
-                <p className="text-3xl font-bold mt-1" style={{ fontFamily: SERIF, color: '#f0f0f2' }}>{overallScore}</p>
+                <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Business Health</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{overallScore}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   {trendIcon(healthTrend)}
                   <span className={`text-xs ${avgDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)} pts</span>
@@ -269,7 +263,7 @@ export function Dashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs t-secondary uppercase tracking-wider">Active Risks</p>
-                <p className="text-3xl font-bold t-primary mt-1" style={{ fontFamily: SERIF }}>{risks.length}</p>
+                <p className="text-3xl font-bold t-primary mt-1" >{risks.length}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
                   <span className="text-xs text-red-500">{criticalRisks} critical</span>
@@ -286,8 +280,8 @@ export function Dashboard() {
           <CardContent>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider" style={{ color: '#2d7d2d' }}>Active Catalysts</p>
-                <p className="text-3xl font-bold mt-1" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>{activeCatalysts}</p>
+                <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Active Catalysts</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{activeCatalysts}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Zap className="w-3.5 h-3.5 text-emerald-600" />
                   <span className="text-xs text-emerald-600">{totalTasks} tasks in progress</span>
@@ -305,7 +299,7 @@ export function Dashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs t-secondary uppercase tracking-wider">System Health</p>
-                <p className="text-3xl font-bold t-primary mt-1" style={{ fontFamily: SERIF }}>{cpHealth ? `${cpHealth.overallUptime.toFixed(2)}%` : '--'}</p>
+                <p className="text-3xl font-bold t-primary mt-1" >{cpHealth ? `${cpHealth.overallUptime.toFixed(2)}%` : '--'}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Activity className={`w-3.5 h-3.5 ${(cpHealth?.overallHealth ?? 0) >= 80 ? 'text-emerald-500' : 'text-amber-500'}`} />
                   <span className={`text-xs ${(cpHealth?.overallHealth ?? 0) >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>{(cpHealth?.overallHealth ?? 0) >= 80 ? 'All systems operational' : 'Degraded performance'}</span>
@@ -323,7 +317,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold t-primary" style={{ fontFamily: SERIF }}>practical</h2>
+            <h2 className="text-lg font-bold t-primary" >practical</h2>
             <Link to="/pulse" className="flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>
               <ArrowRight size={12} />
             </Link>
@@ -367,15 +361,15 @@ export function Dashboard() {
             {metrics.slice(0, 3).map((metric) => (
               <div
                 key={metric.id}
-                className="rounded-2xl p-4 transition-all hover:-translate-y-0.5"
-                style={{ background: 'linear-gradient(135deg, #e6f3f5 0%, #d4eef2 100%)', border: '1px solid rgba(42, 124, 140, 0.1)' }}
+                className="rounded-xl p-4 transition-all hover:-translate-y-0.5"
+                style={{ background: 'var(--accent-subtle)', border: '1px solid var(--border-card)' }}
               >
                 <div className="flex items-center justify-between mb-2">
                                     <Sparkline data={metric.trend || []} width={50} height={22} color="#2a7c8c" />
-                                    <ArrowRight size={14} style={{ color: '#2a7c8c' }} />
+                                    <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
                 </div>
-                <p className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{metric.name}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>{metric.value} {metric.unit}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{metric.name}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{metric.value} {metric.unit}</p>
               </div>
             ))}
           </div>
@@ -383,7 +377,7 @@ export function Dashboard() {
 
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold t-primary" style={{ fontFamily: SERIF }}>level theory</h2>
+            <h2 className="text-lg font-bold t-primary" >level theory</h2>
             <Link to="/apex" className="text-xs font-medium" style={{ color: 'var(--accent)' }}>View all</Link>
           </div>
           <Card>
@@ -411,10 +405,10 @@ export function Dashboard() {
             </div>
           </Card>
 
-          <div className="mt-4 rounded-2xl p-5"          style={{ background: '#1a2332', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="mt-4 rounded-xl p-5"          style={{ background: '#09090b', border: '1px solid var(--border-card)' }}>
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(42,124,140,0.15)' }}>
-                          <Brain size={16} style={{ color: '#2a7c8c' }} />
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
+                          <Brain size={16} style={{ color: 'var(--accent)' }} />
               </div>
               <div>
                 <p className="text-sm text-white font-medium">Hey there!</p>
@@ -442,21 +436,21 @@ export function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
                           <Shield size={16} style={{ color: 'var(--accent)' }} />
-                          <h3 className="text-base font-bold" style={{ fontFamily: SERIF, color: '#e8ecf0' }}>Risk Alerts</h3>
+                          <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Risk Alerts</h3>
                         </div>
                         <Link to="/apex" className="text-xs font-medium" style={{ color: 'var(--accent)' }}>View all</Link>
           </div>
           <div className="space-y-3">
             {risks.slice(0, 3).map((risk) => (
-              <div key={risk.id} className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div key={risk.id} className="p-3 rounded-xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-medium line-clamp-1" style={{ color: '#f0f0f2' }}>{risk.title}</h4>
+                  <h4 className="text-sm font-medium line-clamp-1" style={{ color: 'var(--text-primary)' }}>{risk.title}</h4>
                   <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'default'}>
                     {risk.severity}
                   </Badge>
                 </div>
-                <p className="text-xs mt-1 line-clamp-2" style={{ color: '#a0a0b0' }}>{risk.description}</p>
-                <span className="text-[10px] mt-1.5 inline-block" style={{ color: '#6a6a7a' }}>{Math.round(risk.probability * 100)}% confidence</span>
+                <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{risk.description}</p>
+                <span className="text-[10px] mt-1.5 inline-block" style={{ color: 'var(--text-muted)' }}>{Math.round(risk.probability * 100)}% confidence</span>
               </div>
             ))}
           </div>
@@ -466,7 +460,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Activity size={16} className="text-emerald-500" />
-              <h3 className="text-base font-bold t-primary" style={{ fontFamily: SERIF }}>Anomalies</h3>
+              <h3 className="text-base font-bold t-primary" >Anomalies</h3>
             </div>
             <Link to="/pulse" className="text-xs font-medium" style={{ color: 'var(--accent)' }}>View all</Link>
           </div>
@@ -489,21 +483,21 @@ export function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Zap size={16} className="text-emerald-600" />
-              <h3 className="text-base font-bold" style={{ fontFamily: SERIF, color: '#1a1a1a' }}>Catalyst Activity</h3>
+              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Catalyst Activity</h3>
             </div>
-            <Link to="/catalysts" className="text-xs font-medium" style={{ color: '#2d7d2d' }}>View all</Link>
+            <Link to="/catalysts" className="text-xs font-medium" style={{ color: 'var(--accent)' }}>View all</Link>
           </div>
           <div className="space-y-3">
             {actions.slice(0, 3).map((action) => (
-              <div key={action.id} className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(34,150,34,0.08)' }}>
+              <div key={action.id} className="p-3 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid rgba(34,150,34,0.08)' }}>
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-medium line-clamp-1" style={{ color: '#1a1a1a' }}>{action.action}</h4>
+                  <h4 className="text-sm font-medium line-clamp-1" style={{ color: 'var(--text-primary)' }}>{action.action}</h4>
                   <Badge variant={action.status === 'completed' ? 'success' : action.status === 'pending' ? 'warning' : 'info'}>
                     {action.status}
                   </Badge>
                 </div>
-                <p className="text-xs mt-1" style={{ color: '#666' }}>{action.catalystName}</p>
-                <span className="text-[10px] mt-1 inline-block" style={{ color: '#999' }}>{Math.round(action.confidence * 100)}% confidence</span>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{action.catalystName}</p>
+                <span className="text-[10px] mt-1 inline-block" style={{ color: 'var(--text-muted)' }}>{Math.round(action.confidence * 100)}% confidence</span>
               </div>
             ))}
           </div>
@@ -515,7 +509,7 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <BarChart3 size={16} style={{ color: 'var(--accent)' }} />
-            <h3 className="text-base font-bold t-primary" style={{ fontFamily: SERIF }}>Process Metrics</h3>
+            <h3 className="text-base font-bold t-primary" >Process Metrics</h3>
           </div>
           <Link to="/pulse" className="flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>
             View all <ChevronRight size={12} />
@@ -529,7 +523,7 @@ export function Dashboard() {
                 <span className={`w-2 h-2 rounded-full ${metric.status === 'green' ? 'bg-emerald-500' : metric.status === 'amber' ? 'bg-amber-500' : 'bg-red-500'}`} />
               </div>
               <div className="flex items-end justify-between mt-1">
-                <span className="text-lg font-bold t-primary" style={{ fontFamily: SERIF }}>{metric.value}<span className="text-xs t-secondary ml-1 font-normal">{metric.unit}</span></span>
+                <span className="text-lg font-bold t-primary" >{metric.value}<span className="text-xs t-secondary ml-1 font-normal">{metric.unit}</span></span>
                 <Sparkline data={metric.trend || []} width={50} height={18} color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'} />
               </div>
             </div>
@@ -540,7 +534,7 @@ export function Dashboard() {
       {/* LAYER QUICK LINKS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: BarChart3, label: 'Apex', desc: 'Executive intelligence', to: '/apex', color: '#2a7c8c' },
+          { icon: BarChart3, label: 'Apex', desc: 'Executive intelligence', to: '/apex', color: 'var(--accent)' },
           { icon: Activity, label: 'Pulse', desc: 'Process monitoring', to: '/pulse', color: '#10b981' },
           { icon: Database, label: 'Memory', desc: 'Knowledge base', to: '/memory', color: '#3b82f6' },
           { icon: Brain, label: 'Mind', desc: 'AI models', to: '/mind', color: '#8b5cf6' },
@@ -550,11 +544,11 @@ export function Dashboard() {
             <Link
               key={item.label}
               to={item.to}
-              className="rounded-2xl p-4 transition-all hover:-translate-y-0.5"
+              className="rounded-xl p-4 transition-all hover:-translate-y-0.5"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${item.color}1F` }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-subtle)' }}>
                   <Icon size={18} style={{ color: item.color }} />
                 </div>
                 <div>

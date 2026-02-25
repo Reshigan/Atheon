@@ -17,8 +17,7 @@ import { useAppStore } from "@/stores/appStore";
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
   'read-only': { label: 'Read-Only', icon: Eye, color: 'text-[#2a7c8c]' },
   'assisted': { label: 'Assisted', icon: Wrench, color: 'text-[#2a7c8c]' },
-  'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-400' },
-};
+  'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-400' }};
 
 const statusIcon = (status: string) => {
   if (status === 'completed') return <CheckCircle size={14} className="text-emerald-400" />;
@@ -52,8 +51,7 @@ export function CatalystsPage() {
   const [showManualExec, setShowManualExec] = useState(false);
   const [manualForm, setManualForm] = useState({
     cluster_id: '', catalyst_name: '', action: '',
-    start_datetime: '', end_datetime: '', reasoning: '',
-  });
+    start_datetime: '', end_datetime: '', reasoning: ''});
   const [manualFile, setManualFile] = useState<File | null>(null);
   const [executing, setExecuting] = useState(false);
   const [execError, setExecError] = useState<string | null>(null);
@@ -129,8 +127,7 @@ export function CatalystsPage() {
         name: deployForm.name.trim(),
         domain: deployForm.domain,
         autonomy_tier: deployForm.autonomy_tier,
-        description: deployForm.description || `${deployForm.name} catalyst cluster`,
-      });
+        description: deployForm.description || `${deployForm.name} catalyst cluster`});
       const c = await api.catalysts.clusters();
       setClusters(c.clusters);
       setShowDeployCatalyst(false);
@@ -298,7 +295,7 @@ export function CatalystsPage() {
 
       {showManualExec && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2"><Play size={18} className="text-[#2a7c8c]" /> Manual Catalyst Execution</h3>
               <button onClick={() => { setShowManualExec(false); setExecError(null); setExecSuccess(null); }} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
@@ -367,7 +364,7 @@ export function CatalystsPage() {
 
       {showDeployCatalyst && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Deploy New Catalyst</h3>
               <button onClick={() => setShowDeployCatalyst(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>

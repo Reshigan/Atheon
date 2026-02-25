@@ -17,25 +17,24 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
   return (
-    <div className={cn('flex gap-1 p-1 rounded-xl backdrop-blur-sm overflow-x-auto scrollbar-thin', className)}>
+    <div className={cn('flex gap-0.5 overflow-x-auto scrollbar-thin', className)} style={{ borderBottom: '1px solid var(--border-card)' }}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
           className={cn(
-            'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
-                        activeTab === tab.id
-                          ? 'text-[#2a7c8c] shadow-sm backdrop-blur-sm'
-                          : 't-muted hover:t-secondary border border-transparent'
+            'flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all duration-150 whitespace-nowrap border-b-2 -mb-px',
+            activeTab === tab.id
+              ? 'border-[var(--accent)] text-[var(--accent)]'
+              : 'border-transparent t-muted hover:t-secondary hover:border-[var(--border-card)]'
           )}
         >
           {tab.icon}
-          <span className="hidden sm:inline">{tab.label}</span>
-          <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+          <span>{tab.label}</span>
           {tab.count !== undefined && (
             <span className={cn(
-              'ml-1 px-1.5 py-0.5 rounded-full text-xs',
-              activeTab === tab.id ? 'bg-[#2a7c8c]/15 text-[#2a7c8c]' : 't-muted'
+              'ml-1 px-1.5 py-0.5 rounded text-[10px]',
+              activeTab === tab.id ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'bg-[var(--bg-secondary)] t-muted'
             )}>
               {tab.count}
             </span>

@@ -193,13 +193,13 @@ iam.post('/users/:id/resend-welcome', async (c) => {
 
   const loginUrl = 'https://atheon.vantax.co.za/login';
   const template = getWelcomeEmailTemplate(user.name, user.email, tempPassword, loginUrl, 'dark');
-  const emailResult = await sendOrQueueEmail(c.env.DB, {
+  await sendOrQueueEmail(c.env.DB, {
     to: [user.email],
     subject: 'Welcome to Atheon\u2122 \u2014 Your Account Has Been Created',
     htmlBody: template.html,
     textBody: template.text,
     tenantId,
-  }, c.env);
+  }, c.env).catch(() => null);
 
   return c.json({ success: true, email: user.email, tempPassword });
 });

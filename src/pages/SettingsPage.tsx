@@ -74,9 +74,9 @@ export function SettingsPage() {
   };
 
   const accentOptions: { key: AccentColor; label: string; lightColor: string; darkColor: string }[] = [
-    { key: 'teal', label: 'Teal', lightColor: '#2a7c8c', darkColor: '#3a9cac' },
+    { key: 'indigo', label: 'Indigo', lightColor: '#4f46e5', darkColor: '#818cf8' },
     { key: 'blue', label: 'Blue', lightColor: '#2563eb', darkColor: '#3b82f6' },
-    { key: 'sky', label: 'Sky', lightColor: '#0284c7', darkColor: '#0ea5e9' },
+    { key: 'violet', label: 'Violet', lightColor: '#7c3aed', darkColor: '#a78bfa' },
     { key: 'emerald', label: 'Emerald', lightColor: '#059669', darkColor: '#10b981' },
     { key: 'rose', label: 'Rose', lightColor: '#e11d48', darkColor: '#f43f5e' },
   ];
@@ -85,7 +85,7 @@ export function SettingsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-subtle)' }}>
-          <Settings className="w-5 h-5 text-[#2a7c8c]" />
+          <Settings className="w-5 h-5 text-[var(--accent)]" />
         </div>
         <div>
           <h1 className="text-2xl font-bold t-primary">Settings</h1>
@@ -97,11 +97,11 @@ export function SettingsPage() {
         {/* Profile */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-[#2a7c8c]" /> Profile
+            <User className="w-4 h-4 text-[var(--accent)]" /> Profile
           </h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2a7c8c] to-[#1a5c68] flex items-center justify-center text-2xl font-bold text-white">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-2xl font-bold text-white">
                 {displayName?.charAt(0) || 'A'}
               </div>
               <div>
@@ -143,7 +143,7 @@ export function SettingsPage() {
         {/* Notifications */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-[#2a7c8c]" /> Notifications
+            <Bell className="w-4 h-4 text-[var(--accent)]" /> Notifications
           </h3>
           <div className="space-y-3">
             {notifications.map((notif, index) => (
@@ -174,7 +174,7 @@ export function SettingsPage() {
         {/* Appearance */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4 text-[#2a7c8c]" /> Appearance
+            <Palette className="w-4 h-4 text-[var(--accent)]" /> Appearance
           </h3>
           <div className="space-y-4">
             <div>
@@ -186,8 +186,7 @@ export function SettingsPage() {
                   style={{
                     background: theme === 'dark' ? 'var(--accent-subtle)' : 'var(--bg-input)',
                     border: theme === 'dark' ? '2px solid var(--accent)' : '1px solid var(--border-card)',
-                    color: theme === 'dark' ? 'var(--accent)' : 'var(--text-muted)',
-                  }}
+                    color: theme === 'dark' ? 'var(--accent)' : 'var(--text-muted)'}}
                 >
                   <Moon size={16} />
                   Dark
@@ -198,8 +197,7 @@ export function SettingsPage() {
                   style={{
                     background: theme === 'light' ? 'var(--accent-subtle)' : 'var(--bg-input)',
                     border: theme === 'light' ? '2px solid var(--accent)' : '1px solid var(--border-card)',
-                    color: theme === 'light' ? 'var(--accent)' : 'var(--text-muted)',
-                  }}
+                    color: theme === 'light' ? 'var(--accent)' : 'var(--text-muted)'}}
                 >
                   <Sun size={16} />
                   Light
@@ -221,14 +219,13 @@ export function SettingsPage() {
                         background: swatchColor,
                         outline: c.key === accentColor ? `2px solid ${swatchColor}` : 'none',
                         outlineOffset: '3px',
-                        transform: c.key === accentColor ? 'scale(1.15)' : 'scale(1)',
-                      }}
+                        transform: c.key === accentColor ? 'scale(1.15)' : 'scale(1)'}}
                     />
                   );
                 })}
               </div>
               <p className="text-[10px] t-muted mt-2">
-                Selected: {accentOptions.find(c => c.key === accentColor)?.label || 'Teal'}
+                Selected: {accentOptions.find(c => c.key === accentColor)?.label || 'Indigo'}
               </p>
             </div>
           </div>
@@ -237,7 +234,7 @@ export function SettingsPage() {
         {/* Platform Info */}
         <Card>
           <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-[#2a7c8c]" /> Platform
+            <Cpu className="w-4 h-4 text-[var(--accent)]" /> Platform
           </h3>
           <div className="space-y-3">
             {[

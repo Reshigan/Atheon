@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { api, getToken, setToken } from "@/lib/api";
 import { Loader2 } from "lucide-react";
-import { Hero3D } from "@/components/common/Hero3D";
 
 export function AppLayout() {
   const { user, setUser, theme, onboardingDismissed } = useAppStore();
@@ -26,7 +25,6 @@ export function AppLayout() {
       setChecking(false);
       return;
     }
-    // Validate token and restore session
     api.auth.me()
       .then((me) => {
         setUser({
@@ -48,10 +46,8 @@ export function AppLayout() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="card-dark rounded-2xl p-8">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--accent)' }} />
       </div>
     );
   }
@@ -59,31 +55,21 @@ export function AppLayout() {
   if (!user) return null;
 
   return (
-    <div className={cn('min-h-screen relative transition-colors duration-300', theme === 'dark' ? 'atheon-dark' : '')}>
-      {/* Global 3D Crystal Background — very subtle in light, slightly visible in dark */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-start justify-center" style={{ paddingTop: '4vh' }}>
-        <div style={{ opacity: theme === 'dark' ? 0.25 : 0.04 }}>
-          <Hero3D size="lg" />
-        </div>
-      </div>
-
+    <div className={cn('min-h-screen transition-colors duration-200', theme === 'dark' ? 'atheon-dark' : '')} style={{ background: 'var(--bg-primary)' }}>
       <Sidebar />
       <Header />
       <main
         className={cn(
-          'pt-16 min-h-screen transition-all duration-300 relative z-10',
-          'pl-0 lg:pl-[60px]'
+          'pt-12 min-h-screen transition-all duration-200',
+          'pl-0 lg:pl-14'
         )}
       >
-        <div className="p-4 sm:p-6">
+        <div className="p-4 sm:p-5 lg:p-6">
           <Outlet />
         </div>
       </main>
 
-      {/* Onboarding modal for new users */}
       {!onboardingDismissed && <OnboardingModal />}
-
-      {/* Floating help button */}
       <HelpButton />
     </div>
   );

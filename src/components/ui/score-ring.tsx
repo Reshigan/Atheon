@@ -10,14 +10,14 @@ interface ScoreRingProps {
 }
 
 const sizeConfig = {
-  sm: { width: 60, stroke: 4, fontSize: 'text-sm', r: 24 },
-  md: { width: 80, stroke: 5, fontSize: 'text-lg', r: 32 },
-  lg: { width: 120, stroke: 6, fontSize: 'text-2xl', r: 48 },
-  xl: { width: 160, stroke: 8, fontSize: 'text-4xl', r: 64 },
+  sm: { width: 56, stroke: 3, fontSize: 'text-xs', r: 22 },
+  md: { width: 72, stroke: 4, fontSize: 'text-sm', r: 28 },
+  lg: { width: 100, stroke: 5, fontSize: 'text-xl', r: 40 },
+  xl: { width: 140, stroke: 6, fontSize: 'text-3xl', r: 56 },
 };
 
 function getScoreColor(score: number): string {
-  if (score >= 80) return '#10b981';
+  if (score >= 80) return 'var(--accent)';
   if (score >= 60) return '#f59e0b';
   if (score >= 40) return '#f97316';
   return '#ef4444';
@@ -40,7 +40,7 @@ export function ScoreRing({ score, maxScore = 100, size = 'lg', label, sublabel,
             cy={center}
             r={config.r}
             fill="none"
-            stroke="var(--divider)"
+            stroke="var(--bg-secondary)"
             strokeWidth={config.stroke}
           />
           <circle
@@ -54,15 +54,14 @@ export function ScoreRing({ score, maxScore = 100, size = 'lg', label, sublabel,
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             className="transition-all duration-1000 ease-out"
-            style={{ filter: `drop-shadow(0 0 6px ${color}40)` }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn('font-bold t-primary', config.fontSize)}>{score}</span>
+          <span className={cn('font-semibold t-primary', config.fontSize)}>{score}</span>
         </div>
       </div>
-            {label && <span className="mt-2 text-sm font-medium t-secondary">{label}</span>}
-            {sublabel && <span className="text-xs t-muted">{sublabel}</span>}
+      {label && <span className="mt-1.5 text-xs font-medium t-secondary">{label}</span>}
+      {sublabel && <span className="text-[10px] t-muted">{sublabel}</span>}
     </div>
   );
 }

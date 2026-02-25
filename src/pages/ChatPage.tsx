@@ -33,8 +33,7 @@ export function ChatPage() {
             id: item.id,
             role: 'assistant',
             content: item.response,
-            citations: item.citations.map((c: string, i: number) => ({ id: `c-${i}`, source: c, confidence: 0.9 })),
-          });
+            citations: item.citations.map((c: string, i: number) => ({ id: `c-${i}`, source: c, confidence: 0.9 }))});
         }
         setMessages(restored);
       })
@@ -63,8 +62,7 @@ export function ChatPage() {
         id: result.id,
         role: 'assistant',
         content: result.response,
-        citations: result.citations.map((c, i) => ({ id: `c-${i}`, source: c, confidence: 0.9 })),
-      };
+        citations: result.citations.map((c, i) => ({ id: `c-${i}`, source: c, confidence: 0.9 }))};
       setMessages(prev => [...prev, assistantMsg]);
     } catch {
       setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: 'Sorry, I could not process that query. Please try again.' }]);

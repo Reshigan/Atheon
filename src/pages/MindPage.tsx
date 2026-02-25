@@ -39,8 +39,7 @@ export function MindPage() {
     name: t.name, model: t.model, context: `${t.maxTokens} tokens`,
     latency: `${t.avgLatency}ms`, cost: t.avgLatency < 100 ? 'Low' : t.avgLatency < 500 ? 'Medium' : 'High',
     usage: stats?.tierBreakdown?.find(b => b.tier === t.id)?.count || 0,
-    description: t.description,
-  }));
+    description: t.description}));
   const totalUsage = modelTiers.reduce((s, t) => s + t.usage, 0) || 1;
 
   const pipeline = models?.trainingPipeline;

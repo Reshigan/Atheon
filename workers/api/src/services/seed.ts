@@ -1,5 +1,3 @@
-import type { Env } from '../types';
-
 export async function seedDatabase(db: D1Database) {
   // Check if already seeded
   const existing = await db.prepare('SELECT COUNT(*) as count FROM tenants').first<{ count: number }>();

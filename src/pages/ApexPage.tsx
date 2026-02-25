@@ -40,8 +40,7 @@ export function ApexPage() {
         title: `Scenario ${scenarios.length + 1}`,
         description: 'New what-if analysis',
         input_query: 'What if revenue drops by 10%?',
-        variables: ['revenue', 'margin', 'headcount'],
-      });
+        variables: ['revenue', 'margin', 'headcount']});
       if (result.id) {
         const s = await api.apex.scenarios();
         setScenarios(s.scenarios);
@@ -71,8 +70,7 @@ export function ApexPage() {
         key, name: key.charAt(0).toUpperCase() + key.slice(1),
         score: val.score, trend: val.trend as 'up' | 'down' | 'stable',
         change: val.delta, weight: 0.2,
-        sparkline: [val.score - 6, val.score - 4, val.score - 3, val.score - 2, val.score - 1, val.score],
-      }))
+        sparkline: [val.score - 6, val.score - 4, val.score - 3, val.score - 2, val.score - 1, val.score]}))
     : [];
 
   const tabs = [
@@ -154,7 +152,7 @@ export function ApexPage() {
                 <h3 className="text-lg font-semibold">Daily Executive Briefing</h3>
                 <Badge variant="info">Today</Badge>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: '#a0a0b0' }}>{briefing?.summary || 'No briefing available'}</p>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{briefing?.summary || 'No briefing available'}</p>
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

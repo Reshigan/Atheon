@@ -182,10 +182,14 @@ export class DashboardRoom {
   }
 
   webSocketClose(ws: WebSocket, _code: number, _reason: string, _wasClean: boolean): void {
+    void _code;
+    void _reason;
+    void _wasClean;
     this.sessions.delete(ws);
   }
 
   webSocketError(ws: WebSocket, _error: unknown): void {
+    void _error;
     this.sessions.delete(ws);
   }
 

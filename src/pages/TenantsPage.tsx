@@ -56,8 +56,7 @@ export function TenantsPage() {
   const [entitlementForm, setEntitlementForm] = useState({
     maxUsers: 10, maxAgents: 5, ssoEnabled: false, apiAccess: false, customBranding: false,
     dataRetentionDays: 90, autonomyTiers: ['read-only'] as string[], llmTiers: ['tier-1'] as string[],
-    features: [] as string[],
-  });
+    features: [] as string[]});
   const [savingEntitlements, setSavingEntitlements] = useState(false);
 
   const handleOnboard = async () => {
@@ -92,8 +91,7 @@ export function TenantsPage() {
         tenant_id: showManageUsers,
         email: addUserForm.email.trim(),
         name: addUserForm.name.trim(),
-        role: addUserForm.role,
-      });
+        role: addUserForm.role});
       const res = await api.iam.users(showManageUsers);
       setTenantUsers(res.users);
       setAddUserForm({ email: '', name: '', role: 'analyst' });
@@ -111,8 +109,7 @@ export function TenantsPage() {
         tenant_id: showDeployCatalyst,
         name: catalystForm.name.trim(),
         domain: catalystForm.domain,
-        autonomy_tier: catalystForm.autonomy_tier,
-      });
+        autonomy_tier: catalystForm.autonomy_tier});
       setShowDeployCatalyst(null);
       setCatalystForm({ name: '', domain: 'finance', autonomy_tier: 'assisted' });
       // Refresh tenants to reflect new cluster
@@ -134,8 +131,7 @@ export function TenantsPage() {
       dataRetentionDays: tenant.entitlements.dataRetentionDays,
       autonomyTiers: [...tenant.entitlements.autonomyTiers],
       llmTiers: [...tenant.entitlements.llmTiers],
-      features: [...tenant.entitlements.features],
-    });
+      features: [...tenant.entitlements.features]});
   };
 
   const handleSaveEntitlements = async () => {
@@ -194,7 +190,7 @@ export function TenantsPage() {
       {/* Onboard Modal */}
       {showOnboard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Onboard New Tenant</h3>
               <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -438,8 +434,7 @@ export function TenantsPage() {
               const colorMap: Record<string, { bg: string; text: string }> = {
                 blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
                 amber: { bg: 'bg-[#2a7c8c]/10', text: 'text-[#2a7c8c]' },
-                sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
-              };
+                sky: { bg: 'bg-sky-50', text: 'text-sky-600' }};
               const colors = colorMap[infra.color] || colorMap.blue;
               return (
                 <Card key={infra.model}>
@@ -466,7 +461,7 @@ export function TenantsPage() {
       {/* Manage Users Modal */}
       {showManageUsers && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Manage Users</h3>
               <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -517,7 +512,7 @@ export function TenantsPage() {
       {/* Deploy Catalyst Modal */}
       {showDeployCatalyst && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Deploy Catalyst Cluster</h3>
               <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -541,7 +536,7 @@ export function TenantsPage() {
       {/* Edit Entitlements Modal */}
       {showEditEntitlements && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Edit Entitlements</h3>
               <button onClick={() => setShowEditEntitlements(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -578,8 +573,7 @@ export function TenantsPage() {
                       ...p,
                       autonomyTiers: p.autonomyTiers.includes(tier)
                         ? p.autonomyTiers.filter(t => t !== tier)
-                        : [...p.autonomyTiers, tier],
-                    }))}
+                        : [...p.autonomyTiers, tier]}))}
                     className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-[#2a7c8c]/10 border-[#2a7c8c] text-[#2a7c8c]' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
                   >
                     {tier}
@@ -598,8 +592,7 @@ export function TenantsPage() {
                       ...p,
                       llmTiers: p.llmTiers.includes(tier)
                         ? p.llmTiers.filter(t => t !== tier)
-                        : [...p.llmTiers, tier],
-                    }))}
+                        : [...p.llmTiers, tier]}))}
                     className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.llmTiers.includes(tier) ? 'bg-[#2a7c8c]/10 border-[#2a7c8c] text-[#2a7c8c]' : 'bg-white/[0.03] border-white/[0.06] text-gray-500'}`}
                   >
                     {tier}

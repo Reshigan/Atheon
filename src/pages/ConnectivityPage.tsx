@@ -43,8 +43,7 @@ export function ConnectivityPage() {
       { name: `${c.adapterSystem.toLowerCase()}.read`, description: `Read data from ${c.adapterName}`, permissions: ['read'] },
       { name: `${c.adapterSystem.toLowerCase()}.write`, description: `Write data to ${c.adapterName}`, permissions: ['read', 'write'] },
       { name: `${c.adapterSystem.toLowerCase()}.sync`, description: `Sync ${c.name}`, permissions: ['read', 'execute'] },
-    ],
-  }));
+    ]}));
 
   if (loading) {
     return (

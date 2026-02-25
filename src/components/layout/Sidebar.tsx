@@ -9,14 +9,12 @@ import {
 } from "@/components/icons/AtheonIcons";
 import type { UserRole } from "@/types";
 
-/** Roles that can see each menu item. If omitted, all roles can see it. */
 type NavItem = {
   path: string;
   label: string;
   icon: typeof IconDashboard;
   section: string;
   sublabel?: string;
-  /** Roles allowed to see this item. undefined = visible to everyone */
   roles?: UserRole[];
 };
 
@@ -40,12 +38,11 @@ const navItems: NavItem[] = [
   { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: ADMIN_ROLES },
 ];
 
-/** Atheon infinity-loop logo mark for sidebar */
+/** Atheon logo mark — geometric A */
 function AtheonSidebarLogo() {
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 4C8.5 4 4 8.5 4 14s4.5 10 10 10 10-4.5 10-10S19.5 4 14 4zm0 17c-3.9 0-7-3.1-7-7s3.1-7 7-7 7 3.1 7 7-3.1 7-7 7z" fill="var(--accent)" opacity="0.8"/>
-      <path d="M14 8c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 9.5c-1.9 0-3.5-1.6-3.5-3.5S12.1 10.5 14 10.5s3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z" fill="var(--accent)" opacity="0.5"/>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L3 20h3.5l1.5-3.5h8L17.5 20H21L12 2zm0 5.5L15.5 15h-7L12 7.5z" fill="var(--accent)" />
     </svg>
   );
 }
@@ -56,10 +53,9 @@ export function Sidebar() {
   const closeMobile = () => setMobileSidebarOpen(false);
   const userRole = user?.role as UserRole | undefined;
 
-  // Filter nav items based on user role
   const visibleItems = navItems.filter((item) => {
-    if (!item.roles) return true; // visible to everyone
-    if (!userRole) return false;  // hide restricted items if no user
+    if (!item.roles) return true;
+    if (!userRole) return false;
     return item.roles.includes(userRole);
   });
 
@@ -68,26 +64,25 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile overlay backdrop */}
       {mobileSidebarOpen && (
         <div
-          className={cn("fixed inset-0 z-40 backdrop-blur-sm lg:hidden", isDark ? "bg-black/50" : "bg-black/20")}
+          className={cn("fixed inset-0 z-40 lg:hidden", isDark ? "bg-black/60" : "bg-black/20")}
           onClick={closeMobile}
         />
       )}
 
-      {/* Desktop sidebar -- icon-only narrow bar with soft blue tint */}
+      {/* Desktop sidebar — icon-only 56px bar */}
       <aside
-        className="fixed left-0 top-0 h-full z-40 w-[60px] hidden lg:flex flex-col items-center py-4 transition-colors duration-300"
-        style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--divider)' }}
+        className="fixed left-0 top-0 h-full z-40 w-14 hidden lg:flex flex-col items-center py-3 transition-colors duration-200"
+        style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-card)' }}
       >
-        {/* Logo */}
-        <div className="mb-6 mt-1">
-          <AtheonSidebarLogo />
+        <div className="mb-5 mt-0.5">
+          <Link to="/dashboard" className="block">
+            <AtheonSidebarLogo />
+          </Link>
         </div>
 
-        {/* Nav icons */}
-        <nav className="flex-1 flex flex-col items-center gap-1 overflow-y-auto scrollbar-thin w-full px-2">
+        <nav className="flex-1 flex flex-col items-center gap-0.5 overflow-y-auto scrollbar-thin w-full px-1.5">
           {visibleItems.map((item) => {
             const isActive = location.pathname === item.path ||
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -97,23 +92,22 @@ export function Sidebar() {
 
             return (
               <div key={item.path} className="w-full flex flex-col items-center">
-                {showDivider && <div className="w-6 h-px my-1.5" style={{ background: 'var(--divider)' }} />}
+                {showDivider && <div className="w-5 h-px my-1" style={{ background: 'var(--border-card)' }} />}
                 <Link
                   to={item.path}
                   title={item.label}
                   className={cn(
-                    'w-10 h-10 flex items-center justify-center rounded-2xl transition-all duration-200 group relative',
+                    'w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150 group relative',
                     isActive
-                      ? 'shadow-sm'
-                      : 'hover:bg-white/[0.5]'
+                      ? ''
+                      : 'hover:bg-[var(--bg-secondary)]'
                   )}
-                  style={isActive ? { background: 'var(--bg-card)', boxShadow: 'var(--shadow-card)' } : undefined}
+                  style={isActive ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
                 >
-                  <Icon size={18} className={cn(isActive ? 'text-[var(--accent)]' : 't-muted group-hover:t-secondary')} />
-                  {/* Tooltip */}
+                  <Icon size={17} className={cn(isActive ? 'text-[var(--accent)]' : 't-muted group-hover:t-secondary')} />
                   <div
-                    className="absolute left-full ml-3 px-3 py-1.5 text-xs font-medium rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg"
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+                    className="absolute left-full ml-2.5 px-2.5 py-1 text-[11px] font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50"
+                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-dropdown)' }}
                   >
                     {item.label}
                   </div>
@@ -123,41 +117,40 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Settings at bottom */}
-        <div className="mt-2 mb-1">
+        <div className="mt-1 mb-0.5">
           <Link
             to="/settings"
             title="Settings"
-            className="w-10 h-10 flex items-center justify-center rounded-2xl t-muted hover:t-secondary transition-all"
+            className={cn(
+              'w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150',
+              location.pathname === '/settings' ? '' : 'hover:bg-[var(--bg-secondary)]'
+            )}
+            style={location.pathname === '/settings' ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
           >
-            <IconSettings size={18} />
+            <IconSettings size={17} className={location.pathname === '/settings' ? 'text-[var(--accent)]' : 't-muted'} />
           </Link>
         </div>
       </aside>
 
-      {/* Mobile sidebar -- full expanded with labels */}
+      {/* Mobile sidebar */}
       <aside className={cn(
-        'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-72 lg:hidden',
+        'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-64 lg:hidden',
         mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
-      )} style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--divider)' }}>
-        <div className="flex items-center justify-between px-4 h-16" style={{ borderBottom: '1px solid var(--divider)' }}>
-          <div className="flex items-center gap-3">
+      )} style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border-card)' }}>
+        <div className="flex items-center justify-between px-4 h-14" style={{ borderBottom: '1px solid var(--border-card)' }}>
+          <div className="flex items-center gap-2.5">
             <AtheonSidebarLogo />
             <div>
-                <h1 className="text-lg font-bold t-primary">Atheon</h1>
-                <p className="text-[10px] t-muted -mt-0.5 tracking-wider uppercase">Enterprise Intelligence</p>
+              <h1 className="text-sm font-semibold t-primary tracking-tight">Atheon</h1>
+              <p className="text-[10px] t-muted tracking-wide uppercase">Enterprise Intelligence</p>
             </div>
           </div>
-          <button
-            onClick={closeMobile}
-            className="p-2 rounded-xl t-muted hover:t-primary transition-all"
-            style={{ background: 'transparent' }}
-          >
-            <X size={20} />
+          <button onClick={closeMobile} className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all">
+            <X size={18} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 px-3">
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-2 px-2">
           {(() => {
             let prevSection = '';
             return visibleItems.map((item) => {
@@ -171,7 +164,7 @@ export function Sidebar() {
               return (
                 <div key={item.path}>
                   {showSectionHeader && (
-                    <span className="block px-3 mt-4 mb-1.5 text-[10px] font-semibold t-muted uppercase tracking-wider first:mt-0">
+                    <span className="block px-2.5 mt-4 mb-1 text-[10px] font-medium t-muted uppercase tracking-widest first:mt-0">
                       {sectionLabels[item.section]}
                     </span>
                   )}
@@ -179,16 +172,16 @@ export function Sidebar() {
                     to={item.path}
                     onClick={closeMobile}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group',
+                      'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-all duration-150 group',
                       isActive
-                        ? 'shadow-sm'
-                        : 't-secondary hover:t-primary'
+                        ? 'font-medium'
+                        : 't-secondary hover:t-primary hover:bg-[var(--bg-secondary)]'
                     )}
-                    style={isActive ? { background: 'var(--bg-primary)', color: 'var(--accent)' } : undefined}
+                    style={isActive ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
                   >
-                    <Icon className={cn('flex-shrink-0', isActive ? 'text-[var(--accent)]' : 't-muted group-hover:t-secondary')} size={18} />
+                    <Icon className={cn('flex-shrink-0', isActive ? 'text-[var(--accent)]' : 't-muted group-hover:t-secondary')} size={16} />
                     <div className="min-w-0">
-                      <span className="font-medium">{item.label}</span>
+                      <span className={isActive ? 'font-medium' : ''}>{item.label}</span>
                       {item.sublabel && (
                         <span className="block text-[10px] t-muted truncate">{item.sublabel}</span>
                       )}

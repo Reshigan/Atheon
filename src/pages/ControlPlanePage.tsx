@@ -15,8 +15,7 @@ const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; la
   deploying: { icon: RefreshCw, color: 'text-[#2a7c8c]', label: 'Deploying' },
   stopped: { icon: Square, color: 'text-gray-400', label: 'Stopped' },
   error: { icon: XCircle, color: 'text-red-400', label: 'Error' },
-  pending: { icon: Activity, color: 'text-[#2a7c8c]', label: 'Pending' },
-};
+  pending: { icon: Activity, color: 'text-[#2a7c8c]', label: 'Pending' }};
 
 interface DeploymentConfig {
   replicas?: number;
@@ -59,8 +58,7 @@ export function ControlPlanePage() {
         name: deployForm.name,
         agent_type: deployForm.agent_type,
         deployment_model: deployForm.deployment_model,
-        version: deployForm.version,
-      };
+        version: deployForm.version};
       if (deployForm.cluster_id) payload.cluster_id = deployForm.cluster_id;
       await api.controlplane.createDeployment(payload);
       await refresh();
@@ -124,8 +122,7 @@ export function ControlPlanePage() {
     try {
       await api.controlplane.updateDeployment(editingDeployment.id, {
         version: editVersion,
-        config: editConfig,
-      });
+        config: editConfig});
       await refresh();
       setShowEditConfig(false);
       setEditingDeployment(null);
@@ -205,7 +202,7 @@ export function ControlPlanePage() {
       {/* Deploy Modal */}
       {showDeploy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Deploy New Agent</h3>
               <button onClick={() => setShowDeploy(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
@@ -232,7 +229,7 @@ export function ControlPlanePage() {
       {/* Edit Config Modal */}
       {showEditConfig && editingDeployment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Edit Deployment Config</h3>
               <button

@@ -32,8 +32,7 @@ export function IAMPage() {
         name: policyForm.name.trim(),
         description: policyForm.description.trim(),
         type: policyForm.type,
-        rules: [],
-      });
+        rules: []});
       const p = await api.iam.policies(tenantId);
       setPolicies(p.policies);
       setPolicyForm({ name: '', description: '', type: 'rbac' });
@@ -90,7 +89,7 @@ export function IAMPage() {
       {/* New Policy Modal */}
       {showNewPolicy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "rgba(18,18,42,0.95)", border: "1px solid rgba(255,255,255,0.1)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary">Create New Policy</h3>
               <button onClick={() => setShowNewPolicy(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>

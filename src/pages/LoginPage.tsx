@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 import { api, setToken, getToken } from "@/lib/api";
-import { Hero3D, AtheonLogoInline } from "@/components/common/Hero3D";
+import { Hero3D } from "@/components/common/Hero3D";
 
 type AuthMode = 'login' | 'register';
 
@@ -23,19 +23,10 @@ export function LoginPage() {
 
   const handleAuthResult = (res: { token: string; user: { id: string; email: string; name: string; role: string; tenantId: string; tenantName?: string; permissions: string[] } }) => {
     setToken(res.token);
-    setUser({
-      id: res.user.id,
-      email: res.user.email,
-      name: res.user.name,
-      role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator',
-      tenantId: res.user.tenantId,
-      tenantName: res.user.tenantName,
-      permissions: res.user.permissions,
-    });
+    setUser({ id: res.user.id, email: res.user.email, name: res.user.name, role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator', tenantId: res.user.tenantId, tenantName: res.user.tenantName, permissions: res.user.permissions });
     navigate('/dashboard');
   };
 
-  // Handle SSO callback
   useEffect(() => {
     const code = searchParams.get('code');
     const state = searchParams.get('state');
@@ -44,20 +35,14 @@ export function LoginPage() {
       setError(null);
       api.auth.ssoCallback(code, state)
         .then((res) => handleAuthResult(res))
-        .catch((err) => {
-          setError(err instanceof Error ? err.message : 'SSO authentication failed');
-          window.history.replaceState({}, '', '/login');
-        })
+        .catch((err) => { setError(err instanceof Error ? err.message : 'SSO authentication failed'); window.history.replaceState({}, '', '/login'); })
         .finally(() => setLoading(false));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // If already authenticated, redirect to dashboard
   useEffect(() => {
-    if (existingUser && getToken()) {
-      navigate('/dashboard', { replace: true });
-    }
+    if (existingUser && getToken()) navigate('/dashboard', { replace: true });
   }, [existingUser, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -74,11 +59,8 @@ export function LoginPage() {
         const res = await api.auth.login(email, password);
         handleAuthResult(res);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Authentication failed'); }
+    finally { setLoading(false); }
   };
 
   const [showForgotPw, setShowForgotPw] = useState(false);
@@ -90,212 +72,83 @@ export function LoginPage() {
     setError(null);
     try {
       const res = await api.auth.ssoAuthorize(provider === 'azure' ? 'azure_ad' : provider);
-      if (res.redirect_url) {
-        window.location.href = res.redirect_url;
-        return;
-      }
+      if (res.redirect_url) { window.location.href = res.redirect_url; return; }
       setError('SSO configuration not available');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'SSO login failed. Ensure SSO is configured in IAM settings.');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'SSO login failed.'); }
+    finally { setLoading(false); }
   };
 
   const handleForgotPassword = async () => {
     if (!forgotEmail.trim()) return;
-    try {
-      await api.auth.forgotPassword(forgotEmail);
-    } catch {
-      // Don't reveal errors
-    }
+    try { await api.auth.forgotPassword(forgotEmail); } catch { /* silent */ }
     setForgotSent(true);
   };
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)' }}>
-      {/* Left - Branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-16 relative overflow-hidden"
-              style={{ background: '#1a2332' }}
-            >
-              {/* Subtle gradient overlays */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#2a7c8c]/20 via-transparent to-[#6366f1]/10" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(42,124,140,0.08),transparent_70%)]" />
-
-        <div className="relative z-10 text-center max-w-md">
-          <div className="mb-8 flex justify-center">
-            <Hero3D size="md" />
-          </div>
-          <div className="flex items-baseline justify-center gap-1 mb-4">
-            <AtheonLogoInline className="text-6xl text-white" />
-            <span className="text-5xl font-bold text-white" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>theon</span>
-          </div>
-          <p className="text-xl text-gray-300 mb-3" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            Enterprise Intelligence Platform
-          </p>
-          <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
-            AI-powered executive intelligence, autonomous process monitoring,
-            and intelligent execution across your entire enterprise.
-          </p>
-
-          {/* Feature highlights */}
-          <div className="mt-10 space-y-3 text-left max-w-xs mx-auto">
-            {[
-              'Real-time executive health scoring',
-              'Autonomous catalyst execution',
-              'Multi-tenant SaaS architecture',
-              'ERP integration layer',
-            ].map((f) => (
-              <div key={f} className="flex items-center gap-3 text-sm text-gray-400">
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#2a7c8c' }} />
-                {f}
-              </div>
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: '#09090b' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(79, 70, 229, 0.08), transparent 70%)' }} />
+        <div className="relative z-10 text-center max-w-sm">
+          <div className="mb-8 flex justify-center"><Hero3D size="md" /></div>
+          <h1 className="text-4xl font-bold text-white tracking-tight mb-3">Atheon</h1>
+          <p className="text-sm text-zinc-400 mb-2">Enterprise Intelligence Platform</p>
+          <p className="text-xs text-zinc-600 leading-relaxed max-w-xs mx-auto">AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
+          <div className="mt-10 space-y-2.5 text-left max-w-xs mx-auto">
+            {['Real-time executive health scoring', 'Autonomous catalyst execution', 'Multi-tenant SaaS architecture', 'Universal ERP integration layer'].map((f) => (
+              <div key={f} className="flex items-center gap-2.5 text-xs text-zinc-500"><div className="w-1 h-1 rounded-full flex-shrink-0 bg-indigo-500" />{f}</div>
             ))}
           </div>
         </div>
       </div>
-
-      {/* Right - Login Form */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 sm:p-12">
+      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-baseline gap-1 mb-10">
-            <AtheonLogoInline className="text-4xl" />
-            <span className="text-3xl font-bold t-primary" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>theon</span>
-          </div>
-
-          <h2 className="text-3xl font-bold t-primary mb-2" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-            {mode === 'register' ? 'Create your account' : 'Welcome back'}
-          </h2>
-          <p className="text-sm t-muted mb-8">
-            {mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}
-          </p>
-
-          {error && (
-            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-500">
-              {error}
-            </div>
-          )}
-
-          {/* SSO Buttons */}
+          <div className="lg:hidden mb-8"><h1 className="text-2xl font-bold t-primary tracking-tight">Atheon</h1><p className="text-xs t-muted">Enterprise Intelligence Platform</p></div>
+          <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
+          <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>
+          {error && <div className="mb-4 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">{error}</div>}
           {mode === 'login' && (
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={() => handleSSO('azure')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm t-secondary transition-all hover:opacity-80"
-                style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
-              >
-                <div className="w-5 h-5 rounded bg-sky-600 flex items-center justify-center text-[10px] font-bold text-white">M</div>
-                Continue with Azure AD
+            <div className="space-y-2 mb-5">
+              <button onClick={() => handleSSO('azure')} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-all hover:bg-[var(--bg-secondary)]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
+                <div className="w-4 h-4 rounded bg-sky-600 flex items-center justify-center text-[8px] font-bold text-white">M</div>Continue with Azure AD
               </button>
             </div>
           )}
-
           {mode === 'login' && (
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px" style={{ background: 'var(--divider)' }} />
-              <span className="text-xs t-muted">or sign in with email</span>
-              <div className="flex-1 h-px" style={{ background: 'var(--divider)' }} />
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px" style={{ background: 'var(--divider)' }} /><span className="text-[10px] t-muted">or sign in with email</span><div className="flex-1 h-px" style={{ background: 'var(--divider)' }} />
             </div>
           )}
-
-          {/* Email/Password Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            {mode === 'register' && (
-              <Input
-                label="Full Name"
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            )}
-            <Input
-              label="Email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Input
-              label="Password"
-              type="password"
-              placeholder={mode === 'register' ? 'Min 8 characters' : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          <form onSubmit={handleLogin} className="space-y-3">
+            {mode === 'register' && <Input label="Full Name" type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />}
+            <Input label="Email" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input label="Password" type="password" placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'} value={password} onChange={(e) => setPassword(e.target.value)} />
             {mode === 'login' && (
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs t-muted">
-                  <input type="checkbox" className="rounded" style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }} />
-                  Remember me
-                </label>
-                <button type="button" onClick={() => setShowForgotPw(true)} className="text-xs hover:opacity-80" style={{ color: 'var(--accent)' }}>Forgot password?</button>
+                <label className="flex items-center gap-1.5 text-[10px] t-muted"><input type="checkbox" className="rounded" style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }} />Remember me</label>
+                <button type="button" onClick={() => setShowForgotPw(true)} className="text-[10px] font-medium" style={{ color: 'var(--accent)' }}>Forgot password?</button>
               </div>
             )}
-            <Button variant="primary" size="lg" className="w-full" type="submit" disabled={loading}>
-              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              {mode === 'register' ? (
-                <><UserPlus size={16} /> Create Account</>
-              ) : (
-                <>Sign In <ArrowRight size={16} /></>
-              )}
+            <Button variant="primary" size="md" className="w-full mt-1" type="submit" disabled={loading}>
+              {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+              {mode === 'register' ? <><UserPlus size={14} /> Create Account</> : <>Sign In <ArrowRight size={14} /></>}
             </Button>
           </form>
-
-          {/* Forgot Password Modal */}
           {showForgotPw && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-              <div
-                className="rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4 max-h-[90vh] overflow-y-auto"
-                style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-subtle)' }}
-              >
-                <h3 className="text-lg font-semibold t-primary" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>Reset Password</h3>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+              <div className="rounded-xl p-5 w-full max-w-sm space-y-3" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-modal)' }}>
+                <h3 className="text-sm font-semibold t-primary">Reset Password</h3>
                 {forgotSent ? (
-                  <div className="space-y-3">
-                    <p className="text-sm t-secondary">If an account exists for <strong className="t-primary">{forgotEmail}</strong>, a password reset link has been sent.</p>
-                    <Button variant="primary" className="w-full" onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }}>Back to Login</Button>
-                  </div>
+                  <div className="space-y-3"><p className="text-xs t-secondary">If an account exists for <strong className="t-primary">{forgotEmail}</strong>, a reset link has been sent.</p><Button variant="primary" size="sm" className="w-full" onClick={() => { setShowForgotPw(false); setForgotSent(false); setForgotEmail(''); }}>Back to Login</Button></div>
                 ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm t-muted">Enter your email address and we'll send you a reset link.</p>
-                    <input
-                      className="w-full px-3 py-2 rounded-xl text-sm"
-                      style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
-                      type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)}
-                    />
-                    <div className="flex gap-3">
-                      <button onClick={() => { setShowForgotPw(false); setForgotEmail(''); }} className="flex-1 px-4 py-2 rounded-xl text-sm t-muted transition-all" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>Cancel</button>
-                      <Button variant="primary" className="flex-1" onClick={handleForgotPassword} disabled={!forgotEmail.trim()}>Send Reset Link</Button>
-                    </div>
-                  </div>
+                  <div className="space-y-3"><p className="text-xs t-muted">Enter your email and we will send you a reset link.</p><input className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }} type="email" placeholder="you@company.com" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} /><div className="flex gap-2"><Button variant="secondary" size="sm" className="flex-1" onClick={() => { setShowForgotPw(false); setForgotEmail(''); }}>Cancel</Button><Button variant="primary" size="sm" className="flex-1" onClick={handleForgotPassword} disabled={!forgotEmail.trim()}>Send Reset Link</Button></div></div>
                 )}
               </div>
             </div>
           )}
-
-          {/* Toggle mode */}
-          <p className="text-xs t-muted text-center mt-8">
-            {mode === 'login' ? (
-              <>Don&apos;t have an account?{' '}
-                <button onClick={() => { setMode('register'); setError(null); }} className="hover:opacity-80 font-medium" style={{ color: 'var(--accent)' }}>
-                  Create one
-                </button>
-              </>
-            ) : (
-              <>Already have an account?{' '}
-                <button onClick={() => { setMode('login'); setError(null); }} className="hover:opacity-80 font-medium" style={{ color: 'var(--accent)' }}>
-                  Sign in
-                </button>
-              </>
-            )}
+          <p className="text-[10px] t-muted text-center mt-6">
+            {mode === 'login' ? <>Don&apos;t have an account? <button onClick={() => { setMode('register'); setError(null); }} className="font-medium" style={{ color: 'var(--accent)' }}>Create one</button></> : <>Already have an account? <button onClick={() => { setMode('login'); setError(null); }} className="font-medium" style={{ color: 'var(--accent)' }}>Sign in</button></>}
           </p>
-
-          {/* Footer */}
-          <p className="text-[10px] t-muted text-center mt-12 leading-relaxed">
-            Protected by enterprise-grade security.<br />
-            &copy; {new Date().getFullYear()} Atheon Intelligence Platform
-          </p>
+          <p className="text-[9px] t-muted text-center mt-8">Protected by enterprise-grade security. &copy; {new Date().getFullYear()} Atheon</p>
         </div>
       </div>
     </div>

@@ -12,8 +12,7 @@ const methodColor: Record<string, string> = {
   POST: 'bg-[#2a7c8c]/10 text-[#2a7c8c] border-[#2a7c8c]/20',
   PUT: 'bg-[#2a7c8c]/10 text-[#2a7c8c] border-[#2a7c8c]/20',
   PATCH: 'bg-[#2a7c8c]/10 text-[#2a7c8c] border-[#2a7c8c]/20',
-  DELETE: 'bg-red-500/10 text-red-400 border-red-500/20',
-};
+  DELETE: 'bg-red-500/10 text-red-400 border-red-500/20'};
 
 const domainColor: Record<string, string> = {
   finance: 'text-emerald-400',
@@ -22,8 +21,7 @@ const domainColor: Record<string, string> = {
   hr: 'text-[#2a7c8c]',
   sales: 'text-pink-600',
   inventory: 'text-[#2a7c8c]',
-  crm: 'text-orange-400',
-};
+  crm: 'text-orange-400'};
 
 export function CanonicalApiPage() {
   const { activeTab, setActiveTab } = useTabState('endpoints');
@@ -129,8 +127,7 @@ export function CanonicalApiPage() {
                               setTryResult(null);
                               const apiUrl = import.meta.env.VITE_API_URL || 'https://atheon-api.reshigan-085.workers.dev';
                               fetch(`${apiUrl}${ep.path}?tenant_id=vantax`, {
-                                headers: { 'Authorization': `Bearer ${localStorage.getItem('atheon_token') || ''}` },
-                              })
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('atheon_token') || ''}` }})
                                 .then(async (res) => {
                                   const data = await res.json().catch(() => ({}));
                                   setTryResult({ endpointId: ep.id, status: res.status, data });

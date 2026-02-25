@@ -117,8 +117,8 @@ export function getWelcomeEmailTemplate(
   loginUrl: string,
   _theme: 'dark' | 'light' = 'dark'
 ): { html: string; text: string } {
+  void _theme;
   // Atheon brand colors — always use the dark theme for email branding consistency
-  const bg = '#0f0f1a';
   const outerBg = '#0a0a14';
   const cardBg = '#16161e';
   const cardBorder = 'rgba(245,197,66,0.12)';
