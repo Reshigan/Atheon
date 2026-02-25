@@ -1,69 +1,73 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <radialGradient id="fc" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="white" stop-opacity="1"/>
-      <stop offset="20%" stop-color="#fde68a" stop-opacity="0.9"/>
-      <stop offset="50%" stop-color="#f5c542" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="transparent"/>
-    </radialGradient>
-    <radialGradient id="fg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#f5c542" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="transparent"/>
-    </radialGradient>
-    <linearGradient id="fr1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f5c542" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#fbbf24" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#f5c542" stop-opacity="0"/>
+    <linearGradient id="fi-body" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
+      <stop offset="35%" stop-color="#f97316" stop-opacity="0.85"/>
+      <stop offset="65%" stop-color="#ef4444" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6"/>
     </linearGradient>
-    <linearGradient id="fr2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f97316" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#fb923c" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+    <linearGradient id="fi-fire" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.95"/>
+      <stop offset="25%" stop-color="#fbbf24" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.8"/>
+      <stop offset="80%" stop-color="#be185d" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.5"/>
     </linearGradient>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="fi-highlight" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#fef3c7" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </linearGradient>
+    <linearGradient id="fi-edge" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#ec4899" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="fi-bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#1a1a2a"/>
       <stop offset="100%" stop-color="#16161e"/>
     </linearGradient>
-    <filter id="gl">
-      <feGaussianBlur stdDeviation="1" result="blur"/>
+    <radialGradient id="fi-glow" cx="42%" cy="38%" r="45%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#fef3c7" stop-opacity="0.5"/>
+      <stop offset="70%" stop-color="#f59e0b" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <filter id="fi-gl">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
+    <pattern id="fi-ribs" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(255,255,255,0.12)" stroke-width="0.4"/>
+    </pattern>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="url(#fi-bg)"/>
   <!-- Ambient glow -->
-  <circle cx="32" cy="32" r="28" fill="url(#fg)" opacity="0.5"/>
-  <!-- Hexagonal frame -->
-  <polygon points="32,6 54,17 54,47 32,58 10,47 10,17" fill="none" stroke="#f5c542" stroke-width="0.4" opacity="0.15"/>
-  <!-- Orbital rings -->
-  <ellipse cx="32" cy="32" rx="26" ry="8" fill="none" stroke="url(#fr1)" stroke-width="0.7" transform="rotate(-18 32 32)"/>
-  <ellipse cx="32" cy="32" rx="22" ry="6.5" fill="none" stroke="url(#fr2)" stroke-width="0.5" transform="rotate(30 32 32)"/>
-  <!-- Neural pathways (cyan) -->
-  <path d="M 32 8 Q 28 20 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <path d="M 32 56 Q 36 44 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <path d="M 8 32 Q 20 28 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <path d="M 56 32 Q 44 36 32 32" stroke="#f5c542" stroke-width="0.6" fill="none" opacity="0.35"/>
-  <!-- Neural pathways (indigo) -->
-  <path d="M 14 14 Q 22 20 32 32" stroke="#f97316" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <path d="M 50 50 Q 42 44 32 32" stroke="#f97316" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <path d="M 50 14 Q 42 20 32 32" stroke="#f87171" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <path d="M 14 50 Q 22 44 32 32" stroke="#f87171" stroke-width="0.5" fill="none" opacity="0.25"/>
-  <!-- Endpoint nodes -->
-  <circle cx="32" cy="8" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="32" cy="56" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="8" cy="32" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="56" cy="32" r="1.8" fill="#fbbf24" opacity="0.7" filter="url(#gl)"/>
-  <circle cx="14" cy="14" r="1.5" fill="#fb923c" opacity="0.6"/>
-  <circle cx="50" cy="50" r="1.5" fill="#fb923c" opacity="0.6"/>
-  <circle cx="50" cy="14" r="1.5" fill="#f87171" opacity="0.6"/>
-  <circle cx="14" cy="50" r="1.5" fill="#f87171" opacity="0.6"/>
-  <!-- Core layers -->
-  <circle cx="32" cy="32" r="8" fill="url(#fc)" opacity="0.7"/>
-  <circle cx="32" cy="32" r="4.5" fill="white" opacity="0.85" filter="url(#gl)"/>
-  <circle cx="32" cy="32" r="2.5" fill="white" opacity="1"/>
-  <ellipse cx="30.5" cy="30.5" rx="1.5" ry="1" fill="white" opacity="0.6" transform="rotate(-30 30.5 30.5)"/>
-  <!-- Particles -->
-  <circle cx="10" cy="22" r="0.8" fill="#fbbf24" opacity="0.5"/>
-  <circle cx="54" cy="20" r="0.7" fill="#fb923c" opacity="0.4"/>
-  <circle cx="12" cy="46" r="0.6" fill="#fbbf24" opacity="0.35"/>
-  <circle cx="52" cy="48" r="0.8" fill="#f87171" opacity="0.4"/>
+  <ellipse cx="34" cy="30" rx="20" ry="24" fill="#f97316" opacity="0.1" filter="url(#fi-gl)"/>
+  <!-- Shadow layer -->
+  <path d="M 32 8 C 45 7, 54 20, 52 33 C 50 46, 44 54, 38 57 C 32 60, 24 58, 19 50 C 14 42, 12 30, 17 19 C 22 8, 28 8, 32 8 Z" fill="url(#fi-body)" opacity="0.5" filter="url(#fi-gl)"/>
+  <!-- Main fluid body -->
+  <path d="M 32 10 C 44 9, 52 21, 50 33 C 48 45, 42 53, 37 56 C 32 59, 24 57, 20 50 C 16 43, 14 31, 18 21 C 22 10, 28 10, 32 10 Z" fill="url(#fi-fire)" opacity="0.85"/>
+  <!-- Ribbed texture -->
+  <path d="M 32 10 C 44 9, 52 21, 50 33 C 48 45, 42 53, 37 56 C 32 59, 24 57, 20 50 C 16 43, 14 31, 18 21 C 22 10, 28 10, 32 10 Z" fill="url(#fi-ribs)" opacity="0.5"/>
+  <!-- Cool purple edge -->
+  <path d="M 28 12 C 21 15, 15 26, 15 36 C 15 46, 20 54, 28 57" stroke="url(#fi-edge)" stroke-width="2.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+  <!-- Warm specular highlight -->
+  <path d="M 36 12 C 44 15, 50 24, 49 34 C 48 42, 44 50, 38 54" stroke="url(#fi-highlight)" stroke-width="1.8" fill="none" opacity="0.65" stroke-linecap="round" filter="url(#fi-gl)"/>
+  <!-- Rib lines -->
+  <path d="M 29 14 C 37 20, 41 30, 39 42" stroke="rgba(255,255,255,0.12)" stroke-width="0.5" fill="none"/>
+  <path d="M 31 13 C 40 22, 44 33, 40 46" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none"/>
+  <path d="M 34 13 C 42 24, 46 36, 42 48" stroke="rgba(255,255,255,0.08)" stroke-width="0.4" fill="none"/>
+  <path d="M 27 16 C 34 18, 38 28, 36 40" stroke="rgba(253,230,138,0.1)" stroke-width="0.4" fill="none"/>
+  <!-- Core bright spot -->
+  <ellipse cx="37" cy="28" rx="7" ry="9" fill="url(#fi-glow)" opacity="0.45" filter="url(#fi-gl)"/>
+  <!-- Specular dots -->
+  <circle cx="38" cy="22" r="2" fill="white" opacity="0.75" filter="url(#fi-gl)"/>
+  <circle cx="42" cy="32" r="1.2" fill="white" opacity="0.4" filter="url(#fi-gl)"/>
+  <!-- Ambient particles -->
+  <circle cx="10" cy="20" r="0.8" fill="#fbbf24" opacity="0.4"/>
+  <circle cx="54" cy="18" r="0.7" fill="#c084fc" opacity="0.35"/>
+  <circle cx="8" cy="46" r="0.6" fill="#f97316" opacity="0.3"/>
+  <circle cx="56" cy="48" r="0.7" fill="#ef4444" opacity="0.35"/>
 </svg>
