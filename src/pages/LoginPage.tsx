@@ -122,7 +122,7 @@ export function LoginPage() {
             <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 4px 16px rgba(78, 124, 246, 0.25)' }}>
               <svg width="18" height="18" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="mobA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#mobA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg>
             </div>
-            <div><h1 className="text-xl font-extrabold tracking-tighter" style={{ color: '#1e293b' }}>Atheon</h1><p className="text-[9px] t-muted font-medium tracking-wide uppercase">Enterprise Intelligence</p></div>
+            <div><h1 className="text-xl font-extrabold tracking-tighter t-primary">Atheon</h1><p className="text-[9px] t-muted font-medium tracking-wide uppercase">Enterprise Intelligence</p></div>
           </div>
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>

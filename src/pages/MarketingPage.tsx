@@ -115,7 +115,7 @@ function AnimatedCounter({ target, suffix = '' }: { target: string; suffix?: str
         const animate = (now: number) => {
           const progress = Math.min((now - start) / dur, 1);
           const eased = 1 - Math.pow(1 - progress, 3);
-          const current = Math.round(num * eased);
+          const current = num % 1 === 0 ? Math.round(num * eased) : parseFloat((num * eased).toFixed(1));
           setDisplay(target.replace(String(num), String(current)));
           if (progress < 1) requestAnimationFrame(animate);
           else setDisplay(target);
