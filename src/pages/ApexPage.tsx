@@ -131,7 +131,7 @@ export function ApexPage() {
  {dim.change > 0 ? '+' : ''}{dim.change}
  </span>
  </div>
- <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'up' ? '#10b981' : dim.trend === 'down' ? '#ef4444' : '#6b7280'} />
+ <Sparkline data={dim.sparkline} width={60} height={20} color={(dim.trend === 'up' || dim.trend === 'improving') ? '#10b981' : (dim.trend === 'down' || dim.trend === 'declining') ? '#ef4444' : '#6b7280'} />
  </div>
  </div>
  ))}
