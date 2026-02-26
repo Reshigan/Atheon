@@ -60,23 +60,9 @@ export function tenantIsolation() {
         }, 403);
       }
 
-      // Industry-based tenant resolution: if ?industry=X is passed,
-      // find a tenant with that industry and override the effective tenantId.
-      // This allows the industry selector to switch the data view.
-      const industryParam = c.req.query('industry');
-      if (industryParam && industryParam !== 'general') {
-        try {
-          const industryTenant = await c.env.DB.prepare(
-            'SELECT id FROM tenants WHERE industry = ? AND status = ? LIMIT 1'
-          ).bind(industryParam, 'active').first<{ id: string }>();
-          if (industryTenant) {
-            authCtx.tenantId = industryTenant.id;
-            c.set('auth', authCtx);
-          }
-        } catch {
-          // If lookup fails, continue with original tenant
-        }
-      }
+      // Industry param is passed through to route handlers for filtering,
+      // but does NOT override the tenant context. Tenant isolation is preserved.
+      // Route handlers can read c.req.query('industry') to filter data within the tenant.
 
       await next();
     } catch {

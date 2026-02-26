@@ -131,7 +131,7 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
     return c.json({ error: 'Forbidden', message: 'Only admins can toggle sub-catalysts' }, 403);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ?').bind(clusterId).first<{ sub_catalysts: string }>();
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string }>;
@@ -139,8 +139,8 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
   if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
 
   subs[idx].enabled = !subs[idx].enabled;
-  await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ?')
-    .bind(JSON.stringify(subs), clusterId).run();
+  await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
+    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
 
   // Audit log
   await c.env.DB.prepare(

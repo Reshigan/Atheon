@@ -267,6 +267,11 @@ for (const [name, handler] of routeModules) {
   app.route(`/api/v1/${name}`, handler);
 }
 
+// HTML escape helper to prevent injection in email bodies
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // POST /api/contact - Contact form submission (sends email to atheon@vantax.co.za)
 app.post('/api/contact', async (c) => {
   try {
@@ -274,6 +279,12 @@ app.post('/api/contact', async (c) => {
     if (!body.name || !body.email || !body.message) {
       return c.json({ error: 'Name, email, and message are required' }, 400);
     }
+
+    // Sanitize all user input for HTML email body
+    const safeName = escapeHtml(body.name);
+    const safeEmail = escapeHtml(body.email);
+    const safeCompany = escapeHtml(body.company || 'Not provided');
+    const safeMessage = escapeHtml(body.message).replace(/\n/g, '<br>');
 
     // Try to send via Microsoft Graph API if configured
     const env = c.env as Env;
@@ -296,8 +307,8 @@ app.post('/api/contact', async (c) => {
             headers: { Authorization: `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               message: {
-                subject: `Atheon Contact: ${body.name} from ${body.company || 'Unknown'}`,
-                body: { contentType: 'HTML', content: `<h3>New Contact Form Submission</h3><p><strong>Name:</strong> ${body.name}</p><p><strong>Email:</strong> ${body.email}</p><p><strong>Company:</strong> ${body.company || 'Not provided'}</p><p><strong>Message:</strong></p><p>${body.message.replace(/\n/g, '<br>')}</p>` },
+                subject: `Atheon Contact: ${safeName} from ${body.company ? escapeHtml(body.company) : 'Unknown'}`,
+                body: { contentType: 'HTML', content: `<h3>New Contact Form Submission</h3><p><strong>Name:</strong> ${safeName}</p><p><strong>Email:</strong> ${safeEmail}</p><p><strong>Company:</strong> ${safeCompany}</p><p><strong>Message:</strong></p><p>${safeMessage}</p>` },
                 toRecipients: [{ emailAddress: { address: 'atheon@vantax.co.za' } }],
                 replyTo: [{ emailAddress: { address: body.email, name: body.name } }],
               },

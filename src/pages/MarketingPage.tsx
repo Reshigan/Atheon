@@ -730,7 +730,7 @@ export function MarketingPage() {
           </div>
           <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">Get in touch</h2>
           <p className="mk-reveal mk-reveal-d2 text-base text-white/40 mb-10 max-w-md mx-auto">Ready to transform your enterprise intelligence? Fill in the form and our team will be in touch within 24 hours.</p>
-          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); const data = Object.fromEntries(fd.entries()); fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(() => { (e.target as HTMLFormElement).reset(); setContactSent(true); setTimeout(() => setContactSent(false), 5000); }).catch(() => {}); }} className="mk-reveal mk-reveal-d3 text-left space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); const data = Object.fromEntries(fd.entries()); fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((res) => { if (!res.ok) throw new Error('Failed'); (e.target as HTMLFormElement).reset(); setContactSent(true); setTimeout(() => setContactSent(false), 5000); }).catch(() => {}); }} className="mk-reveal mk-reveal-d3 text-left space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-white/50 mb-1.5">Full Name *</label>
