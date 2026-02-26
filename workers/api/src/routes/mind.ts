@@ -78,6 +78,23 @@ function getTenantId(c: { get: (key: string) => unknown }): string {
   return auth?.tenantId || 'vantax';
 }
 
+// Helper: check if a sub-catalyst query is restricted by admin toggle
+async function checkSubCatalystRestriction(db: D1Database, tenantId: string, query: string): Promise<{ restricted: boolean; subName?: string }> {
+  try {
+    const clusters = await db.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE tenant_id = ?').bind(tenantId).all();
+    const queryLower = query.toLowerCase();
+    for (const cl of clusters.results) {
+      const subs = JSON.parse((cl as Record<string, unknown>).sub_catalysts as string || '[]') as Array<{ name: string; enabled: boolean }>;
+      for (const sub of subs) {
+        if (!sub.enabled && queryLower.includes(sub.name.toLowerCase())) {
+          return { restricted: true, subName: sub.name };
+        }
+      }
+    }
+  } catch { /* ignore parse errors */ }
+  return { restricted: false };
+}
+
 // POST /api/mind/query
 mind.post('/query', async (c) => {
   const { data: body, errors } = await getValidatedJsonBody<{
@@ -90,6 +107,24 @@ mind.post('/query', async (c) => {
   if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const tenantId = getTenantId(c);
+
+  // Check sub-catalyst restrictions — if query references a disabled sub-catalyst, restrict the response
+  const restriction = await checkSubCatalystRestriction(c.env.DB, tenantId, body.query);
+  if (restriction.restricted) {
+    return c.json({
+      id: crypto.randomUUID(),
+      response: `The sub-catalyst "${restriction.subName}" is currently disabled by your administrator. Please contact your admin to enable this capability before querying it.`,
+      tier: body.tier || 'tier-1',
+      model: 'restricted',
+      tokensIn: 0,
+      tokensOut: 0,
+      latencyMs: 0,
+      citations: [],
+      generatedAt: new Date().toISOString(),
+      restricted: true,
+      restrictedSubCatalyst: restriction.subName,
+    });
+  }
   const tierKey = body.tier || 'tier-1';
   const tierConfig = MODEL_TIERS[tierKey] || MODEL_TIERS['tier-1'];
 

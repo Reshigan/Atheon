@@ -60,6 +60,24 @@ export function tenantIsolation() {
         }, 403);
       }
 
+      // Industry-based tenant resolution: if ?industry=X is passed,
+      // find a tenant with that industry and override the effective tenantId.
+      // This allows the industry selector to switch the data view.
+      const industryParam = c.req.query('industry');
+      if (industryParam && industryParam !== 'general') {
+        try {
+          const industryTenant = await c.env.DB.prepare(
+            'SELECT id FROM tenants WHERE industry = ? AND status = ? LIMIT 1'
+          ).bind(industryParam, 'active').first<{ id: string }>();
+          if (industryTenant) {
+            authCtx.tenantId = industryTenant.id;
+            c.set('auth', authCtx);
+          }
+        } catch {
+          // If lookup fails, continue with original tenant
+        }
+      }
+
       await next();
     } catch {
       return c.json({ error: 'Unauthorized', message: 'Invalid token' }, 401);

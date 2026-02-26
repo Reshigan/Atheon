@@ -68,7 +68,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v5';
+const MIGRATION_VERSION = 'v6';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
@@ -181,6 +181,13 @@ app.use('*', async (c, next) => {
         await c.env.DB.prepare(idx).run();
       }
 
+      // Add sub_catalysts column to catalyst_clusters (v6 migration)
+      try {
+        await c.env.DB.prepare('ALTER TABLE catalyst_clusters ADD COLUMN sub_catalysts TEXT NOT NULL DEFAULT \'[]\'').run();
+      } catch {
+        // Column may already exist — ignore
+      }
+
       // Seed with demo data
       await seedDatabase(c.env.DB);
 
@@ -259,6 +266,62 @@ for (const [name, handler] of routeModules) {
   app.route(`/api/${name}`, handler);
   app.route(`/api/v1/${name}`, handler);
 }
+
+// POST /api/contact - Contact form submission (sends email to atheon@vantax.co.za)
+app.post('/api/contact', async (c) => {
+  try {
+    const body = await c.req.json<{ name: string; email: string; company?: string; message: string }>();
+    if (!body.name || !body.email || !body.message) {
+      return c.json({ error: 'Name, email, and message are required' }, 400);
+    }
+
+    // Try to send via Microsoft Graph API if configured
+    const env = c.env as Env;
+    if (env.MS_GRAPH_CLIENT_ID && env.MS_GRAPH_CLIENT_SECRET && env.MS_GRAPH_TENANT_ID) {
+      try {
+        const tokenRes = await fetch(`https://login.microsoftonline.com/${env.MS_GRAPH_TENANT_ID}/oauth2/v2.0/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: env.MS_GRAPH_CLIENT_ID,
+            client_secret: env.MS_GRAPH_CLIENT_SECRET,
+            scope: 'https://graph.microsoft.com/.default',
+            grant_type: 'client_credentials',
+          }),
+        });
+        const tokenData = await tokenRes.json() as { access_token?: string };
+        if (tokenData.access_token) {
+          await fetch('https://graph.microsoft.com/v1.0/users/atheon@vantax.co.za/sendMail', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: {
+                subject: `Atheon Contact: ${body.name} from ${body.company || 'Unknown'}`,
+                body: { contentType: 'HTML', content: `<h3>New Contact Form Submission</h3><p><strong>Name:</strong> ${body.name}</p><p><strong>Email:</strong> ${body.email}</p><p><strong>Company:</strong> ${body.company || 'Not provided'}</p><p><strong>Message:</strong></p><p>${body.message.replace(/\n/g, '<br>')}</p>` },
+                toRecipients: [{ emailAddress: { address: 'atheon@vantax.co.za' } }],
+                replyTo: [{ emailAddress: { address: body.email, name: body.name } }],
+              },
+            }),
+          });
+        }
+      } catch { /* email send failed, still log the contact */ }
+    }
+
+    // Always log to DB as a fallback
+    try {
+      await c.env.DB.prepare(
+        'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).bind(crypto.randomUUID(), 'system', 'contact_form.submitted', 'marketing', 'contact',
+        JSON.stringify({ name: body.name, email: body.email, company: body.company, message: body.message }),
+        'success'
+      ).run();
+    } catch { /* DB log failed */ }
+
+    return c.json({ success: true, message: 'Your message has been received. We will be in touch shortly.' });
+  } catch {
+    return c.json({ error: 'Failed to process contact form' }, 500);
+  }
+});
 
 // 404 handler
 app.notFound((c) => {

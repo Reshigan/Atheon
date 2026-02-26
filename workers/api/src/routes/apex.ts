@@ -10,6 +10,23 @@ function getTenantId(c: { get: (key: string) => unknown; req: { query: (key: str
   return auth?.tenantId || 'vantax';
 }
 
+// Helper: check if a query/action references a disabled sub-catalyst
+async function checkSubCatalystRestriction(db: D1Database, tenantId: string, context: string): Promise<{ restricted: boolean; subName?: string }> {
+  try {
+    const clusters = await db.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE tenant_id = ?').bind(tenantId).all();
+    const ctxLower = context.toLowerCase();
+    for (const cl of clusters.results) {
+      const subs = JSON.parse((cl as Record<string, unknown>).sub_catalysts as string || '[]') as Array<{ name: string; enabled: boolean }>;
+      for (const sub of subs) {
+        if (!sub.enabled && ctxLower.includes(sub.name.toLowerCase())) {
+          return { restricted: true, subName: sub.name };
+        }
+      }
+    }
+  } catch { /* ignore parse errors */ }
+  return { restricted: false };
+}
+
 // GET /api/apex/health
 apex.get('/health', async (c) => {
   const tenantId = getTenantId(c);
@@ -155,6 +172,12 @@ apex.post('/scenarios', async (c) => {
     { field: 'input_query', type: 'string', required: true, minLength: 1, maxLength: 2000 },
   ]);
   if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+
+  // Check sub-catalyst restrictions — block scenarios referencing disabled sub-catalysts
+  const restriction = await checkSubCatalystRestriction(c.env.DB, tenantId, `${body.title} ${body.description} ${body.input_query}`);
+  if (restriction.restricted) {
+    return c.json({ error: `The sub-catalyst "${restriction.subName}" is currently disabled by your administrator. Enable it before running scenarios that reference it.`, restricted: true, restrictedSubCatalyst: restriction.subName }, 403);
+  }
 
   const id = crypto.randomUUID();
 

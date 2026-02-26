@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { ClusterItem, ActionItem, GovernanceData } from "@/lib/api";
+import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst } from "@/lib/api";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
@@ -68,7 +68,8 @@ export function CatalystsPage() {
  setUpdatingAction(actionId);
  try {
  await api.catalysts.approveAction(actionId);
- const a = await api.catalysts.actions();
+ const ind = industry !== 'general' ? industry : undefined;
+ const a = await api.catalysts.actions(undefined, undefined, ind);
  setActions(a.actions);
  } catch { /* silent */ }
  setUpdatingAction(null);
@@ -79,7 +80,8 @@ export function CatalystsPage() {
  setUpdatingAction(actionId);
  try {
  await api.catalysts.rejectAction(actionId);
- const a = await api.catalysts.actions();
+ const ind = industry !== 'general' ? industry : undefined;
+ const a = await api.catalysts.actions(undefined, undefined, ind);
  setActions(a.actions);
  } catch { /* silent */ }
  setUpdatingAction(null);
@@ -105,7 +107,8 @@ export function CatalystsPage() {
 
  const result = await api.catalysts.manualExecute(formData);
  setExecSuccess(result.message);
- const a = await api.catalysts.actions();
+ const ind = industry !== 'general' ? industry : undefined;
+ const a = await api.catalysts.actions(undefined, undefined, ind);
  setActions(a.actions);
  setTimeout(() => {
  setShowManualExec(false);
@@ -128,7 +131,8 @@ export function CatalystsPage() {
  domain: deployForm.domain,
  autonomy_tier: deployForm.autonomy_tier,
  description: deployForm.description || `${deployForm.name} catalyst cluster`});
- const c = await api.catalysts.clusters();
+ const ind2 = industry !== 'general' ? industry : undefined;
+ const c = await api.catalysts.clusters(undefined, ind2);
  setClusters(c.clusters);
  setShowDeployCatalyst(false);
  setDeployForm({ name: '', domain: 'finance', autonomy_tier: 'assisted', description: '' });
@@ -136,11 +140,15 @@ export function CatalystsPage() {
  setDeploying(false);
  };
 
+ const industry = useAppStore((s) => s.industry);
+ const [togglingSubCatalyst, setTogglingSubCatalyst] = useState<string | null>(null);
+
  useEffect(() => {
  async function load() {
  setLoading(true);
+ const ind = industry !== 'general' ? industry : undefined;
  const [c, a, g] = await Promise.allSettled([
- api.catalysts.clusters(), api.catalysts.actions(), api.catalysts.governance(),
+ api.catalysts.clusters(undefined, ind), api.catalysts.actions(undefined, undefined, ind), api.catalysts.governance(undefined, ind),
  ]);
  if (c.status === 'fulfilled') setClusters(c.value.clusters);
  if (a.status === 'fulfilled') setActions(a.value.actions);
@@ -148,7 +156,20 @@ export function CatalystsPage() {
  setLoading(false);
  }
  load();
- }, []);
+ }, [industry]);
+
+ const handleToggleSubCatalyst = async (clusterId: string, subName: string) => {
+ const key = `${clusterId}:${subName}`;
+ if (togglingSubCatalyst) return;
+ setTogglingSubCatalyst(key);
+ try {
+ await api.catalysts.toggleSubCatalyst(clusterId, subName);
+ const ind = industry !== 'general' ? industry : undefined;
+ const c = await api.catalysts.clusters(undefined, ind);
+ setClusters(c.clusters);
+ } catch { /* silent */ }
+ setTogglingSubCatalyst(null);
+ };
 
  const exceptionCount = actions.filter(a => a.status === 'exception').length;
 
@@ -444,6 +465,44 @@ export function CatalystsPage() {
  </div>
  <Progress value={cluster.trustScore} color={cluster.trustScore >= 90 ? 'emerald' : cluster.trustScore >= 80 ? 'blue' : 'amber'} size="sm" />
  </div>
+
+ {/* Sub-Catalysts */}
+ {cluster.subCatalysts && cluster.subCatalysts.length > 0 && (
+ <div className="mt-4 border-t border-[var(--border-card)] pt-3">
+ <h4 className="text-xs font-semibold t-secondary mb-2 flex items-center gap-1.5">
+ <Zap size={12} className="text-accent" /> Sub-Catalysts
+ </h4>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+ {cluster.subCatalysts.map((sub: SubCatalyst) => (
+ <div key={sub.name} className={`flex items-center justify-between p-2 rounded-lg border ${sub.enabled ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-gray-500/5 border-gray-500/20 opacity-60'}`}>
+ <div className="flex items-center gap-2 min-w-0">
+ <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.enabled ? 'bg-emerald-400' : 'bg-gray-400'}`} />
+ <div className="min-w-0">
+ <span className="text-xs font-medium t-primary block truncate">{sub.name}</span>
+ {sub.description && <span className="text-[10px] t-secondary block truncate">{sub.description}</span>}
+ </div>
+ </div>
+ <div className="flex items-center gap-1.5 flex-shrink-0">
+ {!isAdmin && sub.enabled && (
+ <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); }}>
+ <Play size={10} className="mr-1" /> Run
+ </Button>
+ )}
+ {isAdmin && (
+ <button
+ onClick={(e) => { e.stopPropagation(); handleToggleSubCatalyst(cluster.id, sub.name); }}
+ disabled={togglingSubCatalyst === `${cluster.id}:${sub.name}`}
+ className={`relative w-8 h-4 rounded-full transition-colors ${sub.enabled ? 'bg-emerald-500' : 'bg-gray-400'} ${togglingSubCatalyst === `${cluster.id}:${sub.name}` ? 'opacity-50' : ''}`}
+ >
+ <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${sub.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+ </button>
+ )}
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
  </Card>
  );
  })}

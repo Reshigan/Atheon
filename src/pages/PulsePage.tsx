@@ -6,9 +6,11 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import type { Metric, AnomalyItem, ProcessItem, CorrelationItem } from "@/lib/api";
+import { useAppStore } from "@/stores/appStore";
 import { Activity, AlertTriangle, GitBranch, Link2, ArrowRight, Loader2 } from "lucide-react";
 
 export function PulsePage() {
+ const industry = useAppStore((s) => s.industry);
  const { activeTab, setActiveTab } = useTabState('monitoring');
  const [metrics, setMetrics] = useState<Metric[]>([]);
  const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
@@ -19,8 +21,9 @@ export function PulsePage() {
  useEffect(() => {
  async function load() {
  setLoading(true);
+ const ind = industry !== 'general' ? industry : undefined;
  const [m, a, p, c] = await Promise.allSettled([
- api.pulse.metrics(), api.pulse.anomalies(), api.pulse.processes(), api.pulse.correlations(),
+ api.pulse.metrics(undefined, ind), api.pulse.anomalies(undefined, ind), api.pulse.processes(undefined, ind), api.pulse.correlations(undefined, ind),
  ]);
  if (m.status === 'fulfilled') setMetrics(m.value.metrics);
  if (a.status === 'fulfilled') setAnomalies(a.value.anomalies);
@@ -29,7 +32,7 @@ export function PulsePage() {
  setLoading(false);
  }
  load();
- }, []);
+ }, [industry]);
 
  const tabs = [
  { id: 'monitoring', label: 'Live Monitoring', icon: <Activity size={14} /> },

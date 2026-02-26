@@ -292,6 +292,7 @@ function useMouseSpotlight(ref: React.RefObject<HTMLDivElement | null>) {
 export function MarketingPage() {
   const navigate = useNavigate();
   const mainRef = useRef<HTMLDivElement>(null);
+  const [contactSent, setContactSent] = useState(false);
   useScrollReveal(mainRef);
   useMouseSpotlight(mainRef);
 
@@ -389,8 +390,8 @@ export function MarketingPage() {
           </p>
 
           <div style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.65s", opacity: 0 }} className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-            <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
-              Start Free Trial <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
+              Contact Us <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
             </button>
             <button onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/70 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
               <IconPlay size={16} /> See How It Works
@@ -708,16 +709,55 @@ export function MarketingPage() {
             Join the organisations deploying Catalysts to transform operational data into autonomous action.
           </p>
           <p className="mk-reveal mk-reveal-d3 text-sm text-white/25 leading-relaxed mb-12 max-w-md mx-auto">
-            All six intelligence layers. No credit card required. Deploy in under 15 minutes.
+            All six intelligence layers. Enterprise-grade. Deploy in under 15 minutes.
           </p>
           <div className="mk-reveal mk-reveal-d4 flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
-              Start Free Trial <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
+              Get In Touch <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
             </button>
-            <button className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/60 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
-              Contact Sales <IconChevronRight size={16} />
+            <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/60 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
+              Sign In <IconChevronRight size={16} />
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* ========== CONTACT FORM ========== */}
+      <section id="contact" className="relative py-32 overflow-hidden">
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <div className="mk-reveal w-16 h-16 rounded-2xl mx-auto mb-8 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)", boxShadow: "0 8px 40px rgba(99, 102, 241, 0.3)" }}>
+            <IconChat size={28} />
+          </div>
+          <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">Get in touch</h2>
+          <p className="mk-reveal mk-reveal-d2 text-base text-white/40 mb-10 max-w-md mx-auto">Ready to transform your enterprise intelligence? Fill in the form and our team will be in touch within 24 hours.</p>
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); const data = Object.fromEntries(fd.entries()); fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(() => { (e.target as HTMLFormElement).reset(); setContactSent(true); setTimeout(() => setContactSent(false), 5000); }).catch(() => {}); }} className="mk-reveal mk-reveal-d3 text-left space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/50 mb-1.5">Full Name *</label>
+                <input name="name" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all" placeholder="Your name" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/50 mb-1.5">Email *</label>
+                <input name="email" type="email" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all" placeholder="you@company.com" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/50 mb-1.5">Company</label>
+              <input name="company" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all" placeholder="Your company name" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/50 mb-1.5">Message *</label>
+              <textarea name="message" required rows={4} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all resize-none" placeholder="Tell us about your enterprise intelligence needs..." />
+            </div>
+            <button type="submit" className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
+              Send Message <IconArrowRight size={16} />
+            </button>
+            {contactSent && (
+              <div className="text-center py-3 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-sm text-emerald-400 font-medium">Message sent successfully! We will be in touch shortly.</p>
+              </div>
+            )}
+          </form>
         </div>
       </section>
 

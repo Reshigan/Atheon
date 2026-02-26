@@ -40,6 +40,7 @@ catalysts.get('/clusters', async (c) => {
     successRate: cl.success_rate,
     trustScore: cl.trust_score,
     autonomyTier: cl.autonomy_tier,
+    subCatalysts: safeJsonParse(cl.sub_catalysts as string) || [],
     createdAt: cl.created_at,
   }));
 
@@ -119,6 +120,38 @@ catalysts.post('/clusters', async (c) => {
   ).bind(id, tenantId, body.name, body.domain, body.description || '', body.autonomy_tier || 'read-only').run();
 
   return c.json({ id, name: body.name, domain: body.domain }, 201);
+});
+
+// PUT /api/catalysts/clusters/:id/sub-catalysts/:name/toggle - Toggle sub-catalyst on/off (admin only)
+catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) => {
+  const clusterId = c.req.param('clusterId');
+  const subName = decodeURIComponent(c.req.param('subName'));
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || (auth.role !== 'admin' && auth.role !== 'executive' && auth.role !== 'system_admin')) {
+    return c.json({ error: 'Forbidden', message: 'Only admins can toggle sub-catalysts' }, 403);
+  }
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ?').bind(clusterId).first<{ sub_catalysts: string }>();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string }>;
+  const idx = subs.findIndex((s) => s.name === subName);
+  if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
+
+  subs[idx].enabled = !subs[idx].enabled;
+  await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ?')
+    .bind(JSON.stringify(subs), clusterId).run();
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.toggled', 'catalysts', clusterId,
+    JSON.stringify({ sub_catalyst: subName, enabled: subs[idx].enabled }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({ success: true, subCatalyst: subs[idx] });
 });
 
 // PUT /api/catalysts/clusters/:id

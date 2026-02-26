@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { api } from "@/lib/api";
 import type { GraphStats, GraphEntity } from "@/lib/api";
+import { useAppStore } from "@/stores/appStore";
 import { Database, Network, Search, BookOpen, ArrowRight, Loader2 } from "lucide-react";
 
 const entityColors: Record<string, string> = {
@@ -25,6 +26,7 @@ const industryTemplates = [
 ];
 
 export function MemoryPage() {
+ const industry = useAppStore((s) => s.industry);
  const [stats, setStats] = useState<GraphStats | null>(null);
  const [entities, setEntities] = useState<GraphEntity[]>([]);
  const [loading, setLoading] = useState(true);
@@ -32,15 +34,16 @@ export function MemoryPage() {
  useEffect(() => {
  async function load() {
  setLoading(true);
+ const ind = industry !== 'general' ? industry : undefined;
  const [s, e] = await Promise.allSettled([
- api.memory.stats(), api.memory.entities(),
+ api.memory.stats(undefined, ind), api.memory.entities(undefined, undefined, ind),
  ]);
  if (s.status === 'fulfilled') setStats(s.value);
  if (e.status === 'fulfilled') setEntities(e.value.entities);
  setLoading(false);
  }
  load();
- }, []);
+ }, [industry]);
 
  if (loading) {
  return (

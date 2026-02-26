@@ -2,6 +2,7 @@ import { useState, useEffect, useId } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/ui/sparkline";
 import { api } from "@/lib/api";
+import { useAppStore } from "@/stores/appStore";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth } from "@/lib/api";
 import {
   TrendingUp, TrendingDown, Minus, Loader2, Info, SlidersHorizontal,
@@ -54,6 +55,7 @@ function TintedCard({ children, className = "" }: { children: React.ReactNode; c
 }
 
 export function Dashboard() {
+  const industry = useAppStore((s) => s.industry);
   const [health, setHealth] = useState<HealthScore | null>(null);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [metrics, setMetrics] = useState<Metric[]>([]);
@@ -69,14 +71,15 @@ export function Dashboard() {
     async function load() {
       setLoading(true);
       try {
+        const ind = industry !== 'general' ? industry : undefined;
         const [h, r, m, a, c, act, cp] = await Promise.allSettled([
-          api.apex.health(),
-          api.apex.risks(),
-          api.pulse.metrics(),
-          api.pulse.anomalies(),
-          api.catalysts.clusters(),
-          api.catalysts.actions(),
-          api.controlplane.health(),
+          api.apex.health(undefined, ind),
+          api.apex.risks(undefined, ind),
+          api.pulse.metrics(undefined, ind),
+          api.pulse.anomalies(undefined, ind),
+          api.catalysts.clusters(undefined, ind),
+          api.catalysts.actions(undefined, undefined, ind),
+          api.controlplane.health(undefined, ind),
         ]);
         if (h.status === "fulfilled") setHealth(h.value);
         if (r.status === "fulfilled") setRisks(r.value.risks);
@@ -91,7 +94,7 @@ export function Dashboard() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [industry]);
 
   const overallScore = health?.overall ?? 0;
   const dimEntries = health?.dimensions ? Object.values(health.dimensions) : [];
