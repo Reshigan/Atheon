@@ -6,6 +6,7 @@ import { LayerBadge } from "@/components/ui/layer-badge";
 import { api } from "@/lib/api";
 import type { MindQueryResult } from "@/lib/api";
 import { MessageSquare, Send, Plus, User, Sparkles, Loader2 } from "lucide-react";
+import { IconAttachment } from "@/components/icons/AtheonIcons";
 import type { AtheonLayer } from "@/types";
 
 interface ChatMessage {
@@ -136,7 +137,7 @@ export function ChatPage() {
  <div className="mt-3 space-y-1.5">
  {msg.citations.map((cit) => (
  <div key={cit.id} className="flex items-center gap-2 p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs">
- <span className="text-accent">📎</span>
+ <IconAttachment size={12} className="text-accent" />
  <span className="text-gray-400">{cit.source}</span>
  <Badge variant="info" size="sm">{Math.round(cit.confidence * 100)}%</Badge>
  </div>

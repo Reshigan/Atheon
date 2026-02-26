@@ -9,9 +9,10 @@ import {
  Plug, CheckCircle, XCircle, RefreshCw, Plus, Database,
  Activity, Loader2, X
 } from "lucide-react";
+import { IconERP_SAP, IconERP_Cloud, IconERP_Generic } from "@/components/icons/AtheonIcons";
 
-const systemIcons: Record<string, string> = {
- SAP: '🔷', SF: '☁️', WD: '🟣', ORC: '🔴', D365: '🟢', NS: '🟠', SG: '🟤', API: '🔌'};
+const systemIconMap: Record<string, React.FC<{ size?: number }>> = {
+ SAP: IconERP_SAP, SF: IconERP_Cloud, WD: IconERP_Generic, ORC: IconERP_Generic, D365: IconERP_Generic, NS: IconERP_Generic, SG: IconERP_Generic, API: IconERP_Generic};
 
 export function ERPAdaptersPage() {
  const { activeTab, setActiveTab } = useTabState('adapters');
@@ -152,7 +153,7 @@ export function ERPAdaptersPage() {
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-3">
  <div className=" w-12 h-12 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center text-xl">
- {systemIcons[adapter.system]|| '🔌'}
+ {(() => { const SysIcon = systemIconMap[adapter.system] || IconERP_Generic; return <SysIcon size={20} />; })()}
  </div>
  <div>
  <h3 className="text-base font-semibold t-primary">{adapter.name}</h3>
@@ -203,7 +204,7 @@ export function ERPAdaptersPage() {
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-3">
  <div className=" w-10 h-10 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center text-lg">
- {systemIcons[conn.adapterSystem]|| '🔌'}
+ {(() => { const SysIcon = systemIconMap[conn.adapterSystem] || IconERP_Generic; return <SysIcon size={18} />; })()}
  </div>
  <div>
  <h3 className="text-base font-semibold t-primary">{conn.name}</h3>

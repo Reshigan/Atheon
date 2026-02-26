@@ -9,8 +9,9 @@ import {
  Building2, Cloud, Server, GitBranch, Users, Bot, Shield,
  ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2, X
 } from "lucide-react";
+import { IconCheck, IconCross } from "@/components/icons/AtheonIcons";
 
-const deploymentIcon = (model: string) => {
+const deploymentIcon= (model: string) => {
  if (model === 'saas') return <Cloud size={14} className="text-accent" />;
  if (model === 'on-premise') return <Server size={14} className="text-accent" />;
  return <GitBranch size={14} className="text-accent" />;
@@ -330,13 +331,13 @@ export function TenantsPage() {
  <span className="text-[10px] text-gray-400">Flags</span>
  <div className="flex gap-2 mt-1 text-xs">
  <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-400' : 'text-gray-400'}>
- {tenant.entitlements.ssoEnabled ? '✓' : '✗'} SSO
+ {tenant.entitlements.ssoEnabled ? <IconCheck size={10} /> : <IconCross size={10} />} SSO
  </span>
  <span className={tenant.entitlements.apiAccess ? 'text-emerald-400' : 'text-gray-400'}>
- {tenant.entitlements.apiAccess ? '✓' : '✗'} API
+ {tenant.entitlements.apiAccess ? <IconCheck size={10} /> : <IconCross size={10} />} API
  </span>
  <span className={tenant.entitlements.customBranding ? 'text-emerald-400' : 'text-gray-400'}>
- {tenant.entitlements.customBranding ? '✓' : '✗'} Branding
+ {tenant.entitlements.customBranding ? <IconCheck size={10} /> : <IconCross size={10} />} Branding
  </span>
  </div>
  </div>

@@ -152,9 +152,19 @@ export function Dashboard() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--accent-subtle)" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 22h4l1.5-3.5h9L18 22h4L12 2zm0 5.5l3.2 7.5H8.8L12 7.5z" fill={ACCENT} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative" style={{ background: "linear-gradient(135deg, #0a0e2a, #141a3d)", boxShadow: "0 4px 16px rgba(78, 124, 246, 0.25)" }}>
+            <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+              <defs>
+                <linearGradient id="dashA" x1="16" y1="8" x2="48" y2="56">
+                  <stop offset="0%" stopColor="#7db4ff" />
+                  <stop offset="40%" stopColor="#4e7cf6" />
+                  <stop offset="100%" stopColor="#2952cc" />
+                </linearGradient>
+              </defs>
+              <path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#dashA)" />
+              <path d="M32 10 L15 52 h8.5 l4-9.5 h4.5 L32 22 Z" fill="white" opacity="0.12" />
+              <rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6" />
+              <circle cx="32" cy="9" r="2" fill="#7db4ff" opacity="0.8" />
             </svg>
           </div>
           <div>

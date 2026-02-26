@@ -228,3 +228,172 @@ export function IconSettings({ size = 18, ...props }: IconProps) {
     </svg>
   );
 }
+
+/** ERP SAP — hexagonal enterprise icon */
+export function IconERP_SAP({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" fill={`url(#${gid})`} opacity="0.10" />
+      <path d="M8 10h8M8 12h6M8 14h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.6" />
+    </svg>
+  );
+}
+
+/** ERP Salesforce — cloud icon */
+export function IconERP_Cloud({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <path d="M6 19a4.5 4.5 0 01-.5-8.96A7 7 0 0119.5 12H20a3 3 0 010 6H6z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M6 19a4.5 4.5 0 01-.5-8.96A7 7 0 0119.5 12H20a3 3 0 010 6H6z" fill={`url(#${gid})`} opacity="0.10" />
+    </svg>
+  );
+}
+
+/** ERP Generic — database connector */
+export function IconERP_Generic({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="4" y="4" width="16" height="16" rx="3" fill={`url(#${gid})`} opacity="0.08" />
+      <path d="M8 9h8M8 12h5M8 15h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.6" />
+      <circle cx="17" cy="15" r="1" fill="currentColor" opacity="0.4" />
+    </svg>
+  );
+}
+
+/** Paperclip / attachment icon */
+export function IconAttachment({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Check / tick mark icon */
+export function IconCheck({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Cross / X mark icon */
+export function IconCross({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Shield with lock — security icon */
+export function IconShield({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <path d="M12 2L4 6v5c0 5.25 3.4 10.15 8 11.4 4.6-1.25 8-6.15 8-11.4V6l-8-4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M12 2L4 6v5c0 5.25 3.4 10.15 8 11.4 4.6-1.25 8-6.15 8-11.4V6l-8-4z" fill={`url(#${gid})`} opacity="0.08" />
+      <rect x="10" y="10" width="4" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M10 10V8.5a2 2 0 014 0V10" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+/** Bar chart — analytics icon */
+export function IconBarChart({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <rect x="3" y="12" width="4" height="9" rx="1" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="10" y="7" width="4" height="14" rx="1" stroke="currentColor" strokeWidth="1.5" fill={`url(#${gid})`} fillOpacity="0.10" />
+      <rect x="17" y="3" width="4" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/** Lightning bolt — energy/speed icon */
+export function IconBolt({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <path d="M13 2L4 14h7l-2 8 11-12h-7l2-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 2L4 14h7l-2 8 11-12h-7l2-8z" fill={`url(#${gid})`} opacity="0.10" />
+    </svg>
+  );
+}
+
+/** Network nodes — connectivity/integration icon */
+export function IconNetwork({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <circle cx="12" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="5" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="19" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M12 7.5V12M12 12l-5.5 4M12 12l5.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="1.5" fill={`url(#${gid})`} opacity="0.3" />
+    </svg>
+  );
+}
+
+/** Arrow right icon */
+export function IconArrowRight({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Play icon */
+export function IconPlay({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M6 4l14 8-14 8V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Star icon */
+export function IconStar({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Chevron right */
+export function IconChevronRight({ size = 18, ...props }: IconProps) {
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Check circle — success/verified icon */
+export function IconCheckCircle({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="9" fill={`url(#${gid})`} opacity="0.08" />
+      <path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
