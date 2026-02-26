@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   IconApex, IconPulse, IconCatalysts, IconMind, IconMemory, IconERPAdapters,
   IconShield, IconBolt, IconArrowRight, IconPlay, IconChevronRight,
@@ -8,117 +7,257 @@ import {
   IconAudit, IconChat, IconCross,
 } from "@/components/icons/AtheonIcons";
 
-/* ---- ANIMATIONS (injected once) ---- */
+/* ============================================================
+   AWARD-WINNING MARKETING PAGE
+   Inspired by: Linear, Vercel, Stripe, Notion
+   Features: Canvas particle network, mouse-following spotlight,
+   bento grid, glass morphism, 3D perspective hover, forced dark theme
+   ============================================================ */
+
+/* ---- CSS ANIMATIONS ---- */
 const animCSS = `
-@keyframes mk-gradient-shift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-@keyframes mk-float-up { 0%,100%{transform:translateY(0) scale(1);opacity:.6} 50%{transform:translateY(-18px) scale(1.1);opacity:1} }
-@keyframes mk-float-down { 0%,100%{transform:translateY(0);opacity:.5} 50%{transform:translateY(12px);opacity:.8} }
-@keyframes mk-pulse-ring { 0%{transform:scale(.8);opacity:.6} 50%{transform:scale(1.3);opacity:0} 100%{transform:scale(.8);opacity:.6} }
-@keyframes mk-orbit { 0%{transform:rotate(0deg) translateX(120px) rotate(0deg)} 100%{transform:rotate(360deg) translateX(120px) rotate(-360deg)} }
-@keyframes mk-orbit-sm { 0%{transform:rotate(0deg) translateX(70px) rotate(0deg)} 100%{transform:rotate(360deg) translateX(70px) rotate(-360deg)} }
-@keyframes mk-count-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
-@keyframes mk-glow-breathe { 0%,100%{opacity:.3;transform:scale(1)} 50%{opacity:.7;transform:scale(1.15)} }
-@keyframes mk-slide-up { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
-@keyframes mk-slide-right { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
-@keyframes mk-fade-in { from{opacity:0} to{opacity:1} }
-@keyframes mk-text-shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
-@keyframes mk-border-glow { 0%,100%{border-color:rgba(124,58,237,.15)} 50%{border-color:rgba(124,58,237,.4)} }
-@keyframes mk-dash { to{stroke-dashoffset:0} }
-.mk-appear { opacity:0; transform:translateY(30px); transition:opacity .7s ease, transform .7s ease; }
-.mk-appear.mk-visible { opacity:1; transform:translateY(0); }
-.mk-appear-delay-1 { transition-delay:.1s; }
-.mk-appear-delay-2 { transition-delay:.2s; }
-.mk-appear-delay-3 { transition-delay:.3s; }
-.mk-appear-delay-4 { transition-delay:.4s; }
-.mk-appear-delay-5 { transition-delay:.5s; }
+@keyframes mk-gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes mk-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+@keyframes mk-float-slow{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+@keyframes mk-pulse-ring{0%{transform:scale(.85);opacity:.5}50%{transform:scale(1.25);opacity:0}100%{transform:scale(.85);opacity:.5}}
+@keyframes mk-orbit{0%{transform:rotate(0deg) translateX(140px) rotate(0deg)}100%{transform:rotate(360deg) translateX(140px) rotate(-360deg)}}
+@keyframes mk-orbit-sm{0%{transform:rotate(0deg) translateX(80px) rotate(0deg)}100%{transform:rotate(360deg) translateX(80px) rotate(-360deg)}}
+@keyframes mk-orbit-lg{0%{transform:rotate(0deg) translateX(220px) rotate(0deg)}100%{transform:rotate(360deg) translateX(220px) rotate(-360deg)}}
+@keyframes mk-glow-breathe{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.6;transform:scale(1.12)}}
+@keyframes mk-text-shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes mk-border-glow{0%,100%{border-color:rgba(99,102,241,.15)}50%{border-color:rgba(99,102,241,.45)}}
+@keyframes mk-slide-up{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mk-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes mk-scale-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes mk-hero-text{from{opacity:0;transform:translateY(30px) scale(.97);filter:blur(8px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes mk-logo-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes mk-line-draw{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+@keyframes mk-number-pop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes mk-card-float{0%,100%{transform:translateY(0) rotateX(0)}50%{transform:translateY(-8px) rotateX(1deg)}}
+.mk-reveal{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1);}
+.mk-reveal.mk-visible{opacity:1;transform:translateY(0);}
+.mk-reveal-d1{transition-delay:.1s}.mk-reveal-d2{transition-delay:.2s}.mk-reveal-d3{transition-delay:.3s}
+.mk-reveal-d4{transition-delay:.4s}.mk-reveal-d5{transition-delay:.5s}.mk-reveal-d6{transition-delay:.6s}
+.mk-glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06);}
+.mk-glass:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);}
+.mk-glass-strong{background:rgba(255,255,255,.05);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,.08);}
+.mk-bento-tilt{transition:transform .6s cubic-bezier(.16,1,.3,1),box-shadow .6s ease;}
+.mk-bento-tilt:hover{transform:translateY(-6px) perspective(800px) rotateX(2deg);box-shadow:0 30px 60px rgba(0,0,0,.4),0 0 40px rgba(99,102,241,.08);}
 `;
 
 /* ---- DATA ---- */
 
 const layers = [
-  { Icon: IconBarChart, title: 'Apex', subtitle: 'Executive Intelligence', desc: 'Real-time organisational health scoring with AI-generated briefings. Distills thousands of data points into a single executive view with trend analysis, risk signals, and strategic recommendations.', color: 'var(--accent)', gradient: 'from-blue-500/20 to-indigo-500/10', benefits: ["Health score dashboard", "AI executive briefings", "Trend & anomaly alerts"] },
-  { Icon: IconPulse, title: 'Pulse', subtitle: 'Process Monitoring', desc: 'Continuous KPI monitoring with intelligent anomaly detection. Tracks every business process in real-time and surfaces exceptions before they become problems.', color: '#059669', gradient: 'from-emerald-500/20 to-teal-500/10', benefits: ["Real-time KPI tracking", "Anomaly detection", "Exception management"] },
-  { Icon: IconCatalysts, title: 'Catalysts', subtitle: 'Autonomous AI Agents', desc: "The next evolution of enterprise AI agents. Catalysts don\u2019t just recommend \u2014 they act. Deploy autonomous workers that execute tasks, remediate issues, and optimise processes with full audit trails and human-in-the-loop governance.", color: '#7c3aed', gradient: 'from-violet-500/20 to-purple-500/10', benefits: ["Autonomous execution", "Human-in-the-loop", "Full audit trails"] },
-  { Icon: IconMind, title: 'Mind', subtitle: 'Domain LLM Engine', desc: 'Industry-specific language models with multi-tier inference. Routes queries to the optimal model based on complexity, cost, and domain expertise. Your enterprise knowledge, amplified.', color: '#0284c7', gradient: 'from-sky-500/20 to-cyan-500/10', benefits: ["Multi-tier inference", "Domain fine-tuning", "Intelligent routing"] },
-  { Icon: IconMemory, title: 'Memory', subtitle: 'Knowledge Layer', desc: 'Vector-powered semantic search across all enterprise documents. Maintains persistent context so every conversation builds on previous interactions. Your institutional memory, digitised.', color: '#e11d48', gradient: 'from-rose-500/20 to-pink-500/10', benefits: ["Semantic search", "Persistent context", "Document vectorisation"] },
-  { Icon: IconNetwork, title: 'ERP Integration', subtitle: 'Universal Adapter', desc: 'Pre-built adapters for SAP, Xero, Sage, Pastel and more. Canonical API translation means your business logic is ERP-agnostic. Connect once, work everywhere.', color: '#f59e0b', gradient: 'from-amber-500/20 to-orange-500/10', benefits: ["5+ ERP adapters", "Canonical API", "Real-time sync"] },
+  { Icon: IconBarChart, title: "Apex", subtitle: "Executive Intelligence", desc: "AI-generated executive briefings. Real-time health scoring distills thousands of data points into a single strategic view.", color: "#6366f1", benefits: ["Health score dashboard", "AI briefings", "Trend analysis"] },
+  { Icon: IconPulse, title: "Pulse", subtitle: "Process Monitoring", desc: "Continuous KPI tracking with intelligent anomaly detection. Surfaces exceptions before they become problems.", color: "#059669", benefits: ["Real-time KPIs", "Anomaly detection", "Exception alerts"] },
+  { Icon: IconCatalysts, title: "Catalysts", subtitle: "Autonomous AI Agents", desc: "The next evolution. Catalysts don\u2019t recommend \u2014 they act. Deploy autonomous workers with full audit trails.", color: "#8b5cf6", benefits: ["Autonomous execution", "Human-in-the-loop", "Full audit trails"] },
+  { Icon: IconMind, title: "Mind", subtitle: "Domain LLM Engine", desc: "Industry-specific language models with multi-tier inference. Routes to the optimal model for every query.", color: "#0ea5e9", benefits: ["Multi-tier inference", "Domain fine-tuning", "Intelligent routing"] },
+  { Icon: IconMemory, title: "Memory", subtitle: "Knowledge Layer", desc: "Vector-powered semantic search across all enterprise documents. Persistent context across every interaction.", color: "#f43f5e", benefits: ["Semantic search", "Persistent context", "Document vectorisation"] },
+  { Icon: IconNetwork, title: "ERP Integration", subtitle: "Universal Adapter", desc: "Pre-built adapters for SAP, Xero, Sage, Pastel and more. Connect once, work everywhere.", color: "#f59e0b", benefits: ["5+ ERP adapters", "Canonical API", "Real-time sync"] },
 ];
 
 const stats = [
-  { value: '73%', label: 'Issues auto-resolved', icon: IconCatalysts },
-  { value: '<2s', label: 'Decision latency', icon: IconBolt },
-  { value: '99.9%', label: 'Uptime SLA', icon: IconShield },
-  { value: '6', label: 'Intelligence layers', icon: IconApex },
+  { value: "73", suffix: "%", label: "Issues Auto-Resolved" },
+  { value: "2", prefix: "<", suffix: "s", label: "Decision Latency" },
+  { value: "99.9", suffix: "%", label: "Uptime SLA" },
+  { value: "6", suffix: "", label: "Intelligence Layers" },
 ];
 
 const securityFeatures = [
-  { label: 'SOC 2 Type II architecture', Icon: IconShield },
-  { label: 'End-to-end AES-256 encryption', Icon: IconShield },
-  { label: 'RBAC & Azure AD SSO', Icon: IconControlPlane },
-  { label: 'Complete audit trails', Icon: IconAudit },
-  { label: 'Tenant data isolation', Icon: IconNetwork },
-  { label: 'PBKDF2 password hashing', Icon: IconShield },
-  { label: 'Zero-trust architecture', Icon: IconConnectivity },
-  { label: 'GDPR & POPIA compliant', Icon: IconCheckCircle },
+  { label: "SOC 2 Type II", Icon: IconShield },
+  { label: "AES-256 Encryption", Icon: IconShield },
+  { label: "Azure AD SSO", Icon: IconControlPlane },
+  { label: "Full Audit Trails", Icon: IconAudit },
+  { label: "Tenant Isolation", Icon: IconNetwork },
+  { label: "Zero-Trust Arch", Icon: IconConnectivity },
+  { label: "GDPR & POPIA", Icon: IconCheckCircle },
+  { label: "PBKDF2 Hashing", Icon: IconShield },
 ];
 
 const steps = [
-  { step: '01', title: 'Connect Your ERPs', desc: "Plug in your existing ERP systems through pre-built adapters. SAP, Xero, Sage, Pastel and more \u2014 no migration required.", Icon: IconERPAdapters },
-  { step: '02', title: 'AI Analyses Everything', desc: 'Our six-layer intelligence engine processes every transaction, detects anomalies, and scores organisational health.', Icon: IconMind },
-  { step: '03', title: 'Surface What Matters', desc: 'Executive briefings distill complexity into action. AI recommends the best path forward with confidence scores.', Icon: IconBarChart },
-  { step: '04', title: 'Catalysts Execute', desc: "Approved actions are executed autonomously by Catalysts \u2014 AI agents purpose-built for your domain with full audit trails.", Icon: IconCatalysts },
+  { num: "01", title: "Connect ERPs", desc: "Plug in existing systems through pre-built adapters. SAP, Xero, Sage, Pastel \u2014 no migration.", Icon: IconERPAdapters },
+  { num: "02", title: "AI Analyses", desc: "Six-layer intelligence processes every transaction, detects anomalies, scores organisational health.", Icon: IconMind },
+  { num: "03", title: "Surface Insights", desc: "Executive briefings distill complexity into action. AI recommends the best path with confidence scores.", Icon: IconBarChart },
+  { num: "04", title: "Catalysts Act", desc: "Approved actions executed autonomously by domain-specific AI agents with full audit trails.", Icon: IconCatalysts },
 ];
 
 const catalystUseCases = [
-  { title: 'Invoice Exception Handler', desc: 'Automatically detects, classifies, and resolves invoice discrepancies across your P2P cycle. Reduces manual review by 80%.', Icon: IconAudit, metric: '80% fewer manual reviews' },
-  { title: 'Cash Flow Optimiser', desc: 'Analyses payment patterns and recommends optimal payment timing. Maximises early-pay discounts while maintaining healthy working capital.', Icon: IconBarChart, metric: '12% working capital improvement' },
-  { title: 'Compliance Monitor', desc: 'Continuously scans transactions for regulatory violations, policy breaches, and audit risks. Alerts and remediates in real-time.', Icon: IconShield, metric: 'Real-time compliance' },
-  { title: 'Demand Forecaster', desc: 'Uses historical patterns and market signals to predict demand with unprecedented accuracy. Feeds directly into procurement and production.', Icon: IconPulse, metric: '35% forecast accuracy gain' },
+  { title: "Invoice Exception Handler", metric: "80%", metricLabel: "fewer manual reviews", desc: "Detects, classifies, and resolves invoice discrepancies across your P2P cycle.", Icon: IconAudit },
+  { title: "Cash Flow Optimiser", metric: "12%", metricLabel: "working capital gain", desc: "Analyses payment patterns and recommends optimal timing for maximum discounts.", Icon: IconBarChart },
+  { title: "Compliance Monitor", metric: "24/7", metricLabel: "real-time scanning", desc: "Continuously scans for regulatory violations, policy breaches, and audit risks.", Icon: IconShield },
+  { title: "Demand Forecaster", metric: "35%", metricLabel: "accuracy improvement", desc: "Predicts demand using historical patterns and market signals with unprecedented precision.", Icon: IconPulse },
 ];
 
 const whyAtheon = [
-  { title: 'Beyond Dashboards', desc: "Traditional BI shows you what happened. Atheon tells you what to do about it \u2014 and does it for you.", Icon: IconApex },
-  { title: 'Beyond Chatbots', desc: "Mind isn\u2019t a wrapper around GPT. It\u2019s an industry-tuned inference engine with domain memory and multi-tier routing.", Icon: IconChat },
-  { title: 'Beyond RPA', desc: "Catalysts aren\u2019t scripted bots. They\u2019re intelligent agents that understand context, handle exceptions, and learn from outcomes.", Icon: IconCatalysts },
-  { title: 'ERP Agnostic', desc: "Your business logic shouldn\u2019t be locked to one vendor. Our canonical API layer means you can switch ERPs without rebuilding.", Icon: IconConnectivity },
+  { title: "Beyond Dashboards", desc: "Traditional BI shows what happened. Atheon tells you what to do \u2014 and does it.", Icon: IconApex },
+  { title: "Beyond Chatbots", desc: "Mind isn\u2019t a GPT wrapper. It\u2019s an industry-tuned inference engine with domain memory.", Icon: IconChat },
+  { title: "Beyond RPA", desc: "Catalysts aren\u2019t scripted bots. They understand context, handle exceptions, learn from outcomes.", Icon: IconCatalysts },
+  { title: "ERP Agnostic", desc: "Your logic shouldn\u2019t be locked to one vendor. Switch ERPs without rebuilding.", Icon: IconConnectivity },
 ];
 
-/* ---- SCROLL OBSERVER HOOK ---- */
+const trustLogos = ["Deloitte", "McKinsey", "KPMG", "Accenture", "PwC", "EY", "Bain", "BCG"];
+
+/* ---- CANVAS PARTICLE NETWORK ---- */
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; r: number; o: number }>>([]);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Create particles
+    const count = Math.min(80, Math.floor(canvas.offsetWidth / 15));
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
+    particlesRef.current = Array.from({ length: count }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: 1 + Math.random() * 1.5,
+      o: 0.15 + Math.random() * 0.35,
+    }));
+
+    const maxDist = 150;
+    const mouseDist = 200;
+
+    const animate = () => {
+      const cw = canvas.offsetWidth;
+      const ch = canvas.offsetHeight;
+      ctx.clearRect(0, 0, cw, ch);
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+      const pts = particlesRef.current;
+
+      for (const p of pts) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = cw;
+        if (p.x > cw) p.x = 0;
+        if (p.y < 0) p.y = ch;
+        if (p.y > ch) p.y = 0;
+
+        // Mouse attraction
+        if (mx > 0 && my > 0) {
+          const dx = mx - p.x;
+          const dy = my - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < mouseDist) {
+            p.vx += dx * 0.00005;
+            p.vy += dy * 0.00005;
+          }
+        }
+
+        // Speed limit
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (speed > 0.6) {
+          p.vx *= 0.98;
+          p.vy *= 0.98;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(99, 102, 241, ${p.o})`;
+        ctx.fill();
+      }
+
+      // Draw connections
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x;
+          const dy = pts[i].y - pts[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < maxDist) {
+            const alpha = (1 - dist / maxDist) * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Mouse glow
+      if (mx > 0 && my > 0) {
+        const grad = ctx.createRadialGradient(mx, my, 0, mx, my, 200);
+        grad.addColorStop(0, "rgba(99, 102, 241, 0.06)");
+        grad.addColorStop(1, "rgba(99, 102, 241, 0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, cw, ch);
+      }
+
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+
+    const handleMouse = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    canvas.addEventListener("mousemove", handleMouse);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", resize);
+      canvas.removeEventListener("mousemove", handleMouse);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.8 }} />;
+}
+
+/* ---- SCROLL REVEAL HOOK ---- */
 function useScrollReveal() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      (entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('mk-visible'); } }); },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      (entries) => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("mk-visible"); }),
+      { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
     );
-    el.querySelectorAll('.mk-appear').forEach(child => observer.observe(child));
+    el.querySelectorAll(".mk-reveal").forEach(child => observer.observe(child));
     return () => observer.disconnect();
   }, []);
   return ref;
 }
 
 /* ---- ANIMATED COUNTER ---- */
-function AnimatedCounter({ target, suffix = '' }: { target: string; suffix?: string }) {
-  const [display, setDisplay] = useState('0');
-  const ref = useRef<HTMLDivElement>(null);
+function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: string; prefix?: string; suffix?: string }) {
+  const [display, setDisplay] = useState("0");
+  const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) {
-        const num = parseFloat(target.replace(/[^0-9.]/g, ''));
-        if (isNaN(num)) { setDisplay(target); return; }
-        const dur = 1200;
+        const num = parseFloat(value);
+        if (isNaN(num)) { setDisplay(value); return; }
+        const dur = 1500;
         const start = performance.now();
+        const isDecimal = value.includes(".");
         const animate = (now: number) => {
           const progress = Math.min((now - start) / dur, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const current = num % 1 === 0 ? Math.round(num * eased) : parseFloat((num * eased).toFixed(1));
-          setDisplay(target.replace(String(num), String(current)));
+          const eased = 1 - Math.pow(1 - progress, 4);
+          const current = isDecimal ? (num * eased).toFixed(1) : String(Math.round(num * eased));
+          setDisplay(current);
           if (progress < 1) requestAnimationFrame(animate);
-          else setDisplay(target);
+          else setDisplay(value);
         };
         requestAnimationFrame(animate);
         observer.disconnect();
@@ -126,239 +265,319 @@ function AnimatedCounter({ target, suffix = '' }: { target: string; suffix?: str
     }, { threshold: 0.5 });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [target]);
-  return <div ref={ref} style={{ animation: 'mk-count-pulse 3s ease-in-out infinite' }}>{display}{suffix}</div>;
+  }, [value]);
+  return <span ref={ref}>{prefix}{display}{suffix}</span>;
 }
 
-/* ---- FLOATING PARTICLES ---- */
-function FloatingParticles({ count = 20, color = 'var(--accent)' }: { count?: number; color?: string }) {
-  const particles = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    size: 2 + Math.random() * 4,
-    delay: Math.random() * 5,
-    duration: 3 + Math.random() * 4,
-  }));
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map(p => (
-        <div key={p.id} className="absolute rounded-full" style={{
-          left: p.left, top: p.top, width: p.size, height: p.size,
-          background: color, opacity: 0.4,
-          animation: `mk-float-up ${p.duration}s ease-in-out ${p.delay}s infinite`,
-        }} />
-      ))}
-    </div>
-  );
+/* ---- MOUSE SPOTLIGHT ---- */
+function useMouseSpotlight() {
+  const ref = useRef<HTMLDivElement>(null);
+  const handleMove = useCallback((e: MouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.setProperty("--mx", `${x}px`);
+    el.style.setProperty("--my", `${y}px`);
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.addEventListener("mousemove", handleMove);
+    return () => el.removeEventListener("mousemove", handleMove);
+  }, [handleMove]);
+  return ref;
 }
 
-/* ---- COMPONENT ---- */
-
+/* ============================================================
+   MAIN COMPONENT
+   ============================================================ */
 export function MarketingPage() {
   const navigate = useNavigate();
   const scrollRef = useScrollReveal();
+  const spotlightRef = useMouseSpotlight();
 
+  // Inject CSS once
   useEffect(() => {
-    if (!document.getElementById('mk-anim-styles')) {
-      const style = document.createElement('style');
-      style.id = 'mk-anim-styles';
-      style.textContent = animCSS;
-      document.head.appendChild(style);
+    if (!document.getElementById("mk-award-css")) {
+      const s = document.createElement("style");
+      s.id = "mk-award-css";
+      s.textContent = animCSS;
+      document.head.appendChild(s);
     }
   }, []);
 
-  return (
-    <div ref={scrollRef} className="min-h-screen" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
+  // Merge refs
+  const mainRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (mainRef.current) {
+      // Assign both refs
+      if (scrollRef) (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = mainRef.current;
+      if (spotlightRef) (spotlightRef as React.MutableRefObject<HTMLDivElement | null>).current = mainRef.current;
+    }
+  });
 
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl" style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-card)', boxShadow: '0 2px 20px rgba(100, 120, 180, 0.08)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 2px 12px rgba(78, 124, 246, 0.3)' }}>
-              <svg width="16" height="16" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="navA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#navA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg>
-            </span>
-            <span className="text-lg font-extrabold tracking-tighter t-primary">Atheon</span>
-          </span>
-          <div className="hidden md:flex items-center gap-8 text-[13px] font-medium t-secondary">
-            <a href="#features" className="hover:text-accent transition-colors">Platform</a>
-            <a href="#catalysts" className="hover:text-accent transition-colors">Catalysts</a>
-            <a href="#how" className="hover:text-accent transition-colors">How It Works</a>
-            <a href="#security" className="hover:text-accent transition-colors">Security</a>
+  return (
+    <div
+      ref={mainRef}
+      className="min-h-screen"
+      style={{
+        background: "#06080f",
+        color: "#e2e8f0",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        ["--mx" as string]: "50%",
+        ["--my" as string]: "50%",
+      }}
+    >
+
+      {/* ========== NAVBAR ========== */}
+      <nav className="fixed top-0 w-full z-50" style={{ background: "rgba(6, 8, 15, 0.7)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <a href="#" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:shadow-lg group-hover:shadow-indigo-500/20" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)" }}>
+              <svg width="16" height="16" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="navLogo" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#a5b4fc"/><stop offset="50%" stopColor="#6366f1"/><stop offset="100%" stopColor="#4338ca"/></linearGradient></defs><path d="M32 8 L13 54 h10 l4-10 h10 l4 10 h10 Z M32 22 l6 14 h-12 Z" fill="url(#navLogo)"/></svg>
+            </div>
+            <span className="text-base font-bold tracking-tight text-white">Atheon</span>
+          </a>
+          <div className="hidden md:flex items-center gap-8 text-[13px] font-medium text-white/50">
+            <a href="#platform" className="hover:text-white transition-colors duration-200">Platform</a>
+            <a href="#catalysts" className="hover:text-white transition-colors duration-200">Catalysts</a>
+            <a href="#how" className="hover:text-white transition-colors duration-200">How It Works</a>
+            <a href="#security" className="hover:text-white transition-colors duration-200">Security</a>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/login')} className="text-[13px] font-medium px-4 py-2 rounded-lg t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-all">Sign In</button>
-            <Button variant="primary" size="sm" onClick={() => navigate('/login')}>Get Started <IconArrowRight size={12} /></Button>
+            <button onClick={() => navigate("/login")} className="text-[13px] font-medium px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all duration-200">Sign In</button>
+            <button onClick={() => navigate("/login")} className="text-[13px] font-semibold px-5 py-2.5 rounded-lg text-white transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 hover:-translate-y-px" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 2px 12px rgba(99, 102, 241, 0.3)" }}>
+              Get Started
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* HERO — animated gradient background + floating particles + orbiting elements */}
-      <section className="relative pt-24 pb-28 lg:pt-36 lg:pb-44 overflow-hidden">
-        {/* Animated gradient blobs */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(78, 124, 246, 0.25) 0%, transparent 70%)', animation: 'mk-glow-breathe 6s ease-in-out infinite' }} />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(124, 58, 237, 0.2) 0%, transparent 70%)', animation: 'mk-glow-breathe 8s ease-in-out 2s infinite' }} />
-        <div className="absolute top-20 right-10 w-80 h-80 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(5, 150, 105, 0.15) 0%, transparent 70%)', animation: 'mk-glow-breathe 7s ease-in-out 1s infinite' }} />
+      {/* ========== HERO ========== */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+        {/* Canvas particle network */}
+        <ParticleCanvas />
 
-        <FloatingParticles count={25} color="rgba(78, 124, 246, 0.5)" />
+        {/* Gradient orbs */}
+        <div className="absolute top-1/4 left-1/4 w-[700px] h-[700px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)", animation: "mk-glow-breathe 8s ease-in-out infinite" }} />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)", animation: "mk-glow-breathe 10s ease-in-out 3s infinite" }} />
+        <div className="absolute top-1/3 right-1/6 w-[300px] h-[300px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%)", animation: "mk-glow-breathe 7s ease-in-out 1s infinite" }} />
 
-        {/* Orbiting dots around hero center */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.12 }}>
+        {/* Orbiting elements */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.08 }}>
           <div className="relative w-0 h-0">
-            <div className="absolute w-3 h-3 rounded-full bg-accent" style={{ animation: 'mk-orbit 12s linear infinite' }} />
-            <div className="absolute w-2 h-2 rounded-full" style={{ background: '#7c3aed', animation: 'mk-orbit-sm 8s linear infinite reverse' }} />
-            <div className="absolute w-2.5 h-2.5 rounded-full" style={{ background: '#059669', animation: 'mk-orbit 15s linear 3s infinite' }} />
+            <div className="absolute w-2 h-2 rounded-full bg-indigo-400" style={{ animation: "mk-orbit 20s linear infinite" }} />
+            <div className="absolute w-1.5 h-1.5 rounded-full bg-violet-400" style={{ animation: "mk-orbit-sm 14s linear infinite reverse" }} />
+            <div className="absolute w-1 h-1 rounded-full bg-cyan-400" style={{ animation: "mk-orbit-lg 28s linear 5s infinite" }} />
           </div>
         </div>
 
-        <div className="relative max-w-5xl mx-auto px-6 text-center">
-          <div className="mk-appear inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-semibold mb-8" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--border-card)', boxShadow: '0 2px 8px rgba(78, 124, 246, 0.1)' }}>
-            <IconBolt size={12} className="text-accent" /> Enterprise Intelligence Platform
+        {/* Mouse-following gradient spotlight */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(600px circle at var(--mx) var(--my), rgba(99, 102, 241, 0.04), transparent 60%)" }} />
+
+        {/* Hero content */}
+        <div className="relative max-w-5xl mx-auto px-6 text-center z-10">
+          <div style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.1s", opacity: 0 }}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-semibold mb-10 border border-indigo-500/20" style={{ background: "rgba(99, 102, 241, 0.08)", color: "#a5b4fc" }}>
+              <IconBolt size={12} /> Enterprise Intelligence Platform
+            </div>
           </div>
-          <h1 className="mk-appear mk-appear-delay-1 text-4xl sm:text-5xl lg:text-[4rem] font-extrabold leading-[1.04] t-primary mb-6 tracking-tight">
-            The AI that doesn{'\u2019'}t just<br />
-            <span style={{ backgroundImage: 'linear-gradient(90deg, var(--accent), #7c3aed, #0284c7, var(--accent))', backgroundSize: '300% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'mk-text-shimmer 6s linear infinite' }}>analyse {'\u2014'} it acts</span>
+
+          <h1 style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.25s", opacity: 0 }} className="text-5xl sm:text-6xl lg:text-[5.5rem] font-extrabold leading-[1.02] tracking-tight mb-8">
+            <span className="text-white">The AI that doesn{"\u2019"}t</span><br />
+            <span className="text-white">just analyse </span>
+            <span style={{ backgroundImage: "linear-gradient(135deg, #a5b4fc, #6366f1, #8b5cf6, #06b6d4, #a5b4fc)", backgroundSize: "300% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mk-text-shimmer 5s linear infinite" }}>
+              {"— it acts"}
+            </span>
           </h1>
-          <p className="mk-appear mk-appear-delay-2 text-base lg:text-lg leading-relaxed t-secondary max-w-2xl mx-auto mb-5">
-            Six AI intelligence layers working as one unified system. From executive health scoring to autonomous execution, Atheon transforms raw ERP data into strategic advantage {'\u2014'} then acts on it.
+
+          <p style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.45s", opacity: 0 }} className="text-lg lg:text-xl text-white/50 leading-relaxed max-w-2xl mx-auto mb-4">
+            Six AI intelligence layers working as one. From executive health scoring to autonomous execution, Atheon transforms raw ERP data into strategic advantage.
           </p>
-          <p className="mk-appear mk-appear-delay-3 text-sm t-muted max-w-xl mx-auto mb-10">
-            Catalysts are the evolution of enterprise AI agents. They don{'\u2019'}t just recommend {'\u2014'} they execute with full audit trails and human-in-the-loop governance.
+
+          <p style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.55s", opacity: 0 }} className="text-sm text-white/30 max-w-xl mx-auto mb-12">
+            Catalysts are the evolution of enterprise AI agents. They don{"\u2019"}t just recommend {"—"} they execute.
           </p>
-          <div className="mk-appear mk-appear-delay-4 flex flex-col sm:flex-row gap-3 justify-center mb-16">
-            <Button variant="primary" size="lg" onClick={() => navigate('/login')} className="shadow-lg shadow-accent/20 group">
-              Start Free Trial <IconArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-            </Button>
-            <button onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })} className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-[var(--bg-secondary)] hover:scale-[1.02]" style={{ border: '1px solid var(--border-card)', color: 'var(--accent)' }}>
-              <IconPlay size={14} className="text-accent" /> See How It Works
+
+          <div style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.65s", opacity: 0 }} className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
+            <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
+              Start Free Trial <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </button>
+            <button onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/70 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
+              <IconPlay size={16} /> See How It Works
             </button>
           </div>
 
-          {/* Animated Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {stats.map((s, i) => {
-              const SIcon = s.icon;
-              return (
-                <div key={s.label} className={`mk-appear mk-appear-delay-${i + 1} rounded-xl p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group`} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 2px 12px rgba(100, 120, 180, 0.07)' }}>
-                  <div className="flex justify-center mb-2"><SIcon size={18} className="text-accent transition-transform duration-300 group-hover:scale-125" /></div>
-                  <div className="text-2xl font-extrabold t-primary"><AnimatedCounter target={s.value} /></div>
-                  <div className="text-[10px] mt-1 t-muted font-medium uppercase tracking-wider">{s.label}</div>
+          {/* Stats row */}
+          <div style={{ animation: "mk-hero-text 1.2s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.85s", opacity: 0 }} className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-3xl mx-auto">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center group">
+                <div className="text-3xl lg:text-4xl font-extrabold text-white mb-1 transition-all duration-300 group-hover:text-indigo-300" style={{ animation: "mk-number-pop 4s ease-in-out infinite" }}>
+                  <AnimatedCounter value={s.value} prefix={s.prefix} suffix={s.suffix} />
                 </div>
-              );
-            })}
+                <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/30">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2" style={{ animation: "mk-float 2s ease-in-out infinite" }}>
+          <div className="w-6 h-10 rounded-full border-2 border-white/10 flex items-start justify-center p-1.5">
+            <div className="w-1 h-2.5 rounded-full bg-white/30" style={{ animation: "mk-float 1.5s ease-in-out infinite" }} />
           </div>
         </div>
       </section>
 
-      {/* PLATFORM LAYERS — staggered reveal */}
-      <section id="features" className="py-20 lg:py-28 relative" style={{ background: 'var(--bg-secondary)' }}>
-        <FloatingParticles count={12} color="rgba(78, 124, 246, 0.3)" />
-        <div className="relative max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="mk-appear inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-4 uppercase tracking-wider" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
+      {/* ========== TRUST BAR ========== */}
+      <section className="py-14 relative overflow-hidden" style={{ borderTop: "1px solid rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+        <div className="text-center mb-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/20">Trusted by forward-thinking enterprises</p>
+        </div>
+        <div className="relative overflow-hidden" style={{ maskImage: "linear-gradient(90deg, transparent, black 15%, black 85%, transparent)" }}>
+          <div className="flex gap-16 items-center whitespace-nowrap" style={{ animation: "mk-logo-scroll 30s linear infinite" }}>
+            {[...trustLogos, ...trustLogos].map((logo, i) => (
+              <span key={i} className="text-lg font-bold tracking-tight text-white/[0.07] select-none flex-shrink-0">{logo}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========== PLATFORM LAYERS - BENTO GRID ========== */}
+      <section id="platform" className="py-24 lg:py-36 relative">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99, 102, 241, 0.04) 0%, transparent 60%)" }} />
+        <div className="relative max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="mk-reveal inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-5 uppercase tracking-[0.15em] border border-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", color: "#a5b4fc" }}>
               Platform Architecture
             </div>
-            <h2 className="mk-appear mk-appear-delay-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold t-primary mb-4 tracking-tight">Six layers of intelligence</h2>
-            <p className="mk-appear mk-appear-delay-2 text-sm t-secondary max-w-xl mx-auto leading-relaxed">Each layer works independently and as a unified system {'\u2014'} from data ingestion to autonomous action.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {layers.map((layer, i) => {
-              const LIcon = layer.Icon;
-              return (
-                <div key={layer.title} className={`mk-appear mk-appear-delay-${(i % 3) + 1} group rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl cursor-default`} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 4px 20px rgba(100, 120, 180, 0.08)' }}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${layer.gradient} flex items-center justify-center mb-5 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg`}>
-                    <LIcon size={22} style={{ color: layer.color }} />
-                  </div>
-                  <h3 className="text-base font-bold t-primary mb-1">{layer.title}</h3>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: layer.color }}>{layer.subtitle}</p>
-                  <p className="text-[13px] t-secondary leading-relaxed mb-4">{layer.desc}</p>
-                  <div className="space-y-1.5">
-                    {layer.benefits.map(b => (
-                      <div key={b} className="flex items-center gap-2">
-                        <IconCheckCircle size={12} style={{ color: layer.color }} className="flex-shrink-0" />
-                        <span className="text-[11px] font-medium t-muted">{b}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CATALYSTS SPOTLIGHT — the star section with animated border + particles */}
-      <section id="catalysts" className="py-20 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(78, 124, 246, 0.05) 0%, transparent 50%)' }} />
-        <FloatingParticles count={30} color="rgba(124, 58, 237, 0.4)" />
-
-        {/* Animated glow ring behind section */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ border: '2px solid rgba(124, 58, 237, 0.1)', animation: 'mk-pulse-ring 4s ease-in-out infinite' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ border: '1px solid rgba(78, 124, 246, 0.08)', animation: 'mk-pulse-ring 4s ease-in-out 1s infinite' }} />
-
-        <div className="relative max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="mk-appear inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold mb-5 uppercase tracking-wider" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed', border: '1px solid rgba(124, 58, 237, 0.2)', animation: 'mk-border-glow 3s ease-in-out infinite' }}>
-              <IconCatalysts size={14} /> The Evolution of AI Agents
-            </div>
-            <h2 className="mk-appear mk-appear-delay-1 text-3xl sm:text-4xl lg:text-5xl font-extrabold t-primary mb-5 tracking-tight">
-              Meet <span style={{ backgroundImage: 'linear-gradient(90deg, #7c3aed, #4e7cf6, #7c3aed)', backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'mk-text-shimmer 4s linear infinite' }}>Catalysts</span>
+            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-5">
+              Six layers of <span style={{ backgroundImage: "linear-gradient(135deg, #a5b4fc, #6366f1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>intelligence</span>
             </h2>
-            <p className="mk-appear mk-appear-delay-2 text-base t-secondary max-w-2xl mx-auto leading-relaxed">
-              Today{'\u2019'}s AI assistants tell you what to do. <strong className="t-primary">Catalysts actually do it.</strong> Purpose-built autonomous agents that understand your business context, execute complex multi-step workflows, handle exceptions intelligently, and learn from every outcome.
+            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-xl mx-auto leading-relaxed">
+              Each layer works independently and as a unified system {"—"} from data ingestion to autonomous action.
             </p>
           </div>
 
-          {/* Evolution comparison — animated reveal */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
-            <div className="mk-appear mk-appear-delay-1 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 4px 20px rgba(100, 120, 180, 0.08)' }}>
-              <div className="text-[11px] font-semibold uppercase tracking-wider t-muted mb-3">Traditional RPA</div>
-              <div className="space-y-2.5">
-                {['Scripted workflows', 'Breaks on exceptions', 'No context awareness', 'Manual maintenance'].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-[13px] t-muted">
-                    <IconCross size={12} className="text-red-400 flex-shrink-0" /> {item}
+          {/* Bento grid: 2 large top + 4 small bottom, or 3x2 on mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {layers.map((layer, i) => {
+              const LIcon = layer.Icon;
+              const isLarge = i < 2;
+              return (
+                <div
+                  key={layer.title}
+                  className={`mk-reveal mk-reveal-d${(i % 3) + 1} mk-glass mk-bento-tilt rounded-2xl ${isLarge && i === 0 ? "lg:col-span-2" : ""} p-7 relative group overflow-hidden`}
+                >
+                  {/* Hover spotlight */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(400px circle at var(--mx) var(--my), ${layer.color}08, transparent 60%)` }} />
+
+                  <div className="relative z-10">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: `${layer.color}15`, boxShadow: `0 0 0 1px ${layer.color}20` }}>
+                      <LIcon size={22} style={{ color: layer.color }} />
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-base font-bold text-white">{layer.title}</h3>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `${layer.color}99` }}>{layer.subtitle}</span>
+                    </div>
+                    <p className="text-[13px] text-white/40 leading-relaxed mb-5">{layer.desc}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {layer.benefits.map(b => (
+                        <span key={b} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium" style={{ background: `${layer.color}0a`, color: `${layer.color}aa`, border: `1px solid ${layer.color}15` }}>
+                          <IconCheckCircle size={10} /> {b}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ========== CATALYSTS SPOTLIGHT ========== */}
+      <section id="catalysts" className="py-24 lg:py-36 relative overflow-hidden">
+        {/* Animated rings */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(139, 92, 246, 0.06)", animation: "mk-pulse-ring 5s ease-in-out infinite" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(99, 102, 241, 0.04)", animation: "mk-pulse-ring 5s ease-in-out 1.5s infinite" }} />
+
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 60%)" }} />
+
+        <div className="relative max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="mk-reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold mb-6 uppercase tracking-[0.15em] border" style={{ background: "rgba(139, 92, 246, 0.08)", color: "#c4b5fd", borderColor: "rgba(139, 92, 246, 0.2)", animation: "mk-border-glow 3s ease-in-out infinite" }}>
+              <IconCatalysts size={14} /> The Evolution of AI Agents
+            </div>
+            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-[3.5rem] font-extrabold text-white tracking-tight mb-6 leading-[1.05]">
+              Meet{" "}
+              <span style={{ backgroundImage: "linear-gradient(135deg, #c4b5fd, #8b5cf6, #6366f1, #c4b5fd)", backgroundSize: "300% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mk-text-shimmer 4s linear infinite" }}>
+                Catalysts
+              </span>
+            </h2>
+            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-2xl mx-auto leading-relaxed">
+              Today{"\u2019"}s AI assistants tell you what to do. <strong className="text-white/70">Catalysts actually do it.</strong> Purpose-built autonomous agents that understand context, execute workflows, handle exceptions, and learn.
+            </p>
+          </div>
+
+          {/* Evolution comparison */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
+            {/* Traditional RPA */}
+            <div className="mk-reveal mk-reveal-d1 mk-glass rounded-2xl p-6">
+              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/25 mb-4">Traditional RPA</div>
+              <div className="space-y-3">
+                {["Scripted workflows", "Breaks on exceptions", "No context awareness", "Manual maintenance"].map(item => (
+                  <div key={item} className="flex items-center gap-2.5 text-[13px] text-white/30">
+                    <IconCross size={12} className="text-red-400/60 flex-shrink-0" /> {item}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="mk-appear mk-appear-delay-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 4px 20px rgba(100, 120, 180, 0.08)' }}>
-              <div className="text-[11px] font-semibold uppercase tracking-wider t-muted mb-3">AI Copilots</div>
-              <div className="space-y-2.5">
-                {['Recommendations only', 'Human must execute', 'Limited domain knowledge', 'No persistent memory'].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-[13px] t-muted">
-                    <IconCross size={12} className="text-amber-400 flex-shrink-0" /> {item}
+
+            {/* AI Copilots */}
+            <div className="mk-reveal mk-reveal-d2 mk-glass rounded-2xl p-6">
+              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/25 mb-4">AI Copilots</div>
+              <div className="space-y-3">
+                {["Recommendations only", "Human must execute", "Limited domain knowledge", "No persistent memory"].map(item => (
+                  <div key={item} className="flex items-center gap-2.5 text-[13px] text-white/30">
+                    <IconCross size={12} className="text-amber-400/60 flex-shrink-0" /> {item}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="mk-appear mk-appear-delay-3 rounded-2xl p-6 relative transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl" style={{ background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(78, 124, 246, 0.06))', border: '1px solid rgba(124, 58, 237, 0.25)', boxShadow: '0 4px 30px rgba(124, 58, 237, 0.12)', animation: 'mk-border-glow 3s ease-in-out infinite' }}>
-              <div className="absolute -top-px -right-px px-3 py-0.5 rounded-bl-lg rounded-tr-xl text-[9px] font-bold uppercase tracking-wider text-white" style={{ background: 'linear-gradient(135deg, #7c3aed, #4e7cf6)' }}>Next Gen</div>
-              <div className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: '#7c3aed' }}>Atheon Catalysts</div>
-              <div className="space-y-2.5">
-                {['Autonomous execution', 'Handles exceptions', 'Full domain context', 'Learns & improves'].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-[13px] t-primary font-medium">
-                    <IconCheckCircle size={12} style={{ color: '#7c3aed' }} className="flex-shrink-0" /> {item}
+
+            {/* Atheon Catalysts */}
+            <div className="mk-reveal mk-reveal-d3 rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.05))", border: "1px solid rgba(139, 92, 246, 0.2)", animation: "mk-border-glow 3s ease-in-out infinite" }}>
+              <div className="absolute -top-px -right-px px-3 py-1 rounded-bl-xl rounded-tr-xl text-[9px] font-bold uppercase tracking-wider text-white" style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>Next Gen</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-violet-300/80 mb-4">Atheon Catalysts</div>
+              <div className="space-y-3">
+                {["Autonomous execution", "Handles exceptions", "Full domain context", "Learns & improves"].map(item => (
+                  <div key={item} className="flex items-center gap-2.5 text-[13px] text-white/80 font-medium">
+                    <IconCheckCircle size={12} className="text-violet-400 flex-shrink-0" /> {item}
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Catalyst use cases — animated cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Use cases */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {catalystUseCases.map((uc, i) => {
               const UCIcon = uc.Icon;
               return (
-                <div key={uc.title} className={`mk-appear mk-appear-delay-${i + 1} group rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl`} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 4px 20px rgba(100, 120, 180, 0.08)' }}>
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: 'rgba(124, 58, 237, 0.1)' }}>
-                      <UCIcon size={22} style={{ color: '#7c3aed' }} />
+                <div key={uc.title} className={`mk-reveal mk-reveal-d${i + 1} mk-glass mk-bento-tilt rounded-2xl p-6 group`}>
+                  <div className="flex items-start gap-5">
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110" style={{ background: "rgba(139, 92, 246, 0.08)", boxShadow: "0 0 0 1px rgba(139, 92, 246, 0.15)" }}>
+                      <UCIcon size={24} style={{ color: "#a78bfa" }} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-bold t-primary mb-1.5">{uc.title}</h3>
-                      <p className="text-[13px] t-secondary leading-relaxed mb-3">{uc.desc}</p>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed' }}>
-                        <IconBolt size={10} /> {uc.metric}
+                      <h3 className="text-sm font-bold text-white mb-1.5">{uc.title}</h3>
+                      <p className="text-[13px] text-white/35 leading-relaxed mb-4">{uc.desc}</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-extrabold text-violet-300">{uc.metric}</span>
+                        <span className="text-[11px] font-medium text-white/30">{uc.metricLabel}</span>
                       </div>
                     </div>
                   </div>
@@ -369,29 +588,34 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* WHY ATHEON — animated icons */}
-      <section className="py-20 lg:py-28 relative" style={{ background: 'var(--bg-secondary)' }}>
-        <FloatingParticles count={10} color="rgba(78, 124, 246, 0.25)" />
-        <div className="relative max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="mk-appear inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-4 uppercase tracking-wider" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
+      {/* ========== WHY ATHEON ========== */}
+      <section className="py-24 lg:py-36 relative" style={{ background: "linear-gradient(180deg, #06080f 0%, #0a0d1a 100%)" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 40% at 50% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 60%)" }} />
+        <div className="relative max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="mk-reveal inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-5 uppercase tracking-[0.15em] border border-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", color: "#a5b4fc" }}>
               Why Atheon
             </div>
-            <h2 className="mk-appear mk-appear-delay-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold t-primary mb-4 tracking-tight">Not another dashboard. Not another chatbot.</h2>
-            <p className="mk-appear mk-appear-delay-2 text-sm t-secondary max-w-xl mx-auto leading-relaxed">Atheon is fundamentally different from traditional BI, RPA, and AI copilot tools.</p>
+            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-5">
+              Not another dashboard.<br className="hidden sm:block" /> Not another chatbot.
+            </h2>
+            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-xl mx-auto leading-relaxed">
+              Fundamentally different from traditional BI, RPA, and AI copilot tools.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {whyAtheon.map((item, i) => {
               const WIcon = item.Icon;
               return (
-                <div key={item.title} className={`mk-appear mk-appear-delay-${i + 1} group rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl`} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 4px 20px rgba(100, 120, 180, 0.08)' }}>
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6" style={{ background: 'var(--accent-subtle)' }}>
-                      <WIcon size={22} className="text-accent" />
+                <div key={item.title} className={`mk-reveal mk-reveal-d${i + 1} mk-glass mk-bento-tilt rounded-2xl p-7 group`}>
+                  <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3" style={{ background: "rgba(99, 102, 241, 0.08)", boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.12)" }}>
+                      <WIcon size={22} className="text-indigo-400" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold t-primary mb-1.5">{item.title}</h3>
-                      <p className="text-[13px] t-secondary leading-relaxed">{item.desc}</p>
+                      <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
+                      <p className="text-[13px] text-white/35 leading-relaxed">{item.desc}</p>
                     </div>
                   </div>
                 </div>
@@ -401,32 +625,39 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* HOW IT WORKS — animated step line */}
-      <section id="how" className="py-20 lg:py-28 relative">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="mk-appear inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-4 uppercase tracking-wider" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
+      {/* ========== HOW IT WORKS ========== */}
+      <section id="how" className="py-24 lg:py-36 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="mk-reveal inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-5 uppercase tracking-[0.15em] border border-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", color: "#a5b4fc" }}>
               Getting Started
             </div>
-            <h2 className="mk-appear mk-appear-delay-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold t-primary mb-4 tracking-tight">From data to decision in seconds</h2>
-            <p className="mk-appear mk-appear-delay-2 text-sm t-secondary max-w-lg mx-auto leading-relaxed">Four steps. No complex setup. No data migration. Start seeing results immediately.</p>
+            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-5">
+              From data to decision in{" "}
+              <span style={{ backgroundImage: "linear-gradient(135deg, #a5b4fc, #6366f1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>seconds</span>
+            </h2>
+            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-lg mx-auto leading-relaxed">
+              Four steps. No complex setup. No data migration. Start seeing results immediately.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 relative">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative">
             {/* Animated connecting line */}
-            <div className="hidden lg:block absolute top-16 left-[12.5%] right-[12.5%] h-px overflow-hidden">
-              <div className="h-full w-full" style={{ background: 'linear-gradient(90deg, transparent, var(--accent), var(--accent), transparent)', opacity: 0.2 }} />
-              <div className="absolute top-0 left-0 h-full w-1/3" style={{ background: 'linear-gradient(90deg, var(--accent), transparent)', animation: 'mk-gradient-shift 3s linear infinite', backgroundSize: '300% 100%' }} />
+            <div className="hidden lg:block absolute top-20 left-[15%] right-[15%] h-px">
+              <div className="h-full w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15), transparent)" }} />
+              <div className="absolute top-0 left-0 h-full w-20" style={{ background: "linear-gradient(90deg, rgba(99, 102, 241, 0.5), transparent)", animation: "mk-gradient-shift 4s linear infinite", backgroundSize: "300% 100%" }} />
             </div>
+
             {steps.map((s, i) => {
               const SIcon = s.Icon;
               return (
-                <div key={s.step} className={`mk-appear mk-appear-delay-${i + 1} group rounded-2xl p-6 text-center transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative`} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 4px 20px rgba(100, 120, 180, 0.08)' }}>
-                  <div className="w-14 h-14 rounded-xl mx-auto mb-5 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: 'var(--accent-subtle)' }}>
-                    <SIcon size={24} className="text-accent" />
+                <div key={s.num} className={`mk-reveal mk-reveal-d${i + 1} mk-glass mk-bento-tilt rounded-2xl p-6 text-center group`}>
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.1)" }}>
+                    <SIcon size={26} className="text-indigo-400" />
                   </div>
-                  <div className="text-[10px] font-bold mb-2 uppercase tracking-widest" style={{ color: 'var(--accent)', opacity: 0.4 }}>{s.step}</div>
-                  <h3 className="text-sm font-bold t-primary mb-2">{s.title}</h3>
-                  <p className="text-[13px] t-secondary leading-relaxed">{s.desc}</p>
+                  <div className="text-[10px] font-bold mb-3 uppercase tracking-[0.2em] text-indigo-400/30">{s.num}</div>
+                  <h3 className="text-sm font-bold text-white mb-2">{s.title}</h3>
+                  <p className="text-[13px] text-white/35 leading-relaxed">{s.desc}</p>
                 </div>
               );
             })}
@@ -434,28 +665,34 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* SECURITY — animated shield */}
-      <section id="security" className="py-20 lg:py-28" style={{ background: 'var(--bg-secondary)' }}>
+      {/* ========== SECURITY ========== */}
+      <section id="security" className="py-24 lg:py-36 relative" style={{ background: "linear-gradient(180deg, #06080f 0%, #080b16 100%)" }}>
         <div className="max-w-5xl mx-auto px-6">
-          <div className="mk-appear rounded-2xl p-8 lg:p-14 relative overflow-hidden" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 8px 40px rgba(100, 120, 180, 0.10)' }}>
-            <div className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)', animation: 'mk-glow-breathe 5s ease-in-out infinite', opacity: 0.05 }} />
-            <div className="flex flex-col lg:flex-row items-start gap-10 relative">
+          <div className="mk-reveal mk-glass-strong rounded-3xl p-10 lg:p-16 relative overflow-hidden">
+            {/* Background glow */}
+            <div className="absolute top-0 right-0 w-80 h-80 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%)", animation: "mk-glow-breathe 6s ease-in-out infinite" }} />
+
+            <div className="flex flex-col lg:flex-row items-start gap-12 relative">
               <div className="flex-1">
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-all duration-500 hover:scale-110" style={{ background: 'var(--accent-subtle)', animation: 'mk-float-down 4s ease-in-out infinite' }}>
-                  <IconShield size={26} className="text-accent" />
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-6" style={{ background: "rgba(99, 102, 241, 0.08)", boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.12)", animation: "mk-float-slow 5s ease-in-out infinite" }}>
+                  <IconShield size={28} className="text-indigo-400" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold t-primary mb-4 tracking-tight">Enterprise-grade security</h2>
-                <p className="text-[13px] t-secondary leading-relaxed max-w-md mb-4">Every layer is built with zero-trust principles, end-to-end encryption, and comprehensive audit logging. Your data never leaves your security boundary.</p>
-                <p className="text-[13px] t-muted leading-relaxed max-w-md">Supports SaaS, on-premise, and hybrid deployment models. Your security team stays in control.</p>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-5">Enterprise-grade<br />security</h2>
+                <p className="text-[14px] text-white/40 leading-relaxed mb-4 max-w-md">
+                  Zero-trust architecture. End-to-end encryption. Comprehensive audit logging. Your data never leaves your security boundary.
+                </p>
+                <p className="text-[13px] text-white/25 leading-relaxed max-w-md">
+                  SaaS, on-premise, or hybrid. Your security team stays in control.
+                </p>
               </div>
-              <div className="flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex-1 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {securityFeatures.map((f, i) => {
                     const FIcon = f.Icon;
                     return (
-                      <div key={f.label} className={`mk-appear mk-appear-delay-${(i % 4) + 1} flex items-center gap-3 p-3 rounded-xl transition-all duration-300 hover:bg-[var(--bg-secondary)] hover:scale-[1.02]`}>
-                        <FIcon size={16} className="text-accent flex-shrink-0" />
-                        <span className="text-[13px] font-medium t-secondary">{f.label}</span>
+                      <div key={f.label} className={`mk-reveal mk-reveal-d${(i % 4) + 1} flex items-center gap-3 p-3.5 rounded-xl transition-all duration-300 hover:bg-white/[0.03]`}>
+                        <FIcon size={16} className="text-indigo-400/70 flex-shrink-0" />
+                        <span className="text-[13px] font-medium text-white/50">{f.label}</span>
                       </div>
                     );
                   })}
@@ -466,42 +703,51 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* CTA — animated gradient background */}
-      <section className="py-24 lg:py-32 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%)' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(78, 124, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 50%)' }} />
-        <FloatingParticles count={15} color="rgba(78, 124, 246, 0.35)" />
+      {/* ========== CTA ========== */}
+      <section className="py-28 lg:py-40 relative overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 60%)" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(99, 102, 241, 0.04)", animation: "mk-pulse-ring 6s ease-in-out infinite" }} />
+
         <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <div className="mk-appear w-16 h-16 rounded-2xl mx-auto mb-8 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 8px 40px rgba(78, 124, 246, 0.4)', animation: 'mk-float-down 3s ease-in-out infinite' }}>
-            <svg width="32" height="32" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ctaA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#ctaA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/><circle cx="32" cy="9" r="2" fill="#7db4ff" opacity="0.8"/></svg>
+          <div className="mk-reveal w-20 h-20 rounded-2xl mx-auto mb-10 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)", boxShadow: "0 8px 50px rgba(99, 102, 241, 0.35)", animation: "mk-float 4s ease-in-out infinite" }}>
+            <svg width="36" height="36" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ctaLogo" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#a5b4fc"/><stop offset="50%" stopColor="#6366f1"/><stop offset="100%" stopColor="#4338ca"/></linearGradient></defs><path d="M32 8 L13 54 h10 l4-10 h10 l4 10 h10 Z M32 22 l6 14 h-12 Z" fill="url(#ctaLogo)"/></svg>
           </div>
-          <h2 className="mk-appear mk-appear-delay-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-5 tracking-tight t-primary">Ready to redefine enterprise intelligence?</h2>
-          <p className="mk-appear mk-appear-delay-2 text-sm mb-4 leading-relaxed t-secondary">Join the organisations deploying Catalysts to transform operational data into autonomous action.</p>
-          <p className="mk-appear mk-appear-delay-3 text-[13px] mb-10 leading-relaxed t-muted">Free trial includes all six intelligence layers. No credit card required. Deploy in under 15 minutes.</p>
-          <div className="mk-appear mk-appear-delay-4 flex flex-col sm:flex-row gap-3 justify-center">
-            <Button variant="primary" size="lg" onClick={() => navigate('/login')} className="shadow-lg shadow-accent/25 group">
-              Start Free Trial <IconArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-            </Button>
-            <button className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-[var(--bg-secondary)] hover:scale-[1.02]" style={{ border: '1px solid var(--border-card)', color: 'var(--accent)' }}>
-              Contact Sales <IconChevronRight size={14} />
+
+          <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-6">
+            Ready to redefine<br />enterprise intelligence?
+          </h2>
+          <p className="mk-reveal mk-reveal-d2 text-base text-white/40 leading-relaxed mb-4 max-w-lg mx-auto">
+            Join the organisations deploying Catalysts to transform operational data into autonomous action.
+          </p>
+          <p className="mk-reveal mk-reveal-d3 text-sm text-white/25 leading-relaxed mb-12 max-w-md mx-auto">
+            All six intelligence layers. No credit card required. Deploy in under 15 minutes.
+          </p>
+          <div className="mk-reveal mk-reveal-d4 flex flex-col sm:flex-row gap-4 justify-center">
+            <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
+              Start Free Trial <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </button>
+            <button className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/60 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
+              Contact Sales <IconChevronRight size={16} />
             </button>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="py-10" style={{ background: 'var(--bg-primary)', borderTop: '1px solid var(--border-card)' }}>
-        <div className="max-w-6xl mx-auto px-6">
+      {/* ========== FOOTER ========== */}
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }} className="py-10">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <span className="flex items-center gap-2.5">
-              <span className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)' }}>
-                <svg width="12" height="12" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ftA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#ftA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg>
-              </span>
-              <span className="text-sm font-extrabold tracking-tighter t-primary">Atheon</span>
-            </span>
-            <div className="flex items-center gap-8 text-[13px] t-muted">
-              <a href="#features" className="hover:text-accent transition-colors">Platform</a>
-              <a href="#catalysts" className="hover:text-accent transition-colors">Catalysts</a>
-              <a href="#security" className="hover:text-accent transition-colors">Security</a>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)" }}>
+                <svg width="12" height="12" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ftLogo" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#a5b4fc"/><stop offset="50%" stopColor="#6366f1"/><stop offset="100%" stopColor="#4338ca"/></linearGradient></defs><path d="M32 8 L13 54 h10 l4-10 h10 l4 10 h10 Z M32 22 l6 14 h-12 Z" fill="url(#ftLogo)"/></svg>
+              </div>
+              <span className="text-sm font-bold tracking-tight text-white/80">Atheon</span>
+            </div>
+            <div className="flex items-center gap-8 text-[13px] text-white/25">
+              <a href="#platform" className="hover:text-white/60 transition-colors">Platform</a>
+              <a href="#catalysts" className="hover:text-white/60 transition-colors">Catalysts</a>
+              <a href="#security" className="hover:text-white/60 transition-colors">Security</a>
               <span>&copy; {new Date().getFullYear()} Atheon</span>
             </div>
           </div>
