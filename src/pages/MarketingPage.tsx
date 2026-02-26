@@ -72,7 +72,7 @@ export function MarketingPage() {
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
 
       {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl" style={{ background: 'rgba(var(--bg-primary-rgb, 255, 255, 255), 0.85)', borderBottom: '1px solid var(--border-card)', boxShadow: '0 2px 20px rgba(100, 120, 180, 0.08)' }}>
+      <nav className="sticky top-0 z-50 backdrop-blur-xl" style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-card)', boxShadow: '0 2px 20px rgba(100, 120, 180, 0.08)' }}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <span className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 2px 12px rgba(78, 124, 246, 0.3)' }}>
