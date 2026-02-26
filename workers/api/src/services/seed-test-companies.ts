@@ -218,7 +218,7 @@ export async function seedTestCompanies(db: D1Database) {
   // COMPANY 2: GREENLEAF ORGANICS — XERO — AGRICULTURE
   // ═══════════════════════════════════════════════════════════════════════════
   await db.prepare('INSERT INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('greenleaf','GreenLeaf Organics (Pty) Ltd','greenleaf','fmcg','professional','active','saas','af-south-1').run();
+    .bind('greenleaf','GreenLeaf Organics (Pty) Ltd','greenleaf','agriculture','professional','active','saas','af-south-1').run();
 
   await db.prepare('INSERT INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('greenleaf','["apex","pulse","catalysts","mind"]','["finance","supply-chain","sales"]',20,50,'["read-only","assisted"]','["tier-1","tier-2"]','["executive-briefings","risk-alerts","process-mining"]',0,1,0,180).run();
@@ -494,7 +494,7 @@ export async function seedTestCompanies(db: D1Database) {
   // COMPANY 4: BLUEPEAK LOGISTICS — SAGE PASTEL — LOGISTICS / TRANSPORT
   // ═══════════════════════════════════════════════════════════════════════════
   await db.prepare('INSERT INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('bluepeak','BluePeak Logistics (Pty) Ltd','bluepeak','general','professional','active','saas','af-south-1').run();
+    .bind('bluepeak','BluePeak Logistics (Pty) Ltd','bluepeak','logistics','professional','active','saas','af-south-1').run();
 
   await db.prepare('INSERT INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('bluepeak','["apex","pulse","catalysts"]','["finance","supply-chain","sales"]',15,40,'["read-only","assisted"]','["tier-1"]','["executive-briefings","process-mining"]',0,0,0,90).run();
@@ -608,7 +608,7 @@ export async function seedTestCompanies(db: D1Database) {
   // COMPANY 5: NOVATECH SOLUTIONS — ORACLE FUSION — TECHNOLOGY / SAAS
   // ═══════════════════════════════════════════════════════════════════════════
   await db.prepare('INSERT INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('novatech','NovaTech Solutions (Pty) Ltd','novatech','general','enterprise','active','saas','af-south-1').run();
+    .bind('novatech','NovaTech Solutions (Pty) Ltd','novatech','technology','enterprise','active','saas','af-south-1').run();
 
   await db.prepare('INSERT INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('novatech','["apex","pulse","catalysts","mind","memory"]','["finance","hr","sales"]',50,200,'["read-only","assisted","transactional"]','["tier-1","tier-2","tier-3"]','["scenario-modelling","process-mining","graphrag","executive-briefings","risk-alerts"]',1,1,1,365).run();
