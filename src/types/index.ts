@@ -4,7 +4,7 @@
 
 // --- Platform Identity ---
 export type AtheonLayer = 'apex' | 'pulse' | 'catalysts' | 'mind' | 'memory';
-export type IndustryVertical = 'fmcg' | 'healthcare' | 'mining' | 'general';
+export type IndustryVertical = 'fmcg' | 'healthcare' | 'mining' | 'general' | 'agriculture' | 'logistics' | 'technology' | 'manufacturing';
 
 // --- Auth & Tenancy ---
 export interface User {

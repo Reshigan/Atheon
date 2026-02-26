@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import type { Env, AppBindings } from './types';
 import { seedDatabase } from './services/seed';
 import { seedSampleCompany } from './services/seed-sample-company';
+import { seedTestCompanies } from './services/seed-test-companies';
 import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter } from './middleware/ratelimit';
 import { auditEnrichment, requestSizeLimiter } from './middleware/validation';
 import { tenantIsolation } from './middleware/tenant';
@@ -185,6 +186,9 @@ app.use('*', async (c, next) => {
 
       // Seed sample test company (Protea Manufacturing)
       await seedSampleCompany(c.env.DB);
+
+      // Seed 5 test companies across different ERPs and industries
+      await seedTestCompanies(c.env.DB);
 
       // Mark as migrated in KV (TTL 24h — re-checks daily)
       await c.env.CACHE.put(migrationKey, 'true', { expirationTtl: 86400 });
