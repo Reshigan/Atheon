@@ -1,20 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64">
-      <stop offset="0%" stop-color="#0c1222"/>
-      <stop offset="100%" stop-color="#1a2340"/>
+      <stop offset="0%" stop-color="#0a0e2a"/>
+      <stop offset="100%" stop-color="#141a3d"/>
     </linearGradient>
-    <linearGradient id="a-grad" x1="20" y1="14" x2="44" y2="48">
-      <stop offset="0%" stop-color="#8bb5ff"/>
-      <stop offset="50%" stop-color="#6b93ff"/>
+    <linearGradient id="a-main" x1="16" y1="8" x2="48" y2="56">
+      <stop offset="0%" stop-color="#7db4ff"/>
+      <stop offset="40%" stop-color="#4e7cf6"/>
+      <stop offset="100%" stop-color="#2952cc"/>
+    </linearGradient>
+    <linearGradient id="a-glow" x1="24" y1="28" x2="40" y2="36">
+      <stop offset="0%" stop-color="#7db4ff"/>
       <stop offset="100%" stop-color="#4e7cf6"/>
     </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="outer-glow">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
   </defs>
+  <!-- Background -->
   <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <!-- Glass A with gradient -->
-  <path d="M 20 48 L 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 27 40 L 24.5 48 Z M 28.2 36.5 L 35.8 36.5 L 32 22.5 Z" fill="url(#a-grad)"/>
-  <!-- Glass reflection -->
-  <path d="M 30.5 14 L 33.5 14 L 44 48 L 39.5 48 L 37 40 L 32 22.5 Z" fill="white" opacity="0.15"/>
-  <!-- Accent orbital dot -->
-  <circle cx="48" cy="16" r="3.5" fill="#6b93ff" opacity="0.7"/>
+  <!-- Outer glow behind A -->
+  <path d="M32 10 L14 52 h10 l3-7 h10 l3 7 h10 Z" fill="#4e7cf6" opacity="0.15" filter="url(#outer-glow)"/>
+  <!-- Bold A letterform -->
+  <path d="M32 12 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 24 l5.5 13 h-11 Z" fill="url(#a-main)" filter="url(#glow)"/>
+  <!-- Glass highlight on left edge -->
+  <path d="M32 12 L15 52 h8.5 l4-9.5 h4.5 L32 24 Z" fill="white" opacity="0.12"/>
+  <!-- Energy crossbar glow -->
+  <rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="url(#a-glow)" opacity="0.6"/>
+  <!-- Top accent prism flare -->
+  <circle cx="32" cy="11" r="2.5" fill="#7db4ff" opacity="0.8"/>
+  <circle cx="32" cy="11" r="5" fill="#7db4ff" opacity="0.15"/>
 </svg>

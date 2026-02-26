@@ -45,7 +45,7 @@ export function MarketingPage() {
       {/* NAVBAR */}
       <nav className="sticky top-0 z-50" style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-card)', boxShadow: '0 2px 12px rgba(100, 120, 180, 0.06)' }}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold tracking-tight" style={{ color: '#4e7cf6' }}>Atheon</span>
+          <span className="flex items-center gap-2"><span className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 2px 8px rgba(78, 124, 246, 0.25)' }}><svg width="14" height="14" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="navA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#navA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg></span><span className="text-lg font-extrabold tracking-tighter" style={{ color: '#1e293b' }}>Atheon</span></span>
           <div className="hidden md:flex items-center gap-6 text-xs font-medium t-secondary">
             <a href="#features" className="hover:t-primary transition-colors">Features</a>
             <a href="#how" className="hover:t-primary transition-colors">How It Works</a>
@@ -203,7 +203,7 @@ export function MarketingPage() {
       {/* FOOTER */}
       <footer className="py-8" style={{ background: 'var(--bg-primary)', borderTop: '1px solid var(--border-card)' }}>
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="text-sm font-bold tracking-tight" style={{ color: '#4e7cf6' }}>Atheon</span>
+          <span className="flex items-center gap-2"><span className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)' }}><svg width="12" height="12" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ftA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#ftA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg></span><span className="text-sm font-extrabold tracking-tighter" style={{ color: '#1e293b' }}>Atheon</span></span>
           <div className="flex items-center gap-6 text-xs t-muted">
             <a href="#features" className="hover:t-primary transition-colors">Features</a>
             <a href="#how" className="hover:t-primary transition-colors">How It Works</a>

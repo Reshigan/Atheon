@@ -89,11 +89,24 @@ export function LoginPage() {
         <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(78, 124, 246, 0.15), transparent 70%)' }} />
         <div className="relative z-10 text-center max-w-sm">
           <div className="mb-8 flex justify-center">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4e7cf6, #6b93ff)', boxShadow: '0 8px 32px rgba(78, 124, 246, 0.3)' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 22h4l1.5-3.5h9L18 22h4L12 2zm0 5.5l3.2 7.5H8.8L12 7.5z" fill="white" /></svg>
+            <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 12px 40px rgba(78, 124, 246, 0.35), 0 0 0 1px rgba(78, 124, 246, 0.15)' }}>
+              <div className="absolute inset-0 rounded-2xl" style={{ background: 'radial-gradient(ellipse at 50% 30%, rgba(125, 180, 255, 0.15) 0%, transparent 60%)' }} />
+              <svg width="48" height="48" viewBox="0 0 64 64" fill="none">
+                <defs>
+                  <linearGradient id="loginA" x1="16" y1="8" x2="48" y2="56">
+                    <stop offset="0%" stopColor="#7db4ff" />
+                    <stop offset="40%" stopColor="#4e7cf6" />
+                    <stop offset="100%" stopColor="#2952cc" />
+                  </linearGradient>
+                </defs>
+                <path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#loginA)" />
+                <path d="M32 10 L15 52 h8.5 l4-9.5 h4.5 L32 22 Z" fill="white" opacity="0.12" />
+                <rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6" />
+                <circle cx="32" cy="9" r="2.5" fill="#7db4ff" opacity="0.8" />
+              </svg>
             </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ color: '#1e293b' }}>Atheon</h1>
+          <h1 className="text-4xl font-extrabold tracking-tighter mb-3" style={{ color: '#1e293b' }}>Atheon</h1>
           <p className="text-sm mb-2" style={{ color: '#64748b' }}>Enterprise Intelligence Platform</p>
           <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: '#94a3b8' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
           <div className="mt-10 space-y-2.5 text-left max-w-xs mx-auto">
@@ -105,7 +118,12 @@ export function LoginPage() {
       </div>
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8"><h1 className="text-2xl font-bold tracking-tight" style={{ color: '#4e7cf6' }}>Atheon</h1><p className="text-xs t-muted">Enterprise Intelligence Platform</p></div>
+          <div className="lg:hidden mb-8 flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 4px 16px rgba(78, 124, 246, 0.25)' }}>
+              <svg width="18" height="18" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="mobA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#mobA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg>
+            </div>
+            <div><h1 className="text-xl font-extrabold tracking-tighter" style={{ color: '#1e293b' }}>Atheon</h1><p className="text-[9px] t-muted font-medium tracking-wide uppercase">Enterprise Intelligence</p></div>
+          </div>
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>
           {error && <div className="mb-4 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">{error}</div>}
