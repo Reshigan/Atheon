@@ -188,9 +188,20 @@ export interface CorrelationEvent {
 // --- Catalysts: Autonomous Execution ---
 export type CatalystClusterType =
   | 'finance' | 'procurement' | 'supply-chain' | 'hr' | 'sales'
+  // FMCG
   | 'fmcg-trade' | 'fmcg-distributor' | 'fmcg-launch' | 'fmcg-shelf'
-  | 'health-patient' | 'health-supply' | 'health-staffing' | 'health-compliance'
-  | 'mining-equipment' | 'mining-ore' | 'mining-safety' | 'mining-environment';
+  // Healthcare
+  | 'health-patient' | 'health-supply' | 'health-staffing' | 'health-compliance' | 'health-experience'
+  // Mining
+  | 'mining-equipment' | 'mining-ore' | 'mining-safety' | 'mining-environment'
+  // Agriculture
+  | 'agri-crop' | 'agri-irrigation' | 'agri-quality' | 'agri-market'
+  // Logistics
+  | 'logistics-fleet' | 'logistics-route' | 'logistics-warehouse' | 'logistics-compliance'
+  // Technology
+  | 'tech-devops' | 'tech-security' | 'tech-product' | 'tech-customer-success'
+  // Manufacturing
+  | 'mfg-production' | 'mfg-quality' | 'mfg-maintenance' | 'mfg-energy';
 
 export type AutonomyTier = 'read-only' | 'assisted' | 'transactional';
 
