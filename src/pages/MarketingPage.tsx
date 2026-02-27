@@ -654,7 +654,7 @@ function LayerViz({ color }: { color: string }) {
         if (p.y < 0 || p.y > 300) p.vy *= -1;
         x!.beginPath();
         x!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        x!.fillStyle = color + "40)";
+        x!.fillStyle = color + "0.25)";
         x!.fill();
       }
       for (let i = 0; i < pts.length; i++) {
