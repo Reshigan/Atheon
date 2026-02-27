@@ -516,7 +516,7 @@ export async function seedTestCompanies(db: D1Database) {
     .bind('bluepeak','BluePeak Logistics (Pty) Ltd','bluepeak','logistics','professional','active','saas','af-south-1').run();
 
   await db.prepare('INSERT OR IGNORE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind('bluepeak','["apex","pulse","catalysts"]','["finance","procurement","supply-chain","hr","sales","logistics-fleet","logistics-compliance","logistics-warehouse"]',15,40,'["read-only","assisted"]','["tier-1"]','["executive-briefings","process-mining"]',0,0,0,90).run();
+    .bind('bluepeak','["apex","pulse","catalysts"]','["finance","procurement","supply-chain","hr","sales","logistics-fleet","logistics-compliance","logistics-warehouse"]',20,40,'["read-only","assisted"]','["tier-1"]','["executive-briefings","process-mining"]',0,0,0,90).run();
 
   const bpUsers = [
     {id:'bp-admin',email:'admin@bluepeak-logistics.co.za',name:'Pieter Botha',role:'admin'},
