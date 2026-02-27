@@ -18,7 +18,7 @@ const ACCENT = "#4A6B5A";
 const ACCENT_B = "#5d8a6f";
 const BRONZE = "#c9a059";
 const SKY = "#7AACB5";
-const CHART_LIGHT = "rgba(74, 107, 90, 0.15)";
+const CHART_LIGHT = "#b8d4c4";
 
 const trendIcon = (trend: string) => {
   if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
@@ -47,9 +47,9 @@ function TintedCard({ children, className = "" }: { children: React.ReactNode; c
     <div
       className={`rounded-2xl p-5 ${className}`}
       style={{
-        background: "linear-gradient(135deg, rgba(78, 124, 246, 0.06), rgba(107, 147, 255, 0.03))",
-        border: "1px solid rgba(78, 124, 246, 0.10)",
-        boxShadow: "0 2px 12px rgba(100, 120, 180, 0.05)",
+        background: "linear-gradient(135deg, rgba(74, 107, 90, 0.06), rgba(93, 138, 111, 0.03))",
+        border: "1px solid rgba(74, 107, 90, 0.10)",
+        boxShadow: "0 2px 12px rgba(74, 107, 90, 0.05)",
       }}
     >
       {children}

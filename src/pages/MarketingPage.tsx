@@ -411,12 +411,20 @@ function HeroCanvas() {
     let w = 0, h = 0;
     const particles: Array<{
       tx: number; ty: number; x: number; y: number; s: number; a: number;
-      sp: number; an: number; dr: number; c: string;
+      sp: number; an: number; dr: number; c: string; fx: number; fy: number;
     }> = [];
 
     function resize() {
+      const oldW = w || window.innerWidth;
+      const oldH = h || window.innerHeight;
       w = canvas!.width = window.innerWidth;
       h = canvas!.height = window.innerHeight;
+      if (particles.length > 0) {
+        for (const p of particles) {
+          p.tx = w * p.fx;
+          p.ty = h * p.fy;
+        }
+      }
     }
     resize();
     window.addEventListener("resize", resize);
@@ -424,11 +432,13 @@ function HeroCanvas() {
     for (let i = 0; i < 200; i++) {
       const row = Math.random();
       const halfW = row * 0.35;
-      const tx = w * (0.62 + (Math.random() - 0.5) * halfW * 2);
-      const ty = h * (0.15 + row * 0.7);
+      const fx = 0.62 + (Math.random() - 0.5) * halfW * 2;
+      const fy = 0.15 + row * 0.7;
+      const tx = w * fx;
+      const ty = h * fy;
       const c = Math.random();
       particles.push({
-        tx, ty,
+        tx, ty, fx, fy,
         x: tx + (Math.random() - 0.5) * 200,
         y: ty + (Math.random() - 0.5) * 200,
         s: Math.random() * 1.5 + 0.3,
