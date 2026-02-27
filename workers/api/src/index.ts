@@ -68,7 +68,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v8';
+const MIGRATION_VERSION = 'v9';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);

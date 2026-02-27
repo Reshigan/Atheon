@@ -27,7 +27,7 @@ export async function seedTestCompanies(db: D1Database) {
   await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
     .bind('highveld','Highveld Steel Works (Pty) Ltd','highveld','mining','enterprise','active','hybrid','af-south-1').run();
 
-  await db.prepare('INSERT OR IGNORE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('highveld','["apex","pulse","catalysts","mind","memory"]','["finance","procurement","supply-chain","hr","sales","mining-equipment","mining-safety","mining-ore","mining-environment"]',40,150,'["read-only","assisted","transactional"]','["tier-1","tier-2","tier-3"]','["scenario-modelling","process-mining","graphrag","executive-briefings","risk-alerts"]',1,1,1,730).run();
 
   const hvUsers = [
@@ -98,7 +98,7 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'cc-hv-sales',name:'Sales & Distribution Catalyst',domain:'sales',desc:'Customer order management, pricing optimization, and delivery scheduling for steel products',status:'active',agents:2,done:178,prog:4,rate:94.8,trust:91.2,tier:'assisted',subs:[{name:'Order Management',enabled:true,description:'Automated order intake, confirmation, and prioritization'},{name:'Dynamic Pricing',enabled:false,description:'Market-based pricing recommendation for steel grades'},{name:'Delivery Scheduling',enabled:true,description:'Optimized dispatch planning linked to production schedule'},{name:'Customer Credit Scoring',enabled:true,description:'Real-time credit limit monitoring and risk assessment'}]},
   ];
   for (const c of hvClusters) {
-    await db.prepare('INSERT OR IGNORE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'highveld',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
@@ -228,7 +228,7 @@ export async function seedTestCompanies(db: D1Database) {
   await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
     .bind('greenleaf','GreenLeaf Organics (Pty) Ltd','greenleaf','agriculture','professional','active','saas','af-south-1').run();
 
-  await db.prepare('INSERT OR IGNORE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('greenleaf','["apex","pulse","catalysts","mind"]','["finance","supply-chain","sales","hr","agri-crop","agri-irrigation","agri-quality","agri-market"]',20,50,'["read-only","assisted"]','["tier-1","tier-2"]','["executive-briefings","risk-alerts","process-mining"]',0,1,0,180).run();
 
   const glUsers = [
@@ -289,7 +289,7 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'cc-gl-hr',name:'Farm Workforce Catalyst',domain:'hr',desc:'Seasonal labor planning, worker safety, and skills tracking for agricultural operations',status:'active',agents:1,done:87,prog:2,rate:91.5,trust:88.2,tier:'read-only',subs:[{name:'Seasonal Labor Planning',enabled:true,description:'Harvest labor demand forecasting and recruitment scheduling'},{name:'Worker Safety',enabled:true,description:'Heat stress monitoring and chemical handling compliance'},{name:'Skills & Certification',enabled:true,description:'Pesticide applicator licenses and equipment operator certifications'},{name:'Payroll Integration',enabled:false,description:'Piece-rate and hourly payroll calculation automation'}]},
   ];
   for (const c of glClusters) {
-    await db.prepare('INSERT OR IGNORE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'greenleaf',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
@@ -368,7 +368,7 @@ export async function seedTestCompanies(db: D1Database) {
   await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
     .bind('medibridge','MediBridge Clinics Group','medibridge','healthcare','enterprise','active','saas','af-south-1').run();
 
-  await db.prepare('INSERT OR IGNORE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('medibridge','["apex","pulse","catalysts","mind","memory"]','["finance","procurement","hr","health-patient","health-compliance","health-supply","health-staffing","health-experience"]',35,120,'["read-only","assisted"]','["tier-1","tier-2","tier-3"]','["executive-briefings","risk-alerts","process-mining","graphrag"]',1,1,1,365).run();
 
   const mbUsers = [
@@ -431,7 +431,7 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'cc-mb-proc',name:'Healthcare Procurement Catalyst',domain:'procurement',desc:'Medical supply procurement, tender management, and vendor evaluation',status:'active',agents:2,done:156,prog:4,rate:94.7,trust:92.3,tier:'assisted',subs:[{name:'Tender Management',enabled:true,description:'Medical supply tender creation, evaluation, and awarding'},{name:'Vendor Evaluation',enabled:true,description:'Supplier quality, delivery, and pricing scorecarding'},{name:'Contract Compliance',enabled:true,description:'Supplier contract SLA monitoring and penalty tracking'},{name:'Group Purchasing',enabled:false,description:'Multi-clinic bulk purchasing coordination for volume discounts'}]},
   ];
   for (const c of mbClusters) {
-    await db.prepare('INSERT OR IGNORE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'medibridge',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
@@ -515,7 +515,7 @@ export async function seedTestCompanies(db: D1Database) {
   await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
     .bind('bluepeak','BluePeak Logistics (Pty) Ltd','bluepeak','logistics','professional','active','saas','af-south-1').run();
 
-  await db.prepare('INSERT OR IGNORE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('bluepeak','["apex","pulse","catalysts"]','["finance","procurement","supply-chain","hr","sales","logistics-fleet","logistics-compliance","logistics-warehouse"]',20,40,'["read-only","assisted"]','["tier-1"]','["executive-briefings","process-mining"]',0,0,0,90).run();
 
   const bpUsers = [
@@ -575,7 +575,7 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'cc-bp-proc',name:'Procurement Catalyst',domain:'procurement',desc:'Fuel procurement, parts purchasing, and vendor management for fleet operations',status:'active',agents:1,done:89,prog:2,rate:94.5,trust:91.8,tier:'read-only',subs:[{name:'Fuel Procurement',enabled:true,description:'Bulk fuel purchasing and depot price optimization'},{name:'Parts Purchasing',enabled:true,description:'Automated spare parts reordering based on maintenance schedules'},{name:'Vendor Scoring',enabled:true,description:'Supplier reliability and pricing benchmarking'},{name:'Tender Management',enabled:false,description:'Fleet service provider tender creation and evaluation'}]},
   ];
   for (const c of bpClusters) {
-    await db.prepare('INSERT OR IGNORE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'bluepeak',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
@@ -635,7 +635,7 @@ export async function seedTestCompanies(db: D1Database) {
   await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
     .bind('novatech','NovaTech Solutions (Pty) Ltd','novatech','technology','enterprise','active','saas','af-south-1').run();
 
-  await db.prepare('INSERT OR IGNORE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind('novatech','["apex","pulse","catalysts","mind","memory"]','["finance","procurement","supply-chain","hr","sales","tech-devops","tech-security","tech-product","tech-customer-success"]',50,200,'["read-only","assisted","transactional"]','["tier-1","tier-2","tier-3"]','["scenario-modelling","process-mining","graphrag","executive-briefings","risk-alerts"]',1,1,1,365).run();
 
   const ntUsers = [
@@ -700,7 +700,7 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'cc-nt-supply',name:'Supply Chain Catalyst',domain:'supply-chain',desc:'Hardware procurement, data center inventory, and professional services resource planning',status:'active',agents:1,done:67,prog:2,rate:91.8,trust:88.3,tier:'read-only',subs:[{name:'Hardware Lifecycle',enabled:true,description:'Employee device tracking, refresh cycles, and disposal management'},{name:'License Compliance',enabled:true,description:'Software audit readiness and entitlement tracking'},{name:'Resource Planning',enabled:false,description:'Professional services resource allocation and utilization optimization'}]},
   ];
   for (const c of ntClusters) {
-    await db.prepare('INSERT OR IGNORE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'novatech',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
