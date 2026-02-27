@@ -1,109 +1,406 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState, useCallback } from "react";
-import {
-  IconApex, IconPulse, IconCatalysts, IconMind, IconMemory, IconERPAdapters,
-  IconShield, IconBolt, IconArrowRight, IconPlay, IconChevronRight,
-  IconCheckCircle, IconBarChart, IconNetwork, IconConnectivity, IconControlPlane,
-  IconAudit, IconChat, IconCross,
-} from "@/components/icons/AtheonIcons";
+import { useEffect, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
 
 /* ============================================================
-   AWARD-WINNING MARKETING PAGE
-   Inspired by: Linear, Vercel, Stripe, Notion
-   Features: Canvas particle network, mouse-following spotlight,
-   bento grid, glass morphism, 3D perspective hover, forced dark theme
+   ATHEON MARKETING PAGE v5
+   Dark void theme, Instrument Serif typography, particle pyramid,
+   ticker, manifesto, evolution strip, three-layer architecture,
+   comparison grid, integrations, brand identity, CTA.
    ============================================================ */
 
-/* ---- CSS ANIMATIONS ---- */
-const animCSS = `
-@keyframes mk-gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-@keyframes mk-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
-@keyframes mk-float-slow{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(3deg)}}
-@keyframes mk-pulse-ring{0%{transform:scale(.85);opacity:.5}50%{transform:scale(1.25);opacity:0}100%{transform:scale(.85);opacity:.5}}
-@keyframes mk-orbit{0%{transform:rotate(0deg) translateX(140px) rotate(0deg)}100%{transform:rotate(360deg) translateX(140px) rotate(-360deg)}}
-@keyframes mk-orbit-sm{0%{transform:rotate(0deg) translateX(80px) rotate(0deg)}100%{transform:rotate(360deg) translateX(80px) rotate(-360deg)}}
-@keyframes mk-orbit-lg{0%{transform:rotate(0deg) translateX(220px) rotate(0deg)}100%{transform:rotate(360deg) translateX(220px) rotate(-360deg)}}
-@keyframes mk-glow-breathe{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.6;transform:scale(1.12)}}
-@keyframes mk-text-shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-@keyframes mk-border-glow{0%,100%{border-color:rgba(99,102,241,.15)}50%{border-color:rgba(99,102,241,.45)}}
-@keyframes mk-slide-up{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
-@keyframes mk-fade-in{from{opacity:0}to{opacity:1}}
-@keyframes mk-scale-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
-@keyframes mk-hero-text{from{opacity:0;transform:translateY(30px) scale(.97);filter:blur(8px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
-@keyframes mk-logo-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-@keyframes mk-line-draw{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
-@keyframes mk-number-pop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-@keyframes mk-card-float{0%,100%{transform:translateY(0) rotateX(0)}50%{transform:translateY(-8px) rotateX(1deg)}}
-.mk-reveal{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1);}
-.mk-reveal.mk-visible{opacity:1;transform:translateY(0);}
-.mk-reveal-d1{transition-delay:.1s}.mk-reveal-d2{transition-delay:.2s}.mk-reveal-d3{transition-delay:.3s}
-.mk-reveal-d4{transition-delay:.4s}.mk-reveal-d5{transition-delay:.5s}.mk-reveal-d6{transition-delay:.6s}
-.mk-glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06);}
-.mk-glass:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);}
-.mk-glass-strong{background:rgba(255,255,255,.05);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,.08);}
-.mk-bento-tilt{transition:transform .6s cubic-bezier(.16,1,.3,1),box-shadow .6s ease;}
-.mk-bento-tilt:hover{transform:translateY(-6px) perspective(800px) rotateX(2deg);box-shadow:0 30px 60px rgba(0,0,0,.4),0 0 40px rgba(99,102,241,.08);}
+const marketingCSS = `
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+
+.mk5-body {
+  --void: #06090d;
+  --abyss: #0a0f14;
+  --deep: #0e151c;
+  --sage: #4A6B5A;
+  --sage-b: #5d8a6f;
+  --sage-d: rgba(74,107,90,.08);
+  --bronze: #c9a059;
+  --sky: #7AACB5;
+  --cream: #e8e4dc;
+  --chalk: #c4bfb4;
+  --slate: #586573;
+  --line: rgba(74,107,90,.1);
+  --line-b: rgba(74,107,90,.25);
+  font-family: 'Outfit', sans-serif;
+  background: var(--void);
+  color: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.mk5-grain {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: .03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.mk5-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1.5rem 3.5rem; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(6,9,13,.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line);
+}
+.mk5-nav-logo {
+  display: flex; align-items: center; gap: .75rem; text-decoration: none; color: var(--cream);
+  font-family: 'Instrument Serif', serif; font-size: 1.3rem; letter-spacing: .08em;
+}
+.mk5-nav-links { display: flex; align-items: center; gap: 2.5rem; }
+.mk5-nav-links a {
+  font-family: 'IBM Plex Mono', monospace; font-size: .65rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--slate); text-decoration: none; transition: color .3s;
+}
+.mk5-nav-links a:hover { color: var(--cream); }
+.mk5-nav-cta {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .15em;
+  text-transform: uppercase; padding: .6rem 1.5rem; border: 1px solid var(--sage);
+  color: var(--sage); text-decoration: none; transition: all .3s; cursor: pointer;
+  background: transparent;
+}
+.mk5-nav-cta:hover { background: var(--sage); color: var(--void); }
+
+.mk5-hero {
+  min-height: 100vh; display: flex; align-items: flex-end; padding: 0 3.5rem 6rem;
+  position: relative; overflow: hidden;
+}
+.mk5-hero canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: .5;
+}
+.mk5-hero-content {
+  position: relative; z-index: 2; display: grid; grid-template-columns: 1.2fr 1fr;
+  gap: 4rem; width: 100%; align-items: end;
+}
+.mk5-hero-eyebrow {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .35em;
+  text-transform: uppercase; color: var(--sage); margin-bottom: 1.5rem;
+}
+.mk5-hero h1 {
+  font-family: 'Instrument Serif', serif; font-size: clamp(3.5rem, 7vw, 7rem);
+  font-weight: 400; line-height: .95; letter-spacing: -.02em; margin: 0;
+}
+.mk5-hero h1 .thin { font-weight: 300; color: var(--chalk); }
+.mk5-hero h1 i {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.mk5-hero-desc {
+  font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); margin-bottom: 2.5rem;
+}
+.mk5-hero-actions { display: flex; gap: 1.5rem; align-items: center; }
+.mk5-btn-main {
+  font-family: 'IBM Plex Mono', monospace; font-size: .65rem; letter-spacing: .15em;
+  text-transform: uppercase; padding: .8rem 2rem; background: var(--sage);
+  color: var(--void); text-decoration: none; transition: all .4s; font-weight: 500;
+  border: none; cursor: pointer;
+}
+.mk5-btn-main:hover { background: var(--sage-b); }
+.mk5-btn-line {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--slate); text-decoration: none;
+  border-bottom: 1px solid var(--line); padding-bottom: 2px; transition: color .3s;
+  background: transparent; border-top: none; border-left: none; border-right: none;
+  cursor: pointer;
+}
+.mk5-btn-line:hover { color: var(--cream); }
+.mk5-hero-scroll {
+  position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+}
+.mk5-hero-scroll span {
+  font-family: 'IBM Plex Mono', monospace; font-size: .5rem; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--slate);
+}
+.mk5-scroll-line {
+  width: 1px; height: 40px; background: var(--line); position: relative; overflow: hidden;
+}
+.mk5-scroll-line::after {
+  content: ''; position: absolute; top: -100%; left: 0; width: 100%; height: 40%;
+  background: linear-gradient(to bottom, transparent, var(--sage));
+  animation: mk5scrollP 2s linear infinite;
+}
+
+.mk5-ticker {
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  padding: 1.2rem 0; overflow: hidden;
+}
+.mk5-ticker-track {
+  display: flex; gap: 0; white-space: nowrap;
+  animation: mk5tickScroll 20s linear infinite;
+}
+.mk5-ticker-item {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .25em;
+  text-transform: uppercase; color: var(--slate); padding: 0 2.5rem;
+  display: inline-flex; align-items: center; gap: 2.5rem;
+}
+.mk5-ticker-dot {
+  width: 3px; height: 3px; border-radius: 50%; background: var(--sage); opacity: .4;
+  display: inline-block;
+}
+
+.mk5-manifesto { padding: 10rem 3.5rem; max-width: 900px; }
+.mk5-manifesto-text {
+  font-family: 'Instrument Serif', serif; font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-weight: 400; line-height: 1.4; color: var(--chalk);
+}
+.mk5-manifesto-text em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.mk5-manifesto-text strong { color: var(--cream); font-weight: 400; }
+
+.mk5-evo { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+.mk5-evo-item { padding: 4rem 3rem; border-right: 1px solid var(--line); position: relative; }
+.mk5-evo-item:last-child { border-right: none; }
+.mk5-evo-era {
+  font-family: 'IBM Plex Mono', monospace; font-size: .55rem; letter-spacing: .3em;
+  text-transform: uppercase; margin-bottom: 1.5rem;
+}
+.mk5-evo-era.past { color: var(--slate); }
+.mk5-evo-era.present { color: var(--sky); }
+.mk5-evo-era.future { color: var(--sage); }
+.mk5-evo-name {
+  font-family: 'Instrument Serif', serif; font-size: 2.5rem; font-weight: 400;
+  margin-bottom: 1.5rem;
+}
+.mk5-evo-desc { font-size: .85rem; font-weight: 300; line-height: 1.8; color: var(--chalk); }
+.mk5-evo-arrow {
+  position: absolute; right: -1rem; top: 50%; font-size: 1.5rem; color: var(--line-b);
+  transform: translateY(-50%);
+}
+
+.mk5-layers { padding: 10rem 3.5rem; }
+.mk5-layers-intro { display: grid; grid-template-columns: 200px 1fr; gap: 4rem; margin-bottom: 6rem; }
+.mk5-layers-intro-left {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--sage); padding-top: .5rem;
+}
+.mk5-layers-intro-right h2 {
+  font-family: 'Instrument Serif', serif; font-size: clamp(2.5rem, 4vw, 4rem);
+  font-weight: 400; line-height: 1.1; margin-bottom: 1.5rem;
+}
+.mk5-layers-intro-right p {
+  font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
+}
+.mk5-layer-block {
+  display: grid; grid-template-columns: 60px 1fr 400px; gap: 3rem;
+  padding: 5rem 0; border-top: 1px solid var(--line);
+}
+.mk5-layer-num {
+  font-family: 'IBM Plex Mono', monospace; font-size: 5rem; font-weight: 300;
+  color: var(--line-b); line-height: 1;
+}
+.mk5-layer-name {
+  font-family: 'Instrument Serif', serif; font-size: 2rem; font-weight: 400; margin-bottom: .5rem;
+}
+.mk5-layer-role {
+  font-family: 'IBM Plex Mono', monospace; font-size: .55rem; letter-spacing: .2em;
+  text-transform: uppercase; margin-bottom: 1.5rem;
+}
+.mk5-layer-role.bronze { color: var(--bronze); }
+.mk5-layer-role.sky { color: var(--sky); }
+.mk5-layer-role.sage { color: var(--sage); }
+.mk5-layer-desc { font-size: .9rem; font-weight: 300; line-height: 1.8; color: var(--chalk); margin-bottom: 2rem; }
+.mk5-layer-tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+.mk5-layer-tag {
+  font-family: 'IBM Plex Mono', monospace; font-size: .55rem; letter-spacing: .1em;
+  padding: .4rem 1rem; border: 1px solid var(--line); color: var(--slate); transition: all .3s;
+}
+.mk5-layer-tag:hover { border-color: var(--sage); color: var(--sage); background: var(--sage-d); }
+
+.mk5-big-stmt { padding: 16rem 3.5rem; text-align: center; }
+.mk5-big-stmt h2 {
+  font-family: 'Instrument Serif', serif; font-size: clamp(3rem, 8vw, 8rem);
+  font-weight: 400; line-height: .95; letter-spacing: -.02em;
+}
+.mk5-big-stmt .stroke {
+  -webkit-text-fill-color: transparent; -webkit-text-stroke: 1.5px var(--chalk);
+}
+.mk5-big-stmt .glow {
+  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.mk5-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.mk5-stat-item {
+  padding: 4rem 3rem; border-right: 1px solid var(--line); text-align: center;
+  transition: background .4s;
+}
+.mk5-stat-item:last-child { border-right: none; }
+.mk5-stat-item:hover { background: var(--sage-d); }
+.mk5-stat-num {
+  font-family: 'Instrument Serif', serif; font-size: 4.5rem; font-weight: 400; line-height: 1;
+}
+.mk5-stat-num .accent { color: var(--sage-b); }
+.mk5-stat-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .25em;
+  text-transform: uppercase; color: var(--slate); margin-top: 1rem;
+}
+
+.mk5-comp { padding: 10rem 3.5rem; position: relative; }
+.mk5-comp-header { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 5rem; }
+.mk5-comp-header h2 {
+  font-family: 'Instrument Serif', serif; font-size: clamp(2.5rem, 4vw, 4rem);
+  font-weight: 400; line-height: 1.1;
+}
+.mk5-comp-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); align-self: end; }
+.mk5-cg {
+  display: grid; grid-template-columns: 2fr repeat(4, 1fr); border-top: 1px solid var(--line);
+}
+.mk5-ch {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; font-weight: 500;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--slate);
+  padding: 1.2rem 1.5rem; border-bottom: 2px solid var(--line); border-right: 1px solid var(--line);
+}
+.mk5-ch:nth-child(5n) { border-right: none; }
+.mk5-ch.ath { color: var(--sage); border-bottom-color: var(--sage); }
+.mk5-cc {
+  padding: 1.4rem 1.5rem; font-size: .85rem; border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line); transition: background .3s;
+}
+.mk5-cc:nth-child(5n) { border-right: none; }
+.mk5-cc.rl { font-weight: 500; color: var(--cream); }
+.mk5-cc.ca { background: var(--sage-d); color: var(--sage-b); font-weight: 600; }
+.mk5-cc.cy { color: var(--sage); }
+.mk5-cc.cn { color: var(--slate); opacity: .3; }
+.mk5-cc.cp { color: var(--slate); font-style: italic; }
+
+.mk5-int { padding: 10rem 3.5rem; }
+.mk5-int-header { margin-bottom: 5rem; padding-bottom: 3rem; border-bottom: 1px solid var(--line); }
+.mk5-int-header h2 {
+  font-family: 'Instrument Serif', serif; font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 400; line-height: 1.2;
+}
+.mk5-int-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line);
+}
+.mk5-int-item {
+  background: var(--abyss); padding: 3rem 2rem; text-align: center;
+  transition: all .4s; display: flex; flex-direction: column; align-items: center; gap: 1rem;
+}
+.mk5-int-item:hover { background: var(--sage-d); }
+.mk5-int-icon { font-size: 1.6rem; opacity: .25; transition: opacity .3s; }
+.mk5-int-item:hover .mk5-int-icon { opacity: .6; }
+.mk5-int-name { font-size: .75rem; font-weight: 500; letter-spacing: .1em; color: var(--chalk); }
+.mk5-int-type {
+  font-family: 'IBM Plex Mono', monospace; font-size: .5rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--slate);
+}
+
+.mk5-cta {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; text-align: center; position: relative; padding: 4rem;
+}
+.mk5-cta::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(74,107,90,.06) 0%, transparent 70%);
+}
+.mk5-cta-content { position: relative; z-index: 2; }
+.mk5-cta-ey {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .4em;
+  text-transform: uppercase; color: var(--sage); margin-bottom: 3rem;
+}
+.mk5-cta h2 {
+  font-family: 'Instrument Serif', serif; font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 400; line-height: .95; letter-spacing: -.02em; margin-bottom: 2rem;
+}
+.mk5-cta h2 i {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.mk5-cta-sub {
+  font-size: 1.1rem; font-weight: 300; line-height: 1.8; color: var(--chalk);
+  max-width: 480px; margin: 0 auto 3.5rem;
+}
+
+.mk5-contact { padding: 8rem 3.5rem; border-top: 1px solid var(--line); }
+.mk5-contact-inner { max-width: 600px; margin: 0 auto; text-align: center; }
+.mk5-contact h2 {
+  font-family: 'Instrument Serif', serif; font-size: 2.5rem; font-weight: 400;
+  margin-bottom: 1rem;
+}
+.mk5-contact p { font-size: .9rem; font-weight: 300; color: var(--chalk); margin-bottom: 3rem; line-height: 1.8; }
+.mk5-contact input, .mk5-contact textarea {
+  width: 100%; padding: 1rem 1.2rem; background: var(--abyss); border: 1px solid var(--line);
+  color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .85rem; font-weight: 300;
+  outline: none; transition: border-color .3s; margin-bottom: 1rem; box-sizing: border-box;
+}
+.mk5-contact input:focus, .mk5-contact textarea:focus { border-color: var(--sage); }
+.mk5-contact input::placeholder, .mk5-contact textarea::placeholder { color: var(--slate); }
+.mk5-contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.mk5-contact-btn {
+  width: 100%; padding: 1rem; background: var(--sage); color: var(--void);
+  font-family: 'IBM Plex Mono', monospace; font-size: .65rem; letter-spacing: .15em;
+  text-transform: uppercase; font-weight: 500; border: none; cursor: pointer;
+  transition: background .3s; margin-top: .5rem;
+}
+.mk5-contact-btn:hover { background: var(--sage-b); }
+
+.mk5-footer {
+  padding: 3rem 3.5rem; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center;
+}
+.mk5-fl { font-family: 'Instrument Serif', serif; font-size: 1.2rem; letter-spacing: .15em; }
+.mk5-fc { text-align: center; font-size: .75rem; font-weight: 300; color: var(--slate); }
+.mk5-fr {
+  text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: .55rem;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--slate);
+}
+
+@keyframes mk5scrollP { 0% { top: -100%; } 100% { top: 200%; } }
+@keyframes mk5tickScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.mk5-reveal { opacity: 0; transform: translateY(50px); transition: all 1s cubic-bezier(.16,1,.3,1); }
+.mk5-reveal.visible { opacity: 1; transform: translateY(0); }
+
+@media(max-width:1024px) {
+  .mk5-hero-content { grid-template-columns: 1fr; }
+  .mk5-layers-intro { grid-template-columns: 1fr; gap: 2rem; }
+  .mk5-layer-block { grid-template-columns: 60px 1fr; gap: 2rem; }
+  .mk5-layer-visual { display: none; }
+  .mk5-stats { grid-template-columns: repeat(2, 1fr); }
+  .mk5-evo { grid-template-columns: 1fr; }
+  .mk5-int-grid { grid-template-columns: repeat(3, 1fr); }
+  .mk5-comp-header { grid-template-columns: 1fr; }
+  .mk5-evo-arrow { display: none; }
+}
+@media(max-width:768px) {
+  .mk5-nav { padding: 1.5rem 2rem; }
+  .mk5-nav-links { display: none; }
+  .mk5-hero { padding: 0 2rem 4rem; }
+  .mk5-manifesto { padding: 8rem 2rem; }
+  .mk5-layers, .mk5-comp, .mk5-int, .mk5-contact { padding-left: 2rem; padding-right: 2rem; }
+  .mk5-layer-block { grid-template-columns: 1fr; }
+  .mk5-layer-num { font-size: 4rem; }
+  .mk5-stats { grid-template-columns: 1fr 1fr; }
+  .mk5-int-grid { grid-template-columns: repeat(2, 1fr); }
+  .mk5-footer { grid-template-columns: 1fr; gap: 1.5rem; text-align: center; }
+  .mk5-fr { text-align: center; }
+  .mk5-big-stmt { padding: 8rem 2rem; }
+  .mk5-cg { min-width: 700px; }
+  .mk5-comp { overflow-x: auto; }
+  .mk5-contact-grid { grid-template-columns: 1fr; }
+}
 `;
 
-/* ---- DATA ---- */
+const AtheonLogo = ({ size = 28 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+    <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
+    <line x1="9" y1="20" x2="23" y2="20" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
+    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
+    <circle cx="16" cy="9" r="1.5" fill="#c9a059" />
+  </svg>
+);
 
-const layers = [
-  { Icon: IconBarChart, title: "Apex", subtitle: "Executive Intelligence", desc: "AI-generated executive briefings. Real-time health scoring distills thousands of data points into a single strategic view.", color: "#6366f1", benefits: ["Health score dashboard", "AI briefings", "Trend analysis"] },
-  { Icon: IconPulse, title: "Pulse", subtitle: "Process Monitoring", desc: "Continuous KPI tracking with intelligent anomaly detection. Surfaces exceptions before they become problems.", color: "#059669", benefits: ["Real-time KPIs", "Anomaly detection", "Exception alerts"] },
-  { Icon: IconCatalysts, title: "Catalysts", subtitle: "Autonomous AI Agents", desc: "The next evolution. Catalysts don\u2019t recommend \u2014 they act. Deploy autonomous workers with full audit trails.", color: "#8b5cf6", benefits: ["Autonomous execution", "Human-in-the-loop", "Full audit trails"] },
-  { Icon: IconMind, title: "Mind", subtitle: "Domain LLM Engine", desc: "Industry-specific language models with multi-tier inference. Routes to the optimal model for every query.", color: "#0ea5e9", benefits: ["Multi-tier inference", "Domain fine-tuning", "Intelligent routing"] },
-  { Icon: IconMemory, title: "Memory", subtitle: "Knowledge Layer", desc: "Vector-powered semantic search across all enterprise documents. Persistent context across every interaction.", color: "#f43f5e", benefits: ["Semantic search", "Persistent context", "Document vectorisation"] },
-  { Icon: IconNetwork, title: "ERP Integration", subtitle: "Universal Adapter", desc: "Pre-built adapters for SAP, Xero, Sage, Pastel and more. Connect once, work everywhere.", color: "#f59e0b", benefits: ["5+ ERP adapters", "Canonical API", "Real-time sync"] },
-];
-
-const stats = [
-  { value: "73", suffix: "%", label: "Issues Auto-Resolved" },
-  { value: "2", prefix: "<", suffix: "s", label: "Decision Latency" },
-  { value: "99.9", suffix: "%", label: "Uptime SLA" },
-  { value: "6", suffix: "", label: "Intelligence Layers" },
-];
-
-const securityFeatures = [
-  { label: "SOC 2 Type II", Icon: IconShield },
-  { label: "AES-256 Encryption", Icon: IconShield },
-  { label: "Azure AD SSO", Icon: IconControlPlane },
-  { label: "Full Audit Trails", Icon: IconAudit },
-  { label: "Tenant Isolation", Icon: IconNetwork },
-  { label: "Zero-Trust Arch", Icon: IconConnectivity },
-  { label: "GDPR & POPIA", Icon: IconCheckCircle },
-  { label: "PBKDF2 Hashing", Icon: IconShield },
-];
-
-const steps = [
-  { num: "01", title: "Connect ERPs", desc: "Plug in existing systems through pre-built adapters. SAP, Xero, Sage, Pastel \u2014 no migration.", Icon: IconERPAdapters },
-  { num: "02", title: "AI Analyses", desc: "Six-layer intelligence processes every transaction, detects anomalies, scores organisational health.", Icon: IconMind },
-  { num: "03", title: "Surface Insights", desc: "Executive briefings distill complexity into action. AI recommends the best path with confidence scores.", Icon: IconBarChart },
-  { num: "04", title: "Catalysts Act", desc: "Approved actions executed autonomously by domain-specific AI agents with full audit trails.", Icon: IconCatalysts },
-];
-
-const catalystUseCases = [
-  { title: "Invoice Exception Handler", metric: "80%", metricLabel: "fewer manual reviews", desc: "Detects, classifies, and resolves invoice discrepancies across your P2P cycle.", Icon: IconAudit },
-  { title: "Cash Flow Optimiser", metric: "12%", metricLabel: "working capital gain", desc: "Analyses payment patterns and recommends optimal timing for maximum discounts.", Icon: IconBarChart },
-  { title: "Compliance Monitor", metric: "24/7", metricLabel: "real-time scanning", desc: "Continuously scans for regulatory violations, policy breaches, and audit risks.", Icon: IconShield },
-  { title: "Demand Forecaster", metric: "35%", metricLabel: "accuracy improvement", desc: "Predicts demand using historical patterns and market signals with unprecedented precision.", Icon: IconPulse },
-];
-
-const whyAtheon = [
-  { title: "Beyond Dashboards", desc: "Traditional BI shows what happened. Atheon tells you what to do \u2014 and does it.", Icon: IconApex },
-  { title: "Beyond Chatbots", desc: "Mind isn\u2019t a GPT wrapper. It\u2019s an industry-tuned inference engine with domain memory.", Icon: IconChat },
-  { title: "Beyond RPA", desc: "Catalysts aren\u2019t scripted bots. They understand context, handle exceptions, learn from outcomes.", Icon: IconCatalysts },
-  { title: "ERP Agnostic", desc: "Your logic shouldn\u2019t be locked to one vendor. Switch ERPs without rebuilding.", Icon: IconConnectivity },
-];
-
-const trustLogos = ["Deloitte", "McKinsey", "KPMG", "Accenture", "PwC", "EY", "Bain", "BCG"];
-
-/* ---- CANVAS PARTICLE NETWORK ---- */
-function ParticleCanvas() {
+function HeroCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; r: number; o: number }>>([]);
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -111,675 +408,479 @@ function ParticleCanvas() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    };
+    let w = 0, h = 0;
+    const particles: Array<{
+      tx: number; ty: number; x: number; y: number; s: number; a: number;
+      sp: number; an: number; dr: number; c: string; fx: number; fy: number;
+    }> = [];
+
+    function resize() {
+      w = canvas!.width = window.innerWidth;
+      h = canvas!.height = window.innerHeight;
+      if (particles.length > 0) {
+        for (const p of particles) {
+          p.tx = w * p.fx;
+          p.ty = h * p.fy;
+        }
+      }
+    }
     resize();
     window.addEventListener("resize", resize);
 
-    // Create particles
-    const count = Math.min(80, Math.floor(canvas.offsetWidth / 15));
-    const w = canvas.offsetWidth;
-    const h = canvas.offsetHeight;
-    particlesRef.current = Array.from({ length: count }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      r: 1 + Math.random() * 1.5,
-      o: 0.15 + Math.random() * 0.35,
-    }));
+    for (let i = 0; i < 200; i++) {
+      const row = Math.random();
+      const halfW = row * 0.35;
+      const fx = 0.62 + (Math.random() - 0.5) * halfW * 2;
+      const fy = 0.15 + row * 0.7;
+      const tx = w * fx;
+      const ty = h * fy;
+      const c = Math.random();
+      particles.push({
+        tx, ty, fx, fy,
+        x: tx + (Math.random() - 0.5) * 200,
+        y: ty + (Math.random() - 0.5) * 200,
+        s: Math.random() * 1.5 + 0.3,
+        a: Math.random() * 0.3 + 0.05,
+        sp: Math.random() * 0.003 + 0.001,
+        an: Math.random() * Math.PI * 2,
+        dr: Math.random() * 20 + 10,
+        c: c < 0.6 ? "74,107,90" : c < 0.85 ? "122,172,181" : "201,160,89",
+      });
+    }
 
-    const maxDist = 150;
-    const mouseDist = 200;
-
-    const animate = () => {
-      const cw = canvas.offsetWidth;
-      const ch = canvas.offsetHeight;
-      ctx.clearRect(0, 0, cw, ch);
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-      const pts = particlesRef.current;
-
-      for (const p of pts) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = cw;
-        if (p.x > cw) p.x = 0;
-        if (p.y < 0) p.y = ch;
-        if (p.y > ch) p.y = 0;
-
-        // Mouse attraction
-        if (mx > 0 && my > 0) {
-          const dx = mx - p.x;
-          const dy = my - p.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < mouseDist) {
-            p.vx += dx * 0.00005;
-            p.vy += dy * 0.00005;
-          }
-        }
-
-        // Speed limit
-        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (speed > 0.6) {
-          p.vx *= 0.98;
-          p.vy *= 0.98;
-        }
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(99, 102, 241, ${p.o})`;
-        ctx.fill();
+    let raf = 0;
+    function animate() {
+      ctx!.clearRect(0, 0, w, h);
+      for (const p of particles) {
+        p.an += p.sp;
+        p.x = p.tx + Math.sin(p.an) * p.dr;
+        p.y = p.ty + Math.cos(p.an * 0.7) * p.dr * 0.5;
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+        ctx!.fillStyle = "rgba(" + p.c + "," + p.a + ")";
+        ctx!.fill();
       }
-
-      // Draw connections
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x;
-          const dy = pts[i].y - pts[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < maxDist) {
-            const alpha = (1 - dist / maxDist) * 0.15;
-            ctx.beginPath();
-            ctx.moveTo(pts[i].x, pts[i].y);
-            ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 100) {
+            ctx!.beginPath();
+            ctx!.moveTo(particles[i].x, particles[i].y);
+            ctx!.lineTo(particles[j].x, particles[j].y);
+            ctx!.strokeStyle = "rgba(74,107,90," + (0.03 * (1 - d / 100)) + ")";
+            ctx!.lineWidth = 0.5;
+            ctx!.stroke();
           }
         }
       }
-
-      // Mouse glow
-      if (mx > 0 && my > 0) {
-        const grad = ctx.createRadialGradient(mx, my, 0, mx, my, 200);
-        grad.addColorStop(0, "rgba(99, 102, 241, 0.06)");
-        grad.addColorStop(1, "rgba(99, 102, 241, 0)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, cw, ch);
-      }
-
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
-
-    const handleMouse = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    };
-    canvas.addEventListener("mousemove", handleMouse);
+      raf = requestAnimationFrame(animate);
+    }
+    raf = requestAnimationFrame(animate);
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      canvas.removeEventListener("mousemove", handleMouse);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.8 }} />;
+  return <canvas ref={canvasRef} />;
 }
 
-/* ---- SCROLL REVEAL HOOK ---- */
-function useScrollReveal(ref: React.RefObject<HTMLDivElement | null>) {
+function useReveal(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("mk-visible"); }),
-      { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((en) => { if (en.isIntersecting) en.target.classList.add("visible"); }),
+      { threshold: 0.1, rootMargin: "0px 0px -80px 0px" }
     );
-    el.querySelectorAll(".mk-reveal").forEach(child => observer.observe(child));
-    return () => observer.disconnect();
+    el.querySelectorAll(".mk5-reveal").forEach((child) => obs.observe(child));
+    return () => obs.disconnect();
   }, [ref]);
 }
 
-/* ---- ANIMATED COUNTER ---- */
-function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: string; prefix?: string; suffix?: string }) {
-  const [display, setDisplay] = useState("0");
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) {
-        const num = parseFloat(value);
-        if (isNaN(num)) { setDisplay(value); return; }
-        const dur = 1500;
-        const start = performance.now();
-        const isDecimal = value.includes(".");
-        const animate = (now: number) => {
-          const progress = Math.min((now - start) / dur, 1);
-          const eased = 1 - Math.pow(1 - progress, 4);
-          const current = isDecimal ? (num * eased).toFixed(1) : String(Math.round(num * eased));
-          setDisplay(current);
-          if (progress < 1) requestAnimationFrame(animate);
-          else setDisplay(value);
-        };
-        requestAnimationFrame(animate);
-        observer.disconnect();
-      }
-    }, { threshold: 0.5 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [value]);
-  return <span ref={ref}>{prefix}{display}{suffix}</span>;
-}
-
-/* ---- MOUSE SPOTLIGHT ---- */
-function useMouseSpotlight(ref: React.RefObject<HTMLDivElement | null>) {
-  const handleMove = useCallback((e: MouseEvent) => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    el.style.setProperty("--mx", `${x}px`);
-    el.style.setProperty("--my", `${y}px`);
-  }, [ref]);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.addEventListener("mousemove", handleMove);
-    return () => el.removeEventListener("mousemove", handleMove);
-  }, [ref, handleMove]);
-}
-
-/* ============================================================
-   MAIN COMPONENT
-   ============================================================ */
 export function MarketingPage() {
   const navigate = useNavigate();
   const mainRef = useRef<HTMLDivElement>(null);
   const [contactSent, setContactSent] = useState(false);
-  useScrollReveal(mainRef);
-  useMouseSpotlight(mainRef);
+  useReveal(mainRef);
 
-  // Inject CSS once
   useEffect(() => {
-    if (!document.getElementById("mk-award-css")) {
+    if (!document.getElementById("mk5-css")) {
       const s = document.createElement("style");
-      s.id = "mk-award-css";
-      s.textContent = animCSS;
+      s.id = "mk5-css";
+      s.textContent = marketingCSS;
       document.head.appendChild(s);
     }
   }, []);
 
-  return (
-    <div
-      ref={mainRef}
-      className="min-h-screen"
-      style={{
-        background: "#06080f",
-        color: "#e2e8f0",
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        ["--mx" as string]: "50%",
-        ["--my" as string]: "50%",
-      }}
-    >
+  const tickerItems = ["Catalyst", "Not an Agent", "Three Layers", "Governed", "Correlated", "One Truth"];
 
-      {/* ========== NAVBAR ========== */}
-      <nav className="fixed top-0 w-full z-50" style={{ background: "rgba(6, 8, 15, 0.7)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:shadow-lg group-hover:shadow-indigo-500/20" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)" }}>
-              <svg width="16" height="16" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="navLogo" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#a5b4fc"/><stop offset="50%" stopColor="#6366f1"/><stop offset="100%" stopColor="#4338ca"/></linearGradient></defs><path d="M32 8 L13 54 h10 l4-10 h10 l4 10 h10 Z M32 22 l6 14 h-12 Z" fill="url(#navLogo)"/></svg>
-            </div>
-            <span className="text-base font-bold tracking-tight text-white">Atheon</span>
-          </a>
-          <div className="hidden md:flex items-center gap-8 text-[13px] font-medium text-white/50">
-            <a href="#platform" className="hover:text-white transition-colors duration-200">Platform</a>
-            <a href="#catalysts" className="hover:text-white transition-colors duration-200">Catalysts</a>
-            <a href="#how" className="hover:text-white transition-colors duration-200">How It Works</a>
-            <a href="#security" className="hover:text-white transition-colors duration-200">Security</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/login")} className="text-[13px] font-medium px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all duration-200">Sign In</button>
-            <button onClick={() => navigate("/login")} className="text-[13px] font-semibold px-5 py-2.5 rounded-lg text-white transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25 hover:-translate-y-px" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 2px 12px rgba(99, 102, 241, 0.3)" }}>
-              Get Started
-            </button>
-          </div>
+  const integrations = [
+    { icon: "\u25C6", name: "SAP S/4HANA", type: "ERP" },
+    { icon: "\u25C6", name: "SAP Business One", type: "ERP" },
+    { icon: "\u25C7", name: "Dynamics 365", type: "ERP + CRM" },
+    { icon: "\u25C6", name: "Sage 300", type: "ERP" },
+    { icon: "\u25C6", name: "SYSPRO", type: "ERP" },
+    { icon: "\u25C7", name: "Odoo", type: "ERP" },
+    { icon: "\u25CB", name: "SuccessFactors", type: "HCM" },
+    { icon: "\u25CB", name: "Salesforce", type: "CRM" },
+    { icon: "\u25CB", name: "Xero", type: "Accounting" },
+    { icon: "\u2750", name: "REST APIs", type: "Custom" },
+  ];
+
+  return (
+    <div ref={mainRef} className="mk5-body">
+      <div className="mk5-grain" />
+
+      <nav className="mk5-nav">
+        <a href="#" className="mk5-nav-logo" onClick={(e) => e.preventDefault()}>
+          <AtheonLogo size={28} />
+          Atheon
+        </a>
+        <div className="mk5-nav-links">
+          <a href="#layers">Architecture</a>
+          <a href="#compare">Compare</a>
+          <a href="#contact">Contact</a>
+          <button className="mk5-nav-cta" onClick={() => navigate("/login")}>
+            <span>Sign In</span>
+          </button>
         </div>
       </nav>
 
-      {/* ========== HERO ========== */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-        {/* Canvas particle network */}
-        <ParticleCanvas />
-
-        {/* Gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 w-[700px] h-[700px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)", animation: "mk-glow-breathe 8s ease-in-out infinite" }} />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)", animation: "mk-glow-breathe 10s ease-in-out 3s infinite" }} />
-        <div className="absolute top-1/3 right-1/6 w-[300px] h-[300px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%)", animation: "mk-glow-breathe 7s ease-in-out 1s infinite" }} />
-
-        {/* Orbiting elements */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.08 }}>
-          <div className="relative w-0 h-0">
-            <div className="absolute w-2 h-2 rounded-full bg-indigo-400" style={{ animation: "mk-orbit 20s linear infinite" }} />
-            <div className="absolute w-1.5 h-1.5 rounded-full bg-violet-400" style={{ animation: "mk-orbit-sm 14s linear infinite reverse" }} />
-            <div className="absolute w-1 h-1 rounded-full bg-cyan-400" style={{ animation: "mk-orbit-lg 28s linear 5s infinite" }} />
+      <section className="mk5-hero">
+        <HeroCanvas />
+        <div className="mk5-hero-content">
+          <div>
+            <div className="mk5-hero-eyebrow">Introducing the Catalyst</div>
+            <h1>
+              <span className="thin">Agents evolve.</span><br />
+              <i>Catalysts</i> <span className="thin">emerge.</span>
+            </h1>
           </div>
-        </div>
-
-        {/* Mouse-following gradient spotlight */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(600px circle at var(--mx) var(--my), rgba(99, 102, 241, 0.04), transparent 60%)" }} />
-
-        {/* Hero content */}
-        <div className="relative max-w-5xl mx-auto px-6 text-center z-10">
-          <div style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.1s", opacity: 0 }}>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-semibold mb-10 border border-indigo-500/20" style={{ background: "rgba(99, 102, 241, 0.08)", color: "#a5b4fc" }}>
-              <IconBolt size={12} /> Enterprise Intelligence Platform
+          <div>
+            <p className="mk5-hero-desc">
+              Agents automate tasks. Copilots assist individuals. A Catalyst does what neither
+              can&nbsp;&mdash; it governs, correlates, and synthesises across your entire
+              organisation. Atheon is the world&rsquo;s first Catalyst platform. Three layers of
+              intelligence. One living truth.
+            </p>
+            <div className="mk5-hero-actions">
+              <button className="mk5-btn-main" onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}>
+                Request Access
+              </button>
+              <button className="mk5-btn-line" onClick={() => document.getElementById("layers")?.scrollIntoView({ behavior: "smooth" })}>
+                See the architecture
+              </button>
             </div>
           </div>
+        </div>
+        <div className="mk5-hero-scroll">
+          <div className="mk5-scroll-line" />
+          <span>Scroll</span>
+        </div>
+      </section>
 
-          <h1 style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.25s", opacity: 0 }} className="text-5xl sm:text-6xl lg:text-[5.5rem] font-extrabold leading-[1.02] tracking-tight mb-8">
-            <span className="text-white">The AI that doesn{"\u2019"}t</span><br />
-            <span className="text-white">just analyse </span>
-            <span style={{ backgroundImage: "linear-gradient(135deg, #a5b4fc, #6366f1, #8b5cf6, #06b6d4, #a5b4fc)", backgroundSize: "300% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mk-text-shimmer 5s linear infinite" }}>
-              {"— it acts"}
+      <div className="mk5-ticker">
+        <div className="mk5-ticker-track">
+          {[0, 1].map((rep) => (
+            <span key={rep} style={{ display: "contents" }}>
+              {tickerItems.map((t) => (
+                <span key={rep + "-" + t} className="mk5-ticker-item">
+                  {t}<span className="mk5-ticker-dot" />
+                </span>
+              ))}
             </span>
-          </h1>
-
-          <p style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.45s", opacity: 0 }} className="text-lg lg:text-xl text-white/50 leading-relaxed max-w-2xl mx-auto mb-4">
-            Six AI intelligence layers working as one. From executive health scoring to autonomous execution, Atheon transforms raw ERP data into strategic advantage.
-          </p>
-
-          <p style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.55s", opacity: 0 }} className="text-sm text-white/30 max-w-xl mx-auto mb-12">
-            Catalysts are the evolution of enterprise AI agents. They don{"\u2019"}t just recommend {"—"} they execute.
-          </p>
-
-          <div style={{ animation: "mk-hero-text 1s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.65s", opacity: 0 }} className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-            <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
-              Contact Us <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
-            <button onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/70 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
-              <IconPlay size={16} /> See How It Works
-            </button>
-          </div>
-
-          {/* Stats row */}
-          <div style={{ animation: "mk-hero-text 1.2s cubic-bezier(.16,1,.3,1) forwards", animationDelay: "0.85s", opacity: 0 }} className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-3xl mx-auto">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center group">
-                <div className="text-3xl lg:text-4xl font-extrabold text-white mb-1 transition-all duration-300 group-hover:text-indigo-300" style={{ animation: "mk-number-pop 4s ease-in-out infinite" }}>
-                  <AnimatedCounter value={s.value} prefix={s.prefix} suffix={s.suffix} />
-                </div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/30">{s.label}</div>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
+      </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2" style={{ animation: "mk-float 2s ease-in-out infinite" }}>
-          <div className="w-6 h-10 rounded-full border-2 border-white/10 flex items-start justify-center p-1.5">
-            <div className="w-1 h-2.5 rounded-full bg-white/30" style={{ animation: "mk-float 1.5s ease-in-out infinite" }} />
-          </div>
-        </div>
+      <section className="mk5-manifesto">
+        <p className="mk5-manifesto-text mk5-reveal">
+          An agent automates a task. A copilot assists a person. A <em>Catalyst</em> governs
+          an entire organisation&nbsp;&mdash; correlating every output, detecting every anomaly,
+          synthesising every signal into a single, living <strong>truth</strong>. This is the
+          next evolution.
+        </p>
       </section>
 
-      {/* ========== TRUST BAR ========== */}
-      <section className="py-14 relative overflow-hidden" style={{ borderTop: "1px solid rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-        <div className="text-center mb-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/20">Trusted by forward-thinking enterprises</p>
+      <div className="mk5-evo">
+        <div className="mk5-evo-item mk5-reveal">
+          <div className="mk5-evo-era past">Yesterday</div>
+          <div className="mk5-evo-name">Agent</div>
+          <div className="mk5-evo-desc">
+            Automates a single task. Operates in a silo. No awareness of what other agents
+            are doing. No governance. No organisational context.
+          </div>
+          <div className="mk5-evo-arrow">&rarr;</div>
         </div>
-        <div className="relative overflow-hidden" style={{ maskImage: "linear-gradient(90deg, transparent, black 15%, black 85%, transparent)" }}>
-          <div className="flex gap-16 items-center whitespace-nowrap" style={{ animation: "mk-logo-scroll 30s linear infinite" }}>
-            {[...trustLogos, ...trustLogos].map((logo, i) => (
-              <span key={i} className="text-lg font-bold tracking-tight text-white/[0.07] select-none flex-shrink-0">{logo}</span>
-            ))}
+        <div className="mk5-evo-item mk5-reveal">
+          <div className="mk5-evo-era present">Today</div>
+          <div className="mk5-evo-name">Copilot</div>
+          <div className="mk5-evo-desc">
+            Assists one person at a time. Answers questions from a knowledge base. Cannot
+            correlate across departments or govern autonomous processes.
+          </div>
+          <div className="mk5-evo-arrow">&rarr;</div>
+        </div>
+        <div className="mk5-evo-item mk5-reveal">
+          <div className="mk5-evo-era future">The Evolution</div>
+          <div className="mk5-evo-name">Catalyst</div>
+          <div className="mk5-evo-desc">
+            Governs a fleet of agents. Correlates outputs across every department. Synthesises
+            a living health score for the entire organisation. Thinks at executive, operational,
+            and execution level simultaneously.
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ========== PLATFORM LAYERS - BENTO GRID ========== */}
-      <section id="platform" className="py-24 lg:py-36 relative">
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99, 102, 241, 0.04) 0%, transparent 60%)" }} />
-        <div className="relative max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="mk-reveal inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-5 uppercase tracking-[0.15em] border border-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", color: "#a5b4fc" }}>
-              Platform Architecture
-            </div>
-            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-5">
-              Six layers of <span style={{ backgroundImage: "linear-gradient(135deg, #a5b4fc, #6366f1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>intelligence</span>
-            </h2>
-            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-xl mx-auto leading-relaxed">
-              Each layer works independently and as a unified system {"—"} from data ingestion to autonomous action.
+      <section className="mk5-layers" id="layers">
+        <div className="mk5-layers-intro">
+          <div className="mk5-layers-intro-left">The Architecture</div>
+          <div className="mk5-layers-intro-right mk5-reveal">
+            <h2>Inside the Catalyst.<br />Three layers deep.</h2>
+            <p>
+              A Catalyst isn&rsquo;t a single tool&nbsp;&mdash; it&rsquo;s three layers of intelligence
+              working as one. Execution at the base. Operational correlation in the core.
+              Executive synthesis at the apex. This is the architecture the agent market never built.
             </p>
           </div>
-
-          {/* Bento grid: 2 large top + 4 small bottom, or 3x2 on mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {layers.map((layer, i) => {
-              const LIcon = layer.Icon;
-              const isLarge = i < 2;
-              return (
-                <div
-                  key={layer.title}
-                  className={`mk-reveal mk-reveal-d${(i % 3) + 1} mk-glass mk-bento-tilt rounded-2xl ${isLarge && i === 0 ? "lg:col-span-2" : ""} p-7 relative group overflow-hidden`}
-                >
-                  {/* Hover spotlight */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(400px circle at var(--mx) var(--my), ${layer.color}08, transparent 60%)` }} />
-
-                  <div className="relative z-10">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg" style={{ background: `${layer.color}15`, boxShadow: `0 0 0 1px ${layer.color}20` }}>
-                      <LIcon size={22} style={{ color: layer.color }} />
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-base font-bold text-white">{layer.title}</h3>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `${layer.color}99` }}>{layer.subtitle}</span>
-                    </div>
-                    <p className="text-[13px] text-white/40 leading-relaxed mb-5">{layer.desc}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {layer.benefits.map(b => (
-                        <span key={b} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium" style={{ background: `${layer.color}0a`, color: `${layer.color}aa`, border: `1px solid ${layer.color}15` }}>
-                          <IconCheckCircle size={10} /> {b}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
-      </section>
 
-      {/* ========== CATALYSTS SPOTLIGHT ========== */}
-      <section id="catalysts" className="py-24 lg:py-36 relative overflow-hidden">
-        {/* Animated rings */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(139, 92, 246, 0.06)", animation: "mk-pulse-ring 5s ease-in-out infinite" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(99, 102, 241, 0.04)", animation: "mk-pulse-ring 5s ease-in-out 1.5s infinite" }} />
-
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 60%)" }} />
-
-        <div className="relative max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="mk-reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold mb-6 uppercase tracking-[0.15em] border" style={{ background: "rgba(139, 92, 246, 0.08)", color: "#c4b5fd", borderColor: "rgba(139, 92, 246, 0.2)", animation: "mk-border-glow 3s ease-in-out infinite" }}>
-              <IconCatalysts size={14} /> The Evolution of AI Agents
-            </div>
-            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-[3.5rem] font-extrabold text-white tracking-tight mb-6 leading-[1.05]">
-              Meet{" "}
-              <span style={{ backgroundImage: "linear-gradient(135deg, #c4b5fd, #8b5cf6, #6366f1, #c4b5fd)", backgroundSize: "300% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mk-text-shimmer 4s linear infinite" }}>
-                Catalysts
-              </span>
-            </h2>
-            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-2xl mx-auto leading-relaxed">
-              Today{"\u2019"}s AI assistants tell you what to do. <strong className="text-white/70">Catalysts actually do it.</strong> Purpose-built autonomous agents that understand context, execute workflows, handle exceptions, and learn.
+        <div className="mk5-layer-block">
+          <div className="mk5-layer-num">01</div>
+          <div>
+            <h3 className="mk5-layer-name">Executive Insight</h3>
+            <div className="mk5-layer-role bronze">The Apex&nbsp;&mdash; C-Suite &amp; Board</div>
+            <p className="mk5-layer-desc">
+              What makes a Catalyst fundamentally different from an agent. Natural language queries
+              across your entire business. One health score synthesising every department, every agent
+              output, every anomaly into executive clarity. An agent automates. A Catalyst delivers
+              organisational awareness.
             </p>
-          </div>
-
-          {/* Evolution comparison */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
-            {/* Traditional RPA */}
-            <div className="mk-reveal mk-reveal-d1 mk-glass rounded-2xl p-6">
-              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/25 mb-4">Traditional RPA</div>
-              <div className="space-y-3">
-                {["Scripted workflows", "Breaks on exceptions", "No context awareness", "Manual maintenance"].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-[13px] text-white/30">
-                    <IconCross size={12} className="text-red-400/60 flex-shrink-0" /> {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* AI Copilots */}
-            <div className="mk-reveal mk-reveal-d2 mk-glass rounded-2xl p-6">
-              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/25 mb-4">AI Copilots</div>
-              <div className="space-y-3">
-                {["Recommendations only", "Human must execute", "Limited domain knowledge", "No persistent memory"].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-[13px] text-white/30">
-                    <IconCross size={12} className="text-amber-400/60 flex-shrink-0" /> {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Atheon Catalysts */}
-            <div className="mk-reveal mk-reveal-d3 rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.05))", border: "1px solid rgba(139, 92, 246, 0.2)", animation: "mk-border-glow 3s ease-in-out infinite" }}>
-              <div className="absolute -top-px -right-px px-3 py-1 rounded-bl-xl rounded-tr-xl text-[9px] font-bold uppercase tracking-wider text-white" style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>Next Gen</div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-violet-300/80 mb-4">Atheon Catalysts</div>
-              <div className="space-y-3">
-                {["Autonomous execution", "Handles exceptions", "Full domain context", "Learns & improves"].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-[13px] text-white/80 font-medium">
-                    <IconCheckCircle size={12} className="text-violet-400 flex-shrink-0" /> {item}
-                  </div>
-                ))}
-              </div>
+            <div className="mk5-layer-tags">
+              {["Health Score Engine", "NLP Chat Interface", "Predictive Alerts", "Auto Reports", "Board Summaries"].map((t) => (
+                <span key={t} className="mk5-layer-tag">{t}</span>
+              ))}
             </div>
           </div>
-
-          {/* Use cases */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {catalystUseCases.map((uc, i) => {
-              const UCIcon = uc.Icon;
-              return (
-                <div key={uc.title} className={`mk-reveal mk-reveal-d${i + 1} mk-glass mk-bento-tilt rounded-2xl p-6 group`}>
-                  <div className="flex items-start gap-5">
-                    <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110" style={{ background: "rgba(139, 92, 246, 0.08)", boxShadow: "0 0 0 1px rgba(139, 92, 246, 0.15)" }}>
-                      <UCIcon size={24} style={{ color: "#a78bfa" }} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-bold text-white mb-1.5">{uc.title}</h3>
-                      <p className="text-[13px] text-white/35 leading-relaxed mb-4">{uc.desc}</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-extrabold text-violet-300">{uc.metric}</span>
-                        <span className="text-[11px] font-medium text-white/30">{uc.metricLabel}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <div className="mk5-layer-visual" />
         </div>
-      </section>
 
-      {/* ========== WHY ATHEON ========== */}
-      <section className="py-24 lg:py-36 relative" style={{ background: "linear-gradient(180deg, #06080f 0%, #0a0d1a 100%)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 40% at 50% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 60%)" }} />
-        <div className="relative max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="mk-reveal inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-5 uppercase tracking-[0.15em] border border-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", color: "#a5b4fc" }}>
-              Why Atheon
-            </div>
-            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-5">
-              Not another dashboard.<br className="hidden sm:block" /> Not another chatbot.
-            </h2>
-            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-xl mx-auto leading-relaxed">
-              Fundamentally different from traditional BI, RPA, and AI copilot tools.
+        <div className="mk5-layer-block">
+          <div className="mk5-layer-num">02</div>
+          <div>
+            <h3 className="mk5-layer-name">Operational Intelligence</h3>
+            <div className="mk5-layer-role sky">The Core&nbsp;&mdash; Directors &amp; Managers</div>
+            <p className="mk5-layer-desc">
+              The layer that separates a Catalyst from everything that came before it. Real-time
+              departmental intelligence that correlates agent outputs across your entire operation,
+              detects anomalies before they escalate, and recommends actions with confidence scores.
+              No agent has this. No copilot has this. Only a Catalyst.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {whyAtheon.map((item, i) => {
-              const WIcon = item.Icon;
-              return (
-                <div key={item.title} className={`mk-reveal mk-reveal-d${i + 1} mk-glass mk-bento-tilt rounded-2xl p-7 group`}>
-                  <div className="flex items-start gap-5">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3" style={{ background: "rgba(99, 102, 241, 0.08)", boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.12)" }}>
-                      <WIcon size={22} className="text-indigo-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
-                      <p className="text-[13px] text-white/35 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ========== HOW IT WORKS ========== */}
-      <section id="how" className="py-24 lg:py-36 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="mk-reveal inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-semibold mb-5 uppercase tracking-[0.15em] border border-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", color: "#a5b4fc" }}>
-              Getting Started
+            <div className="mk5-layer-tags">
+              {["Anomaly Detection", "Department Dashboards", "Process Mining", "Recommendation Engine", "Cross-Dept Correlation"].map((t) => (
+                <span key={t} className="mk5-layer-tag">{t}</span>
+              ))}
             </div>
-            <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-5">
-              From data to decision in{" "}
-              <span style={{ backgroundImage: "linear-gradient(135deg, #a5b4fc, #6366f1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>seconds</span>
-            </h2>
-            <p className="mk-reveal mk-reveal-d2 text-base text-white/40 max-w-lg mx-auto leading-relaxed">
-              Four steps. No complex setup. No data migration. Start seeing results immediately.
+          </div>
+          <div className="mk5-layer-visual" />
+        </div>
+
+        <div className="mk5-layer-block">
+          <div className="mk5-layer-num">03</div>
+          <div>
+            <h3 className="mk5-layer-name">Autonomous Agents</h3>
+            <div className="mk5-layer-role sage">The Foundation&nbsp;&mdash; Operations &amp; Execution</div>
+            <p className="mk5-layer-desc">
+              Atheon includes pre-built and custom agents for finance, HR, sales, supply chain, and
+              IT&nbsp;&mdash; but inside a Catalyst, agents aren&rsquo;t standalone. Every action is governed,
+              every decision auditable, every escalation routed through the intelligence layers above.
+              Same concept, fundamentally evolved.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative">
-            {/* Animated connecting line */}
-            <div className="hidden lg:block absolute top-20 left-[15%] right-[15%] h-px">
-              <div className="h-full w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15), transparent)" }} />
-              <div className="absolute top-0 left-0 h-full w-20" style={{ background: "linear-gradient(90deg, rgba(99, 102, 241, 0.5), transparent)", animation: "mk-gradient-shift 4s linear infinite", backgroundSize: "300% 100%" }} />
+            <div className="mk5-layer-tags">
+              {["12 Pre-Built Agents", "Custom Agent Builder", "Governance Framework", "Full Audit Trail", "ERP Integration"].map((t) => (
+                <span key={t} className="mk5-layer-tag">{t}</span>
+              ))}
             </div>
-
-            {steps.map((s, i) => {
-              const SIcon = s.Icon;
-              return (
-                <div key={s.num} className={`mk-reveal mk-reveal-d${i + 1} mk-glass mk-bento-tilt rounded-2xl p-6 text-center group`}>
-                  <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-indigo-500/15" style={{ background: "rgba(99, 102, 241, 0.06)", boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.1)" }}>
-                    <SIcon size={26} className="text-indigo-400" />
-                  </div>
-                  <div className="text-[10px] font-bold mb-3 uppercase tracking-[0.2em] text-indigo-400/30">{s.num}</div>
-                  <h3 className="text-sm font-bold text-white mb-2">{s.title}</h3>
-                  <p className="text-[13px] text-white/35 leading-relaxed">{s.desc}</p>
-                </div>
-              );
-            })}
           </div>
+          <div className="mk5-layer-visual" />
         </div>
       </section>
 
-      {/* ========== SECURITY ========== */}
-      <section id="security" className="py-24 lg:py-36 relative" style={{ background: "linear-gradient(180deg, #06080f 0%, #080b16 100%)" }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="mk-reveal mk-glass-strong rounded-3xl p-10 lg:p-16 relative overflow-hidden">
-            {/* Background glow */}
-            <div className="absolute top-0 right-0 w-80 h-80 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%)", animation: "mk-glow-breathe 6s ease-in-out infinite" }} />
-
-            <div className="flex flex-col lg:flex-row items-start gap-12 relative">
-              <div className="flex-1">
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-6" style={{ background: "rgba(99, 102, 241, 0.08)", boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.12)", animation: "mk-float-slow 5s ease-in-out infinite" }}>
-                  <IconShield size={28} className="text-indigo-400" />
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-5">Enterprise-grade<br />security</h2>
-                <p className="text-[14px] text-white/40 leading-relaxed mb-4 max-w-md">
-                  Zero-trust architecture. End-to-end encryption. Comprehensive audit logging. Your data never leaves your security boundary.
-                </p>
-                <p className="text-[13px] text-white/25 leading-relaxed max-w-md">
-                  SaaS, on-premise, or hybrid. Your security team stays in control.
-                </p>
-              </div>
-              <div className="flex-1 w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {securityFeatures.map((f, i) => {
-                    const FIcon = f.Icon;
-                    return (
-                      <div key={f.label} className={`mk-reveal mk-reveal-d${(i % 4) + 1} flex items-center gap-3 p-3.5 rounded-xl transition-all duration-300 hover:bg-white/[0.03]`}>
-                        <FIcon size={16} className="text-indigo-400/70 flex-shrink-0" />
-                        <span className="text-[13px] font-medium text-white/50">{f.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <section className="mk5-big-stmt mk5-reveal">
+        <h2>
+          <span className="stroke">Agent. Copilot.</span><br />
+          <span className="glow">Catalyst.</span>
+        </h2>
       </section>
 
-      {/* ========== CTA ========== */}
-      <section className="py-28 lg:py-40 relative overflow-hidden">
-        {/* Gradient background */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 60%)" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(99, 102, 241, 0.04)", animation: "mk-pulse-ring 6s ease-in-out infinite" }} />
+      <div className="mk5-stats">
+        <div className="mk5-stat-item mk5-reveal">
+          <div className="mk5-stat-num"><span className="accent">3</span></div>
+          <div className="mk5-stat-label">Intelligence Layers</div>
+        </div>
+        <div className="mk5-stat-item mk5-reveal">
+          <div className="mk5-stat-num">12<span className="accent">+</span></div>
+          <div className="mk5-stat-label">Pre-Built Agents</div>
+        </div>
+        <div className="mk5-stat-item mk5-reveal">
+          <div className="mk5-stat-num"><span className="accent">6</span></div>
+          <div className="mk5-stat-label">ERP Connectors</div>
+        </div>
+        <div className="mk5-stat-item mk5-reveal">
+          <div className="mk5-stat-num"><span className="accent">1</span></div>
+          <div className="mk5-stat-label">Unified Platform</div>
+        </div>
+      </div>
 
-        <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <div className="mk-reveal w-20 h-20 rounded-2xl mx-auto mb-10 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)", boxShadow: "0 8px 50px rgba(99, 102, 241, 0.35)", animation: "mk-float 4s ease-in-out infinite" }}>
-            <svg width="36" height="36" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ctaLogo" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#a5b4fc"/><stop offset="50%" stopColor="#6366f1"/><stop offset="100%" stopColor="#4338ca"/></linearGradient></defs><path d="M32 8 L13 54 h10 l4-10 h10 l4 10 h10 Z M32 22 l6 14 h-12 Z" fill="url(#ctaLogo)"/></svg>
-          </div>
-
-          <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-6">
-            Ready to redefine<br />enterprise intelligence?
-          </h2>
-          <p className="mk-reveal mk-reveal-d2 text-base text-white/40 leading-relaxed mb-4 max-w-lg mx-auto">
-            Join the organisations deploying Catalysts to transform operational data into autonomous action.
+      <section className="mk5-comp" id="compare">
+        <div className="mk5-comp-header">
+          <h2 className="mk5-reveal">Agents and copilots<br />were chapter one.</h2>
+          <p className="mk5-reveal">
+            Every competitor built agents or copilots. None evolved beyond. Atheon is the
+            world&rsquo;s first Catalyst&nbsp;&mdash; the only platform with all three layers of enterprise intelligence.
           </p>
-          <p className="mk-reveal mk-reveal-d3 text-sm text-white/25 leading-relaxed mb-12 max-w-md mx-auto">
-            All six intelligence layers. Enterprise-grade. Deploy in under 15 minutes.
-          </p>
-          <div className="mk-reveal mk-reveal-d4 flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 group" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
-              Get In Touch <IconArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
-            <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white/60 border border-white/10 transition-all duration-300 hover:bg-white/5 hover:text-white hover:border-white/20">
-              Sign In <IconChevronRight size={16} />
-            </button>
-          </div>
+        </div>
+        <div className="mk5-cg mk5-reveal">
+          <div className="mk5-ch rl">Capability</div>
+          <div className="mk5-ch">Copilot</div>
+          <div className="mk5-ch">Agentforce</div>
+          <div className="mk5-ch">Standalone</div>
+          <div className="mk5-ch ath">Atheon</div>
+
+          <div className="mk5-cc rl">Agent Execution</div>
+          <div className="mk5-cc cy">&check;</div>
+          <div className="mk5-cc cy">&check;</div>
+          <div className="mk5-cc cy">&check;</div>
+          <div className="mk5-cc ca">&check;</div>
+
+          <div className="mk5-cc rl">Operational Intelligence</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc ca">&check;</div>
+
+          <div className="mk5-cc rl">Executive Insight Layer</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc ca">&check;</div>
+
+          <div className="mk5-cc rl">Cross-Dept Correlation</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc ca">&check;</div>
+
+          <div className="mk5-cc rl">Agent Governance</div>
+          <div className="mk5-cc cp">Partial</div>
+          <div className="mk5-cc cp">Partial</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc ca">Full</div>
+
+          <div className="mk5-cc rl">Multi-ERP Integration</div>
+          <div className="mk5-cc cp">M365</div>
+          <div className="mk5-cc cp">SFDC</div>
+          <div className="mk5-cc cp">Custom</div>
+          <div className="mk5-cc ca">6 ERPs</div>
+
+          <div className="mk5-cc rl">Organisation Health Score</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc ca">&check;</div>
+
+          <div className="mk5-cc rl">Purpose-Trained LLM</div>
+          <div className="mk5-cc cp">Generic</div>
+          <div className="mk5-cc cp">Generic</div>
+          <div className="mk5-cc cp">Varies</div>
+          <div className="mk5-cc ca">Tuned</div>
         </div>
       </section>
 
-      {/* ========== CONTACT FORM ========== */}
-      <section id="contact" className="relative py-32 overflow-hidden">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-          <div className="mk-reveal w-16 h-16 rounded-2xl mx-auto mb-8 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)", boxShadow: "0 8px 40px rgba(99, 102, 241, 0.3)" }}>
-            <IconChat size={28} />
-          </div>
-          <h2 className="mk-reveal mk-reveal-d1 text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">Get in touch</h2>
-          <p className="mk-reveal mk-reveal-d2 text-base text-white/40 mb-10 max-w-md mx-auto">Ready to transform your enterprise intelligence? Fill in the form and our team will be in touch within 24 hours.</p>
-          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); const data = Object.fromEntries(fd.entries()); fetch(`${API_URL}/api/contact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((res) => { if (!res.ok) throw new Error('Failed'); (e.target as HTMLFormElement).reset(); setContactSent(true); setTimeout(() => setContactSent(false), 5000); }).catch(() => {}); }} className="mk-reveal mk-reveal-d3 text-left space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-white/50 mb-1.5">Full Name *</label>
-                <input name="name" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all" placeholder="Your name" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/50 mb-1.5">Email *</label>
-                <input name="email" type="email" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all" placeholder="you@company.com" />
-              </div>
+      <section className="mk5-int">
+        <div className="mk5-int-header">
+          <h2 className="mk5-reveal">Connects to everything<br />that matters.</h2>
+        </div>
+        <div className="mk5-int-grid mk5-reveal">
+          {integrations.map((item) => (
+            <div key={item.name} className="mk5-int-item">
+              <div className="mk5-int-icon">{item.icon}</div>
+              <div className="mk5-int-name">{item.name}</div>
+              <div className="mk5-int-type">{item.type}</div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/50 mb-1.5">Company</label>
-              <input name="company" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all" placeholder="Your company name" />
+          ))}
+        </div>
+      </section>
+
+      <section className="mk5-cta" id="cta-s">
+        <div className="mk5-cta-content">
+          <div className="mk5-cta-ey mk5-reveal">The Next Evolution in Enterprise AI</div>
+          <h2 className="mk5-reveal">Meet the<br /><i>Catalyst.</i></h2>
+          <p className="mk5-cta-sub mk5-reveal">
+            Atheon is the world&rsquo;s first Catalyst platform&nbsp;&mdash; the evolution beyond agents
+            and copilots. Three layers of intelligence. One platform. We&rsquo;re onboarding founding
+            partners now.
+          </p>
+          <button className="mk5-btn-main mk5-reveal" onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}>
+            Request Access
+          </button>
+        </div>
+      </section>
+
+      <section className="mk5-contact" id="contact">
+        <div className="mk5-contact-inner">
+          <h2 className="mk5-reveal">Get in touch</h2>
+          <p className="mk5-reveal">
+            Ready to transform your enterprise intelligence? Fill in the form and our team
+            will be in touch within 24 hours.
+          </p>
+          <form
+            className="mk5-reveal"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const data = Object.fromEntries(fd.entries());
+              fetch(API_URL + "/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              })
+                .then((res) => {
+                  if (!res.ok) throw new Error("Failed");
+                  (e.target as HTMLFormElement).reset();
+                  setContactSent(true);
+                  setTimeout(() => setContactSent(false), 5000);
+                })
+                .catch(() => {});
+            }}
+            style={{ textAlign: "left" }}
+          >
+            <div className="mk5-contact-grid">
+              <input name="name" required placeholder="Full Name *" />
+              <input name="email" type="email" required placeholder="Email *" />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/50 mb-1.5">Message *</label>
-              <textarea name="message" required rows={4} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all resize-none" placeholder="Tell us about your enterprise intelligence needs..." />
-            </div>
-            <button type="submit" className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-white transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)", boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)" }}>
-              Send Message <IconArrowRight size={16} />
-            </button>
+            <input name="company" placeholder="Company" />
+            <textarea name="message" required rows={4} placeholder="Tell us about your enterprise intelligence needs..." />
+            <button type="submit" className="mk5-contact-btn">Send Message</button>
             {contactSent && (
-              <div className="text-center py-3 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <p className="text-sm text-emerald-400 font-medium">Message sent successfully! We will be in touch shortly.</p>
+              <div style={{ textAlign: "center", padding: "1rem", marginTop: "1rem", background: "rgba(74,107,90,.1)", border: "1px solid rgba(74,107,90,.2)" }}>
+                <p style={{ fontSize: ".85rem", color: "#5d8a6f", fontWeight: 500 }}>
+                  Message sent successfully! We will be in touch shortly.
+                </p>
               </div>
             )}
           </form>
         </div>
       </section>
 
-      {/* ========== FOOTER ========== */}
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }} className="py-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1e1b4b, #312e81)" }}>
-                <svg width="12" height="12" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="ftLogo" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#a5b4fc"/><stop offset="50%" stopColor="#6366f1"/><stop offset="100%" stopColor="#4338ca"/></linearGradient></defs><path d="M32 8 L13 54 h10 l4-10 h10 l4 10 h10 Z M32 22 l6 14 h-12 Z" fill="url(#ftLogo)"/></svg>
-              </div>
-              <span className="text-sm font-bold tracking-tight text-white/80">Atheon</span>
-            </div>
-            <div className="flex items-center gap-8 text-[13px] text-white/25">
-              <a href="#platform" className="hover:text-white/60 transition-colors">Platform</a>
-              <a href="#catalysts" className="hover:text-white/60 transition-colors">Catalysts</a>
-              <a href="#security" className="hover:text-white/60 transition-colors">Security</a>
-              <span>&copy; {new Date().getFullYear()} Atheon</span>
-            </div>
-          </div>
-        </div>
+      <footer className="mk5-footer">
+        <div className="mk5-fl">Atheon</div>
+        <div className="mk5-fc">The World&rsquo;s First Catalyst Platform&nbsp;&mdash; A Vanta X Platform</div>
+        <div className="mk5-fr">&copy; 2026 Atheon. All rights reserved.</div>
       </footer>
     </div>
   );

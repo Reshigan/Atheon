@@ -38,34 +38,21 @@ const navItems: NavItem[] = [
   { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: ADMIN_ROLES },
 ];
 
-/** Atheon logo mark — bold geometric A with prism energy */
+/** Atheon logo mark — geometric triangle with sage/sky/bronze palette */
 function AtheonSidebarLogo() {
   return (
     <svg width="30" height="30" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="sbBg" x1="0" y1="0" x2="36" y2="36">
-          <stop offset="0%" stopColor="#0a0e2a" />
-          <stop offset="100%" stopColor="#141a3d" />
+          <stop offset="0%" stopColor="#06090d" />
+          <stop offset="100%" stopColor="#0e151c" />
         </linearGradient>
-        <linearGradient id="sbA" x1="8" y1="4" x2="28" y2="32">
-          <stop offset="0%" stopColor="#7db4ff" />
-          <stop offset="40%" stopColor="#4e7cf6" />
-          <stop offset="100%" stopColor="#2952cc" />
-        </linearGradient>
-        <linearGradient id="sbBar" x1="12" y1="18" x2="24" y2="18">
-          <stop offset="0%" stopColor="#7db4ff" />
-          <stop offset="100%" stopColor="#4e7cf6" />
-        </linearGradient>
-        <filter id="sbGlow">
-          <feGaussianBlur stdDeviation="1" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
       </defs>
       <rect width="36" height="36" rx="9" fill="url(#sbBg)" />
-      <path d="M18 6.5 L8.5 29 h5 l2.2-5.2 h4.6 l2.2 5.2 h5 Z M18 14 l3 7.2 h-6 Z" fill="url(#sbA)" filter="url(#sbGlow)" />
-      <path d="M18 6.5 L8.5 29 h5 l2.2-5.2 h2.3 L18 14 Z" fill="white" opacity="0.10" />
-      <rect x="12" y="19" width="12" height="1.5" rx="0.75" fill="url(#sbBar)" opacity="0.5" />
-      <circle cx="18" cy="6" r="1.5" fill="#7db4ff" opacity="0.8" />
+      <path d="M18 6L28 29H8L18 6Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
+      <line x1="11" y1="22" x2="25" y2="22" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
+      <line x1="13" y1="16.5" x2="23" y2="16.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
+      <circle cx="18" cy="9.5" r="1.8" fill="#c9a059" />
     </svg>
   );
 }

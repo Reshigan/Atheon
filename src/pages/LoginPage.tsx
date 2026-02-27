@@ -85,33 +85,26 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
-      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #dbeafe 50%, #ede9fe 100%)' }}>
-        <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(78, 124, 246, 0.15), transparent 70%)' }} />
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #06090d 0%, #0a0f14 50%, #0e151c 100%)' }}>
+        <div className="absolute inset-0 opacity-40" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(74, 107, 90, 0.12), transparent 70%)' }} />
         <div className="relative z-10 text-center max-w-sm">
           <div className="mb-8 flex justify-center">
-            <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 12px 40px rgba(78, 124, 246, 0.35), 0 0 0 1px rgba(78, 124, 246, 0.15)' }}>
-              <div className="absolute inset-0 rounded-2xl" style={{ background: 'radial-gradient(ellipse at 50% 30%, rgba(125, 180, 255, 0.15) 0%, transparent 60%)' }} />
-              <svg width="48" height="48" viewBox="0 0 64 64" fill="none">
-                <defs>
-                  <linearGradient id="loginA" x1="16" y1="8" x2="48" y2="56">
-                    <stop offset="0%" stopColor="#7db4ff" />
-                    <stop offset="40%" stopColor="#4e7cf6" />
-                    <stop offset="100%" stopColor="#2952cc" />
-                  </linearGradient>
-                </defs>
-                <path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#loginA)" />
-                <path d="M32 10 L15 52 h8.5 l4-9.5 h4.5 L32 22 Z" fill="white" opacity="0.12" />
-                <rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6" />
-                <circle cx="32" cy="9" r="2.5" fill="#7db4ff" opacity="0.8" />
+            <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #06090d, #0e151c)', boxShadow: '0 12px 40px rgba(74, 107, 90, 0.25), 0 0 0 1px rgba(74, 107, 90, 0.15)' }}>
+              <div className="absolute inset-0 rounded-2xl" style={{ background: 'radial-gradient(ellipse at 50% 30%, rgba(74, 107, 90, 0.10) 0%, transparent 60%)' }} />
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
+                <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
+                <line x1="9" y1="20" x2="23" y2="20" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
+                <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
+                <circle cx="16" cy="9" r="1.5" fill="#c9a059" />
               </svg>
             </div>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tighter mb-3" style={{ color: '#1e293b' }}>Atheon</h1>
-          <p className="text-sm mb-2" style={{ color: '#64748b' }}>Enterprise Intelligence Platform</p>
-          <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: '#94a3b8' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
+          <h1 className="text-4xl font-extrabold tracking-tighter mb-3" style={{ color: '#e8e4dc', fontFamily: 'Instrument Serif, serif' }}>Atheon</h1>
+          <p className="text-sm mb-2" style={{ color: '#c4bfb4' }}>Enterprise Intelligence Platform</p>
+          <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: '#586573' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
           <div className="mt-10 space-y-2.5 text-left max-w-xs mx-auto">
             {['Real-time executive health scoring', 'Autonomous catalyst execution', 'Multi-tenant SaaS architecture', 'Universal ERP integration layer'].map((f) => (
-              <div key={f} className="flex items-center gap-2.5 text-xs" style={{ color: '#64748b' }}><div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#4e7cf6' }} />{f}</div>
+              <div key={f} className="flex items-center gap-2.5 text-xs" style={{ color: '#586573' }}><div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#4A6B5A' }} />{f}</div>
             ))}
           </div>
         </div>
@@ -119,10 +112,10 @@ export function LoginPage() {
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0e2a, #141a3d)', boxShadow: '0 4px 16px rgba(78, 124, 246, 0.25)' }}>
-              <svg width="18" height="18" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="mobA" x1="16" y1="8" x2="48" y2="56"><stop offset="0%" stopColor="#7db4ff"/><stop offset="40%" stopColor="#4e7cf6"/><stop offset="100%" stopColor="#2952cc"/></linearGradient></defs><path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#mobA)"/><rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6"/></svg>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #06090d, #0e151c)', boxShadow: '0 4px 16px rgba(74, 107, 90, 0.25)' }}>
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5"/><line x1="9" y1="20" x2="23" y2="20" stroke="#4A6B5A" strokeWidth=".8" opacity=".6"/><circle cx="16" cy="9" r="1.5" fill="#c9a059"/></svg>
             </div>
-            <div><h1 className="text-xl font-extrabold tracking-tighter t-primary">Atheon</h1><p className="text-[9px] t-muted font-medium tracking-wide uppercase">Enterprise Intelligence</p></div>
+            <div><h1 className="text-xl font-extrabold tracking-tighter t-primary" style={{ fontFamily: 'Instrument Serif, serif' }}>Atheon</h1><p className="text-[9px] t-muted font-medium tracking-wide uppercase">Enterprise Intelligence</p></div>
           </div>
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>

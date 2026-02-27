@@ -14,8 +14,11 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 
-const ACCENT = "#4e7cf6";
-const CHART_BLUE_LIGHT = "#dbeafe";
+const ACCENT = "#4A6B5A";
+const ACCENT_B = "#5d8a6f";
+const BRONZE = "#c9a059";
+const SKY = "#7AACB5";
+const CHART_LIGHT = "#b8d4c4";
 
 const trendIcon = (trend: string) => {
   if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
@@ -44,9 +47,9 @@ function TintedCard({ children, className = "" }: { children: React.ReactNode; c
     <div
       className={`rounded-2xl p-5 ${className}`}
       style={{
-        background: "linear-gradient(135deg, rgba(78, 124, 246, 0.06), rgba(107, 147, 255, 0.03))",
-        border: "1px solid rgba(78, 124, 246, 0.10)",
-        boxShadow: "0 2px 12px rgba(100, 120, 180, 0.05)",
+        background: "linear-gradient(135deg, rgba(74, 107, 90, 0.06), rgba(93, 138, 111, 0.03))",
+        border: "1px solid rgba(74, 107, 90, 0.10)",
+        boxShadow: "0 2px 12px rgba(74, 107, 90, 0.05)",
       }}
     >
       {children}
@@ -128,7 +131,7 @@ export function Dashboard() {
     };
   });
 
-  const piePalette = [ACCENT, "#6b93ff", "#a5c4ff", "#c7d9ff", "#e8edf5"];
+  const piePalette = [ACCENT, ACCENT_B, SKY, BRONZE, CHART_LIGHT];
   const pieData = dimensions.slice(0, 5).map((dim, i) => ({
     name: dim.name,
     value: dim.score,
@@ -155,19 +158,12 @@ export function Dashboard() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative" style={{ background: "linear-gradient(135deg, #0a0e2a, #141a3d)", boxShadow: "0 4px 16px rgba(78, 124, 246, 0.25)" }}>
-            <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
-              <defs>
-                <linearGradient id="dashA" x1="16" y1="8" x2="48" y2="56">
-                  <stop offset="0%" stopColor="#7db4ff" />
-                  <stop offset="40%" stopColor="#4e7cf6" />
-                  <stop offset="100%" stopColor="#2952cc" />
-                </linearGradient>
-              </defs>
-              <path d="M32 10 L15 52 h8.5 l4-9.5 h9 l4 9.5 h8.5 Z M32 22 l5.5 13 h-11 Z" fill="url(#dashA)" />
-              <path d="M32 10 L15 52 h8.5 l4-9.5 h4.5 L32 22 Z" fill="white" opacity="0.12" />
-              <rect x="21" y="33" width="22" height="2.5" rx="1.25" fill="#7db4ff" opacity="0.6" />
-              <circle cx="32" cy="9" r="2" fill="#7db4ff" opacity="0.8" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative" style={{ background: "linear-gradient(135deg, #06090d, #0e151c)", boxShadow: "0 4px 16px rgba(74, 107, 90, 0.25)" }}>
+            <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+              <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
+              <line x1="9" y1="20" x2="23" y2="20" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
+              <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
+              <circle cx="16" cy="9" r="1.5" fill="#c9a059" />
             </svg>
           </div>
           <div>
@@ -300,7 +296,7 @@ export function Dashboard() {
                   <span className="w-2 h-2 rounded-full" style={{ background: ACCENT }} /> Health Score
                 </span>
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium t-muted">
-                  <span className="w-2 h-2 rounded-full" style={{ background: CHART_BLUE_LIGHT }} /> Revenue
+                  <span className="w-2 h-2 rounded-full" style={{ background: CHART_LIGHT }} /> Revenue
                 </span>
               </div>
             </div>
@@ -312,7 +308,7 @@ export function Dashboard() {
                   <YAxis tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "12px", fontSize: "11px" }} />
                   <Bar dataKey="value" name="Health" radius={[4, 4, 0, 0]} fill={ACCENT} />
-                  <Bar dataKey="revenue" name="Revenue" radius={[4, 4, 0, 0]} fill={CHART_BLUE_LIGHT} />
+                  <Bar dataKey="revenue" name="Revenue" radius={[4, 4, 0, 0]} fill={CHART_LIGHT} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
