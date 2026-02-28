@@ -396,19 +396,41 @@ const marketingCSS = `
   text-transform: uppercase; color: var(--slate);
 }
 
-/* BRAND */
-.mk5-brand { padding: 8rem 3.5rem; border-top: 1px solid var(--line); }
-.mk5-logo-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
-  background: var(--line); margin-top: 4rem;
+/* ETHOS */
+.mk5-ethos { padding: 10rem 3.5rem; border-top: 1px solid var(--line); }
+.mk5-ethos-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  background: var(--line); margin-top: 5rem;
 }
-.mk5-lb {
-  aspect-ratio: 3/2; display: flex; align-items: center; justify-content: center;
+.mk5-ethos-card {
+  background: var(--abyss); padding: 4rem 3rem; position: relative; transition: all .5s;
 }
-.mk5-lb.dark { background: var(--abyss); }
-.mk5-lb.light { background: #e8e4dc; }
-.mk5-lb.sg { background: var(--sage); }
-.mk5-lb.mid { background: #14202E; flex-direction: row; gap: 2.5rem; }
+.mk5-ethos-card:hover { background: var(--deep); }
+.mk5-ethos-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+  background: var(--sage); opacity: 0; transition: opacity .4s;
+}
+.mk5-ethos-card:hover::before { opacity: 1; }
+.mk5-ethos-num {
+  font-family: 'Instrument Serif', serif; font-size: 3.5rem; font-weight: 400;
+  line-height: 1; -webkit-text-stroke: 1px var(--line-b); -webkit-text-fill-color: transparent;
+  margin-bottom: 2rem; user-select: none;
+}
+.mk5-ethos-title {
+  font-family: 'Instrument Serif', serif; font-size: 1.8rem; font-weight: 400;
+  line-height: 1.2; margin-bottom: 1rem;
+}
+.mk5-ethos-desc {
+  font-size: .9rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
+}
+.mk5-ethos-accent {
+  display: inline-block; width: 30px; height: 1px; margin-top: 2rem;
+  transition: width .4s, background .4s;
+}
+.mk5-ethos-card:nth-child(1) .mk5-ethos-accent { background: var(--bronze); }
+.mk5-ethos-card:nth-child(2) .mk5-ethos-accent { background: var(--sky); }
+.mk5-ethos-card:nth-child(3) .mk5-ethos-accent { background: var(--sage-b); }
+.mk5-ethos-card:hover .mk5-ethos-accent { width: 60px; }
 
 /* CTA */
 .mk5-cta {
@@ -470,14 +492,14 @@ const marketingCSS = `
   .mk5-evo { grid-template-columns: 1fr; }
   .mk5-int-grid { grid-template-columns: repeat(3, 1fr); }
   .mk5-comp-header { grid-template-columns: 1fr; }
-  .mk5-logo-grid { grid-template-columns: repeat(2, 1fr); }
+  .mk5-ethos-grid { grid-template-columns: 1fr; }
 }
 @media(max-width: 768px) {
   .mk5-nav { padding: 1.5rem 2rem; }
   .mk5-nav-links { display: none; }
   .mk5-hero { padding: 0 2rem 4rem; }
   .mk5-manifesto { padding: 8rem 2rem; }
-  .mk5-layers, .mk5-comp, .mk5-int, .mk5-brand { padding-left: 2rem; padding-right: 2rem; }
+  .mk5-layers, .mk5-comp, .mk5-int, .mk5-ethos { padding-left: 2rem; padding-right: 2rem; }
   .mk5-layer-block { grid-template-columns: 1fr; }
   .mk5-layer-num { font-size: 4rem; }
   .mk5-stats { grid-template-columns: 1fr 1fr; }
@@ -487,7 +509,7 @@ const marketingCSS = `
   .mk5-big-stmt { padding: 8rem 2rem; }
   .mk5-cg { min-width: 700px; }
   .mk5-comp { overflow-x: auto; }
-  .mk5-logo-grid { grid-template-columns: 1fr 1fr; }
+  .mk5-ethos-grid { grid-template-columns: 1fr; }
   .mk5-body { cursor: auto; }
   .mk5-cur, .mk5-cur-dot { display: none; }
 }
@@ -771,7 +793,7 @@ export function MarketingPage() {
         <div className="mk5-nav-links">
           <a href="#layers">Architecture</a>
           <a href="#compare">Compare</a>
-          <a href="#brand">Identity</a>
+          <a href="#ethos">Ethos</a>
           <a href="#cta-s" className="mk5-nav-cta" onClick={(e) => { e.preventDefault(); document.getElementById("cta-s")?.scrollIntoView({ behavior: "smooth" }); }}>
             <span>Early Access</span>
           </a>
@@ -1059,67 +1081,48 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* BRAND / LOGO */}
-      <section className="mk5-brand" id="brand">
+      {/* ETHOS */}
+      <section className="mk5-ethos" id="ethos">
         <div className="mk5-layers-intro">
-          <div className="mk5-layers-intro-left">Brand Identity</div>
+          <div className="mk5-layers-intro-left">Ethos</div>
           <div className="mk5-layers-intro-right mk5-reveal">
-            <h2>The mark.</h2>
+            <h2>What we believe.</h2>
             <p>
-              A pyramid encoding three intelligence layers. The bronze apex is executive insight.
-              The sky line is operational intelligence. The sage outline is the agent foundation.
+              A Catalyst isn&rsquo;t built on features. It&rsquo;s built on principles. These are the
+              convictions that shape every layer of the Atheon platform.
             </p>
           </div>
         </div>
-        <div className="mk5-logo-grid">
-          <div className="mk5-lb dark">
-            <svg width="160" height="55" viewBox="0 0 300 80" fill="none">
-              <path d="M40 6L72 70H8L40 6Z" stroke="#4A6B5A" strokeWidth="1.8" fill="none" />
-              <line x1="17" y1="55" x2="63" y2="55" stroke="#4A6B5A" strokeWidth=".8" opacity=".5" />
-              <line x1="24" y1="38" x2="56" y2="38" stroke="#7AACB5" strokeWidth=".8" opacity=".4" />
-              <circle cx="40" cy="19" r="2.5" fill="#c9a059" />
-              <text x="95" y="50" fontFamily="serif" fontSize="30" fill="#e8e4dc" letterSpacing="5">ATHEON</text>
-            </svg>
+        <div className="mk5-ethos-grid">
+          <div className="mk5-ethos-card mk5-reveal">
+            <div className="mk5-ethos-num">01</div>
+            <h3 className="mk5-ethos-title">Truth over automation</h3>
+            <p className="mk5-ethos-desc">
+              Agents automate. Copilots assist. Neither delivers truth. A Catalyst synthesises
+              every signal across your entire organisation into a single, living health score&nbsp;&mdash;
+              so decisions are made from clarity, not dashboards.
+            </p>
+            <div className="mk5-ethos-accent" />
           </div>
-          <div className="mk5-lb light">
-            <svg width="160" height="55" viewBox="0 0 300 80" fill="none">
-              <path d="M40 6L72 70H8L40 6Z" stroke="#14202E" strokeWidth="1.8" fill="none" />
-              <line x1="17" y1="55" x2="63" y2="55" stroke="#14202E" strokeWidth=".8" opacity=".3" />
-              <line x1="24" y1="38" x2="56" y2="38" stroke="#4A6B5A" strokeWidth=".8" opacity=".4" />
-              <circle cx="40" cy="19" r="2.5" fill="#A67C52" />
-              <text x="95" y="50" fontFamily="serif" fontSize="30" fill="#14202E" letterSpacing="5">ATHEON</text>
-            </svg>
+          <div className="mk5-ethos-card mk5-reveal mk5-rd1">
+            <div className="mk5-ethos-num">02</div>
+            <h3 className="mk5-ethos-title">Governance is non-negotiable</h3>
+            <p className="mk5-ethos-desc">
+              Every agent output is governed. Every decision is auditable. Every escalation is
+              routed through intelligence layers. A fleet of autonomous agents without governance
+              is a liability. A Catalyst makes it an asset.
+            </p>
+            <div className="mk5-ethos-accent" />
           </div>
-          <div className="mk5-lb sg">
-            <svg width="160" height="55" viewBox="0 0 300 80" fill="none">
-              <path d="M40 6L72 70H8L40 6Z" stroke="#e8e4dc" strokeWidth="1.8" fill="none" />
-              <line x1="17" y1="55" x2="63" y2="55" stroke="#e8e4dc" strokeWidth=".8" opacity=".4" />
-              <line x1="24" y1="38" x2="56" y2="38" stroke="#e8e4dc" strokeWidth=".8" opacity=".3" />
-              <circle cx="40" cy="19" r="2.5" fill="#e8e4dc" />
-              <text x="95" y="50" fontFamily="serif" fontSize="30" fill="#e8e4dc" letterSpacing="5">ATHEON</text>
-            </svg>
-          </div>
-          <div className="mk5-lb mid">
-            <div style={{ textAlign: "center" }}>
-              <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
-                <rect width="32" height="32" rx="6" fill="#0a0f14" stroke="#4A6B5A" strokeWidth=".5" />
-                <path d="M16 5L27 27H5L16 5Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
-                <line x1="9" y1="20" x2="23" y2="20" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
-                <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
-                <circle cx="16" cy="9" r="1.8" fill="#c9a059" />
-              </svg>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: ".5rem", letterSpacing: ".2em", color: "#586573", marginTop: ".8rem" }}>FAVICON</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                <rect width="64" height="64" rx="14" fill="#0a0f14" stroke="#4A6B5A" strokeWidth=".5" />
-                <path d="M32 12L54 52H10L32 12Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
-                <line x1="18" y1="40" x2="46" y2="40" stroke="#4A6B5A" strokeWidth="1" opacity=".5" />
-                <line x1="23" y1="30" x2="41" y2="30" stroke="#7AACB5" strokeWidth="1" opacity=".4" />
-                <circle cx="32" cy="20" r="2.5" fill="#c9a059" />
-              </svg>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: ".5rem", letterSpacing: ".2em", color: "#586573", marginTop: ".8rem" }}>APP ICON</div>
-            </div>
+          <div className="mk5-ethos-card mk5-reveal mk5-rd2">
+            <div className="mk5-ethos-num">03</div>
+            <h3 className="mk5-ethos-title">Correlation, not silos</h3>
+            <p className="mk5-ethos-desc">
+              Departments don&rsquo;t operate in isolation. Neither should intelligence. Atheon
+              correlates outputs across finance, operations, HR, and supply chain&nbsp;&mdash; detecting
+              anomalies that no single agent could ever see.
+            </p>
+            <div className="mk5-ethos-accent" />
           </div>
         </div>
       </section>
