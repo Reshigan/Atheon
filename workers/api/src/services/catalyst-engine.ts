@@ -3,6 +3,8 @@
  * Real task runner with confidence scoring, human-in-the-loop approval workflows, and escalation
  */
 
+import { chatWithFallback } from './ollama';
+
 export interface TaskDefinition {
   id: string;
   clusterId: string;
@@ -126,24 +128,30 @@ async function generateActionReasoning(
   action: string,
   inputData: Record<string, unknown>,
   confidence: number,
+  ollamaApiKey?: string,
 ): Promise<string> {
   try {
-    const result = await ai.run('@cf/meta/llama-3.1-8b-instruct' as Parameters<Ai['run']>[0], {
-      messages: [
-        {
-          role: 'system',
-          content: `You are the reasoning engine for "${catalystName}", an autonomous enterprise catalyst agent. Generate a brief, clear reasoning for why this action should be taken, considering the confidence level. Be specific and reference the input data.`,
-        },
-        {
-          role: 'user',
-          content: `Action: ${action}\nConfidence: ${confidence}\nInput: ${JSON.stringify(inputData)}`,
-        },
-      ],
-      max_tokens: 256,
-      temperature: 0.3,
-    });
-    const aiResult = result as { response?: string };
-    return aiResult.response || `Action "${action}" evaluated with ${confidence} confidence based on input parameters.`;
+    const result = await chatWithFallback(
+      ollamaApiKey,
+      ai,
+      {
+        model: 'Reshigan/atheon',
+        messages: [
+          {
+            role: 'system',
+            content: `You are the reasoning engine for "${catalystName}", an autonomous enterprise catalyst agent. Generate a brief, clear reasoning for why this action should be taken, considering the confidence level. Be specific and reference the input data.`,
+          },
+          {
+            role: 'user',
+            content: `Action: ${action}\nConfidence: ${confidence}\nInput: ${JSON.stringify(inputData)}`,
+          },
+        ],
+        maxTokens: 256,
+        temperature: 0.3,
+        workersAiModel: '@cf/meta/llama-3.1-8b-instruct',
+      },
+    );
+    return result.response || `Action "${action}" evaluated with ${confidence} confidence based on input parameters.`;
   } catch {
     return `Action "${action}" evaluated with ${(confidence * 100).toFixed(0)}% confidence. Automated reasoning unavailable.`;
   }
@@ -157,7 +165,7 @@ export async function executeTask(
     inputData: Record<string, unknown>; riskLevel: 'high' | 'medium' | 'low';
     autonomyTier: string; trustScore: number;
   },
-  db: D1Database, cache: KVNamespace, ai: Ai,
+  db: D1Database, cache: KVNamespace, ai: Ai, ollamaApiKey?: string,
 ): Promise<TaskResult> {
   const startTime = Date.now();
   let retryCount = 0;
@@ -180,8 +188,8 @@ export async function executeTask(
   // Calculate confidence
   const confidence = calculateConfidence(task.action, task.inputData, trustScore);
 
-  // Generate AI reasoning
-  const reasoning = await generateActionReasoning(ai, task.catalystName, task.action, task.inputData, confidence);
+  // Generate AI reasoning via Ollama Cloud (Reshigan/atheon) with Workers AI fallback
+  const reasoning = await generateActionReasoning(ai, task.catalystName, task.action, task.inputData, confidence, ollamaApiKey);
 
   // Check if auto-execution is allowed
   const autoExecute = canAutoExecute(autonomyTier, confidence, task.action);

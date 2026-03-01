@@ -63,7 +63,7 @@ export function MindPage() {
  <div className="space-y-6 animate-fadeIn">
  <div>
  <h1 className="text-3xl sm:text-4xl font-bold t-primary" >Atheon Mind</h1>
- <p className="text-sm t-muted mt-1">Proprietary Domain LLM — Enterprise Intelligence Engine</p>
+ <p className="text-sm t-muted mt-1">Powered by Reshigan/atheon — Enterprise Intelligence Engine</p>
  </div>
 
  {/* Model Tiers — admin sees full detail, users see summary */}
@@ -181,10 +181,9 @@ export function MindPage() {
  <div>
  <h3 className="text-sm font-semibold t-primary">Architecture Note</h3>
  <p className="text-xs t-muted mt-1">
- Atheon Mind uses a multi-tier inference architecture. The <span className="text-accent">atheon-mind-proxy</span> Worker
- classifies query complexity and routes to the appropriate tier. Tier 1 (Workers AI) handles 72% of queries at the edge
- with sub-50ms latency. Complex reasoning escalates to Tier 2/3 with full Atheon Mind 70B capabilities.
- Client-specific LoRA adapters are hot-swapped based on tenant context.
+ Atheon Mind uses the <span className="text-accent">Reshigan/atheon</span> model via Ollama Cloud as the primary
+ inference engine, with Cloudflare Workers AI as a fallback. All three tiers route through the custom Atheon model
+ for domain-tuned enterprise intelligence. Client-specific LoRA adapters are hot-swapped based on tenant context.
  </p>
  </div>
  </div>

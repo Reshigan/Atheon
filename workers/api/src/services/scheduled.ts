@@ -4,6 +4,7 @@
  */
 
 import type { Env } from '../types';
+import { chatWithFallback } from './ollama';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -162,18 +163,23 @@ async function generateBriefing(db: D1Database, ai: Ai, tenantId: string): Promi
 
   let summary = `Overall health: ${overallScore}/100. ${activeRisks.results.length} active risk(s). ${pendingApprovals?.count || 0} pending approval(s).`;
 
-  // Try AI-enhanced summary
+  // Try AI-enhanced summary via Ollama Cloud (Reshigan/atheon) with Workers AI fallback
   try {
-    const aiResult = await ai.run('@cf/meta/llama-3.1-8b-instruct' as Parameters<Ai['run']>[0], {
-      messages: [
-        { role: 'system', content: 'You are a concise executive briefing writer for an enterprise intelligence platform. Write a 2-3 sentence executive summary. Be specific with numbers.' },
-        { role: 'user', content: `Health: ${overallScore}/100. Risks: ${risks.join('; ')}. KPIs: ${kpiMovements.join(', ')}. Pending: ${pendingApprovals?.count || 0} approvals.` },
-      ],
-      max_tokens: 256,
-      temperature: 0.3,
-    });
-    const result = aiResult as { response?: string };
-    if (result.response) summary = result.response;
+    const aiResult = await chatWithFallback(
+      undefined, // API key not available in scheduled context — uses Workers AI fallback
+      ai,
+      {
+        model: 'Reshigan/atheon',
+        messages: [
+          { role: 'system', content: 'You are a concise executive briefing writer for an enterprise intelligence platform. Write a 2-3 sentence executive summary. Be specific with numbers.' },
+          { role: 'user', content: `Health: ${overallScore}/100. Risks: ${risks.join('; ')}. KPIs: ${kpiMovements.join(', ')}. Pending: ${pendingApprovals?.count || 0} approvals.` },
+        ],
+        maxTokens: 256,
+        temperature: 0.3,
+        workersAiModel: '@cf/meta/llama-3.1-8b-instruct',
+      },
+    );
+    if (aiResult.response) summary = aiResult.response;
   } catch {
     // Use fallback summary
   }
@@ -415,7 +421,7 @@ export async function handleQueueMessage(
             riskLevel: (payload.riskLevel || 'medium') as 'high' | 'medium' | 'low',
             autonomyTier: payload.autonomyTier || 'read-only',
             trustScore: payload.trustScore || 50,
-          }, env.DB, env.CACHE, env.AI);
+          }, env.DB, env.CACHE, env.AI, env.OLLAMA_API_KEY);
           break;
         }
         case 'health_recalc':

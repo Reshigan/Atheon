@@ -9,6 +9,7 @@ export interface Env {
   AZURE_AD_CLIENT_SECRET: string;
   AZURE_AD_TENANT_ID: string;
   AZURE_AD_CLIENT_ID: string;
+  OLLAMA_API_KEY: string;
   ENVIRONMENT: string;
 }
 

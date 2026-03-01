@@ -240,7 +240,7 @@ catalysts.post('/actions', async (c) => {
     riskLevel: (body.risk_level || 'medium') as 'high' | 'medium' | 'low',
     autonomyTier: (cluster.autonomy_tier as string) || 'read-only',
     trustScore: (cluster.trust_score as number) || 0.5,
-  }, c.env.DB, c.env.CACHE, c.env.AI);
+  }, c.env.DB, c.env.CACHE, c.env.AI, c.env.OLLAMA_API_KEY);
 
   // Log audit
   await c.env.DB.prepare(

@@ -1,14 +1,15 @@
 import { Hono } from 'hono';
 import type { AppBindings, AuthContext } from '../types';
 import { getValidatedJsonBody } from '../middleware/validation';
+import { chatWithFallback } from '../services/ollama';
 
 const mind = new Hono<AppBindings>();
 
-// Model tier configurations — maps to real Workers AI models
-const MODEL_TIERS: Record<string, { name: string; model: string; maxTokens: number; description: string }> = {
-  'tier-1': { name: 'Edge Inference', model: '@cf/meta/llama-3.1-8b-instruct', maxTokens: 2048, description: 'Fast edge inference for simple queries and classification' },
-  'tier-2': { name: 'Atheon Mind 70B', model: '@cf/meta/llama-3.1-70b-instruct', maxTokens: 8192, description: 'Domain-tuned large model for complex analysis and reasoning' },
-  'tier-3': { name: 'Apex Reasoning', model: '@cf/meta/llama-3.1-70b-instruct', maxTokens: 8192, description: 'Multi-step reasoning for scenario modelling and strategic planning' },
+// Model tier configurations — Ollama Cloud (Reshigan/atheon) with Workers AI fallback
+const MODEL_TIERS: Record<string, { name: string; model: string; ollamaModel: string; fallbackModel: string; maxTokens: number; description: string }> = {
+  'tier-1': { name: 'Atheon Edge', model: 'Reshigan/atheon', ollamaModel: 'Reshigan/atheon', fallbackModel: '@cf/meta/llama-3.1-8b-instruct', maxTokens: 2048, description: 'Fast inference via Atheon custom model for queries and classification' },
+  'tier-2': { name: 'Atheon Mind', model: 'Reshigan/atheon', ollamaModel: 'Reshigan/atheon', fallbackModel: '@cf/meta/llama-3.1-70b-instruct', maxTokens: 8192, description: 'Domain-tuned Atheon model for complex enterprise analysis and reasoning' },
+  'tier-3': { name: 'Atheon Apex', model: 'Reshigan/atheon', ollamaModel: 'Reshigan/atheon', fallbackModel: '@cf/meta/llama-3.1-70b-instruct', maxTokens: 8192, description: 'Multi-step reasoning via Atheon model for scenario modelling and strategic planning' },
 };
 
 // Industry LoRA adapters
@@ -140,24 +141,28 @@ mind.post('/query', async (c) => {
   let tokensOut = 0;
 
   try {
-    // Call Workers AI with real LLM
-    const aiResult = await c.env.AI.run(tierConfig.model as Parameters<Ai['run']>[0], {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...(body.context ? [{ role: 'user' as const, content: `Additional context: ${body.context}` }] : []),
-        { role: 'user' as const, content: body.query },
-      ],
-      max_tokens: tierConfig.maxTokens,
-      temperature: tierKey === 'tier-3' ? 0.3 : 0.7,
-    });
+    // Call Ollama Cloud (Reshigan/atheon) with Workers AI fallback
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...(body.context ? [{ role: 'user' as const, content: `Additional context: ${body.context}` }] : []),
+      { role: 'user' as const, content: body.query },
+    ];
 
-    // Extract response from AI result
-    const result = aiResult as { response?: string };
-    response = result.response || 'No response generated.';
+    const aiResult = await chatWithFallback(
+      c.env.OLLAMA_API_KEY,
+      c.env.AI,
+      {
+        model: tierConfig.ollamaModel,
+        messages,
+        maxTokens: tierConfig.maxTokens,
+        temperature: tierKey === 'tier-3' ? 0.3 : 0.7,
+        workersAiModel: tierConfig.fallbackModel,
+      },
+    );
 
-    // Estimate token counts
-    tokensIn = Math.ceil((systemPrompt.length + body.query.length) / 4);
-    tokensOut = Math.ceil(response.length / 4);
+    response = aiResult.response || 'No response generated.';
+    tokensIn = aiResult.tokensIn;
+    tokensOut = aiResult.tokensOut;
 
     // Auto-detect citations from context
     const queryLower = body.query.toLowerCase();
