@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst } from "@/lib/api";
+import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig } from "@/lib/api";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
- Play, X, FileText, Plus
+ Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2
 } from "lucide-react";
 import type { AutonomyTier } from "@/types";
 import { useAppStore } from "@/stores/appStore";
@@ -142,6 +142,63 @@ export function CatalystsPage() {
 
  const industry = useAppStore((s) => s.industry);
  const [togglingSubCatalyst, setTogglingSubCatalyst] = useState<string | null>(null);
+
+ // Data source configuration state
+ const [showDataSourceConfig, setShowDataSourceConfig] = useState(false);
+ const [dsClusterId, setDsClusterId] = useState('');
+ const [dsSubName, setDsSubName] = useState('');
+ const [dsType, setDsType] = useState<'erp' | 'email' | 'cloud_storage' | 'upload'>('erp');
+ const [dsConfig, setDsConfig] = useState<Record<string, unknown>>({});
+ const [dsSaving, setDsSaving] = useState(false);
+ const [dsError, setDsError] = useState<string | null>(null);
+ const [dsExisting, setDsExisting] = useState<DataSourceConfig | undefined>(undefined);
+
+ const openDataSourceConfig = (clusterId: string, sub: SubCatalyst) => {
+ setDsClusterId(clusterId);
+ setDsSubName(sub.name);
+ setDsExisting(sub.data_source);
+ if (sub.data_source) {
+ setDsType(sub.data_source.type);
+ setDsConfig(sub.data_source.config || {});
+ } else {
+ setDsType('erp');
+ setDsConfig({});
+ }
+ setDsError(null);
+ setShowDataSourceConfig(true);
+ };
+
+ const handleSaveDataSource = async () => {
+ if (dsSaving) return;
+ setDsSaving(true);
+ setDsError(null);
+ try {
+ await api.catalysts.setDataSource(dsClusterId, dsSubName, { type: dsType, config: dsConfig });
+ const ind = industry !== 'general' ? industry : undefined;
+ const c = await api.catalysts.clusters(undefined, ind);
+ setClusters(c.clusters);
+ setShowDataSourceConfig(false);
+ } catch (err) {
+ setDsError(err instanceof Error ? err.message : 'Failed to save data source');
+ }
+ setDsSaving(false);
+ };
+
+ const handleRemoveDataSource = async () => {
+ if (dsSaving) return;
+ setDsSaving(true);
+ setDsError(null);
+ try {
+ await api.catalysts.removeDataSource(dsClusterId, dsSubName);
+ const ind = industry !== 'general' ? industry : undefined;
+ const c = await api.catalysts.clusters(undefined, ind);
+ setClusters(c.clusters);
+ setShowDataSourceConfig(false);
+ } catch (err) {
+ setDsError(err instanceof Error ? err.message : 'Failed to remove data source');
+ }
+ setDsSaving(false);
+ };
 
  useEffect(() => {
  async function load() {
@@ -478,7 +535,22 @@ export function CatalystsPage() {
  <div className="flex items-center gap-2 min-w-0">
  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.enabled ? 'bg-emerald-400' : 'bg-gray-400'}`} />
  <div className="min-w-0">
- <span className="text-xs font-medium t-primary block truncate">{sub.name}</span>
+ <div className="flex items-center gap-1.5">
+ <span className="text-xs font-medium t-primary truncate">{sub.name}</span>
+ {sub.data_source && (
+ <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium ${
+ sub.data_source.type === 'erp' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+ sub.data_source.type === 'email' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+ sub.data_source.type === 'cloud_storage' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
+ 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+ }`}>
+ {sub.data_source.type === 'erp' && <><Database size={8} /> ERP</>}
+ {sub.data_source.type === 'email' && <><Mail size={8} /> Email</>}
+ {sub.data_source.type === 'cloud_storage' && <><Cloud size={8} /> Cloud</>}
+ {sub.data_source.type === 'upload' && <><HardDrive size={8} /> Upload</>}
+ </span>
+ )}
+ </div>
  {sub.description && <span className="text-[10px] t-secondary block truncate">{sub.description}</span>}
  </div>
  </div>
@@ -489,6 +561,14 @@ export function CatalystsPage() {
  </Button>
  )}
  {isAdmin && (
+ <>
+ <button
+ onClick={(e) => { e.stopPropagation(); openDataSourceConfig(cluster.id, sub); }}
+ className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent/10 transition-colors"
+ title="Configure data source"
+ >
+ <Settings size={12} className="text-accent" />
+ </button>
  <button
  onClick={(e) => { e.stopPropagation(); handleToggleSubCatalyst(cluster.id, sub.name); }}
  disabled={togglingSubCatalyst === `${cluster.id}:${sub.name}`}
@@ -496,6 +576,7 @@ export function CatalystsPage() {
  >
  <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${sub.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
  </button>
+ </>
  )}
  </div>
  </div>
@@ -601,6 +682,225 @@ export function CatalystsPage() {
  </Card>
  </div>
  </TabPanel>
+ )}
+
+ {/* Data Source Configuration Modal */}
+ {showDataSourceConfig && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
+ <Settings size={18} className="text-accent" /> Configure Data Source
+ </h3>
+ <button onClick={() => setShowDataSourceConfig(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ </div>
+
+ <p className="text-xs t-secondary">
+ Configure where <span className="font-semibold text-accent">{dsSubName}</span> gets its input data from.
+ </p>
+
+ {/* Data Source Type Selector */}
+ <div>
+ <label className="text-xs t-muted block mb-1.5">Data Source Type</label>
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+ {([
+ { type: 'erp' as const, label: 'ERP', icon: Database, selectedBg: 'bg-blue-500/10 border-blue-500/40 ring-1 ring-blue-500/30', selectedText: 'text-blue-400' },
+ { type: 'email' as const, label: 'Email', icon: Mail, selectedBg: 'bg-purple-500/10 border-purple-500/40 ring-1 ring-purple-500/30', selectedText: 'text-purple-400' },
+ { type: 'cloud_storage' as const, label: 'Cloud', icon: Cloud, selectedBg: 'bg-cyan-500/10 border-cyan-500/40 ring-1 ring-cyan-500/30', selectedText: 'text-cyan-400' },
+ { type: 'upload' as const, label: 'Upload', icon: HardDrive, selectedBg: 'bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30', selectedText: 'text-amber-400' },
+ ]).map((opt) => {
+ const Icon = opt.icon;
+ const selected = dsType === opt.type;
+ return (
+ <button
+ key={opt.type}
+ onClick={() => { setDsType(opt.type); setDsConfig({}); }}
+ className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all ${
+ selected
+ ? opt.selectedBg
+ : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
+ }`}
+ >
+ <Icon size={18} className={selected ? opt.selectedText : 'text-gray-400'} />
+ <span className={`text-xs font-medium ${selected ? opt.selectedText : 't-secondary'}`}>{opt.label}</span>
+ </button>
+ );
+ })}
+ </div>
+ </div>
+
+ {/* Dynamic Config Fields */}
+ <div className="space-y-3">
+ {dsType === 'erp' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">ERP System</label>
+ <select
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.erp_type as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, erp_type: e.target.value }))}
+ >
+ <option value="">Select ERP...</option>
+ <option value="sap">SAP</option>
+ <option value="xero">Xero</option>
+ <option value="sage">Sage</option>
+ <option value="pastel">Pastel</option>
+ </select>
+ </div>
+ <div>
+ <label className="text-xs t-muted">Module (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.module as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, module: e.target.value }))}
+ placeholder="e.g. Accounts Payable, General Ledger"
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Connection ID (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.connection_id as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, connection_id: e.target.value }))}
+ placeholder="ERP connection identifier"
+ />
+ </div>
+ </>
+ )}
+
+ {dsType === 'email' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">Mailbox Address</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.mailbox as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, mailbox: e.target.value }))}
+ placeholder="e.g. invoices@company.com"
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Folder (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.folder as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, folder: e.target.value }))}
+ placeholder="e.g. Inbox, Remittances"
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Subject Filter (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.filter as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, filter: e.target.value }))}
+ placeholder="e.g. Remittance, Payment Advice"
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Accepted File Types (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.file_types as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, file_types: e.target.value }))}
+ placeholder="e.g. pdf, xlsx, csv"
+ />
+ </div>
+ </>
+ )}
+
+ {dsType === 'cloud_storage' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">Cloud Provider</label>
+ <select
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.provider as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, provider: e.target.value }))}
+ >
+ <option value="">Select provider...</option>
+ <option value="onedrive">OneDrive</option>
+ <option value="sharepoint">SharePoint</option>
+ <option value="google_drive">Google Drive</option>
+ <option value="dropbox">Dropbox</option>
+ </select>
+ </div>
+ <div>
+ <label className="text-xs t-muted">Folder Path</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.path as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, path: e.target.value }))}
+ placeholder="e.g. /Finance/Invoices"
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Accepted File Types (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.file_types as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, file_types: e.target.value }))}
+ placeholder="e.g. pdf, xlsx, csv"
+ />
+ </div>
+ </>
+ )}
+
+ {dsType === 'upload' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">Accepted File Types (optional)</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.file_types as string) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, file_types: e.target.value }))}
+ placeholder="e.g. csv, xlsx, pdf"
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Max File Size (MB, optional)</label>
+ <input
+ type="number"
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={(dsConfig.max_size_mb as number) || ''}
+ onChange={e => setDsConfig(prev => ({ ...prev, max_size_mb: e.target.value ? Number(e.target.value) : undefined }))}
+ placeholder="e.g. 25"
+ />
+ </div>
+ <p className="text-[10px] t-secondary">
+ Manual file upload — users will upload files directly through the platform.
+ </p>
+ </>
+ )}
+ </div>
+
+ {dsError && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+ <AlertTriangle size={14} /> {dsError}
+ </div>
+ )}
+
+ <div className="flex items-center justify-between pt-2">
+ <div>
+ {dsExisting && (
+ <button
+ onClick={handleRemoveDataSource}
+ disabled={dsSaving}
+ className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
+ >
+ <Trash2 size={12} /> Remove Data Source
+ </button>
+ )}
+ </div>
+ <div className="flex gap-3">
+ <Button variant="secondary" size="sm" onClick={() => setShowDataSourceConfig(false)}>Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleSaveDataSource} disabled={dsSaving}>
+ {dsSaving ? <Loader2 size={14} className="animate-spin" /> : <Settings size={14} />} Save Configuration
+ </Button>
+ </div>
+ </div>
+ </div>
+ </div>
  )}
  </div>
  );
