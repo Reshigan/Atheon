@@ -85,7 +85,8 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(m.id,'highveld',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','SAP S/4HANA').run();
   }
 
-  // Catalyst Clusters
+  // Catalyst Clusters — SKIPPED (manual deployment)
+  /* Catalyst clusters commented out so they can be deployed manually
   const hvClusters = [
     {id:'cc-hv-equip',name:'Equipment Health Catalyst',domain:'mining-equipment',desc:'Predictive maintenance for blast furnaces, rolling mills, and cranes',status:'active',agents:5,done:342,prog:8,rate:94.2,trust:91.5,tier:'assisted',subs:[{name:'Predictive Maintenance',enabled:true,description:'ML-based failure prediction for heavy equipment'},{name:'Vibration Analysis',enabled:true,description:'Real-time vibration monitoring on rotating equipment'},{name:'Thermal Imaging',enabled:false,description:'IR camera analysis for refractory and electrical systems'},{name:'Lubrication Scheduling',enabled:true,description:'Automated lubrication intervals based on operating hours and conditions'},{name:'Spare Parts Forecasting',enabled:false,description:'Demand prediction for critical spares to minimize downtime'}]},
     {id:'cc-hv-safety',name:'Safety Compliance Catalyst',domain:'mining-safety',desc:'Real-time safety monitoring, incident prediction, and compliance tracking',status:'active',agents:3,done:187,prog:4,rate:97.8,trust:95.2,tier:'read-only',subs:[{name:'Incident Prediction',enabled:true,description:'Near-miss and incident trend analysis'},{name:'PPE Compliance',enabled:true,description:'Computer vision PPE detection at entry points'},{name:'Environmental Monitoring',enabled:true,description:'Gas, dust, and noise level tracking'},{name:'Fatigue Management',enabled:true,description:'Shift pattern analysis and fatigue risk scoring'},{name:'Emergency Response',enabled:false,description:'Automated emergency protocol triggering and coordination'}]},
@@ -101,6 +102,7 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'highveld',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
+  END of Highveld catalyst clusters */
 
   // Anomalies
   const hvAnomalies = [
@@ -149,7 +151,8 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(r.id,'highveld',r.src,r.tgt,r.type,r.props,0.92).run();
   }
 
-  // Agent Deployments
+  // Agent Deployments — SKIPPED (manual deployment)
+  /* Agent deployments commented out — depend on catalyst clusters
   const hvDeploys = [
     {id:'ad-hv-1',cluster:'cc-hv-equip',name:'Furnace Predictor',type:'predictive-maintenance',status:'running',model:'hybrid',ver:'2.1.0',health:94.2,uptime:99.91,tasks:342},
     {id:'ad-hv-2',cluster:'cc-hv-safety',name:'Safety Sentinel',type:'safety-monitor',status:'running',model:'hybrid',ver:'1.8.0',health:97.8,uptime:99.99,tasks:187},
@@ -158,6 +161,7 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare("INSERT OR IGNORE INTO agent_deployments (id,tenant_id,cluster_id,name,agent_type,status,deployment_model,version,health_score,uptime,tasks_executed,last_heartbeat) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))")
       .bind(d.id,'highveld',d.cluster,d.name,d.type,d.status,d.model,d.ver,d.health,d.uptime,d.tasks).run();
   }
+  */
 
   // ERP Canonical Data — Customers
   const hvCustomers = [
@@ -278,6 +282,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(m.id,'greenleaf',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Xero').run();
   }
 
+  /* Catalyst clusters commented out — manual deployment
   const glClusters = [
     {id:'cc-gl-fin',name:'Finance Catalyst',domain:'finance',desc:'Automated invoicing, expense categorization, cash flow forecasting',status:'active',agents:2,done:456,prog:5,rate:95.3,trust:92.1,tier:'assisted',subs:[{name:'Accounts Receivable',enabled:true,description:'Invoice generation and debtor management'},{name:'Accounts Payable',enabled:true,description:'Supplier payment scheduling'},{name:'Cash Flow Forecast',enabled:true,description:'12-week rolling cash flow projection'},{name:'Seasonal Budget Planning',enabled:true,description:'Crop cycle-aligned budget forecasting and variance tracking'},{name:'Grant & Subsidy Tracking',enabled:false,description:'Agricultural grant applications and compliance monitoring'}]},
     {id:'cc-gl-supply',name:'Supply Chain Catalyst',domain:'supply-chain',desc:'Harvest planning, cold chain monitoring, distributor coordination',status:'active',agents:3,done:234,prog:7,rate:91.8,trust:88.5,tier:'read-only',subs:[{name:'Harvest Planning',enabled:true,description:'Seasonal yield forecasting and resource allocation'},{name:'Cold Chain Monitor',enabled:true,description:'Temperature and humidity tracking in transit'},{name:'Distributor Coordination',enabled:false,description:'Automated order fulfillment and delivery scheduling'},{name:'Traceability',enabled:true,description:'Field-to-fork traceability for organic certification and recalls'},{name:'Packaging Optimization',enabled:false,description:'Optimal pack size and material selection based on buyer requirements'}]},
@@ -292,8 +297,9 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'greenleaf',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
+  */
 
-  const glAnomalies = [
+  const glAnomalies= [
     {id:'an-gl-1',metric:'Water Usage per Hectare',expected:4500,actual:5800,deviation:28.9,severity:'high',hypothesis:'Irrigation system leak on Farm 3 — drip line damage from recent hail'},
   ];
   for (const a of glAnomalies) {
@@ -420,6 +426,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(m.id,'medibridge',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Sage Business Cloud').run();
   }
 
+  /* Catalyst clusters commented out — manual deployment
   const mbClusters = [
     {id:'cc-mb-patient',name:'Patient Flow Catalyst',domain:'health-patient',desc:'Patient scheduling, ward allocation, discharge planning, readmission prediction',status:'active',agents:4,done:678,prog:12,rate:96.5,trust:94.8,tier:'assisted',subs:[{name:'Scheduling',enabled:true,description:'Automated patient appointment scheduling'},{name:'Ward Allocation',enabled:true,description:'Real-time bed management and allocation'},{name:'Discharge Planning',enabled:true,description:'Coordinated discharge with follow-up scheduling'},{name:'Readmission Prediction',enabled:false,description:'ML model predicting 30-day readmission risk'},{name:'Triage Prioritization',enabled:true,description:'AI-assisted triage scoring and queue optimization'},{name:'Theatre Scheduling',enabled:false,description:'Operating theatre slot optimization and conflict resolution'}]},
     {id:'cc-mb-compliance',name:'Healthcare Compliance Catalyst',domain:'health-compliance',desc:'NDoH reporting, POPIA compliance, clinical audit preparation',status:'active',agents:2,done:234,prog:3,rate:98.2,trust:97.1,tier:'read-only',subs:[{name:'NDoH Reporting',enabled:true,description:'Automated National Department of Health submissions'},{name:'POPIA Compliance',enabled:true,description:'Patient data privacy compliance checks'},{name:'Clinical Audit',enabled:false,description:'Automated clinical audit trail preparation'},{name:'Infection Control',enabled:true,description:'HAI tracking and prevention protocol compliance'},{name:'HPCSA Compliance',enabled:true,description:'Health Professions Council registration and CPD tracking'}]},
@@ -434,8 +441,9 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'medibridge',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
+  */
 
-  const mbAnomalies = [
+  const mbAnomalies= [
     {id:'an-mb-1',metric:'ER Wait Time (Sandton Clinic)',expected:15,actual:38,deviation:153,severity:'critical',hypothesis:'Staff shortage combined with 3 multi-vehicle accident admissions'},
     {id:'an-mb-2',metric:'Pharmaceutical Spend',expected:450000,actual:612000,deviation:36,severity:'high',hypothesis:'Bulk order of antiretrovirals ahead of tender deadline'},
   ];
@@ -564,6 +572,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(m.id,'bluepeak',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Sage Pastel').run();
   }
 
+  /* Catalyst clusters commented out — manual deployment
   const bpClusters = [
     {id:'cc-bp-supply',name:'Route Optimization Catalyst',domain:'supply-chain',desc:'Real-time route planning, fuel optimization, fleet scheduling',status:'active',agents:3,done:567,prog:9,rate:93.4,trust:90.2,tier:'assisted',subs:[{name:'Route Planning',enabled:true,description:'Dynamic route optimization with traffic and weather'},{name:'Fuel Optimization',enabled:true,description:'Fuel consumption tracking and efficiency coaching'},{name:'Fleet Scheduling',enabled:true,description:'Vehicle and driver assignment optimization'},{name:'Load Optimization',enabled:false,description:'Weight distribution and capacity planning'},{name:'Cross-Docking',enabled:true,description:'Hub transfer optimization to minimize handling time'}]},
     {id:'cc-bp-fin',name:'Transport Finance Catalyst',domain:'finance',desc:'Fuel cost tracking, trip costing, customer billing automation',status:'active',agents:2,done:345,prog:4,rate:95.8,trust:93.1,tier:'assisted',subs:[{name:'Trip Costing',enabled:true,description:'Automated per-trip cost calculation'},{name:'Customer Billing',enabled:true,description:'POD-based automated invoice generation'},{name:'Accounts Receivable',enabled:true,description:'Debtor aging and follow-up automation'},{name:'Fuel Surcharge Calculator',enabled:true,description:'Automated fuel surcharge adjustment based on diesel price index'},{name:'Fleet Depreciation',enabled:false,description:'Vehicle depreciation tracking and replacement forecasting'}]},
@@ -578,6 +587,7 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'bluepeak',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
+  */
 
   await db.prepare('INSERT OR IGNORE INTO process_flows (id,tenant_id,name,steps,variants,avg_duration,conformance_rate,bottlenecks) VALUES (?,?,?,?,?,?,?,?)')
     .bind('pf-bp-1','bluepeak','Load-to-Delivery',JSON.stringify([
@@ -688,6 +698,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(m.id,'novatech',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Oracle Fusion').run();
   }
 
+  /* Catalyst clusters commented out — manual deployment
   const ntClusters = [
     {id:'cc-nt-sales',name:'Revenue Operations Catalyst',domain:'sales',desc:'Churn prediction, upsell identification, pipeline health, renewal management',status:'active',agents:5,done:1234,prog:18,rate:95.7,trust:93.4,tier:'transactional',subs:[{name:'Churn Prediction',enabled:true,description:'ML model predicting customer churn probability'},{name:'Upsell Engine',enabled:true,description:'Cross-sell and upsell opportunity identification'},{name:'Pipeline Health',enabled:true,description:'Deal velocity and win-rate tracking'},{name:'Renewal Management',enabled:false,description:'Automated renewal reminders and processing'},{name:'Win/Loss Analysis',enabled:true,description:'Post-deal analysis to improve conversion strategies'},{name:'Territory Planning',enabled:false,description:'Account territory assignment optimization using revenue potential'}]},
     {id:'cc-nt-fin',name:'SaaS Finance Catalyst',domain:'finance',desc:'Revenue recognition, ARR tracking, cash flow forecasting, cost optimization',status:'active',agents:3,done:678,prog:8,rate:97.2,trust:95.8,tier:'assisted',subs:[{name:'Revenue Recognition',enabled:true,description:'ASC 606 compliant revenue recognition'},{name:'ARR Tracking',enabled:true,description:'Real-time ARR, MRR, and expansion metrics'},{name:'Invoice Reconciliation',enabled:true,description:'Subscription billing reconciliation'},{name:'Cost Optimization',enabled:false,description:'Cloud and vendor spend optimization'},{name:'Unit Economics',enabled:true,description:'CAC, LTV, and payback period tracking per cohort'}]},
@@ -703,8 +714,9 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'novatech',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
+  */
 
-  const ntAnomalies = [
+  const ntAnomalies= [
     {id:'an-nt-1',metric:'API Response Time P99',expected:200,actual:850,deviation:325,severity:'critical',hypothesis:'Database connection pool exhaustion during peak — missing index on user_sessions table'},
     {id:'an-nt-2',metric:'Free-to-Paid Conversion',expected:8.5,actual:5.2,deviation:-38.8,severity:'high',hypothesis:'Onboarding flow regression after v2.4 deploy — step 3 completion dropped 40%'},
   ];
@@ -747,7 +759,8 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(r.id,'novatech',r.src,r.tgt,r.type,r.props,0.94).run();
   }
 
-  // Agent Deployments
+  // Agent Deployments — SKIPPED (manual deployment)
+  /* Agent deployments commented out — depend on catalyst clusters
   const ntDeploys = [
     {id:'ad-nt-1',cluster:'cc-nt-sales',name:'Churn Predictor',type:'churn-prediction',status:'running',model:'saas',ver:'3.1.0',health:95.7,uptime:99.98,tasks:1234},
     {id:'ad-nt-2',cluster:'cc-nt-fin',name:'Revenue Recognizer',type:'rev-rec',status:'running',model:'saas',ver:'2.4.0',health:97.2,uptime:99.99,tasks:678},
@@ -756,9 +769,10 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare("INSERT OR IGNORE INTO agent_deployments (id,tenant_id,cluster_id,name,agent_type,status,deployment_model,version,health_score,uptime,tasks_executed,last_heartbeat) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))")
       .bind(d.id,'novatech',d.cluster,d.name,d.type,d.status,d.model,d.ver,d.health,d.uptime,d.tasks).run();
   }
+  */
 
   // ERP Data
-  const ntCustomers = [
+  const ntCustomers= [
     {id:'cust-nt-1',name:'Standard Bank',code:'STDB-001',email:'digital@standardbank.co.za',currency:'ZAR',balance:4200000},
     {id:'cust-nt-2',name:'Vodacom Business',code:'VODA-001',email:'enterprise@vodacom.co.za',currency:'ZAR',balance:3800000},
     {id:'cust-nt-3',name:'Sanlam Group',code:'SAN-001',email:'innovation@sanlam.co.za',currency:'ZAR',balance:2900000},
