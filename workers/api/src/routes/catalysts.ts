@@ -253,7 +253,10 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
     return c.json({ error: 'Forbidden', message: 'Only admins can toggle sub-catalysts' }, 403);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
+  // Admin can manage clusters of other tenants via tenant_id query param
+  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string }>;
@@ -262,13 +265,13 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
 
   subs[idx].enabled = !subs[idx].enabled;
   await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
-    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
 
   // Audit log
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.toggled', 'catalysts', clusterId,
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.toggled', 'catalysts', clusterId,
     JSON.stringify({ sub_catalyst: subName, enabled: subs[idx].enabled }),
     'success'
   ).run().catch(() => {});
@@ -306,7 +309,10 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/data-source', async (
     return c.json({ error: 'Cloud storage data source requires provider and path in config' }, 400);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
+  // Admin can manage clusters of other tenants via tenant_id query param
+  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string; data_source?: { type: string; config: Record<string, unknown> } }>;
@@ -315,13 +321,13 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/data-source', async (
 
   subs[idx].data_source = { type: body.type, config };
   await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
-    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
 
   // Audit log
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.data_source_configured', 'catalysts', clusterId,
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.data_source_configured', 'catalysts', clusterId,
     JSON.stringify({ sub_catalyst: subName, data_source_type: body.type }),
     'success'
   ).run().catch(() => {});
@@ -338,7 +344,10 @@ catalysts.delete('/clusters/:clusterId/sub-catalysts/:subName/data-source', asyn
     return c.json({ error: 'Forbidden', message: 'Only admins can configure data sources' }, 403);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
+  // Admin can manage clusters of other tenants via tenant_id query param
+  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string; data_source?: { type: string; config: Record<string, unknown> } }>;
@@ -347,13 +356,13 @@ catalysts.delete('/clusters/:clusterId/sub-catalysts/:subName/data-source', asyn
 
   delete subs[idx].data_source;
   await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
-    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
 
   // Audit log
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.data_source_removed', 'catalysts', clusterId,
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.data_source_removed', 'catalysts', clusterId,
     JSON.stringify({ sub_catalyst: subName }),
     'success'
   ).run().catch(() => {});

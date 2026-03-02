@@ -218,7 +218,7 @@ export function TenantsPage() {
  const handleToggleSubCatalyst = async (clusterId: string, subName: string) => {
  setTogglingSubCatalyst(`${clusterId}-${subName}`);
  try {
- await api.catalysts.toggleSubCatalyst(clusterId, subName);
+ await api.catalysts.toggleSubCatalyst(clusterId, subName, showDeployCatalyst || undefined);
  if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
  } catch { /* silent */ }
  setTogglingSubCatalyst(null);
@@ -232,7 +232,7 @@ export function TenantsPage() {
  await api.catalysts.setDataSource(configuringSub.clusterId, configuringSub.subName, {
  type: dataSourceForm.type,
  config: dataSourceForm.config,
- });
+ }, showDeployCatalyst || undefined);
  setConfiguringSub(null);
  if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
  } catch { /* silent */ }
@@ -242,7 +242,7 @@ export function TenantsPage() {
  // Remove data source
  const handleRemoveDataSource = async (clusterId: string, subName: string) => {
  try {
- await api.catalysts.removeDataSource(clusterId, subName);
+ await api.catalysts.removeDataSource(clusterId, subName, showDeployCatalyst || undefined);
  if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
  } catch { /* silent */ }
  };

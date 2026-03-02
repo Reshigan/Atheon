@@ -154,12 +154,12 @@ export const api = {
   catalysts: {
     clusters: (tenantId?: string, industry?: string) =>
       request<{ clusters: ClusterItem[]; total: number }>(`/api/catalysts/clusters${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined })}`),
-    toggleSubCatalyst: (clusterId: string, subName: string) =>
-      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/toggle`, { method: 'PUT' }),
-    setDataSource: (clusterId: string, subName: string, dataSource: { type: string; config: Record<string, unknown> }) =>
-      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source`, { method: 'PUT', body: JSON.stringify(dataSource) }),
-    removeDataSource: (clusterId: string, subName: string) =>
-      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source`, { method: 'DELETE' }),
+    toggleSubCatalyst: (clusterId: string, subName: string, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/toggle${qs({ tenant_id: tenantId })}`, { method: 'PUT' }),
+    setDataSource: (clusterId: string, subName: string, dataSource: { type: string; config: Record<string, unknown> }, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify(dataSource) }),
+    removeDataSource: (clusterId: string, subName: string, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source${qs({ tenant_id: tenantId })}`, { method: 'DELETE' }),
     cluster: (id: string) => request<ClusterDetail>(`/api/catalysts/clusters/${id}`),
     actions: (tenantId?: string, clusterId?: string, industry?: string) =>
       request<{ actions: ActionItem[]; total: number }>(`/api/catalysts/actions${qs({ tenant_id: tenantId, cluster_id: clusterId, industry: industry && industry !== 'general' ? industry : undefined })}`),
