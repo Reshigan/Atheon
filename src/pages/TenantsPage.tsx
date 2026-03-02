@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { Tenant, IAMUser } from "@/lib/api";
+import type { Tenant, IAMUser, CatalystIndustryTemplate, CatalystClusterTemplate, ClusterItem, SubCatalyst } from "@/lib/api";
 import {
  Building2, Cloud, Server, GitBranch, Users, Bot, Shield,
- ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2, X
+ ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2, X,
+ Zap, ToggleLeft, ToggleRight, Database, Mail, HardDrive, Upload, Settings, Trash2, ArrowLeft
 } from "lucide-react";
 import { IconCheck, IconCross } from "@/components/icons/AtheonIcons";
 
@@ -51,6 +52,23 @@ export function TenantsPage() {
  const [showDeployCatalyst, setShowDeployCatalyst] = useState<string | null>(null);
  const [catalystForm, setCatalystForm] = useState({ name: '', domain: 'finance', autonomy_tier: 'assisted' });
  const [deployingCatalyst, setDeployingCatalyst] = useState(false);
+
+ // Industry template state
+ const [templates, setTemplates] = useState<CatalystIndustryTemplate[]>([]);
+ const [loadingTemplates, setLoadingTemplates] = useState(false);
+ const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+ const [templateClusters, setTemplateClusters] = useState<Array<CatalystClusterTemplate & { selected: boolean }>>([]);
+ const [deployStep, setDeployStep] = useState<'choose' | 'customize' | 'deploying' | 'done' | 'manage'>('choose');
+ const [deployResult, setDeployResult] = useState<{ clustersCreated: number; existingClusters: number } | null>(null);
+
+ // Manage catalysts state (post-deploy sub-catalyst toggle & config)
+ const [tenantClusters, setTenantClusters] = useState<ClusterItem[]>([]);
+ const [loadingClusters, setLoadingClusters] = useState(false);
+ const [expandedCluster, setExpandedCluster] = useState<string | null>(null);
+ const [togglingSubCatalyst, setTogglingSubCatalyst] = useState<string | null>(null);
+ const [configuringSub, setConfiguringSub] = useState<{ clusterId: string; subName: string } | null>(null);
+ const [dataSourceForm, setDataSourceForm] = useState<{ type: string; config: Record<string, string> }>({ type: 'erp', config: {} });
+ const [savingDataSource, setSavingDataSource] = useState(false);
 
  // Edit Entitlements modal state
  const [showEditEntitlements, setShowEditEntitlements] = useState<string | null>(null);
@@ -101,7 +119,7 @@ export function TenantsPage() {
  setAddingUser(false);
  };
 
- // Deploy Catalyst handler
+ // Deploy Catalyst handler (single cluster - kept for backward compat)
  const handleDeployCatalyst = async () => {
  if (!catalystForm.name.trim() || deployingCatalyst || !showDeployCatalyst) return;
  setDeployingCatalyst(true);
@@ -113,11 +131,129 @@ export function TenantsPage() {
  autonomy_tier: catalystForm.autonomy_tier});
  setShowDeployCatalyst(null);
  setCatalystForm({ name: '', domain: 'finance', autonomy_tier: 'assisted' });
- // Refresh tenants to reflect new cluster
  const res = await api.tenants.list();
  setTenants(res.tenants);
  } catch { /* silent */ }
  setDeployingCatalyst(false);
+ };
+
+ // Load industry templates
+ const loadTemplates = useCallback(async () => {
+ if (templates.length > 0) return;
+ setLoadingTemplates(true);
+ try {
+ const res = await api.catalysts.templates();
+ setTemplates(res.templates);
+ } catch { /* silent */ }
+ setLoadingTemplates(false);
+ }, [templates.length]);
+
+ // Open deploy catalyst modal
+ const openDeployCatalyst = useCallback(async (tenantId: string) => {
+ setShowDeployCatalyst(tenantId);
+ setDeployStep('choose');
+ setSelectedIndustry(null);
+ setTemplateClusters([]);
+ setDeployResult(null);
+ setTenantClusters([]);
+ await loadTemplates();
+ }, [loadTemplates]);
+
+ // Select an industry template
+ const selectIndustryTemplate = useCallback((industry: string) => {
+ setSelectedIndustry(industry);
+ const tmpl = templates.find(t => t.industry === industry);
+ if (tmpl) {
+ setTemplateClusters(tmpl.clusters.map(c => ({ ...c, selected: true })));
+ setDeployStep('customize');
+ }
+ }, [templates]);
+
+ // Deploy the selected template
+ const handleDeployTemplate = async () => {
+ if (!showDeployCatalyst || !selectedIndustry) return;
+ setDeployStep('deploying');
+ try {
+ const selectedClusters = templateClusters.filter(c => c.selected);
+ const res = await api.catalysts.deployTemplate({
+ tenant_id: showDeployCatalyst,
+ industry: selectedIndustry,
+ clusters: selectedClusters.map(c => ({
+ name: c.name,
+ domain: c.domain,
+ description: c.description,
+ autonomy_tier: c.autonomy_tier,
+ sub_catalysts: c.sub_catalysts,
+ })),
+ });
+ setDeployResult({ clustersCreated: res.clustersCreated, existingClusters: res.existingClusters });
+ setDeployStep('done');
+ // Refresh tenants
+ const tenRes = await api.tenants.list();
+ setTenants(tenRes.tenants);
+ } catch {
+ setDeployStep('customize');
+ }
+ };
+
+ // Load tenant's existing clusters for management
+ const loadTenantClusters = async (tenantId: string) => {
+ setLoadingClusters(true);
+ try {
+ const res = await api.catalysts.clusters(tenantId);
+ setTenantClusters(res.clusters);
+ } catch { setTenantClusters([]); }
+ setLoadingClusters(false);
+ };
+
+ // Open manage mode (view existing clusters, toggle sub-catalysts, configure)
+ const openManageCatalysts = async (tenantId: string) => {
+ setShowDeployCatalyst(tenantId);
+ setDeployStep('manage');
+ setExpandedCluster(null);
+ await loadTenantClusters(tenantId);
+ };
+
+ // Toggle sub-catalyst enabled/disabled
+ const handleToggleSubCatalyst = async (clusterId: string, subName: string) => {
+ setTogglingSubCatalyst(`${clusterId}-${subName}`);
+ try {
+ await api.catalysts.toggleSubCatalyst(clusterId, subName, showDeployCatalyst || undefined);
+ if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
+ } catch { /* silent */ }
+ setTogglingSubCatalyst(null);
+ };
+
+ // Save data source configuration
+ const handleSaveDataSource = async () => {
+ if (!configuringSub || savingDataSource) return;
+ setSavingDataSource(true);
+ try {
+ await api.catalysts.setDataSource(configuringSub.clusterId, configuringSub.subName, {
+ type: dataSourceForm.type,
+ config: dataSourceForm.config,
+ }, showDeployCatalyst || undefined);
+ setConfiguringSub(null);
+ if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
+ } catch { /* silent */ }
+ setSavingDataSource(false);
+ };
+
+ // Remove data source
+ const handleRemoveDataSource = async (clusterId: string, subName: string) => {
+ try {
+ await api.catalysts.removeDataSource(clusterId, subName, showDeployCatalyst || undefined);
+ if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
+ } catch { /* silent */ }
+ };
+
+ // Delete a cluster
+ const handleDeleteCluster = async (clusterId: string) => {
+ if (!showDeployCatalyst) return;
+ try {
+ await api.catalysts.deleteCluster(clusterId, showDeployCatalyst);
+ await loadTenantClusters(showDeployCatalyst);
+ } catch { /* silent */ }
  };
 
  // Edit Entitlements handler
@@ -367,7 +503,8 @@ export function TenantsPage() {
 
  <div className="flex gap-2">
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageUsers(tenant.id); }}><Users size={12} /> Manage Users</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowDeployCatalyst(tenant.id); }}><Bot size={12} /> Deploy Catalyst</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openDeployCatalyst(tenant.id); }}><Bot size={12} /> Deploy Catalysts</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }}><Settings size={12} /> Manage Catalysts</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }}><Layers size={12} /> Edit Entitlements</Button>
  </div>
  </div>
@@ -510,24 +647,412 @@ export function TenantsPage() {
  </div>
  )}
 
- {/* Deploy Catalyst Modal */}
+ {/* Deploy Catalyst Modal — Enhanced with Industry Templates */}
  {showDeployCatalyst && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-3xl space-y-4 max-h-[90vh] overflow-y-auto">
+
+ {/* Header */}
  <div className="flex items-center justify-between">
- <h3 className="text-lg font-semibold t-primary">Deploy Catalyst Cluster</h3>
- <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
+ <div className="flex items-center gap-3">
+ {(deployStep === 'customize' || deployStep === 'manage') && deployStep !== 'manage' && (
+ <button onClick={() => { setDeployStep('choose'); setSelectedIndustry(null); }} className="text-gray-400 hover:text-accent"><ArrowLeft size={18} /></button>
+ )}
+ <h3 className="text-lg font-semibold t-primary">
+ {deployStep === 'choose' && 'Deploy Catalyst Clusters'}
+ {deployStep === 'customize' && `Customize ${templates.find(t => t.industry === selectedIndustry)?.label || ''} Template`}
+ {deployStep === 'deploying' && 'Deploying Catalysts...'}
+ {deployStep === 'done' && 'Deployment Complete'}
+ {deployStep === 'manage' && 'Manage Catalyst Clusters'}
+ </h3>
  </div>
- <div className="space-y-3">
+ <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-accent"><X size={18} /></button>
+ </div>
+
+ {/* Step 1: Choose Industry Template */}
+ {deployStep === 'choose' && (
+ <div className="space-y-4">
+ <p className="text-sm t-muted">Select an industry template to deploy pre-configured catalyst clusters with sub-catalysts.</p>
+ {loadingTemplates ? (
+ <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-accent animate-spin" /></div>
+ ) : (
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+ {templates.map(tmpl => (
+ <button
+ key={tmpl.industry}
+ onClick={() => selectIndustryTemplate(tmpl.industry)}
+ className="text-left p-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent hover:bg-accent/5 transition-all group"
+ >
+ <div className="flex items-center gap-2 mb-2">
+ <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+ <Zap size={16} className="text-accent" />
+ </div>
+ <h4 className="text-sm font-semibold t-primary group-hover:text-accent">{tmpl.label}</h4>
+ </div>
+ <p className="text-xs t-muted line-clamp-2">{tmpl.description}</p>
+ <div className="flex items-center gap-2 mt-3">
+ <Badge variant="info" size="sm">{tmpl.clusterCount} clusters</Badge>
+ <Badge variant="outline" size="sm">{tmpl.clusters.reduce((a, c) => a + c.subCatalystCount, 0)} sub-catalysts</Badge>
+ </div>
+ </button>
+ ))}
+ </div>
+ )}
+
+ {/* Or deploy single cluster manually */}
+ <div className="border-t border-[var(--border-card)] pt-4">
+ <p className="text-xs t-muted mb-3">Or deploy a single custom catalyst cluster:</p>
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  <div><label className="text-xs t-muted">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
  <div><label className="text-xs t-muted">Domain</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
- <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only (Monitor)</option><option value="assisted">Assisted (Suggest)</option><option value="supervised">Supervised (Act with approval)</option><option value="autonomous">Autonomous (Full execution)</option></select></div>
+ <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="supervised">Supervised</option><option value="autonomous">Autonomous</option></select></div>
  </div>
- <p className="text-[10px] text-gray-400">The Catalyst cluster will be provisioned and deployed according to the tenant&apos;s deployment model.</p>
- <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setShowDeployCatalyst(null)}>Cancel</Button>
+ <div className="flex gap-3 mt-3">
  <Button variant="primary" size="sm" onClick={handleDeployCatalyst} disabled={!catalystForm.name.trim() || deployingCatalyst}>
- {deployingCatalyst ? <Loader2 size={14} className="animate-spin" /> : <Bot size={14} />} Deploy
+ {deployingCatalyst ? <Loader2 size={14} className="animate-spin" /> : <Bot size={14} />} Deploy Single Cluster
+ </Button>
+ </div>
+ </div>
+ </div>
+ )}
+
+ {/* Step 2: Customize Template Clusters */}
+ {deployStep === 'customize' && (
+ <div className="space-y-4">
+ <p className="text-sm t-muted">Review and customize which clusters to deploy. Toggle individual sub-catalysts on/off before deploying.</p>
+ <div className="space-y-3">
+ {templateClusters.map((cluster, idx) => (
+ <div key={cluster.domain + idx} className={`rounded-xl border transition-all ${
+ cluster.selected ? 'border-accent/40 bg-accent/5' : 'border-[var(--border-card)] bg-[var(--bg-secondary)] opacity-60'
+ }`}>
+ <div className="flex items-center justify-between p-4">
+ <div className="flex items-center gap-3">
+ <button
+ onClick={() => setTemplateClusters(prev => prev.map((c, i) => i === idx ? { ...c, selected: !c.selected } : c))}
+ className="flex-shrink-0"
+ >
+ {cluster.selected ? (
+ <ToggleRight size={24} className="text-accent" />
+ ) : (
+ <ToggleLeft size={24} className="text-gray-400" />
+ )}
+ </button>
+ <div>
+ <h4 className="text-sm font-semibold t-primary">{cluster.name}</h4>
+ <p className="text-xs t-muted">{cluster.description}</p>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ <Badge variant="outline" size="sm">{cluster.domain}</Badge>
+ <Badge variant="info" size="sm">{cluster.autonomy_tier}</Badge>
+ </div>
+ </div>
+
+ {cluster.selected && (
+ <div className="px-4 pb-4">
+ <div className="text-xs t-muted mb-2">Sub-Catalysts ({cluster.sub_catalysts.length})</div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+ {cluster.sub_catalysts.map((sub, subIdx) => (
+ <div key={sub.name} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-card)]">
+ <button
+ onClick={() => {
+ setTemplateClusters(prev => prev.map((c, i) => {
+ if (i !== idx) return c;
+ const newSubs = [...c.sub_catalysts];
+ newSubs[subIdx] = { ...newSubs[subIdx], enabled: !newSubs[subIdx].enabled };
+ return { ...c, sub_catalysts: newSubs };
+ }));
+ }}
+ className="flex-shrink-0 mt-0.5"
+ >
+ {sub.enabled ? (
+ <CheckCircle size={14} className="text-emerald-500" />
+ ) : (
+ <XCircle size={14} className="text-gray-400" />
+ )}
+ </button>
+ <div className="min-w-0">
+ <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 'text-gray-400'}`}>{sub.name}</span>
+ <p className="text-[10px] t-muted truncate">{sub.description}</p>
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+
+ <div className="flex items-center justify-between pt-2">
+ <span className="text-xs t-muted">
+ {templateClusters.filter(c => c.selected).length} of {templateClusters.length} clusters selected
+ </span>
+ <div className="flex gap-3">
+ <Button variant="secondary" size="sm" onClick={() => { setDeployStep('choose'); setSelectedIndustry(null); }}>Back</Button>
+ <Button variant="primary" size="sm" onClick={handleDeployTemplate} disabled={templateClusters.filter(c => c.selected).length === 0}>
+ <Zap size={14} /> Deploy {templateClusters.filter(c => c.selected).length} Clusters
+ </Button>
+ </div>
+ </div>
+ </div>
+ )}
+
+ {/* Step 3: Deploying animation */}
+ {deployStep === 'deploying' && (
+ <div className="flex flex-col items-center justify-center py-12 space-y-4">
+ <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+ <Loader2 className="w-8 h-8 text-accent animate-spin" />
+ </div>
+ <p className="text-sm t-primary font-medium">Deploying catalyst clusters...</p>
+ <p className="text-xs t-muted">Creating clusters and sub-catalysts for {templates.find(t => t.industry === selectedIndustry)?.label}</p>
+ </div>
+ )}
+
+ {/* Step 4: Done */}
+ {deployStep === 'done' && deployResult && (
+ <div className="flex flex-col items-center justify-center py-8 space-y-4">
+ <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+ <CheckCircle className="w-8 h-8 text-emerald-500" />
+ </div>
+ <div className="text-center">
+ <p className="text-lg font-semibold t-primary">{deployResult.clustersCreated} Catalyst Clusters Deployed</p>
+ <p className="text-sm t-muted mt-1">Industry: {templates.find(t => t.industry === selectedIndustry)?.label}</p>
+ {deployResult.existingClusters > 0 && (
+ <p className="text-xs text-amber-500 mt-1">Note: This tenant already had {deployResult.existingClusters} existing cluster(s)</p>
+ )}
+ </div>
+ <div className="flex gap-3 pt-2">
+ <Button variant="secondary" size="sm" onClick={() => setShowDeployCatalyst(null)}>Close</Button>
+ <Button variant="primary" size="sm" onClick={() => { if (showDeployCatalyst) openManageCatalysts(showDeployCatalyst); }}>
+ <Settings size={14} /> Manage Clusters
+ </Button>
+ </div>
+ </div>
+ )}
+
+ {/* Manage Mode: View existing clusters, toggle sub-catalysts, configure data sources */}
+ {deployStep === 'manage' && (
+ <div className="space-y-4">
+ {loadingClusters ? (
+ <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-accent animate-spin" /></div>
+ ) : tenantClusters.length === 0 ? (
+ <div className="text-center py-8">
+ <p className="text-sm t-muted">No catalyst clusters deployed for this tenant.</p>
+ <Button variant="primary" size="sm" className="mt-3" onClick={() => { setDeployStep('choose'); loadTemplates(); }}>
+ <Zap size={14} /> Deploy Catalysts
+ </Button>
+ </div>
+ ) : (
+ <>
+ <div className="flex items-center justify-between">
+ <p className="text-sm t-muted">{tenantClusters.length} cluster(s) deployed</p>
+ <Button variant="secondary" size="sm" onClick={() => { setDeployStep('choose'); loadTemplates(); }}>
+ <Plus size={14} /> Add More
+ </Button>
+ </div>
+ <div className="space-y-3">
+ {tenantClusters.map(cluster => (
+ <div key={cluster.id} className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+ <button
+ className="w-full flex items-center justify-between p-4 text-left"
+ onClick={() => setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)}
+ >
+ <div className="flex items-center gap-3">
+ <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+ <Bot size={16} className="text-accent" />
+ </div>
+ <div>
+ <h4 className="text-sm font-semibold t-primary">{cluster.name}</h4>
+ <p className="text-xs t-muted">{cluster.description}</p>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ <Badge variant="outline" size="sm">{cluster.domain}</Badge>
+ <Badge variant={cluster.status === 'active' ? 'success' : 'default'} size="sm">{cluster.status}</Badge>
+ <Badge variant="info" size="sm">{cluster.autonomyTier}</Badge>
+ {expandedCluster === cluster.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+ </div>
+ </button>
+
+ {expandedCluster === cluster.id && (
+ <div className="px-4 pb-4 space-y-3">
+ {/* Sub-catalysts list */}
+ <div className="text-xs font-medium t-primary">Sub-Catalysts ({(cluster.subCatalysts || []).length})</div>
+ {(cluster.subCatalysts || []).map((sub: SubCatalyst) => (
+ <div key={sub.name} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-card)]">
+ <div className="flex items-center gap-3">
+ <button
+ onClick={() => handleToggleSubCatalyst(cluster.id, sub.name)}
+ disabled={togglingSubCatalyst === `${cluster.id}-${sub.name}`}
+ className="flex-shrink-0"
+ >
+ {togglingSubCatalyst === `${cluster.id}-${sub.name}` ? (
+ <Loader2 size={18} className="text-accent animate-spin" />
+ ) : sub.enabled ? (
+ <ToggleRight size={22} className="text-emerald-500" />
+ ) : (
+ <ToggleLeft size={22} className="text-gray-400" />
+ )}
+ </button>
+ <div>
+ <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 'text-gray-400 line-through'}`}>{sub.name}</span>
+ <p className="text-[10px] t-muted">{sub.description}</p>
+ {sub.data_source && (
+ <div className="flex items-center gap-1 mt-1">
+ <Badge variant="info" size="sm">
+ {sub.data_source.type === 'erp' && <><Database size={10} /> ERP</>}
+ {sub.data_source.type === 'email' && <><Mail size={10} /> Email</>}
+ {sub.data_source.type === 'cloud_storage' && <><HardDrive size={10} /> Cloud</>}
+ {sub.data_source.type === 'upload' && <><Upload size={10} /> Upload</>}
+ </Badge>
+ </div>
+ )}
+ </div>
+ </div>
+ <div className="flex items-center gap-1">
+ <button
+ onClick={() => {
+ setConfiguringSub({ clusterId: cluster.id, subName: sub.name });
+ setDataSourceForm(
+ sub.data_source
+ ? { type: sub.data_source.type, config: sub.data_source.config as Record<string, string> }
+ : { type: 'erp', config: {} }
+ );
+ }}
+ className="p-1.5 rounded-lg hover:bg-accent/10 text-gray-400 hover:text-accent transition-colors"
+ title="Configure data source"
+ >
+ <Database size={14} />
+ </button>
+ {sub.data_source && (
+ <button
+ onClick={() => handleRemoveDataSource(cluster.id, sub.name)}
+ className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors"
+ title="Remove data source"
+ >
+ <Trash2 size={14} />
+ </button>
+ )}
+ </div>
+ </div>
+ ))}
+
+ {/* Delete cluster */}
+ <div className="flex justify-end pt-2 border-t border-[var(--border-card)]">
+ <Button
+ variant="secondary"
+ size="sm"
+ onClick={() => { if (confirm('Delete this catalyst cluster?')) handleDeleteCluster(cluster.id); }}
+ >
+ <Trash2 size={12} /> Remove Cluster
+ </Button>
+ </div>
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ </>
+ )}
+ </div>
+ )}
+
+ </div>
+ </div>
+ )}
+
+ {/* Configure Data Source Modal */}
+ {configuringSub && (
+ <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold t-primary">Configure Data Source</h3>
+ <button onClick={() => setConfiguringSub(null)} className="text-gray-400 hover:text-accent"><X size={18} /></button>
+ </div>
+ <p className="text-xs t-muted">Configure the data source for <span className="font-medium t-primary">{configuringSub.subName}</span></p>
+
+ <div className="space-y-3">
+ <div>
+ <label className="text-xs t-muted">Source Type</label>
+ <select
+ className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm"
+ value={dataSourceForm.type}
+ onChange={e => setDataSourceForm({ type: e.target.value, config: {} })}
+ >
+ <option value="erp">ERP System</option>
+ <option value="email">Email / Mailbox</option>
+ <option value="cloud_storage">Cloud Storage</option>
+ <option value="upload">File Upload</option>
+ </select>
+ </div>
+
+ {dataSourceForm.type === 'erp' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">ERP Type</label>
+ <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.erp_type || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, erp_type: e.target.value } }))}>
+ <option value="">Select ERP...</option>
+ <option value="xero">Xero</option>
+ <option value="sage">Sage</option>
+ <option value="sage-pastel">Sage Pastel</option>
+ <option value="oracle">Oracle</option>
+ <option value="sap">SAP</option>
+ <option value="quickbooks">QuickBooks</option>
+ </select>
+ </div>
+ <div>
+ <label className="text-xs t-muted">Module / Feed</label>
+ <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.module || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, module: e.target.value } }))} placeholder="e.g. invoices, payments, contacts" />
+ </div>
+ </>
+ )}
+
+ {dataSourceForm.type === 'email' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">Mailbox Address</label>
+ <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.mailbox || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, mailbox: e.target.value } }))} placeholder="reports@company.com" />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Folder Filter</label>
+ <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.folder || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, folder: e.target.value } }))} placeholder="Inbox/Reports" />
+ </div>
+ </>
+ )}
+
+ {dataSourceForm.type === 'cloud_storage' && (
+ <>
+ <div>
+ <label className="text-xs t-muted">Provider</label>
+ <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.provider || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, provider: e.target.value } }))}>
+ <option value="">Select provider...</option>
+ <option value="azure_blob">Azure Blob Storage</option>
+ <option value="aws_s3">AWS S3</option>
+ <option value="gcs">Google Cloud Storage</option>
+ <option value="sharepoint">SharePoint</option>
+ <option value="onedrive">OneDrive</option>
+ </select>
+ </div>
+ <div>
+ <label className="text-xs t-muted">Path / Container</label>
+ <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.path || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, path: e.target.value } }))} placeholder="/data/reports/" />
+ </div>
+ </>
+ )}
+
+ {dataSourceForm.type === 'upload' && (
+ <div>
+ <label className="text-xs t-muted">Upload Label</label>
+ <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.label || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, label: e.target.value } }))} placeholder="Monthly financial reports" />
+ </div>
+ )}
+ </div>
+
+ <div className="flex gap-3 pt-2">
+ <Button variant="secondary" size="sm" onClick={() => setConfiguringSub(null)}>Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleSaveDataSource} disabled={savingDataSource}>
+ {savingDataSource ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />} Save Data Source
  </Button>
  </div>
  </div>

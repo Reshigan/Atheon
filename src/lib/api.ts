@@ -154,12 +154,12 @@ export const api = {
   catalysts: {
     clusters: (tenantId?: string, industry?: string) =>
       request<{ clusters: ClusterItem[]; total: number }>(`/api/catalysts/clusters${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined })}`),
-    toggleSubCatalyst: (clusterId: string, subName: string) =>
-      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/toggle`, { method: 'PUT' }),
-    setDataSource: (clusterId: string, subName: string, dataSource: { type: string; config: Record<string, unknown> }) =>
-      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source`, { method: 'PUT', body: JSON.stringify(dataSource) }),
-    removeDataSource: (clusterId: string, subName: string) =>
-      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source`, { method: 'DELETE' }),
+    toggleSubCatalyst: (clusterId: string, subName: string, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/toggle${qs({ tenant_id: tenantId })}`, { method: 'PUT' }),
+    setDataSource: (clusterId: string, subName: string, dataSource: { type: string; config: Record<string, unknown> }, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify(dataSource) }),
+    removeDataSource: (clusterId: string, subName: string, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-source${qs({ tenant_id: tenantId })}`, { method: 'DELETE' }),
     cluster: (id: string) => request<ClusterDetail>(`/api/catalysts/clusters/${id}`),
     actions: (tenantId?: string, clusterId?: string, industry?: string) =>
       request<{ actions: ActionItem[]; total: number }>(`/api/catalysts/actions${qs({ tenant_id: tenantId, cluster_id: clusterId, industry: industry && industry !== 'general' ? industry : undefined })}`),
@@ -173,6 +173,12 @@ export const api = {
       request<GovernanceData>(`/api/catalysts/governance${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined })}`),
     createCluster: (data: Record<string, unknown>) =>
       request<{ id: string; name: string; domain: string }>('/api/catalysts/clusters', { method: 'POST', body: JSON.stringify(data) }),
+    deleteCluster: (id: string, tenantId?: string) =>
+      request<{ success: boolean }>(`/api/catalysts/clusters/${id}${qs({ tenant_id: tenantId })}`, { method: 'DELETE' }),
+    templates: () =>
+      request<{ templates: CatalystIndustryTemplate[] }>('/api/catalysts/templates'),
+    deployTemplate: (data: { tenant_id: string; industry: string; clusters?: Array<{ name: string; domain: string; description: string; autonomy_tier: string; sub_catalysts: Array<{ name: string; enabled: boolean; description: string }> }> }) =>
+      request<{ success: boolean; industry: string; clustersCreated: number; clusterIds: string[]; existingClusters: number }>('/api/catalysts/deploy-template', { method: 'POST', body: JSON.stringify(data) }),
     manualExecute: async (data: FormData): Promise<ManualExecuteResult> => {
       const headers: Record<string, string> = {};
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
@@ -462,6 +468,29 @@ export interface PulseSummary {
 export interface DataSourceConfig {
   type: 'erp' | 'email' | 'cloud_storage' | 'upload';
   config: Record<string, unknown>;
+}
+
+export interface CatalystSubCatalystTemplate {
+  name: string;
+  enabled: boolean;
+  description: string;
+}
+
+export interface CatalystClusterTemplate {
+  name: string;
+  domain: string;
+  description: string;
+  autonomy_tier: string;
+  subCatalystCount: number;
+  sub_catalysts: CatalystSubCatalystTemplate[];
+}
+
+export interface CatalystIndustryTemplate {
+  industry: string;
+  label: string;
+  description: string;
+  clusterCount: number;
+  clusters: CatalystClusterTemplate[];
 }
 
 export interface SubCatalyst {

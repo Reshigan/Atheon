@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppBindings, AuthContext } from '../types';
 import { executeTask, approveAction, rejectAction } from '../services/catalyst-engine';
 import { getValidatedJsonBody } from '../middleware/validation';
+import { INDUSTRY_TEMPLATES, getTemplateForIndustry } from '../services/catalyst-templates';
 
 const catalysts = new Hono<AppBindings>();
 
@@ -23,7 +24,9 @@ function getTenantId(c: { get: (key: string) => unknown }): string {
 
 // GET /api/catalysts/clusters
 catalysts.get('/clusters', async (c) => {
-  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  const defaultTenantId = auth?.tenantId || 'vantax';
+  const tenantId = (auth?.role === 'admin' || auth?.role === 'system_admin') ? (c.req.query('tenant_id') || defaultTenantId) : defaultTenantId;
   const results = await c.env.DB.prepare(
     'SELECT * FROM catalyst_clusters WHERE tenant_id = ? ORDER BY domain ASC'
   ).bind(tenantId).all();
@@ -104,22 +107,147 @@ catalysts.get('/clusters/:id', async (c) => {
 // POST /api/catalysts/clusters
 catalysts.post('/clusters', async (c) => {
   const tenantId = getTenantId(c);
-  const { data: body, errors } = await getValidatedJsonBody<{
-    name: string; domain: string; description?: string; autonomy_tier?: string;
-  }>(c, [
-    { field: 'name', type: 'string', required: true, minLength: 1, maxLength: 100 },
-    { field: 'domain', type: 'string', required: true, minLength: 1, maxLength: 64 },
-    { field: 'description', type: 'string', required: false, maxLength: 500 },
-    { field: 'autonomy_tier', type: 'string', required: false, maxLength: 32 },
-  ]);
-  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+  const raw = await c.req.json<{
+    tenant_id?: string; name: string; domain: string; description?: string; autonomy_tier?: string;
+    sub_catalysts?: Array<{ name: string; enabled: boolean; description: string }>;
+  }>();
+
+  // Admin can override tenant_id for creating clusters on behalf of other tenants
+  const auth = c.get('auth') as AuthContext | undefined;
+  const targetTenant = (auth?.role === 'admin' || auth?.role === 'system_admin') && raw.tenant_id ? raw.tenant_id : tenantId;
+
+  if (!raw.name || raw.name.length < 1) return c.json({ error: 'name is required' }, 400);
+  if (raw.name.length > 100) return c.json({ error: 'name must be 100 characters or less' }, 400);
+  if (!raw.domain || raw.domain.length < 1) return c.json({ error: 'domain is required' }, 400);
+  if (raw.domain.length > 64) return c.json({ error: 'domain must be 64 characters or less' }, 400);
+  if (raw.description && raw.description.length > 500) return c.json({ error: 'description must be 500 characters or less' }, 400);
+  if (raw.autonomy_tier && raw.autonomy_tier.length > 32) return c.json({ error: 'autonomy_tier must be 32 characters or less' }, 400);
 
   const id = crypto.randomUUID();
+  const subCatalysts = raw.sub_catalysts ? JSON.stringify(raw.sub_catalysts) : '[]';
   await c.env.DB.prepare(
-    'INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, autonomy_tier) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, tenantId, body.name, body.domain, body.description || '', body.autonomy_tier || 'read-only').run();
+    'INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, autonomy_tier, status, sub_catalysts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, targetTenant, raw.name, raw.domain, raw.description || '', raw.autonomy_tier || 'read-only', 'active', subCatalysts).run();
 
-  return c.json({ id, name: body.name, domain: body.domain }, 201);
+  return c.json({ id, name: raw.name, domain: raw.domain }, 201);
+});
+
+// GET /api/catalysts/templates - List available industry templates
+catalysts.get('/templates', async (c) => {
+  const templates = INDUSTRY_TEMPLATES.map(t => ({
+    industry: t.industry,
+    label: t.label,
+    description: t.description,
+    clusterCount: t.clusters.length,
+    clusters: t.clusters.map(cl => ({
+      name: cl.name,
+      domain: cl.domain,
+      description: cl.description,
+      autonomy_tier: cl.autonomy_tier,
+      subCatalystCount: cl.sub_catalysts.length,
+      sub_catalysts: cl.sub_catalysts,
+    })),
+  }));
+  return c.json({ templates });
+});
+
+// POST /api/catalysts/deploy-template - Deploy all catalyst clusters for an industry template
+catalysts.post('/deploy-template', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || (auth.role !== 'admin' && auth.role !== 'system_admin')) {
+    return c.json({ error: 'Forbidden', message: 'Only admins can deploy catalyst templates' }, 403);
+  }
+
+  const body = await c.req.json<{
+    tenant_id: string;
+    industry: string;
+    clusters?: Array<{
+      name: string; domain: string; description: string; autonomy_tier: string;
+      sub_catalysts: Array<{ name: string; enabled: boolean; description: string }>;
+    }>;
+  }>();
+
+  if (!body.tenant_id) return c.json({ error: 'tenant_id is required' }, 400);
+  if (!body.industry) return c.json({ error: 'industry is required' }, 400);
+
+  // Verify tenant exists
+  const tenant = await c.env.DB.prepare('SELECT id FROM tenants WHERE id = ?').bind(body.tenant_id).first();
+  if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
+
+  // Get template clusters — use custom clusters if provided, else use the industry default
+  let clustersToCreate = body.clusters;
+  if (!clustersToCreate || clustersToCreate.length === 0) {
+    const template = getTemplateForIndustry(body.industry);
+    if (!template) return c.json({ error: `No template found for industry: ${body.industry}` }, 404);
+    clustersToCreate = template.clusters.map(cl => ({
+      name: cl.name,
+      domain: cl.domain,
+      description: cl.description,
+      autonomy_tier: cl.autonomy_tier,
+      sub_catalysts: cl.sub_catalysts,
+    }));
+  }
+
+  // Check for existing clusters for this tenant — warn but don't block
+  const existing = await c.env.DB.prepare(
+    'SELECT COUNT(*) as count FROM catalyst_clusters WHERE tenant_id = ?'
+  ).bind(body.tenant_id).first<{ count: number }>();
+
+  const createdIds: string[] = [];
+  for (const cl of clustersToCreate) {
+    const id = crypto.randomUUID();
+    await c.env.DB.prepare(
+      'INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, status, agent_count, tasks_completed, tasks_in_progress, success_rate, trust_score, autonomy_tier, sub_catalysts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      id, body.tenant_id, cl.name, cl.domain, cl.description,
+      'active', 0, 0, 0, 0, 0, cl.autonomy_tier,
+      JSON.stringify(cl.sub_catalysts)
+    ).run();
+    createdIds.push(id);
+  }
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), body.tenant_id, 'catalyst.template.deployed', 'catalysts', body.tenant_id,
+    JSON.stringify({ industry: body.industry, clusters_created: createdIds.length, existing_clusters: existing?.count || 0 }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({
+    success: true,
+    industry: body.industry,
+    clustersCreated: createdIds.length,
+    clusterIds: createdIds,
+    existingClusters: existing?.count || 0,
+  }, 201);
+});
+
+// DELETE /api/catalysts/clusters/:id - Delete a catalyst cluster
+catalysts.delete('/clusters/:id', async (c) => {
+  const id = c.req.param('id');
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || (auth.role !== 'admin' && auth.role !== 'system_admin')) {
+    return c.json({ error: 'Forbidden', message: 'Only admins can delete catalyst clusters' }, 403);
+  }
+
+  const tenantId = auth.tenantId;
+  // Admin can delete from any tenant by providing query param
+  const targetTenant = c.req.query('tenant_id') || tenantId;
+
+  await c.env.DB.prepare('DELETE FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(id, targetTenant).run();
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), targetTenant, 'catalyst.cluster.deleted', 'catalysts', id,
+    JSON.stringify({ deleted_cluster_id: id }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({ success: true });
 });
 
 // PUT /api/catalysts/clusters/:id/sub-catalysts/:name/toggle - Toggle sub-catalyst on/off (admin only)
@@ -131,7 +259,10 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
     return c.json({ error: 'Forbidden', message: 'Only admins can toggle sub-catalysts' }, 403);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
+  // Admin can manage clusters of other tenants via tenant_id query param
+  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string }>;
@@ -140,13 +271,13 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
 
   subs[idx].enabled = !subs[idx].enabled;
   await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
-    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
 
   // Audit log
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.toggled', 'catalysts', clusterId,
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.toggled', 'catalysts', clusterId,
     JSON.stringify({ sub_catalyst: subName, enabled: subs[idx].enabled }),
     'success'
   ).run().catch(() => {});
@@ -184,7 +315,10 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/data-source', async (
     return c.json({ error: 'Cloud storage data source requires provider and path in config' }, 400);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
+  // Admin can manage clusters of other tenants via tenant_id query param
+  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string; data_source?: { type: string; config: Record<string, unknown> } }>;
@@ -193,13 +327,13 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/data-source', async (
 
   subs[idx].data_source = { type: body.type, config };
   await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
-    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
 
   // Audit log
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.data_source_configured', 'catalysts', clusterId,
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.data_source_configured', 'catalysts', clusterId,
     JSON.stringify({ sub_catalyst: subName, data_source_type: body.type }),
     'success'
   ).run().catch(() => {});
@@ -216,7 +350,10 @@ catalysts.delete('/clusters/:clusterId/sub-catalysts/:subName/data-source', asyn
     return c.json({ error: 'Forbidden', message: 'Only admins can configure data sources' }, 403);
   }
 
-  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, auth.tenantId).first<{ sub_catalysts: string }>();
+  // Admin can manage clusters of other tenants via tenant_id query param
+  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
 
   const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled: boolean; description?: string; data_source?: { type: string; config: Record<string, unknown> } }>;
@@ -225,13 +362,13 @@ catalysts.delete('/clusters/:clusterId/sub-catalysts/:subName/data-source', asyn
 
   delete subs[idx].data_source;
   await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
-    .bind(JSON.stringify(subs), clusterId, auth.tenantId).run();
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
 
   // Audit log
   await c.env.DB.prepare(
     'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(
-    crypto.randomUUID(), auth.tenantId, 'catalyst.sub_catalyst.data_source_removed', 'catalysts', clusterId,
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.data_source_removed', 'catalysts', clusterId,
     JSON.stringify({ sub_catalyst: subName }),
     'success'
   ).run().catch(() => {});
