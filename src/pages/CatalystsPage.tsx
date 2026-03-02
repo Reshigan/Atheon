@@ -466,7 +466,7 @@ export function CatalystsPage() {
  <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Deploy New Catalyst</h3>
- <button onClick={() => setShowDeployCatalyst(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ <button onClick={() => { setShowDeployCatalyst(false); setDeployError(null); }} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
  </div>
  <div className="space-y-3">
  <div><label className="text-xs t-muted">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={deployForm.name} onChange={e => setDeployForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Finance Catalyst" /></div>

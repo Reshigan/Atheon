@@ -64,6 +64,7 @@ export function ERPAdaptersPage() {
 
  const handleAdapterConnect = (adapterId: string, adapterName: string) => {
  setConnectForm({ adapterId, name: adapterName + ' Connection', syncFrequency: 'daily' });
+ setConnectError(null);
  setShowConnect(true);
  };
 
@@ -123,7 +124,7 @@ export function ERPAdaptersPage() {
  <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Connect ERP System</h3>
- <button onClick={() => setShowConnect(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
+ <button onClick={() => { setShowConnect(false); setConnectError(null); }} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
  </div>
  <div className="space-y-3">
  <div><label className="text-xs t-muted">ERP Adapter</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={connectForm.adapterId} onChange={e => setConnectForm(p => ({ ...p, adapterId: e.target.value }))}><option value="">Select an adapter...</option>{adapters.map(a => <option key={a.id} value={a.id}>{a.name} ({a.system})</option>)}</select></div>
