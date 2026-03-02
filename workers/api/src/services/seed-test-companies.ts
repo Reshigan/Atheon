@@ -293,7 +293,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(c.id,'greenleaf',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
-  const glAnomalies = [
+  const glAnomalies= [
     {id:'an-gl-1',metric:'Water Usage per Hectare',expected:4500,actual:5800,deviation:28.9,severity:'high',hypothesis:'Irrigation system leak on Farm 3 — drip line damage from recent hail'},
   ];
   for (const a of glAnomalies) {
@@ -435,7 +435,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(c.id,'medibridge',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
-  const mbAnomalies = [
+  const mbAnomalies= [
     {id:'an-mb-1',metric:'ER Wait Time (Sandton Clinic)',expected:15,actual:38,deviation:153,severity:'critical',hypothesis:'Staff shortage combined with 3 multi-vehicle accident admissions'},
     {id:'an-mb-2',metric:'Pharmaceutical Spend',expected:450000,actual:612000,deviation:36,severity:'high',hypothesis:'Bulk order of antiretrovirals ahead of tender deadline'},
   ];
@@ -704,7 +704,7 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(c.id,'novatech',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
 
-  const ntAnomalies = [
+  const ntAnomalies= [
     {id:'an-nt-1',metric:'API Response Time P99',expected:200,actual:850,deviation:325,severity:'critical',hypothesis:'Database connection pool exhaustion during peak — missing index on user_sessions table'},
     {id:'an-nt-2',metric:'Free-to-Paid Conversion',expected:8.5,actual:5.2,deviation:-38.8,severity:'high',hypothesis:'Onboarding flow regression after v2.4 deploy — step 3 completion dropped 40%'},
   ];
@@ -758,7 +758,7 @@ export async function seedTestCompanies(db: D1Database) {
   }
 
   // ERP Data
-  const ntCustomers = [
+  const ntCustomers= [
     {id:'cust-nt-1',name:'Standard Bank',code:'STDB-001',email:'digital@standardbank.co.za',currency:'ZAR',balance:4200000},
     {id:'cust-nt-2',name:'Vodacom Business',code:'VODA-001',email:'enterprise@vodacom.co.za',currency:'ZAR',balance:3800000},
     {id:'cust-nt-3',name:'Sanlam Group',code:'SAN-001',email:'innovation@sanlam.co.za',currency:'ZAR',balance:2900000},
