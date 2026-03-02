@@ -62,6 +62,7 @@ export function CatalystsPage() {
  const [showDeployCatalyst, setShowDeployCatalyst] = useState(false);
  const [deployForm, setDeployForm] = useState({ name: '', domain: 'finance', autonomy_tier: 'assisted', description: '' });
  const [deploying, setDeploying] = useState(false);
+ const [deployError, setDeployError] = useState<string | null>(null);
  const [actionError, setActionError] = useState<string | null>(null);
 
  const handleApprove = async (actionId: string) => {
@@ -132,6 +133,7 @@ export function CatalystsPage() {
  const handleDeployCatalyst = async () => {
  if (!deployForm.name.trim() || deploying) return;
  setDeploying(true);
+ setDeployError(null);
  try {
  await api.catalysts.createCluster({
  name: deployForm.name.trim(),
@@ -144,7 +146,7 @@ export function CatalystsPage() {
  setShowDeployCatalyst(false);
  setDeployForm({ name: '', domain: 'finance', autonomy_tier: 'assisted', description: '' });
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Failed to deploy catalyst');
+ setDeployError(err instanceof Error ? err.message : 'Failed to deploy catalyst');
  }
  setDeploying(false);
  };
@@ -472,8 +474,11 @@ export function CatalystsPage() {
  <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={deployForm.autonomy_tier} onChange={e => setDeployForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="transactional">Transactional</option></select></div>
  <div><label className="text-xs t-muted">Description (optional)</label><textarea className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary resize-none" rows={2} value={deployForm.description} onChange={e => setDeployForm(p => ({ ...p, description: e.target.value }))} placeholder="What does this catalyst do?" /></div>
  </div>
+ {deployError && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertTriangle size={14} /> {deployError}</div>
+ )}
  <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setShowDeployCatalyst(false)}>Cancel</Button>
+ <Button variant="secondary" size="sm" onClick={() => { setShowDeployCatalyst(false); setDeployError(null); }}>Cancel</Button>
  <Button variant="primary" size="sm" onClick={handleDeployCatalyst} disabled={deploying || !deployForm.name.trim()}>
  {deploying ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Deploy
  </Button>

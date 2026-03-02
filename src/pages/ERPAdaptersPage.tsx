@@ -27,6 +27,7 @@ export function ERPAdaptersPage() {
  const [connecting, setConnecting] = useState(false);
  const [showLogs, setShowLogs] = useState<string | null>(null);
  const [actionError, setActionError] = useState<string | null>(null);
+ const [connectError, setConnectError] = useState<string | null>(null);
 
   const handleSync = async (connectionId: string) => {
  setSyncing(connectionId);
@@ -41,10 +42,10 @@ export function ERPAdaptersPage() {
  setSyncing(null);
  };
 
-  const handleConnect = async () => {
+ const handleConnect = async () => {
  if (!connectForm.adapterId || !connectForm.name.trim() || connecting) return;
  setConnecting(true);
- setActionError(null);
+ setConnectError(null);
  try {
  await api.erp.createConnection({
  adapter_id: connectForm.adapterId,
@@ -56,7 +57,7 @@ export function ERPAdaptersPage() {
  setShowConnect(false);
  setConnectForm({ adapterId: '', name: '', syncFrequency: 'daily' });
  } catch (err) {
- setActionError(err instanceof Error ? err.message : 'Connection failed');
+ setConnectError(err instanceof Error ? err.message : 'Connection failed');
  }
  setConnecting(false);
  };
@@ -130,8 +131,11 @@ export function ERPAdaptersPage() {
  <div><label className="text-xs t-muted">Sync Frequency</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={connectForm.syncFrequency} onChange={e => setConnectForm(p => ({ ...p, syncFrequency: e.target.value }))}><option value="realtime">Real-time</option><option value="hourly">Hourly</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></div>
  </div>
  <p className="text-[10px] text-gray-400">OAuth authentication will be initiated after connection setup. You will be redirected to the ERP provider to authorise access.</p>
+ {connectError && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertCircle size={14} /> {connectError}</div>
+ )}
  <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setShowConnect(false)}>Cancel</Button>
+ <Button variant="secondary" size="sm" onClick={() => { setShowConnect(false); setConnectError(null); }}>Cancel</Button>
  <Button variant="primary" size="sm" onClick={handleConnect} disabled={!connectForm.adapterId || !connectForm.name.trim() || connecting}>
  {connecting ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />} Connect
  </Button>
