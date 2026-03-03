@@ -115,7 +115,7 @@ export function SettingsPage() {
  <Input label="Display Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
  <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
  <div className="flex items-center gap-3">
- <Button variant="primary" size="sm" onClick={handleSaveProfile} disabled={saving}>
+ <Button variant="primary" size="sm" onClick={handleSaveProfile} disabled={saving} title="Save profile changes">
  {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : null}
  {saved ? 'Saved' : 'Save Changes'}
  </Button>
@@ -134,7 +134,7 @@ export function SettingsPage() {
  {pwMsg.text}
  </div>
  )}
- <Button variant="secondary" size="sm" onClick={handleChangePassword} disabled={changingPw}>
+ <Button variant="secondary" size="sm" onClick={handleChangePassword} disabled={changingPw} title="Update your account password">
  {changingPw ? <Loader2 size={14} className="animate-spin" /> : null}
  Change Password
  </Button>
@@ -164,6 +164,7 @@ export function SettingsPage() {
  className={`w-10 h-5 rounded-full transition-colors relative`}
  style={{ background: notif.enabled ? 'var(--accent)' : 'var(--toggle-bg)' }}
  aria-label={`Toggle ${notif.label}`}
+ title={notif.enabled ? `Disable ${notif.label}` : `Enable ${notif.label}`}
  >
  <div
  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`}
@@ -186,6 +187,7 @@ export function SettingsPage() {
  <button
  onClick={() => setTheme('dark')}
  className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-all"
+ title="Switch to dark theme"
  style={{
  background: theme === 'dark' ? 'var(--accent-subtle)' : 'var(--bg-input)',
  border: theme === 'dark' ? '2px solid var(--accent)' : '1px solid var(--border-card)',
@@ -197,6 +199,7 @@ export function SettingsPage() {
  <button
  onClick={() => setTheme('light')}
  className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-all"
+ title="Switch to light theme"
  style={{
  background: theme === 'light' ? 'var(--accent-subtle)' : 'var(--bg-input)',
  border: theme === 'light' ? '2px solid var(--accent)' : '1px solid var(--border-card)',

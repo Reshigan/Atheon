@@ -103,7 +103,7 @@ export function ApexPage() {
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
  <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
  <p className="text-sm text-red-400 flex-1">{actionError}</p>
- <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+ <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300" title="Dismiss error"><X size={14} /></button>
  </div>
  )}
 
@@ -298,7 +298,7 @@ export function ApexPage() {
  <div className="space-y-6">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Scenario Analysis</h3>
- <Button variant="primary" size="sm" onClick={handleNewScenario}><Play size={14} /> New Scenario</Button>
+ <Button variant="primary" size="sm" onClick={handleNewScenario} title="Create a new what-if scenario analysis"><Play size={14} /> New Scenario</Button>
  </div>
  {scenarios.map((scenario) => (
  <Card key={scenario.id}>

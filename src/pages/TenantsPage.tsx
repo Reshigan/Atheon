@@ -322,7 +322,7 @@ export function TenantsPage() {
  <p className="text-sm t-muted">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
  </div>
  </div>
- <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)}><Plus size={14} /> Onboard Tenant</Button>
+ <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)} title="Create a new tenant (client) and initial configuration"><Plus size={14} /> Onboard Tenant</Button>
  </div>
 
  {/* Onboard Modal */}
@@ -331,7 +331,7 @@ export function TenantsPage() {
  <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Onboard New Tenant</h3>
- <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
+ <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400" title="Close onboarding"> <X size={18} /></button>
  </div>
  <div className="space-y-3">
  <div><label className="text-xs t-muted">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
@@ -342,8 +342,8 @@ export function TenantsPage() {
  <div><label className="text-xs t-muted">Region</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
  </div>
  <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setShowOnboard(false)}>Cancel</Button>
- <Button variant="primary" size="sm" onClick={handleOnboard} disabled={onboarding || !onboardForm.name.trim() || !onboardForm.slug.trim()}>
+ <Button variant="secondary" size="sm" onClick={() => setShowOnboard(false)} title="Cancel onboarding">Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleOnboard} disabled={onboarding || !onboardForm.name.trim() || !onboardForm.slug.trim()} title="Create the tenant and seed basic setup">
  {onboarding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Onboard
  </Button>
  </div>
@@ -503,10 +503,10 @@ export function TenantsPage() {
  </div>
 
  <div className="flex gap-2">
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageUsers(tenant.id); }}><Users size={12} /> Manage Users</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openDeployCatalyst(tenant.id); }}><Bot size={12} /> Deploy Catalysts</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }}><Settings size={12} /> Manage Catalysts</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }}><Layers size={12} /> Edit Entitlements</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageUsers(tenant.id); }} title="View and manage users for this tenant"><Users size={12} /> Manage Users</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openDeployCatalyst(tenant.id); }} title="Deploy catalyst clusters for this tenant"><Bot size={12} /> Deploy Catalysts</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Configure clusters, sub-catalysts, and data sources"><Settings size={12} /> Manage Catalysts</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }} title="Edit plan entitlements and feature access"><Layers size={12} /> Edit Entitlements</Button>
  </div>
  </div>
  )}
@@ -709,7 +709,7 @@ export function TenantsPage() {
  <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="supervised">Supervised</option><option value="autonomous">Autonomous</option></select></div>
  </div>
  <div className="flex gap-3 mt-3">
- <Button variant="primary" size="sm" onClick={handleDeployCatalyst} disabled={!catalystForm.name.trim() || deployingCatalyst}>
+ <Button variant="primary" size="sm" onClick={handleDeployCatalyst} disabled={!catalystForm.name.trim() || deployingCatalyst} title="Deploy a single custom catalyst cluster">
  {deployingCatalyst ? <Loader2 size={14} className="animate-spin" /> : <Bot size={14} />} Deploy Single Cluster
  </Button>
  </div>
@@ -790,8 +790,8 @@ export function TenantsPage() {
  {templateClusters.filter(c => c.selected).length} of {templateClusters.length} clusters selected
  </span>
  <div className="flex gap-3">
- <Button variant="secondary" size="sm" onClick={() => { setDeployStep('choose'); setSelectedIndustry(null); }}>Back</Button>
- <Button variant="primary" size="sm" onClick={handleDeployTemplate} disabled={templateClusters.filter(c => c.selected).length === 0}>
+ <Button variant="secondary" size="sm" onClick={() => { setDeployStep('choose'); setSelectedIndustry(null); }} title="Back to industry template selection">Back</Button>
+ <Button variant="primary" size="sm" onClick={handleDeployTemplate} disabled={templateClusters.filter(c => c.selected).length === 0} title="Deploy selected clusters and sub-catalysts into this tenant">
  <Zap size={14} /> Deploy {templateClusters.filter(c => c.selected).length} Clusters
  </Button>
  </div>
@@ -824,8 +824,8 @@ export function TenantsPage() {
  )}
  </div>
  <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setShowDeployCatalyst(null)}>Close</Button>
- <Button variant="primary" size="sm" onClick={() => { if (showDeployCatalyst) openManageCatalysts(showDeployCatalyst); }}>
+ <Button variant="secondary" size="sm" onClick={() => setShowDeployCatalyst(null)} title="Close deployment wizard">Close</Button>
+ <Button variant="primary" size="sm" onClick={() => { if (showDeployCatalyst) openManageCatalysts(showDeployCatalyst); }} title="Go to cluster management for this tenant">
  <Settings size={14} /> Manage Clusters
  </Button>
  </div>
@@ -840,7 +840,7 @@ export function TenantsPage() {
  ) : tenantClusters.length === 0 ? (
  <div className="text-center py-8">
  <p className="text-sm t-muted">No catalyst clusters deployed for this tenant.</p>
- <Button variant="primary" size="sm" className="mt-3" onClick={() => { setDeployStep('choose'); loadTemplates(); }}>
+ <Button variant="primary" size="sm" className="mt-3" onClick={() => { setDeployStep('choose'); loadTemplates(); }} title="Start deploying catalyst templates for this tenant">
  <Zap size={14} /> Deploy Catalysts
  </Button>
  </div>
@@ -848,7 +848,7 @@ export function TenantsPage() {
  <>
  <div className="flex items-center justify-between">
  <p className="text-sm t-muted">{tenantClusters.length} cluster(s) deployed</p>
- <Button variant="secondary" size="sm" onClick={() => { setDeployStep('choose'); loadTemplates(); }}>
+ <Button variant="secondary" size="sm" onClick={() => { setDeployStep('choose'); loadTemplates(); }} title="Add more catalyst templates to this tenant">
  <Plus size={14} /> Add More
  </Button>
  </div>
@@ -1129,8 +1129,8 @@ export function TenantsPage() {
  </div>
 
  <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setShowEditEntitlements(null)}>Cancel</Button>
- <Button variant="primary" size="sm" onClick={handleSaveEntitlements} disabled={savingEntitlements}>
+ <Button variant="secondary" size="sm" onClick={() => setShowEditEntitlements(null)} title="Discard entitlement changes">Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleSaveEntitlements} disabled={savingEntitlements} title="Save entitlements and feature access for this tenant">
  {savingEntitlements ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />} Save Entitlements
  </Button>
  </div>

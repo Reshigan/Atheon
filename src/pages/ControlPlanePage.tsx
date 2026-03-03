@@ -197,7 +197,7 @@ export function ControlPlanePage() {
  <p className="text-sm t-muted">Deploy, manage, and monitor Catalyst agents per tenant</p>
  </div>
  </div>
- <Button variant="primary" size="sm" onClick={() => setShowDeploy(true)}><Plus size={14} /> Deploy Agent</Button>
+ <Button variant="primary" size="sm" onClick={() => setShowDeploy(true)} title="Deploy a new Catalyst agent"><Plus size={14} /> Deploy Agent</Button>
  </div>
 
  {/* Deploy Modal */}
@@ -475,6 +475,7 @@ export function ControlPlanePage() {
  size="sm"
  onClick={(e) => { e.stopPropagation(); updateStatus(dep.id, 'stopped'); }}
  disabled={updatingDeployment === dep.id}
+ title="Stop this deployment"
  >
  <Square size={12} /> Stop
  </Button>
@@ -485,6 +486,7 @@ export function ControlPlanePage() {
  size="sm"
  onClick={(e) => { e.stopPropagation(); updateStatus(dep.id, 'running'); }}
  disabled={updatingDeployment === dep.id}
+ title="Start this deployment"
  >
  <Play size={12} /> Start
  </Button>
@@ -494,6 +496,7 @@ export function ControlPlanePage() {
  size="sm"
  onClick={(e) => { e.stopPropagation(); restartDeployment(dep.id); }}
  disabled={updatingDeployment === dep.id}
+ title="Restart this deployment"
  >
  <RefreshCw size={12} /> Restart
  </Button>
@@ -502,6 +505,7 @@ export function ControlPlanePage() {
  size="sm"
  onClick={(e) => { e.stopPropagation(); openEditDeploymentConfig(dep); }}
  disabled={updatingDeployment === dep.id}
+ title="Edit deployment configuration"
  >
  <Settings size={12} /> Edit Config
  </Button>
@@ -510,6 +514,7 @@ export function ControlPlanePage() {
  size="sm"
  onClick={(e) => { e.stopPropagation(); deleteDeployment(dep.id); }}
  disabled={updatingDeployment === dep.id}
+ title="Permanently delete this deployment"
  >
  <Trash2 size={12} /> Delete
  </Button>

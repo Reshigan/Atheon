@@ -147,7 +147,7 @@ export function ChatPage() {
  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
  {/* Sidebar - Thread List (Bug #8: multi-thread support) */}
  <div className="space-y-3">
- <Button variant="primary" size="sm" className="w-full" onClick={createNewThread}><Plus size={14} /> New Thread</Button>
+ <Button variant="primary" size="sm" className="w-full" onClick={createNewThread} title="Start a new conversation thread"><Plus size={14} /> New Thread</Button>
  {threads.map((thread) => (
  <Card
    key={thread.id}
@@ -164,6 +164,7 @@ export function ChatPage() {
    <button
      onClick={(e) => { e.stopPropagation(); deleteThread(thread.id); }}
      className="p-1 rounded hover:bg-red-500/10 transition-colors"
+     title="Delete this conversation thread"
    >
      <Trash2 size={12} className="text-gray-400 hover:text-red-400" />
    </button>
@@ -251,6 +252,7 @@ export function ChatPage() {
  key={i}
  onClick={() => setInput(q.text)}
  className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs text-gray-400 hover:bg-[var(--bg-card)] hover:border-accent/30 hover:text-accent transition-all"
+ title="Click to use this suggested query"
  >
  {q.text}
  </button>
@@ -270,7 +272,7 @@ export function ChatPage() {
  className="w-full px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all"
  />
  </div>
- <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending}>
+ <Button variant="primary" size="md" className="px-4" onClick={handleSend} disabled={sending} title="Send message">
  <Send size={16} />
  </Button>
  </div>

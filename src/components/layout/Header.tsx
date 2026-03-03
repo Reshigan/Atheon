@@ -123,6 +123,7 @@ export function Header() {
         <button
           onClick={() => setMobileSidebarOpen(true)}
           className="lg:hidden p-1.5 -ml-1 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+          title="Open navigation menu"
         >
           <Menu size={18} />
         </button>
@@ -145,6 +146,7 @@ export function Header() {
             onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
             className="appearance-none rounded-md pl-2.5 pr-6 py-1 text-[11px] t-secondary cursor-pointer focus:outline-none transition-all"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
+            title="Filter analytics by industry vertical"
           >
             {industries.map(i => (
               <option key={i.value} value={i.value}>{i.label}</option>
@@ -185,11 +187,11 @@ export function Header() {
                 <h3 className="text-xs font-semibold t-primary">Notifications</h3>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[11px] font-medium flex items-center gap-1" style={{ color: 'var(--accent)' }}>
+                    <button onClick={markAllRead} className="text-[11px] font-medium flex items-center gap-1" style={{ color: 'var(--accent)' }} title="Mark all notifications as read">
                       <Check size={11} /> Mark all read
                     </button>
                   )}
-                  <button onClick={() => setShowNotifications(false)} className="p-0.5 rounded t-muted hover:t-primary transition-all">
+                  <button onClick={() => setShowNotifications(false)} className="p-0.5 rounded t-muted hover:t-primary transition-all" title="Close notifications">
                     <X size={13} />
                   </button>
                 </div>
@@ -215,6 +217,7 @@ export function Header() {
                       }}
                       className="w-full text-left px-3.5 py-2.5 transition-all hover:bg-[var(--bg-secondary)]"
                       style={{ borderBottom: '1px solid var(--divider)', background: !n.read ? 'var(--accent-subtle)' : 'transparent' }}
+                      title={n.actionUrl ? 'Open related page' : 'Notification'}
                     >
                       <div className="flex items-start gap-2.5">
                         <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${severityColors[n.severity] || 'bg-zinc-400'}`} />
@@ -235,6 +238,7 @@ export function Header() {
                     onClick={() => { navigate('/audit'); setShowNotifications(false); }}
                     className="text-[11px] font-medium"
                     style={{ color: 'var(--accent)' }}
+                    title="Open audit log"
                   >
                     View all activity
                   </button>

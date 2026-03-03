@@ -84,7 +84,7 @@ export function IAMPage() {
  <p className="text-sm t-muted">RBAC/ABAC policies, SSO federation, per-tenant isolation</p>
  </div>
  </div>
- <Button variant="primary" size="sm" onClick={() => setShowNewPolicy(true)}><Plus size={14} /> New Policy</Button>
+ <Button variant="primary" size="sm" onClick={() => setShowNewPolicy(true)} title="Create a new access policy"><Plus size={14} /> New Policy</Button>
  </div>
 
  {/* New Policy Modal */}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig } from "@/lib/api";
+import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, ERPConnection } from "@/lib/api";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
@@ -58,6 +58,69 @@ export function CatalystsPage() {
  const [execError, setExecError] = useState<string | null>(null);
  const [execSuccess, setExecSuccess] = useState<string | null>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
+ const quickRunFileRef = useRef<HTMLInputElement>(null);
+
+ // Quick Run modal state (streamlined per-sub-catalyst execution)
+ const [showQuickRun, setShowQuickRun] = useState(false);
+ const [quickRunClusterId, setQuickRunClusterId] = useState('');
+ const [quickRunClusterName, setQuickRunClusterName] = useState('');
+ const [quickRunSubName, setQuickRunSubName] = useState('');
+ const [quickRunAction, setQuickRunAction] = useState('');
+ const [quickRunStart, setQuickRunStart] = useState('');
+ const [quickRunEnd, setQuickRunEnd] = useState('');
+ const [quickRunFile, setQuickRunFile] = useState<File | null>(null);
+ const [quickRunning, setQuickRunning] = useState(false);
+ const [quickRunError, setQuickRunError] = useState<string | null>(null);
+ const [quickRunSuccess, setQuickRunSuccess] = useState<string | null>(null);
+
+ const openQuickRun = (clusterId: string, clusterName: string, subName: string) => {
+ setQuickRunClusterId(clusterId);
+ setQuickRunClusterName(clusterName);
+ setQuickRunSubName(subName);
+ setQuickRunAction('');
+ // Default date range: now to +7 days
+ const now = new Date();
+ const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+ setQuickRunStart(now.toISOString().slice(0, 16));
+ setQuickRunEnd(end.toISOString().slice(0, 16));
+ setQuickRunFile(null);
+ setQuickRunError(null);
+ setQuickRunSuccess(null);
+ setShowQuickRun(true);
+ };
+
+ const handleQuickRunExecute = async () => {
+ if (!quickRunAction.trim() || !quickRunStart || !quickRunEnd) {
+ setQuickRunError('Action description and date range are required');
+ return;
+ }
+ setQuickRunning(true);
+ setQuickRunError(null);
+ setQuickRunSuccess(null);
+ try {
+ const formData = new FormData();
+ formData.append('cluster_id', quickRunClusterId);
+ formData.append('catalyst_name', quickRunSubName);
+ formData.append('action', quickRunAction.trim());
+ formData.append('start_datetime', quickRunStart);
+ formData.append('end_datetime', quickRunEnd);
+ formData.append('reasoning', `Quick run from sub-catalyst card: ${quickRunSubName}`);
+ if (quickRunFile) formData.append('file', quickRunFile);
+
+ const result = await api.catalysts.manualExecute(formData);
+ setQuickRunSuccess(result.message);
+ const ind = industry !== 'general' ? industry : undefined;
+ const a = await api.catalysts.actions(undefined, undefined, ind);
+ setActions(a.actions);
+ setTimeout(() => {
+ setShowQuickRun(false);
+ setQuickRunSuccess(null);
+ }, 2000);
+ } catch (err) {
+ setQuickRunError(err instanceof Error ? err.message : 'Execution failed');
+ }
+ setQuickRunning(false);
+ };
 
  // Deploy Catalyst state
  const [showDeployCatalyst, setShowDeployCatalyst] = useState(false);
@@ -164,8 +227,9 @@ export function CatalystsPage() {
  const [dsSaving, setDsSaving] = useState(false);
  const [dsError, setDsError] = useState<string | null>(null);
  const [dsExisting, setDsExisting] = useState<DataSourceConfig | undefined>(undefined);
+ const [erpConnections, setErpConnections] = useState<ERPConnection[]>([]);
 
- const openDataSourceConfig = (clusterId: string, sub: SubCatalyst) => {
+ const openDataSourceConfig = async (clusterId: string, sub: SubCatalyst) => {
  setDsClusterId(clusterId);
  setDsSubName(sub.name);
  setDsExisting(sub.data_source);
@@ -173,8 +237,26 @@ export function CatalystsPage() {
  setDsType(sub.data_source.type);
  setDsConfig(sub.data_source.config || {});
  } else {
+ // Pre-fill from tenant's connected ERP if available
  setDsType('erp');
+ try {
+ const erpData = await api.erp.connections();
+ const connected = erpData.connections.filter(c => c.status === 'connected');
+ setErpConnections(connected);
+ if (connected.length > 0) {
+ const primary = connected[0];
+ setDsConfig({
+ erp_type: primary.adapterSystem.toLowerCase(),
+ connection_id: primary.id,
+ module: '',
+ });
+ } else {
  setDsConfig({});
+ }
+ } catch {
+ setDsConfig({});
+ setErpConnections([]);
+ }
  }
  setDsError(null);
  setShowDataSourceConfig(true);
@@ -341,10 +423,10 @@ export function CatalystsPage() {
 
  {isAdmin && (action.status === 'pending' || action.status === 'exception') && (
  <div className="flex gap-2">
- <Button variant="success" size="sm" onClick={(e) => { e.stopPropagation(); handleApprove(action.id); }} disabled={updatingAction === action.id}>
+ <Button variant="success" size="sm" onClick={(e) => { e.stopPropagation(); handleApprove(action.id); }} disabled={updatingAction === action.id} title="Approve this catalyst action">
  {updatingAction === action.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Approve
  </Button>
- <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); handleReject(action.id); }} disabled={updatingAction === action.id}>
+ <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); handleReject(action.id); }} disabled={updatingAction === action.id} title="Reject this catalyst action">
  <XCircle size={12} /> Reject
  </Button>
  </div>
@@ -364,10 +446,10 @@ export function CatalystsPage() {
  </div>
  {isAdmin && (
  <div className="flex gap-2">
- <Button variant="secondary" size="sm" onClick={() => setShowManualExec(true)}>
+ <Button variant="secondary" size="sm" onClick={() => setShowManualExec(true)} title="Manually trigger a catalyst action">
  <Upload size={14} /> Manual Execute
  </Button>
- <Button variant="primary" size="sm" onClick={() => setShowDeployCatalyst(true)}>
+ <Button variant="primary" size="sm" onClick={() => setShowDeployCatalyst(true)} title="Create and deploy a new catalyst cluster">
  <Plus size={14} /> Deploy Catalyst
  </Button>
  </div>
@@ -389,7 +471,7 @@ export function CatalystsPage() {
  <p className="text-sm font-medium text-red-500">{exceptionCount} exception{exceptionCount > 1 ? 's' : ''} require{exceptionCount === 1 ? 's' : ''} attention</p>
  <p className="text-xs text-red-400/70">Review and resolve catalyst exceptions before running new jobs</p>
  </div>
- <Button variant="danger" size="sm" onClick={() => setActiveTab('exceptions')}>View Exceptions</Button>
+ <Button variant="danger" size="sm" onClick={() => setActiveTab('exceptions')} title="View and resolve catalyst exceptions">View Exceptions</Button>
  </div>
  )}
 
@@ -580,8 +662,8 @@ export function CatalystsPage() {
  </div>
  </div>
  <div className="flex items-center gap-1.5 flex-shrink-0">
- {!isAdmin && sub.enabled && (
- <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); }}>
+ {sub.enabled && (
+ <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openQuickRun(cluster.id, cluster.name, sub.name); }} title="Quick run this sub-catalyst">
  <Play size={10} className="mr-1" /> Run
  </Button>
  )}
@@ -598,6 +680,7 @@ export function CatalystsPage() {
  onClick={(e) => { e.stopPropagation(); handleToggleSubCatalyst(cluster.id, sub.name); }}
  disabled={togglingSubCatalyst === `${cluster.id}:${sub.name}`}
  className={`relative w-8 h-4 rounded-full transition-colors ${sub.enabled ? 'bg-emerald-500' : 'bg-gray-400'} ${togglingSubCatalyst === `${cluster.id}:${sub.name}` ? 'opacity-50' : ''}`}
+ title={sub.enabled ? 'Disable this sub-catalyst' : 'Enable this sub-catalyst'}
  >
  <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${sub.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
  </button>
@@ -709,6 +792,80 @@ export function CatalystsPage() {
  </TabPanel>
  )}
 
+ {/* Quick Run Modal */}
+ {showQuickRun && (
+ <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold t-primary flex items-center gap-2"><Play size={18} className="text-emerald-400" /> Run Sub-Catalyst</h3>
+ <button onClick={() => { setShowQuickRun(false); setQuickRunError(null); setQuickRunSuccess(null); }} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ </div>
+
+ <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+ <div className="flex items-center gap-2">
+ <Bot size={16} className="text-accent" />
+ <div>
+ <p className="text-sm font-medium t-primary">{quickRunSubName}</p>
+ <p className="text-[10px] t-secondary">{quickRunClusterName}</p>
+ </div>
+ </div>
+ </div>
+
+ <div className="space-y-3">
+ <div>
+ <label className="text-xs t-muted">What should this catalyst do?</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={quickRunAction}
+ onChange={e => setQuickRunAction(e.target.value)}
+ placeholder={`e.g. Process all outstanding ${quickRunSubName.toLowerCase()} tasks`}
+ autoFocus
+ />
+ </div>
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> From</label>
+ <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={quickRunStart} onChange={e => setQuickRunStart(e.target.value)} />
+ </div>
+ <div>
+ <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> To</label>
+ <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={quickRunEnd} onChange={e => setQuickRunEnd(e.target.value)} />
+ </div>
+ </div>
+ <div>
+ <label className="text-xs t-muted">Attach file (optional)</label>
+ <div className="mt-1 p-3 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-accent/30 transition-colors" onClick={() => quickRunFileRef.current?.click()}>
+ {quickRunFile ? (
+ <div className="flex items-center justify-center gap-2">
+ <FileText size={14} className="text-accent" />
+ <span className="text-xs t-secondary">{quickRunFile.name}</span>
+ <button onClick={(e) => { e.stopPropagation(); setQuickRunFile(null); }} className="text-gray-500 hover:text-red-400"><X size={12} /></button>
+ </div>
+ ) : (
+ <div><Upload size={16} className="mx-auto text-gray-500 mb-1" /><p className="text-[10px] t-muted">CSV, Excel, or PDF</p></div>
+ )}
+ <input ref={quickRunFileRef} type="file" className="hidden" accept=".csv,.xlsx,.xls,.pdf,.json,.txt" onChange={e => setQuickRunFile(e.target.files?.[0] || null)} />
+ </div>
+ </div>
+ </div>
+
+ {quickRunError && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertTriangle size={14} /> {quickRunError}</div>
+ )}
+ {quickRunSuccess && (
+ <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm flex items-center gap-2"><CheckCircle size={14} /> {quickRunSuccess}</div>
+ )}
+
+ <div className="flex gap-3 pt-2">
+ <Button variant="secondary" size="sm" onClick={() => { setShowQuickRun(false); setQuickRunError(null); setQuickRunSuccess(null); }}>Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleQuickRunExecute} disabled={quickRunning || !quickRunAction.trim() || !quickRunStart || !quickRunEnd}>
+ {quickRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Execute
+ </Button>
+ </div>
+ </div>
+ </div></Portal>
+ )}
+
  {/* Data Source Configuration Modal */}
  {showDataSourceConfig && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -766,11 +923,26 @@ export function CatalystsPage() {
  onChange={e => setDsConfig(prev => ({ ...prev, erp_type: e.target.value }))}
  >
  <option value="">Select ERP...</option>
+ {erpConnections.length > 0 ? (
+ erpConnections.map(conn => (
+ <option key={conn.id} value={conn.adapterSystem.toLowerCase()}>
+ {conn.adapterName} ({conn.status})
+ </option>
+ ))
+ ) : (
+ <>
  <option value="sap">SAP</option>
  <option value="xero">Xero</option>
  <option value="sage">Sage</option>
  <option value="pastel">Pastel</option>
+ </>
+ )}
  </select>
+ {erpConnections.length > 0 && (
+ <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
+ <CheckCircle size={10} /> Pre-filled from your connected ERP adapter
+ </p>
+ )}
  </div>
  <div>
  <label className="text-xs t-muted">Module (optional)</label>
@@ -915,6 +1087,7 @@ export function CatalystsPage() {
  >
  <Trash2 size={12} /> Remove Data Source
  </button>
+
  )}
  </div>
  <div className="flex gap-3">

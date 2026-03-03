@@ -87,7 +87,7 @@ export function Sidebar() {
         style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-card)', boxShadow: '2px 0 12px rgba(100, 120, 180, 0.06)' }}
       >
         <div className="mb-5 mt-0.5">
-          <Link to="/dashboard" className="block">
+          <Link to="/dashboard" className="block" title="Go to Dashboard">
             <AtheonSidebarLogo />
           </Link>
         </div>
@@ -155,7 +155,7 @@ export function Sidebar() {
               <p className="text-[10px] t-muted tracking-wide uppercase">Enterprise Intelligence</p>
             </div>
           </div>
-          <button onClick={closeMobile} className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all">
+          <button onClick={closeMobile} className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all" title="Close navigation menu">
             <X size={18} />
           </button>
         </div>
@@ -181,6 +181,7 @@ export function Sidebar() {
                   <Link
                     to={item.path}
                     onClick={closeMobile}
+                    title={item.label}
                     className={cn(
                       'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-all duration-150 group',
                       isActive

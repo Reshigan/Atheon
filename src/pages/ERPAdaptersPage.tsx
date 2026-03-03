@@ -112,14 +112,14 @@ export function ERPAdaptersPage() {
  <p className="text-sm t-muted">Pluggable adapters for enterprise system connectivity</p>
  </div>
  </div>
- <Button variant="primary" size="sm" onClick={() => setShowConnect(true)}><Plus size={14} /> Connect ERP</Button>
+ <Button variant="primary" size="sm" onClick={() => setShowConnect(true)} title="Connect a new ERP system"><Plus size={14} /> Connect ERP</Button>
  </div>
 
  {actionError && (
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
  <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
  <p className="text-sm text-red-400 flex-1">{actionError}</p>
- <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+ <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300" title="Dismiss error"><X size={14} /></button>
  </div>
  )}
 
@@ -214,7 +214,7 @@ export function ERPAdaptersPage() {
  </div>
  </div>
 
- <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => handleAdapterConnect(adapter.id, adapter.name)}>
+ <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => handleAdapterConnect(adapter.id, adapter.name)} title="Connect this ERP adapter to your tenant">
  <Plug size={12} /> Connect
  </Button>
  </Card>
@@ -268,10 +268,10 @@ export function ERPAdaptersPage() {
  </div>
 
  <div className="flex gap-2 mt-3">
- <Button variant="secondary" size="sm" onClick={() => handleSync(conn.id)} disabled={syncing === conn.id}>
+ <Button variant="secondary" size="sm" onClick={() => handleSync(conn.id)} disabled={syncing === conn.id} title="Trigger a manual data sync now">
  {syncing === conn.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Sync Now
  </Button>
- <Button variant="ghost" size="sm" onClick={() => setShowLogs(showLogs === conn.id ? null : conn.id)}>
+ <Button variant="ghost" size="sm" onClick={() => setShowLogs(showLogs === conn.id ? null : conn.id)} title="View sync activity logs">
  <Activity size={12} /> {showLogs === conn.id ? 'Hide Logs' : 'View Logs'}
  </Button>
  </div>

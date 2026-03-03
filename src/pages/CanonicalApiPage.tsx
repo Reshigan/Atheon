@@ -116,6 +116,7 @@ export function CanonicalApiPage() {
  <Button
  variant="ghost"
  size="sm"
+ title="Call this endpoint and show the response"
  onClick={(e) => {
  e.stopPropagation();
  if (tryingEndpoint === ep.id) {

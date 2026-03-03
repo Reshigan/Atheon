@@ -189,10 +189,10 @@ export function Dashboard() {
               </button>
             ))}
           </div>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }}>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information">
             <Info size={14} />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }}>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard settings">
             <SlidersHorizontal size={14} />
           </button>
         </div>
@@ -371,7 +371,7 @@ export function Dashboard() {
             <DashCard>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold t-primary">Process Metrics</p>
-                <Link to="/pulse" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }}>
+                <Link to="/pulse" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all process metrics">
                   View all <ChevronRight size={10} />
                 </Link>
               </div>
@@ -394,7 +394,7 @@ export function Dashboard() {
             <DashCard>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold t-primary">Catalyst Activity</p>
-                <Link to="/catalysts" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }}>
+                <Link to="/catalysts" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all catalyst activity">
                   View all <ChevronRight size={10} />
                 </Link>
               </div>
@@ -450,7 +450,7 @@ export function Dashboard() {
         <DashCard>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold t-primary">Recent Anomalies</p>
-            <Link to="/pulse" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }}>
+            <Link to="/pulse" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all anomalies">
               View all <ChevronRight size={10} />
             </Link>
           </div>

@@ -67,6 +67,7 @@ export function AuditPage() {
  <button
  onClick={() => setShowFilters(!showFilters)}
  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-400 hover:bg-[var(--bg-secondary)]'}`}
+ title="Toggle audit log filters"
  >
  <Filter size={14} /> Filters {(filterLayer || filterOutcome) ? `(${[filterLayer, filterOutcome].filter(Boolean).length})` : ''}
  </button>
@@ -100,7 +101,7 @@ export function AuditPage() {
  </select>
  </div>
  {(filterLayer || filterOutcome) && (
- <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-accent hover:text-[#3a9cac] pb-1.5">Clear filters</button>
+ <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); }} className="self-end text-xs text-accent hover:text-[#3a9cac] pb-1.5" title="Reset all filters">Clear filters</button>
  )}
  </div>
  )}
