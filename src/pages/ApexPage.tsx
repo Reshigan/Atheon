@@ -11,7 +11,7 @@ import type { HealthScore, Briefing, Risk, ScenarioItem } from "@/lib/api";
 import { Portal } from "@/components/ui/portal";
 import {
  Crown, TrendingUp, TrendingDown, Minus, AlertTriangle, FileText,
- Play, ArrowRight, BarChart3, Shield, Lightbulb, Loader2, AlertCircle, X,
+ Play, BarChart3, Shield, Lightbulb, Loader2, AlertCircle, X,
  Plus, ChevronRight, ChevronLeft, Trash2
 } from "lucide-react";
 
@@ -23,6 +23,9 @@ const trendIcon = (trend: string, size = 14) => {
 };
 
 const severityColor = (s: string) => s === 'critical' ? 'danger' : s === 'high' ? 'warning' : s === 'medium' ? 'info' : 'default';
+
+const riskImpactLabel = (probability: number) => probability >= 0.7 ? 'Very High' : probability >= 0.5 ? 'High' : probability >= 0.3 ? 'Medium' : 'Low';
+const riskLikelihoodBar = (probability: number) => Math.round(probability * 100);
 
 export function ApexPage() {
  const { activeTab, setActiveTab } = useTabState('health');
@@ -330,15 +333,96 @@ export function ApexPage() {
  </div>
 
  {expandedRisk === risk.id && (
- <div className="mt-4 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
- <h4 className="text-sm font-semibold t-primary mb-2">Recommended Actions</h4>
- <div className="space-y-2">
+ <div className="mt-4 space-y-4 animate-fadeIn">
+ {/* Risk Report Header */}
+ <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="flex items-center gap-2 mb-3">
+ <FileText className="w-4 h-4 text-accent" />
+ <h4 className="text-sm font-semibold t-primary">Risk Assessment Report</h4>
+ </div>
+
+ {/* Risk Matrix Summary */}
+ <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+ <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <span className="text-[10px] t-muted uppercase tracking-wider">Likelihood</span>
+ <p className="text-sm font-bold t-primary mt-0.5">{riskImpactLabel(risk.probability)}</p>
+ <div className="h-1.5 rounded-full mt-1.5 overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+ <div className="h-full rounded-full" style={{ width: `${riskLikelihoodBar(risk.probability)}%`, background: risk.severity === 'critical' ? '#ef4444' : risk.severity === 'high' ? '#f59e0b' : 'var(--accent)' }} />
+ </div>
+ </div>
+ <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <span className="text-[10px] t-muted uppercase tracking-wider">Financial Impact</span>
+ <p className="text-sm font-bold t-primary mt-0.5">{risk.impactValue.toLocaleString()} {risk.impactUnit}</p>
+ </div>
+ <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <span className="text-[10px] t-muted uppercase tracking-wider">Risk Category</span>
+ <p className="text-sm font-bold t-primary mt-0.5 capitalize">{risk.category}</p>
+ </div>
+ <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <span className="text-[10px] t-muted uppercase tracking-wider">Detected</span>
+ <p className="text-sm font-bold t-primary mt-0.5">{risk.detectedAt ? new Date(risk.detectedAt).toLocaleDateString() : '--'}</p>
+ </div>
+ </div>
+
+ {/* Impact Analysis */}
+ <div className="mb-4">
+ <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Impact Analysis</h5>
+ <p className="text-sm t-muted leading-relaxed">
+ This {risk.severity}-severity risk in the <span className="font-medium t-primary">{risk.category}</span> domain
+ has a <span className="font-medium t-primary">{Math.round(risk.probability * 100)}%</span> probability of occurrence.
+ If materialised, the estimated financial exposure is <span className="font-medium t-primary">{risk.impactValue.toLocaleString()} {risk.impactUnit}</span>.
+ {risk.severity === 'critical' ? ' Immediate executive attention is required.' : risk.severity === 'high' ? ' This requires prompt management action.' : ' Standard monitoring protocols apply.'}
+ </p>
+ </div>
+
+ {/* Risk Score Visual */}
+ <div className="mb-4">
+ <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Risk Score</h5>
+ <div className="flex items-center gap-3">
+ <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
+ <div className="h-full rounded-full transition-all duration-700" style={{
+ width: `${Math.round(risk.probability * 100)}%`,
+ background: risk.severity === 'critical' ? 'linear-gradient(90deg, #ef4444, #dc2626)' : risk.severity === 'high' ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, var(--accent), var(--accent))'
+ }} />
+ </div>
+ <span className="text-xs font-bold t-primary w-10 text-right">{Math.round(risk.probability * 100)}/100</span>
+ </div>
+ </div>
+ </div>
+
+ {/* Recommended Actions */}
+ <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="flex items-center gap-2 mb-3">
+ <Shield className="w-4 h-4 text-accent" />
+ <h4 className="text-sm font-semibold t-primary">Mitigation Plan</h4>
+ </div>
+ <div className="space-y-2.5">
  {risk.recommendedActions.map((action, i) => (
- <div key={i} className="flex items-start gap-2">
- <ArrowRight className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
- <span className="text-sm t-secondary">{action}</span>
+ <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
+ {i + 1}
+ </div>
+ <div className="flex-1">
+ <span className="text-sm t-primary">{action}</span>
+ <div className="flex items-center gap-2 mt-1">
+ <span className="text-[10px] t-muted">Priority: {i === 0 ? 'Immediate' : i === 1 ? 'Short-term' : 'Medium-term'}</span>
+ <span className="text-[10px] t-muted">|</span>
+ <span className="text-[10px] t-muted">Owner: Risk Committee</span>
+ </div>
+ </div>
  </div>
  ))}
+ </div>
+ </div>
+
+ {/* Status Footer */}
+ <div className="flex items-center justify-between pt-2">
+ <div className="flex items-center gap-2">
+ <Badge variant={risk.status === 'mitigated' ? 'success' : risk.status === 'monitoring' ? 'info' : 'warning'} size="sm">
+ {risk.status || 'open'}
+ </Badge>
+ <span className="text-[10px] t-muted">Last updated: {risk.detectedAt ? new Date(risk.detectedAt).toLocaleString() : 'N/A'}</span>
+ </div>
  </div>
  </div>
  )}
@@ -365,30 +449,111 @@ export function ApexPage() {
  <p className="text-xs t-muted mt-1">Click &quot;New Scenario&quot; above to create your first what-if analysis.</p>
  </div>
  )}
- {scenarios.map((scenario) => (
- <Card key={scenario.id}>
- <div className="flex items-start justify-between">
- <div>
- <h3 className="text-base font-semibold t-primary">{scenario.title}</h3>
- <p className="text-sm t-muted mt-1">{scenario.description}</p>
- </div>
- <Badge variant={scenario.status === 'completed' ? 'success' : 'warning'}>{scenario.status}</Badge>
- </div>
+ {scenarios.map((scenario) => {
+  const resultEntries = scenario.results ? Object.entries(scenario.results) : [];
+  const hasResults = resultEntries.length > 0;
+  return (
+   <Card key={scenario.id}>
+    <div className="flex items-start justify-between">
+     <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2">
+       <h3 className="text-base font-semibold t-primary">{scenario.title}</h3>
+       <Badge variant={scenario.status === 'completed' ? 'success' : 'warning'}>{scenario.status}</Badge>
+      </div>
+      <p className="text-sm t-muted mt-1">{scenario.description}</p>
+      <div className="flex items-center gap-3 mt-2 text-[10px] t-muted">
+       {scenario.variables.length > 0 && <span>Variables: {scenario.variables.join(', ')}</span>}
+       {scenario.createdAt && <span>Created: {new Date(scenario.createdAt).toLocaleDateString()}</span>}
+      </div>
+     </div>
+    </div>
 
- {scenario.results && (
- <div className="mt-4">
- <div className="grid grid-cols-2 gap-3">
- {Object.entries(scenario.results).slice(0, 4).map(([key, val]) => (
- <div key={key} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-xs t-secondary">{key}</span>
- <p className="text-lg font-bold t-primary">{String(val)}</p>
- </div>
- ))}
- </div>
- </div>
- )}
- </Card>
- ))}
+    {/* Scenario Report */}
+    {hasResults && (
+     <div className="mt-4 space-y-4 animate-fadeIn">
+      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+       <div className="flex items-center gap-2 mb-3">
+        <BarChart3 className="w-4 h-4 text-accent" />
+        <h4 className="text-sm font-semibold t-primary">Scenario Analysis Report</h4>
+       </div>
+
+       {/* Key Metrics Grid */}
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {resultEntries.slice(0, 4).map(([key, val]) => (
+         <div key={key} className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+          <span className="text-[10px] t-muted uppercase tracking-wider">{key.replace(/[_-]/g, ' ')}</span>
+          <p className="text-lg font-bold t-primary mt-0.5">{String(val)}</p>
+         </div>
+        ))}
+       </div>
+
+       {/* Analysis Narrative */}
+       <div className="mb-4">
+        <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Analysis Summary</h5>
+        <p className="text-sm t-muted leading-relaxed">
+         The <span className="font-medium t-primary">{scenario.title}</span> scenario analysis
+         evaluated {scenario.variables.length > 0 ? `the impact of changes to ${scenario.variables.join(', ')}` : 'the projected outcomes'}.
+         {resultEntries.length > 0 && ` The model produced ${resultEntries.length} output metric${resultEntries.length > 1 ? 's' : ''}.`}
+         {scenario.inputQuery && ` Query: "${scenario.inputQuery}".`}
+        </p>
+       </div>
+
+       {/* All Results Table */}
+       {resultEntries.length > 4 && (
+        <div className="mb-4">
+         <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Full Results</h5>
+         <div className="space-y-1.5">
+          {resultEntries.slice(4).map(([key, val]) => (
+           <div key={key} className="flex items-center justify-between py-1.5 border-b border-[var(--border-card)] last:border-0">
+            <span className="text-xs t-secondary capitalize">{key.replace(/[_-]/g, ' ')}</span>
+            <span className="text-xs font-semibold t-primary">{String(val)}</span>
+           </div>
+          ))}
+         </div>
+        </div>
+       )}
+
+       {/* Recommendations */}
+       <div>
+        <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Recommendations</h5>
+        <div className="space-y-2">
+         {scenario.variables.map((variable, i) => (
+          <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+           <Lightbulb className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
+           <span className="text-sm t-secondary">Monitor <span className="font-medium t-primary">{variable}</span> closely and review thresholds if deviation exceeds projected ranges.</span>
+          </div>
+         ))}
+         {scenario.variables.length === 0 && (
+          <div className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+           <Lightbulb className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
+           <span className="text-sm t-secondary">Review the projected outcomes and incorporate findings into strategic planning.</span>
+          </div>
+         )}
+        </div>
+       </div>
+      </div>
+     </div>
+    )}
+
+    {/* Pending state */}
+    {!hasResults && scenario.status !== 'completed' && (
+     <div className="mt-4 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
+      <Loader2 className="w-5 h-5 text-accent animate-spin mx-auto mb-2" />
+      <p className="text-sm t-muted">Scenario is being processed...</p>
+      <p className="text-[10px] t-muted mt-1">Results will appear here once the analysis completes.</p>
+     </div>
+    )}
+
+    {/* Completed but no results */}
+    {!hasResults && scenario.status === 'completed' && (
+     <div className="mt-4 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
+      <BarChart3 className="w-5 h-5 t-muted mx-auto mb-2 opacity-40" />
+      <p className="text-sm t-muted">No results were generated for this scenario.</p>
+     </div>
+    )}
+   </Card>
+  );
+ })}
  </div>
  </TabPanel>
  )}
