@@ -64,71 +64,7 @@ export async function seedDatabase(db: D1Database) {
       .bind(c.id, c.tenant_id, c.name, c.domain, c.description, c.status, c.agent_count, c.tasks_completed, c.tasks_in_progress, c.success_rate, c.trust_score, c.autonomy_tier).run();
   }
 
-  // Seed Health Scores
-  await db.prepare('INSERT INTO health_scores (id, tenant_id, overall_score, dimensions) VALUES (?, ?, ?, ?)')
-    .bind('hs-1', 'vantax', 78, JSON.stringify({
-      financial_health: { score: 82, trend: 'up', delta: 3 },
-      operational_efficiency: { score: 75, trend: 'down', delta: -2 },
-      risk_exposure: { score: 68, trend: 'down', delta: -5 },
-      talent_stability: { score: 85, trend: 'up', delta: 1 },
-      market_position: { score: 79, trend: 'stable', delta: 0 },
-      supply_chain_resilience: { score: 71, trend: 'up', delta: 4 },
-      innovation_index: { score: 83, trend: 'up', delta: 2 },
-      customer_satisfaction: { score: 81, trend: 'stable', delta: 0 },
-    })).run();
-
-  // Seed Risk Alerts
-  const risks = [
-    { id: 'risk-1', tenant_id: 'vantax', title: 'Durban Port Congestion Impact', description: 'Container dwell time at Durban port increased 340%. Estimated R2.3M impact on Q3 COGS if unresolved within 14 days.', severity: 'critical', category: 'supply-chain', probability: 0.87, impact_value: 2300000, recommended_actions: '["Activate alternative port routing via Cape Town","Pre-position 2 weeks safety stock for top 50 SKUs","Engage freight forwarder for air-freight contingency"]' },
-    { id: 'risk-2', tenant_id: 'vantax', title: 'Key Supplier Financial Distress', description: 'Apex Trading (15% of procurement spend) shows deteriorating payment patterns. Credit rating downgraded to BB-.', severity: 'high', category: 'procurement', probability: 0.62, impact_value: 5200000, recommended_actions: '["Dual-source critical components within 30 days","Negotiate extended payment terms with backup suppliers","Monitor Apex weekly financial health via Pulse"]' },
-    { id: 'risk-3', tenant_id: 'vantax', title: 'Talent Attrition in Data Engineering', description: 'Data engineering team attrition rate at 23% (industry avg 12%). Pipeline velocity declining.', severity: 'high', category: 'people', probability: 0.75, impact_value: 1800000, recommended_actions: '["Conduct retention interviews within 5 days","Benchmark compensation against market","Accelerate junior hiring pipeline"]' },
-    { id: 'risk-4', tenant_id: 'vantax', title: 'IFRS 17 Compliance Gap', description: 'Insurance contract accounting transition 3 weeks behind schedule. Potential regulatory penalty.', severity: 'medium', category: 'compliance', probability: 0.45, impact_value: 800000, recommended_actions: '["Allocate additional finance resources","Engage external IFRS 17 specialist","Weekly compliance checkpoint meetings"]' },
-    { id: 'risk-5', tenant_id: 'vantax', title: 'Currency Exposure ZAR/USD', description: 'Unhedged USD exposure of $4.2M. ZAR weakening trend could impact margins by 180bps.', severity: 'medium', category: 'financial', probability: 0.55, impact_value: 3200000, recommended_actions: '["Execute forward contracts for 60% of exposure","Review natural hedge opportunities","Adjust pricing model for import-heavy categories"]' },
-  ];
-
-  for (const r of risks) {
-    await db.prepare('INSERT INTO risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, recommended_actions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(r.id, r.tenant_id, r.title, r.description, r.severity, r.category, r.probability, r.impact_value, r.recommended_actions).run();
-  }
-
-  // Seed Executive Briefing
-  await db.prepare('INSERT INTO executive_briefings (id, tenant_id, title, summary, risks, opportunities, kpi_movements, decisions_needed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind('brief-1', 'vantax', 'Daily Executive Briefing — 23 Feb 2026',
-      'Overall business health stable at 78 (+2.3 pts). Supply chain risk elevated due to Durban port congestion. Revenue tracking 3.9% above forecast. Two catalyst escalations require executive attention.',
-      JSON.stringify(['Durban port congestion — R2.3M exposure', 'Apex Trading credit downgrade — R5.2M at risk', 'Data engineering attrition at 23%']),
-      JSON.stringify(['Q3 revenue trending 3.9% above forecast', 'New distributor onboarding ahead of schedule', 'Mining catalyst efficiency up 12%']),
-      JSON.stringify([{ kpi: 'Revenue', movement: '+3.9%', period: 'MTD' }, { kpi: 'OTIF', movement: '-2.1%', period: '7d' }, { kpi: 'Cash Position', movement: '+R4.2M', period: 'WoW' }]),
-      JSON.stringify(['Approve alternative port routing (R340K additional cost)', 'Review Apex Trading supplier risk mitigation plan'])
-    ).run();
-
-  // Seed Process Metrics
-  const metrics = [
-    { id: 'pm-1', tenant_id: 'vantax', name: 'Order-to-Cash Cycle', value: 4.2, unit: 'days', status: 'green', threshold_green: 5, threshold_amber: 7, threshold_red: 10, trend: '[4.5,4.3,4.4,4.2,4.1,4.2]', source_system: 'SAP S/4HANA' },
-    { id: 'pm-2', tenant_id: 'vantax', name: 'Invoice Processing Time', value: 2.8, unit: 'hours', status: 'green', threshold_green: 4, threshold_amber: 8, threshold_red: 12, trend: '[3.1,2.9,3.0,2.8,2.7,2.8]', source_system: 'SAP S/4HANA' },
-    { id: 'pm-3', tenant_id: 'vantax', name: 'OTIF Delivery Rate', value: 87.3, unit: '%', status: 'amber', threshold_green: 92, threshold_amber: 85, threshold_red: 75, trend: '[91.2,89.5,88.1,87.3,87.0,87.3]', source_system: 'Logistics TMS' },
-    { id: 'pm-4', tenant_id: 'vantax', name: 'Procurement Cycle Time', value: 6.5, unit: 'days', status: 'green', threshold_green: 8, threshold_amber: 12, threshold_red: 15, trend: '[7.2,6.8,6.9,6.5,6.4,6.5]', source_system: 'SAP Ariba' },
-    { id: 'pm-5', tenant_id: 'vantax', name: 'Cash Conversion Cycle', value: 42, unit: 'days', status: 'amber', threshold_green: 35, threshold_amber: 45, threshold_red: 60, trend: '[38,40,41,42,43,42]', source_system: 'SAP S/4HANA' },
-    { id: 'pm-6', tenant_id: 'vantax', name: 'Employee Query Resolution', value: 1.5, unit: 'hours', status: 'green', threshold_green: 2, threshold_amber: 4, threshold_red: 8, trend: '[2.1,1.8,1.7,1.5,1.4,1.5]', source_system: 'ServiceNow' },
-    { id: 'pm-7', tenant_id: 'vantax', name: 'Warehouse Pick Accuracy', value: 99.2, unit: '%', status: 'green', threshold_green: 98, threshold_amber: 95, threshold_red: 90, trend: '[98.8,99.0,99.1,99.2,99.3,99.2]', source_system: 'WMS' },
-    { id: 'pm-8', tenant_id: 'vantax', name: 'Supplier Lead Time Variance', value: 12, unit: '%', status: 'red', threshold_green: 5, threshold_amber: 10, threshold_red: 15, trend: '[6,8,9,12,14,12]', source_system: 'SAP SRM' },
-  ];
-
-  for (const m of metrics) {
-    await db.prepare('INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(m.id, m.tenant_id, m.name, m.value, m.unit, m.status, m.threshold_green, m.threshold_amber, m.threshold_red, m.trend, m.source_system).run();
-  }
-
-  // Seed Anomalies
-  const anomalyData = [
-    { id: 'anom-1', tenant_id: 'vantax', metric: 'Product Returns — Electronics', severity: 'critical', expected_value: 2.1, actual_value: 9.3, deviation: 342, hypothesis: 'Batch quality issue in Q4 electronics shipment from Shenzhen supplier. Correlates with supplier change in October.' },
-    { id: 'anom-2', tenant_id: 'vantax', metric: 'AP Processing Volume Spike', severity: 'high', expected_value: 450, actual_value: 892, deviation: 98, hypothesis: 'Month-end accrual catch-up combined with new vendor onboarding backlog.' },
-    { id: 'anom-3', tenant_id: 'vantax', metric: 'Warehouse Dwell Time — Bay 7', severity: 'medium', expected_value: 4, actual_value: 11, deviation: 175, hypothesis: 'Forklift maintenance downtime in Bay 7. Alternative routing via Bay 3 available.' },
-  ];
-
-  for (const a of anomalyData) {
-    await db.prepare('INSERT INTO anomalies (id, tenant_id, metric, severity, expected_value, actual_value, deviation, hypothesis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(a.id, a.tenant_id, a.metric, a.severity, a.expected_value, a.actual_value, a.deviation, a.hypothesis).run();
-  }
+  // Apex/Pulse insights removed — populated dynamically by catalyst execution
 
   // Seed ERP Adapters
   const adapters = [
@@ -253,51 +189,5 @@ export async function seedDatabase(db: D1Database) {
       .bind(s.id, s.tenant_id, s.provider, s.client_id, s.issuer_url, s.enabled, s.auto_provision, s.default_role, s.domain_hint).run();
   }
 
-  // Seed Process Flows
-  const flows = [
-    { id: 'pf-1', tenant_id: 'vantax', name: 'Procure-to-Pay', steps: JSON.stringify([
-      { id: 's1', name: 'Requisition', avgDuration: 0.5, throughput: 120, status: 'healthy' },
-      { id: 's2', name: 'Approval', avgDuration: 1.2, throughput: 110, status: 'healthy' },
-      { id: 's3', name: 'PO Creation', avgDuration: 0.3, throughput: 108, status: 'healthy' },
-      { id: 's4', name: 'Goods Receipt', avgDuration: 3.5, throughput: 95, status: 'bottleneck' },
-      { id: 's5', name: 'Invoice Match', avgDuration: 0.8, throughput: 92, status: 'healthy' },
-      { id: 's6', name: 'Payment', avgDuration: 1.0, throughput: 90, status: 'healthy' },
-    ]), variants: 12, avg_duration: 7.3, conformance_rate: 78, bottlenecks: '["Goods Receipt — 3.5d avg, 52% of cycle time"]' },
-    { id: 'pf-2', tenant_id: 'vantax', name: 'Order-to-Cash', steps: JSON.stringify([
-      { id: 's1', name: 'Order Entry', avgDuration: 0.2, throughput: 200, status: 'healthy' },
-      { id: 's2', name: 'Credit Check', avgDuration: 0.1, throughput: 198, status: 'healthy' },
-      { id: 's3', name: 'Fulfilment', avgDuration: 1.5, throughput: 180, status: 'degraded' },
-      { id: 's4', name: 'Shipping', avgDuration: 1.8, throughput: 170, status: 'healthy' },
-      { id: 's5', name: 'Invoicing', avgDuration: 0.3, throughput: 168, status: 'healthy' },
-      { id: 's6', name: 'Collection', avgDuration: 0.3, throughput: 165, status: 'healthy' },
-    ]), variants: 8, avg_duration: 4.2, conformance_rate: 85, bottlenecks: '["Fulfilment — port congestion causing delays"]' },
-  ];
-
-  for (const f of flows) {
-    await db.prepare('INSERT INTO process_flows (id, tenant_id, name, steps, variants, avg_duration, conformance_rate, bottlenecks) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(f.id, f.tenant_id, f.name, f.steps, f.variants, f.avg_duration, f.conformance_rate, f.bottlenecks).run();
-  }
-
-  // Seed Correlation Events
-  const correlations = [
-    { id: 'ce-1', tenant_id: 'vantax', source_system: 'SAP MM', source_event: 'Supplier delivery delay > 3 days', target_system: 'SAP SD', target_impact: 'OTIF rate decline -2.3%', confidence: 0.89, lag_days: 5 },
-    { id: 'ce-2', tenant_id: 'vantax', source_system: 'Salesforce', source_event: 'Large deal closure > R5M', target_system: 'SAP PP', target_impact: 'Production planning spike +40%', confidence: 0.76, lag_days: 3 },
-    { id: 'ce-3', tenant_id: 'vantax', source_system: 'ServiceNow', source_event: 'IT outage > 2 hours', target_system: 'SAP FI', target_impact: 'Invoice processing backlog +65%', confidence: 0.92, lag_days: 1 },
-  ];
-
-  for (const c of correlations) {
-    await db.prepare('INSERT INTO correlation_events (id, tenant_id, source_system, source_event, target_system, target_impact, confidence, lag_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(c.id, c.tenant_id, c.source_system, c.source_event, c.target_system, c.target_impact, c.confidence, c.lag_days).run();
-  }
-
-  // Seed Scenarios
-  const scenarios = [
-    { id: 'sc-1', tenant_id: 'vantax', title: 'Delay Limpopo Expansion 6 Months', description: 'Postpone the Limpopo distribution centre expansion by 6 months', input_query: 'What if we delay the Limpopo expansion by 6 months?', variables: '["capex_timing","logistics_capacity","market_share"]', results: JSON.stringify({ npv_impact: -4200000, risk_change: '+12%', opportunity_cost: 'R8.1M revenue delay', recommendation: 'Proceed with Phase 1 only, defer Phase 2' }), status: 'completed' },
-    { id: 'sc-2', tenant_id: 'vantax', title: 'Dual-Source Critical Components', description: 'Add second supplier for top 10 critical components', input_query: 'What is the impact of dual-sourcing our top 10 critical components?', variables: '["procurement_cost","lead_time","supply_risk"]', results: JSON.stringify({ cost_increase: '+R1.8M/year', risk_reduction: '-45%', lead_time_impact: '+2 days avg', recommendation: 'Dual-source top 5 by volume, maintain single source for remaining' }), status: 'completed' },
-  ];
-
-  for (const s of scenarios) {
-    await db.prepare('INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(s.id, s.tenant_id, s.title, s.description, s.input_query, s.variables, s.results, s.status).run();
-  }
+  // Process flows, correlations, and scenarios removed — populated dynamically by catalyst execution
 }

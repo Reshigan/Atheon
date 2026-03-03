@@ -168,6 +168,50 @@ tenants.put('/:id/entitlements', async (c) => {
   return c.json({ success: true });
 });
 
+// POST /api/tenants/:id/reset - Reset company (delete all insights, start fresh)
+tenants.post('/:id/reset', async (c) => {
+  const id = c.req.param('id');
+
+  // Verify tenant exists
+  const tenant = await c.env.DB.prepare('SELECT id, name FROM tenants WHERE id = ?').bind(id).first();
+  if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
+
+  // Delete all Apex/Pulse insight data for this tenant
+  const insightTables = [
+    'health_scores',
+    'risk_alerts',
+    'executive_briefings',
+    'process_metrics',
+    'anomalies',
+    'process_flows',
+    'correlation_events',
+    'scenarios',
+  ];
+
+  let deletedTotal = 0;
+  for (const table of insightTables) {
+    try {
+      const result = await c.env.DB.prepare(`DELETE FROM ${table} WHERE tenant_id = ?`).bind(id).run();
+      deletedTotal += result.meta?.changes || 0;
+    } catch {
+      // Table may not exist or have no tenant_id column — skip
+    }
+  }
+
+  // Log the reset action in audit
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), id, 'company.reset', 'admin', 'tenant',
+      JSON.stringify({ tenantName: tenant.name, tablesCleared: insightTables.length, rowsDeleted: deletedTotal }),
+      'success'
+    ).run();
+  } catch { /* audit log failed — non-critical */ }
+
+  return c.json({ success: true, deletedRows: deletedTotal, tablesCleared: insightTables.length });
+});
+
 // DELETE /api/tenants/:id
 tenants.delete('/:id', async (c) => {
   const id = c.req.param('id');

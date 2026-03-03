@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth } from "@/lib/api";
 import {
   TrendingUp, TrendingDown, Minus, Loader2, Info, SlidersHorizontal,
-  ChevronRight,
+  ChevronRight, AlertTriangle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -68,6 +68,8 @@ export function Dashboard() {
   const [cpHealth, setCpHealth] = useState<ControlPlaneHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "health" | "risks">("overview");
+  const [timeFilter, setTimeFilter] = useState<"7d" | "30d" | "90d" | "12m">("30d");
+  const [showFilters, setShowFilters] = useState(false);
   const pieId = useId();
 
   useEffect(() => {
@@ -189,16 +191,34 @@ export function Dashboard() {
               </button>
             ))}
           </div>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information">
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information" onClick={() => setActiveTab('overview')}>
             <Info size={14} />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard settings">
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: showFilters ? 'var(--accent)' : 'var(--bg-secondary)', color: showFilters ? '#fff' : undefined }} title="Toggle filters" onClick={() => setShowFilters(!showFilters)}>
             <SlidersHorizontal size={14} />
           </button>
         </div>
       </div>
 
+      {/* FILTERS ROW */}
+      {showFilters && (
+        <DashCard className="!p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-medium t-muted">Time Range:</span>
+            {(["7d", "30d", "90d", "12m"] as const).map((f) => (
+              <button key={f} onClick={() => setTimeFilter(f)} className="px-3 py-1 text-xs rounded-md font-medium transition-all" style={timeFilter === f ? { background: 'var(--accent)', color: '#fff' } : { background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+                {f === '7d' ? '7 Days' : f === '30d' ? '30 Days' : f === '90d' ? '90 Days' : '12 Months'}
+              </button>
+            ))}
+            <span className="mx-2 h-4 border-l border-[var(--border-card)]" />
+            <span className="text-xs font-medium t-muted">Industry:</span>
+            <span className="text-xs font-semibold t-primary capitalize">{industry === 'general' ? 'All Industries' : industry}</span>
+          </div>
+        </DashCard>
+      )}
+
       {/* MAIN GRID */}
+      {activeTab === 'overview' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* LEFT COLUMN */}
         <div className="lg:col-span-5 space-y-5">
@@ -444,6 +464,192 @@ export function Dashboard() {
           </DashCard>
         </div>
       </div>
+
+      )}
+
+      {/* HEALTH TREND TAB */}
+      {activeTab === 'health' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <TintedCard>
+              <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Overall Score</p>
+              <p className="text-4xl font-bold t-primary">{overallScore}<span className="text-lg t-muted font-normal">/100</span></p>
+              <div className="flex items-center gap-1.5 mt-2">
+                {trendIcon(healthTrend)}
+                <span className={`text-xs ${avgDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)} pts avg change
+                </span>
+              </div>
+            </TintedCard>
+            <DashCard>
+              <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Improving</p>
+              <p className="text-4xl font-bold text-emerald-500">{upCount}</p>
+              <p className="text-[10px] t-muted mt-1">dimensions trending up</p>
+            </DashCard>
+            <DashCard>
+              <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Declining</p>
+              <p className="text-4xl font-bold text-red-500">{downCount}</p>
+              <p className="text-[10px] t-muted mt-1">dimensions trending down</p>
+            </DashCard>
+          </div>
+
+          {dimensions.length === 0 ? (
+            <DashCard>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <TrendingUp className="w-10 h-10 t-muted mb-3 opacity-30" />
+                <p className="text-sm t-muted">No health data yet.</p>
+                <p className="text-xs t-muted mt-1">Run a catalyst from the Catalysts page to generate health insights.</p>
+              </div>
+            </DashCard>
+          ) : (
+            <>
+              <DashCard>
+                <p className="text-sm font-semibold t-primary mb-4">All Dimensions</p>
+                <div className="space-y-4">
+                  {dimensions.map((dim, i) => (
+                    <div key={dim.key}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-sm" style={{ background: piePalette[i % piePalette.length] }} />
+                          <span className="text-xs font-medium t-primary">{dim.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {trendIcon(dim.trend)}
+                          <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {dim.change > 0 ? '+' : ''}{dim.change}
+                          </span>
+                          <span className="text-sm font-bold t-primary w-8 text-right">{dim.score}</span>
+                        </div>
+                      </div>
+                      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${dim.score}%`, background: piePalette[i % piePalette.length] }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </DashCard>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <DashCard>
+                  <p className="text-sm font-semibold t-primary mb-3">Health Score Trend</p>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={metricsOverTime}>
+                        <defs>
+                          <linearGradient id={`${pieId}-htGrad`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={ACCENT} stopOpacity={0.2} />
+                            <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
+                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', borderRadius: '12px', fontSize: '11px' }} />
+                        <Area type="monotone" dataKey="value" name="Health" stroke={ACCENT} strokeWidth={2} fill={`url(#${pieId}-htGrad)`} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </DashCard>
+                <DashCard>
+                  <p className="text-sm font-semibold t-primary mb-3">Month-over-Month Change</p>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={momData} barSize={16}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
+                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', borderRadius: '12px', fontSize: '11px' }} />
+                        <Bar dataKey="change" radius={[4, 4, 0, 0]} fill={ACCENT} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </DashCard>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* RISKS TAB */}
+      {activeTab === 'risks' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            {(['critical', 'high', 'medium', 'low'] as const).map((sev) => {
+              const count = risks.filter((r) => r.severity === sev).length;
+              const color = sev === 'critical' ? '#ef4444' : sev === 'high' ? '#f59e0b' : sev === 'medium' ? ACCENT : SKY;
+              return (
+                <DashCard key={sev}>
+                  <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">{sev}</p>
+                  <p className="text-4xl font-bold" style={{ color }}>{count}</p>
+                  <p className="text-[10px] t-muted mt-1">{sev} severity risks</p>
+                </DashCard>
+              );
+            })}
+          </div>
+
+          {risks.length === 0 ? (
+            <DashCard>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <AlertTriangle className="w-10 h-10 t-muted mb-3 opacity-30" />
+                <p className="text-sm t-muted">No risk alerts detected yet.</p>
+                <p className="text-xs t-muted mt-1">Run a catalyst to scan for organisational risks.</p>
+              </div>
+            </DashCard>
+          ) : (
+            <>
+              <DashCard>
+                <p className="text-sm font-semibold t-primary mb-3">Risk Distribution</p>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={(['critical', 'high', 'medium', 'low'] as const).map((sev) => ({
+                        severity: sev.charAt(0).toUpperCase() + sev.slice(1),
+                        count: risks.filter((r) => r.severity === sev).length,
+                      }))}
+                      barSize={40}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
+                      <XAxis dataKey="severity" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', borderRadius: '12px', fontSize: '11px' }} />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                        {['critical', 'high', 'medium', 'low'].map((sev) => (
+                          <Cell key={sev} fill={sev === 'critical' ? '#ef4444' : sev === 'high' ? '#f59e0b' : sev === 'medium' ? ACCENT : SKY} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </DashCard>
+
+              <DashCard>
+                <p className="text-sm font-semibold t-primary mb-3">All Risk Alerts</p>
+                <div className="space-y-3">
+                  {risks.map((risk) => (
+                    <div key={risk.id} className="flex items-start gap-3 p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                      <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                        risk.severity === 'critical' ? 'text-red-500' : risk.severity === 'high' ? 'text-amber-500' : 'text-gray-400'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs font-semibold t-primary">{risk.title}</h4>
+                          <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'info'}>{risk.severity}</Badge>
+                        </div>
+                        <p className="text-[10px] t-muted mt-0.5">{risk.description}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] t-muted">
+                          <span>Probability: {Math.round(risk.probability * 100)}%</span>
+                          <span>Impact: {risk.impactValue} {risk.impactUnit}</span>
+                          <Badge variant="outline" size="sm">{risk.category}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </DashCard>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ANOMALIES & CONTROL PLANE HEALTH — Bug #7 fix: render previously discarded data */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

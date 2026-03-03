@@ -106,6 +106,8 @@ export const api = {
       request<{ success: boolean }>(`/api/tenants/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     updateEntitlements: (id: string, data: Record<string, unknown>) =>
       request<{ success: boolean }>(`/api/tenants/${id}/entitlements`, { method: 'PUT', body: JSON.stringify(data) }),
+    reset: (id: string) =>
+      request<{ success: boolean; deletedRows: number; tablesCleared: number }>(`/api/tenants/${id}/reset`, { method: 'POST' }),
   },
 
   iam: {

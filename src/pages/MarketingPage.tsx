@@ -794,6 +794,9 @@ export function MarketingPage() {
           <a href="#layers">Architecture</a>
           <a href="#compare">Compare</a>
           <a href="#ethos">Ethos</a>
+          <a href="/login" className="mk5-nav-cta" style={{ marginRight: '0.5rem' }}>
+            <span>Login</span>
+          </a>
           <a href="#cta-s" className="mk5-nav-cta" onClick={(e) => { e.preventDefault(); document.getElementById("cta-s")?.scrollIntoView({ behavior: "smooth" }); }}>
             <span>Early Access</span>
           </a>

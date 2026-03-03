@@ -115,14 +115,26 @@ export function ApexPage() {
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
  <Card variant="black" className="lg:col-span-1 flex flex-col items-center justify-center">
  <ScoreRing score={overallScore} size="xl" label="Overall Health" sublabel="Composite Index" />
+ {health?.calculatedAt && (
  <div className="flex items-center gap-2 mt-4">
  {trendIcon('up')}
  <span className="text-sm text-emerald-400">+2.3 points (7d)</span>
  </div>
+ )}
+ {!health?.calculatedAt && overallScore === 0 && (
+ <p className="text-xs t-muted mt-4 text-center">No health data yet. Run a catalyst to populate.</p>
+ )}
  </Card>
 
  <Card className="lg:col-span-2">
  <h3 className="text-lg font-semibold t-primary mb-4">Dimension Breakdown</h3>
+ {dimensions.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-12 text-center">
+ <Crown className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No dimensions available yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst from the Catalysts page to generate health insights.</p>
+ </div>
+ )}
  <div className="space-y-4">
  {dimensions.map((dim) => (
  <div key={dim.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -164,7 +176,15 @@ export function ApexPage() {
  <h3 className="text-lg font-semibold">Daily Executive Briefing</h3>
  <Badge variant="info">Today</Badge>
  </div>
- <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{briefing?.summary || 'No briefing available'}</p>
+ {briefing?.summary ? (
+ <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{briefing.summary}</p>
+ ) : (
+ <div className="flex flex-col items-center justify-center py-8 text-center">
+ <FileText className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No executive briefing generated yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to generate your first briefing.</p>
+ </div>
+ )}
  </Card>
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -242,6 +262,13 @@ export function ApexPage() {
  {activeTab === 'risks' && (
  <TabPanel>
  <div className="space-y-4">
+ {risks.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-12 text-center">
+ <Shield className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No risk alerts detected yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to scan for organisational risks.</p>
+ </div>
+ )}
  {risks.map((risk) => (
  <Card
  key={risk.id}
@@ -300,6 +327,13 @@ export function ApexPage() {
  <h3 className="text-lg font-semibold t-primary">Scenario Analysis</h3>
  <Button variant="primary" size="sm" onClick={handleNewScenario} title="Create a new what-if scenario analysis"><Play size={14} /> New Scenario</Button>
  </div>
+ {scenarios.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-8 text-center">
+ <BarChart3 className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No scenarios created yet.</p>
+ <p className="text-xs t-muted mt-1">Click &quot;New Scenario&quot; above to create your first what-if analysis.</p>
+ </div>
+ )}
  {scenarios.map((scenario) => (
  <Card key={scenario.id}>
  <div className="flex items-start justify-between">

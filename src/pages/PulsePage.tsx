@@ -66,6 +66,13 @@ export function PulsePage() {
  {activeTab === 'monitoring' && (
  <TabPanel>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+ {metrics.length === 0 && (
+ <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+ <Activity className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No metrics available yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to start monitoring your processes.</p>
+ </div>
+ )}
  {metrics.map((metric) => (
  <Card key={metric.id} hover>
  <div className="flex items-center justify-between mb-2">
@@ -107,6 +114,13 @@ export function PulsePage() {
  {activeTab === 'anomalies' && (
  <TabPanel>
  <div className="space-y-4">
+ {anomalies.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-12 text-center">
+ <AlertTriangle className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No anomalies detected yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to start anomaly detection.</p>
+ </div>
+ )}
  {anomalies.map((anom: AnomalyItem) => (
  <Card key={anom.id}>
  <div className="flex items-start gap-4">
@@ -150,6 +164,13 @@ export function PulsePage() {
  {activeTab === 'processes' && (
  <TabPanel>
  <div className="space-y-6">
+ {processes.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-12 text-center">
+ <GitBranch className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No process flows mapped yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to discover and map your business processes.</p>
+ </div>
+ )}
  {processes.map((flow) => (
  <Card key={flow.id}>
  <div className="flex items-start justify-between mb-4">
@@ -206,6 +227,13 @@ export function PulsePage() {
  {activeTab === 'correlations' && (
  <TabPanel>
  <div className="space-y-4">
+ {correlations.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-12 text-center">
+ <Link2 className="w-10 h-10 t-muted mb-3 opacity-30" />
+ <p className="text-sm t-muted">No correlations discovered yet.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to identify cross-system correlations.</p>
+ </div>
+ )}
  {correlations.map((event) => (
  <Card key={event.id}>
  <div className="flex items-center gap-4">

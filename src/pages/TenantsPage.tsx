@@ -71,6 +71,12 @@ export function TenantsPage() {
  const [dataSourceForm, setDataSourceForm] = useState<{ type: string; config: Record<string, string> }>({ type: 'erp', config: {} });
  const [savingDataSource, setSavingDataSource] = useState(false);
 
+ // Company Reset modal state
+ const [showResetConfirm, setShowResetConfirm] = useState<string | null>(null);
+ const [resetting, setResetting] = useState(false);
+ const [resetResult, setResetResult] = useState<{ deletedRows: number; tablesCleared: number } | null>(null);
+ const [resetConfirmText, setResetConfirmText] = useState('');
+
  // Edit Entitlements modal state
  const [showEditEntitlements, setShowEditEntitlements] = useState<string | null>(null);
  const [entitlementForm, setEntitlementForm] = useState({
@@ -255,6 +261,19 @@ export function TenantsPage() {
  await api.catalysts.deleteCluster(clusterId, showDeployCatalyst);
  await loadTenantClusters(showDeployCatalyst);
  } catch { /* silent */ }
+ };
+
+ // Company Reset handler
+ const handleResetCompany = async () => {
+  if (!showResetConfirm || resetting) return;
+  const tenant = tenants.find(t => t.id === showResetConfirm);
+  if (!tenant || resetConfirmText !== tenant.name) return;
+  setResetting(true);
+  try {
+   const res = await api.tenants.reset(showResetConfirm);
+   setResetResult({ deletedRows: res.deletedRows, tablesCleared: res.tablesCleared });
+  } catch { /* silent */ }
+  setResetting(false);
  };
 
  // Edit Entitlements handler
@@ -507,6 +526,7 @@ export function TenantsPage() {
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openDeployCatalyst(tenant.id); }} title="Deploy catalyst clusters for this tenant"><Bot size={12} /> Deploy Catalysts</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Configure clusters, sub-catalysts, and data sources"><Settings size={12} /> Manage Catalysts</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }} title="Edit plan entitlements and feature access"><Layers size={12} /> Edit Entitlements</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowResetConfirm(tenant.id); setResetResult(null); setResetConfirmText(''); }} title="Reset company — delete all insights and start fresh" className="!text-red-500 !border-red-500/30 hover:!bg-red-500/10"><Trash2 size={12} /> Reset Company</Button>
  </div>
  </div>
  )}
@@ -1134,6 +1154,73 @@ export function TenantsPage() {
  {savingEntitlements ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />} Save Entitlements
  </Button>
  </div>
+ </div>
+ </div></Portal>
+ )}
+
+ {/* Reset Company Confirmation Modal */}
+ {showResetConfirm && (
+ <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
+ {resetResult ? (
+ <>
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+ <CheckCircle size={20} className="text-emerald-500" />
+ </div>
+ <div>
+ <h3 className="text-lg font-semibold t-primary">Company Reset Complete</h3>
+ <p className="text-sm t-muted">{resetResult.deletedRows} rows deleted across {resetResult.tablesCleared} tables</p>
+ </div>
+ </div>
+ <p className="text-xs t-muted">All Apex and Pulse insights have been cleared. The company now starts fresh — run catalysts to regenerate insights.</p>
+ <Button variant="primary" size="sm" onClick={() => { setShowResetConfirm(null); setResetResult(null); }} title="Close reset confirmation">Done</Button>
+ </>
+ ) : (
+ <>
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+ <Trash2 size={20} className="text-red-500" />
+ </div>
+ <div>
+ <h3 className="text-lg font-semibold t-primary">Reset Company</h3>
+ <p className="text-sm t-muted">This action cannot be undone</p>
+ </div>
+ </div>
+ <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+ <p className="text-sm t-primary">This will permanently delete all:</p>
+ <ul className="text-xs t-muted mt-2 space-y-1 list-disc list-inside">
+ <li>Health scores and risk alerts</li>
+ <li>Executive briefings and scenarios</li>
+ <li>Process metrics and anomalies</li>
+ <li>Process flows and correlations</li>
+ </ul>
+ <p className="text-xs t-muted mt-2">The company will start fresh with empty Apex and Pulse pages.</p>
+ </div>
+ <div>
+ <label className="text-xs t-muted block mb-1">Type the company name to confirm: <strong className="t-primary">{tenants.find(t => t.id === showResetConfirm)?.name}</strong></label>
+ <input
+ className="w-full px-3 py-2 rounded-lg border text-sm"
+ style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)', color: 'var(--text-primary)' }}
+ value={resetConfirmText}
+ onChange={e => setResetConfirmText(e.target.value)}
+ placeholder="Company name..."
+ />
+ </div>
+ <div className="flex gap-3 pt-1">
+ <Button variant="secondary" size="sm" onClick={() => setShowResetConfirm(null)} title="Cancel company reset">Cancel</Button>
+ <button
+ onClick={handleResetCompany}
+ disabled={resetting || resetConfirmText !== (tenants.find(t => t.id === showResetConfirm)?.name || '')}
+ className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600"
+ title="Confirm and delete all insights for this company"
+ >
+ {resetting ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Trash2 size={14} className="inline mr-1" />}
+ Reset Company
+ </button>
+ </div>
+ </>
+ )}
  </div>
  </div></Portal>
  )}
