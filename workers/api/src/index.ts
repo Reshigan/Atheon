@@ -79,7 +79,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v13';
+const MIGRATION_VERSION = 'v14';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
@@ -202,20 +202,7 @@ app.use('*', async (c, next) => {
         // Column may already exist — ignore
       }
 
-      // v12 migration: Clear seeded Apex/Pulse insights — now populated by catalyst execution
-      const insightCleanup = [
-        'DELETE FROM health_scores',
-        'DELETE FROM risk_alerts',
-        'DELETE FROM executive_briefings',
-        'DELETE FROM process_metrics',
-        'DELETE FROM anomalies',
-        'DELETE FROM process_flows',
-        'DELETE FROM correlation_events',
-        'DELETE FROM scenarios',
-      ];
-      for (const sql of insightCleanup) {
-        try { await c.env.DB.prepare(sql).run(); } catch { /* table may not exist */ }
-      }
+      // Insight data (health_scores, risk_alerts, etc.) is populated by catalyst execution only — not seeded
 
       // Seed with demo data
       await seedDatabase(c.env.DB);

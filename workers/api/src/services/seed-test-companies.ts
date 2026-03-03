@@ -48,43 +48,6 @@ export async function seedTestCompanies(db: D1Database) {
     '{"host":"s4hana.highveld-steel.co.za","client":"100","system_id":"HVS","base_url":"https://s4hana.highveld-steel.co.za"}',
     'realtime',2145678).run();
 
-  // Health Score
-  await db.prepare('INSERT OR IGNORE INTO health_scores (id,tenant_id,overall_score,dimensions) VALUES (?,?,?,?)')
-    .bind('hs-hv','highveld',72,JSON.stringify({
-      financial_health:{score:68,trend:'down',delta:-4},
-      operational_efficiency:{score:75,trend:'up',delta:2},
-      risk_exposure:{score:62,trend:'down',delta:-8},
-      safety_performance:{score:81,trend:'up',delta:3},
-      equipment_reliability:{score:70,trend:'stable',delta:0},
-      environmental_compliance:{score:78,trend:'up',delta:1},
-    })).run();
-
-  // Risk Alerts
-  const hvRisks = [
-    {id:'risk-hv-1',title:'Furnace #2 Refractory Degradation',description:'Blast furnace #2 refractory lining showing accelerated wear. Estimated 45 days to critical failure. R18M production loss if unplanned shutdown.',severity:'critical',category:'equipment',probability:0.82,impact:18000000},
-    {id:'risk-hv-2',title:'Iron Ore Price Volatility',description:'Seaborne iron ore prices up 23% QoQ. No hedging in place for Q3 procurement (120k tons). R42M margin compression risk.',severity:'high',category:'financial',probability:0.71,impact:42000000},
-    {id:'risk-hv-3',title:'Eskom Load Shedding Stage 4+',description:'National grid instability forecast for winter months. Steel production requires 180MW continuous. Diesel backup limited to 72 hours.',severity:'high',category:'operations',probability:0.65,impact:25000000},
-    {id:'risk-hv-4',title:'Water Recycling Non-Compliance',description:'Cooling water discharge exceeding DWS limits for cadmium and lead. R5M penalty risk plus production stop order.',severity:'medium',category:'environment',probability:0.55,impact:5000000},
-  ];
-  for (const r of hvRisks) {
-    await db.prepare('INSERT OR IGNORE INTO risk_alerts (id,tenant_id,title,description,severity,category,probability,impact_value,recommended_actions) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(r.id,'highveld',r.title,r.description,r.severity,r.category,r.probability,r.impact,'[]').run();
-  }
-
-  // Process Metrics
-  const hvMetrics = [
-    {id:'pm-hv-1',name:'Steel Production Volume',value:42500,unit:'tons/month',status:'amber',tg:50000,ta:40000,tr:35000},
-    {id:'pm-hv-2',name:'Furnace Uptime',value:87.3,unit:'%',status:'amber',tg:92,ta:85,tr:80},
-    {id:'pm-hv-3',name:'Safety Incident Rate',value:0.42,unit:'per 200k hrs',status:'green',tg:0.5,ta:1.0,tr:1.5},
-    {id:'pm-hv-4',name:'Energy Cost per Ton',value:1850,unit:'ZAR',status:'red',tg:1500,ta:1700,tr:1900},
-    {id:'pm-hv-5',name:'Iron Ore Inventory Days',value:18,unit:'days',status:'amber',tg:25,ta:15,tr:10},
-    {id:'pm-hv-6',name:'CO2 Emissions per Ton',value:1.92,unit:'tCO2e',status:'amber',tg:1.5,ta:2.0,tr:2.5},
-  ];
-  for (const m of hvMetrics) {
-    await db.prepare('INSERT OR IGNORE INTO process_metrics (id,tenant_id,name,value,unit,status,threshold_green,threshold_amber,threshold_red,trend,source_system) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(m.id,'highveld',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','SAP S/4HANA').run();
-  }
-
   // Catalyst Clusters
   const hvClusters = [
     {id:'cc-hv-equip',name:'Equipment Health Catalyst',domain:'mining-equipment',desc:'Predictive maintenance for blast furnaces, rolling mills, and cranes',status:'active',agents:5,done:342,prog:8,rate:94.2,trust:91.5,tier:'assisted',subs:[{name:'Predictive Maintenance',enabled:true,description:'ML-based failure prediction for heavy equipment'},{name:'Vibration Analysis',enabled:true,description:'Real-time vibration monitoring on rotating equipment'},{name:'Thermal Imaging',enabled:false,description:'IR camera analysis for refractory and electrical systems'},{name:'Lubrication Scheduling',enabled:true,description:'Automated lubrication intervals based on operating hours and conditions'},{name:'Spare Parts Forecasting',enabled:false,description:'Demand prediction for critical spares to minimize downtime'}]},
@@ -101,27 +64,6 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'highveld',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
-
-  // Anomalies
-  const hvAnomalies = [
-    {id:'an-hv-1',metric:'Furnace Temperature',expected:1550,actual:1620,deviation:4.5,severity:'high',hypothesis:'Refractory degradation causing heat retention anomaly'},
-    {id:'an-hv-2',metric:'Coke Consumption Rate',expected:480,actual:542,deviation:12.9,severity:'critical',hypothesis:'Suboptimal blast distribution — tuyere blockage suspected'},
-  ];
-  for (const a of hvAnomalies) {
-    await db.prepare('INSERT OR IGNORE INTO anomalies (id,tenant_id,metric,expected_value,actual_value,deviation,severity,hypothesis) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(a.id,'highveld',a.metric,a.expected,a.actual,a.deviation,a.severity,a.hypothesis).run();
-  }
-
-  // Process Flows
-  await db.prepare('INSERT OR IGNORE INTO process_flows (id,tenant_id,name,steps,variants,avg_duration,conformance_rate,bottlenecks) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('pf-hv-1','highveld','Ore-to-Steel Production',JSON.stringify([
-      {id:'s1',name:'Ore Reception',avgDuration:0.5,throughput:200,status:'healthy'},
-      {id:'s2',name:'Smelting',avgDuration:8.0,throughput:180,status:'bottleneck'},
-      {id:'s3',name:'Casting',avgDuration:2.0,throughput:175,status:'healthy'},
-      {id:'s4',name:'Rolling',avgDuration:1.5,throughput:170,status:'healthy'},
-      {id:'s5',name:'Quality Testing',avgDuration:0.8,throughput:168,status:'healthy'},
-      {id:'s6',name:'Dispatch',avgDuration:0.3,throughput:165,status:'healthy'},
-    ]),6,13.1,82,'["Smelting — furnace capacity constraint, 8h avg cycle"]').run();
 
   // Graph Entities
   const hvEntities = [
@@ -213,15 +155,6 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(e.id,'highveld','SAP S/4HANA',e.empNum,e.first,e.last,e.dept,e.pos).run();
   }
 
-  // Scenarios
-  await db.prepare('INSERT OR IGNORE INTO scenarios (id,tenant_id,title,description,input_query,variables,results,status) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('sc-hv-1','highveld','Furnace #2 Emergency Shutdown','Impact analysis of an emergency furnace #2 shutdown for refractory relining','What if we shut down Furnace #2 for emergency refractory repair?','["production_capacity","maintenance_cost","delivery_commitments"]',
-      JSON.stringify({npv_impact:-28000000,risk_change:'-65%',opportunity_cost:'R45M production delay over 8 weeks',recommendation:'Schedule controlled shutdown in 30 days, pre-position inventory to cover 60% of commitments'}),'completed').run();
-
-  // Correlation Events
-  await db.prepare('INSERT OR IGNORE INTO correlation_events (id,tenant_id,source_system,source_event,target_system,target_impact,confidence,lag_days) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('ce-hv-1','highveld','SAP PP','Furnace temperature spike > 1600C','SAP QM','Steel quality rejection rate +3.2%',0.91,1).run();
-
   // ═══════════════════════════════════════════════════════════════════════════
   // COMPANY 2: GREENLEAF ORGANICS — XERO — AGRICULTURE
   // ═══════════════════════════════════════════════════════════════════════════
@@ -247,37 +180,6 @@ export async function seedTestCompanies(db: D1Database) {
     '{"xero_tenant_id":"gl-xero-tenant-001","base_url":"https://api.xero.com","oauth_scope":"accounting.transactions accounting.contacts"}',
     '15min',45678).run();
 
-  await db.prepare('INSERT OR IGNORE INTO health_scores (id,tenant_id,overall_score,dimensions) VALUES (?,?,?,?)')
-    .bind('hs-gl','greenleaf',81,JSON.stringify({
-      financial_health:{score:85,trend:'up',delta:4},
-      operational_efficiency:{score:78,trend:'stable',delta:0},
-      supply_chain_resilience:{score:82,trend:'up',delta:2},
-      customer_satisfaction:{score:88,trend:'up',delta:3},
-      sustainability_score:{score:92,trend:'up',delta:1},
-    })).run();
-
-  const glRisks = [
-    {id:'risk-gl-1',title:'Drought Impact on Harvest Yield',description:'Western Cape drought conditions forecast for next 90 days. Estimated 18% yield reduction on winter crops. R2.8M revenue impact.',severity:'high',category:'operations',probability:0.68,impact:2800000},
-    {id:'risk-gl-2',title:'Organic Certification Audit Gap',description:'Soil testing records incomplete for 3 farms. Certification body audit in 45 days. Risk of losing organic premium pricing.',severity:'medium',category:'compliance',probability:0.45,impact:1200000},
-    {id:'risk-gl-3',title:'Cold Chain Logistics Failure',description:'Refrigerated truck fleet aging — 3 of 8 trucks showing compressor issues. Fresh produce spoilage risk during summer.',severity:'high',category:'operations',probability:0.52,impact:1800000},
-  ];
-  for (const r of glRisks) {
-    await db.prepare('INSERT OR IGNORE INTO risk_alerts (id,tenant_id,title,description,severity,category,probability,impact_value,recommended_actions) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(r.id,'greenleaf',r.title,r.description,r.severity,r.category,r.probability,r.impact,'[]').run();
-  }
-
-  const glMetrics = [
-    {id:'pm-gl-1',name:'Harvest Yield per Hectare',value:4.2,unit:'tons/ha',status:'green',tg:4.0,ta:3.5,tr:3.0},
-    {id:'pm-gl-2',name:'Organic Certification Rate',value:98.5,unit:'%',status:'green',tg:95,ta:90,tr:85},
-    {id:'pm-gl-3',name:'Customer Order Fulfillment',value:94.2,unit:'%',status:'green',tg:92,ta:85,tr:80},
-    {id:'pm-gl-4',name:'Produce Waste Rate',value:3.8,unit:'%',status:'green',tg:5,ta:8,tr:12},
-    {id:'pm-gl-5',name:'Revenue per Hectare',value:185000,unit:'ZAR',status:'green',tg:150000,ta:120000,tr:100000},
-  ];
-  for (const m of glMetrics) {
-    await db.prepare('INSERT OR IGNORE INTO process_metrics (id,tenant_id,name,value,unit,status,threshold_green,threshold_amber,threshold_red,trend,source_system) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(m.id,'greenleaf',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Xero').run();
-  }
-
   const glClusters = [
     {id:'cc-gl-fin',name:'Finance Catalyst',domain:'finance',desc:'Automated invoicing, expense categorization, cash flow forecasting',status:'active',agents:2,done:456,prog:5,rate:95.3,trust:92.1,tier:'assisted',subs:[{name:'Accounts Receivable',enabled:true,description:'Invoice generation and debtor management'},{name:'Accounts Payable',enabled:true,description:'Supplier payment scheduling'},{name:'Cash Flow Forecast',enabled:true,description:'12-week rolling cash flow projection'},{name:'Seasonal Budget Planning',enabled:true,description:'Crop cycle-aligned budget forecasting and variance tracking'},{name:'Grant & Subsidy Tracking',enabled:false,description:'Agricultural grant applications and compliance monitoring'}]},
     {id:'cc-gl-supply',name:'Supply Chain Catalyst',domain:'supply-chain',desc:'Harvest planning, cold chain monitoring, distributor coordination',status:'active',agents:3,done:234,prog:7,rate:91.8,trust:88.5,tier:'read-only',subs:[{name:'Harvest Planning',enabled:true,description:'Seasonal yield forecasting and resource allocation'},{name:'Cold Chain Monitor',enabled:true,description:'Temperature and humidity tracking in transit'},{name:'Distributor Coordination',enabled:false,description:'Automated order fulfillment and delivery scheduling'},{name:'Traceability',enabled:true,description:'Field-to-fork traceability for organic certification and recalls'},{name:'Packaging Optimization',enabled:false,description:'Optimal pack size and material selection based on buyer requirements'}]},
@@ -292,24 +194,6 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'greenleaf',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
-
-  const glAnomalies= [
-    {id:'an-gl-1',metric:'Water Usage per Hectare',expected:4500,actual:5800,deviation:28.9,severity:'high',hypothesis:'Irrigation system leak on Farm 3 — drip line damage from recent hail'},
-  ];
-  for (const a of glAnomalies) {
-    await db.prepare('INSERT OR IGNORE INTO anomalies (id,tenant_id,metric,expected_value,actual_value,deviation,severity,hypothesis) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(a.id,'greenleaf',a.metric,a.expected,a.actual,a.deviation,a.severity,a.hypothesis).run();
-  }
-
-  await db.prepare('INSERT OR IGNORE INTO process_flows (id,tenant_id,name,steps,variants,avg_duration,conformance_rate,bottlenecks) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('pf-gl-1','greenleaf','Seed-to-Shelf',JSON.stringify([
-      {id:'s1',name:'Planting',avgDuration:1,throughput:100,status:'healthy'},
-      {id:'s2',name:'Growing',avgDuration:90,throughput:95,status:'healthy'},
-      {id:'s3',name:'Harvesting',avgDuration:3,throughput:88,status:'healthy'},
-      {id:'s4',name:'Packing',avgDuration:1,throughput:85,status:'degraded'},
-      {id:'s5',name:'Cold Chain Transport',avgDuration:1,throughput:82,status:'healthy'},
-      {id:'s6',name:'Retail Delivery',avgDuration:0.5,throughput:80,status:'healthy'},
-    ]),4,96.5,88,'["Packing — labour shortage during peak harvest"]').run();
 
   // Graph Entities
   const glEntities = [
@@ -388,38 +272,6 @@ export async function seedTestCompanies(db: D1Database) {
     '{"region":"za","company_id":"medibridge-001","base_url":"https://api.accounting.sage.com/v3.1"}',
     '30min',123456).run();
 
-  await db.prepare('INSERT OR IGNORE INTO health_scores (id,tenant_id,overall_score,dimensions) VALUES (?,?,?,?)')
-    .bind('hs-mb','medibridge',84,JSON.stringify({
-      financial_health:{score:82,trend:'up',delta:2},
-      operational_efficiency:{score:86,trend:'up',delta:3},
-      patient_satisfaction:{score:91,trend:'up',delta:4},
-      staff_retention:{score:78,trend:'down',delta:-3},
-      regulatory_compliance:{score:95,trend:'stable',delta:0},
-      clinical_quality:{score:89,trend:'up',delta:2},
-    })).run();
-
-  const mbRisks = [
-    {id:'risk-mb-1',title:'Nursing Staff Shortage — Critical',description:'Nursing vacancy rate at 22% across 8 clinics. Patient-to-nurse ratio exceeding NDoH safe limits (1:8 vs target 1:6). Quality of care risk.',severity:'high',category:'people',probability:0.78,impact:4500000},
-    {id:'risk-mb-2',title:'Medical Aid Reimbursement Delays',description:'Discovery Health and Bonitas reimbursement cycle extended from 14 to 28 days. R8.2M cash flow impact across all clinics.',severity:'medium',category:'financial',probability:0.62,impact:8200000},
-    {id:'risk-mb-3',title:'POPIA Patient Data Compliance Gap',description:'Patient records digitization incomplete for 3 clinics. Data breach risk during paper-to-digital migration. R2M fine exposure.',severity:'high',category:'compliance',probability:0.42,impact:2000000},
-  ];
-  for (const r of mbRisks) {
-    await db.prepare('INSERT OR IGNORE INTO risk_alerts (id,tenant_id,title,description,severity,category,probability,impact_value,recommended_actions) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(r.id,'medibridge',r.title,r.description,r.severity,r.category,r.probability,r.impact,'[]').run();
-  }
-
-  const mbMetrics = [
-    {id:'pm-mb-1',name:'Patient Wait Time',value:18.5,unit:'minutes',status:'green',tg:20,ta:30,tr:45},
-    {id:'pm-mb-2',name:'Bed Occupancy Rate',value:82.3,unit:'%',status:'green',tg:85,ta:90,tr:95},
-    {id:'pm-mb-3',name:'Medical Aid Claims Rejection',value:3.2,unit:'%',status:'green',tg:5,ta:8,tr:12},
-    {id:'pm-mb-4',name:'Patient Readmission Rate',value:4.1,unit:'%',status:'green',tg:5,ta:8,tr:12},
-    {id:'pm-mb-5',name:'Average Length of Stay',value:3.2,unit:'days',status:'green',tg:4,ta:5,tr:7},
-  ];
-  for (const m of mbMetrics) {
-    await db.prepare('INSERT OR IGNORE INTO process_metrics (id,tenant_id,name,value,unit,status,threshold_green,threshold_amber,threshold_red,trend,source_system) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(m.id,'medibridge',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Sage Business Cloud').run();
-  }
-
   const mbClusters = [
     {id:'cc-mb-patient',name:'Patient Flow Catalyst',domain:'health-patient',desc:'Patient scheduling, ward allocation, discharge planning, readmission prediction',status:'active',agents:4,done:678,prog:12,rate:96.5,trust:94.8,tier:'assisted',subs:[{name:'Scheduling',enabled:true,description:'Automated patient appointment scheduling'},{name:'Ward Allocation',enabled:true,description:'Real-time bed management and allocation'},{name:'Discharge Planning',enabled:true,description:'Coordinated discharge with follow-up scheduling'},{name:'Readmission Prediction',enabled:false,description:'ML model predicting 30-day readmission risk'},{name:'Triage Prioritization',enabled:true,description:'AI-assisted triage scoring and queue optimization'},{name:'Theatre Scheduling',enabled:false,description:'Operating theatre slot optimization and conflict resolution'}]},
     {id:'cc-mb-compliance',name:'Healthcare Compliance Catalyst',domain:'health-compliance',desc:'NDoH reporting, POPIA compliance, clinical audit preparation',status:'active',agents:2,done:234,prog:3,rate:98.2,trust:97.1,tier:'read-only',subs:[{name:'NDoH Reporting',enabled:true,description:'Automated National Department of Health submissions'},{name:'POPIA Compliance',enabled:true,description:'Patient data privacy compliance checks'},{name:'Clinical Audit',enabled:false,description:'Automated clinical audit trail preparation'},{name:'Infection Control',enabled:true,description:'HAI tracking and prevention protocol compliance'},{name:'HPCSA Compliance',enabled:true,description:'Health Professions Council registration and CPD tracking'}]},
@@ -434,25 +286,6 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'medibridge',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
-
-  const mbAnomalies= [
-    {id:'an-mb-1',metric:'ER Wait Time (Sandton Clinic)',expected:15,actual:38,deviation:153,severity:'critical',hypothesis:'Staff shortage combined with 3 multi-vehicle accident admissions'},
-    {id:'an-mb-2',metric:'Pharmaceutical Spend',expected:450000,actual:612000,deviation:36,severity:'high',hypothesis:'Bulk order of antiretrovirals ahead of tender deadline'},
-  ];
-  for (const a of mbAnomalies) {
-    await db.prepare('INSERT OR IGNORE INTO anomalies (id,tenant_id,metric,expected_value,actual_value,deviation,severity,hypothesis) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(a.id,'medibridge',a.metric,a.expected,a.actual,a.deviation,a.severity,a.hypothesis).run();
-  }
-
-  await db.prepare('INSERT OR IGNORE INTO process_flows (id,tenant_id,name,steps,variants,avg_duration,conformance_rate,bottlenecks) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('pf-mb-1','medibridge','Patient Admission-to-Discharge',JSON.stringify([
-      {id:'s1',name:'Registration',avgDuration:0.25,throughput:120,status:'healthy'},
-      {id:'s2',name:'Triage',avgDuration:0.5,throughput:115,status:'healthy'},
-      {id:'s3',name:'Consultation',avgDuration:0.75,throughput:100,status:'degraded'},
-      {id:'s4',name:'Treatment',avgDuration:2.0,throughput:95,status:'healthy'},
-      {id:'s5',name:'Billing & Claims',avgDuration:0.5,throughput:90,status:'bottleneck'},
-      {id:'s6',name:'Discharge',avgDuration:0.25,throughput:88,status:'healthy'},
-    ]),8,4.25,76,'["Billing & Claims — medical aid pre-auth delays"]').run();
 
   // Graph Entities
   const mbEntities = [
@@ -533,37 +366,6 @@ export async function seedTestCompanies(db: D1Database) {
     '{"host":"pastel.bluepeak.local","company_database":"BLUEPEAK_2026","base_url":"https://pastel.bluepeak-logistics.co.za"}',
     'hourly',67890).run();
 
-  await db.prepare('INSERT OR IGNORE INTO health_scores (id,tenant_id,overall_score,dimensions) VALUES (?,?,?,?)')
-    .bind('hs-bp','bluepeak',76,JSON.stringify({
-      financial_health:{score:74,trend:'stable',delta:0},
-      operational_efficiency:{score:79,trend:'up',delta:2},
-      fleet_utilization:{score:82,trend:'up',delta:3},
-      customer_satisfaction:{score:71,trend:'down',delta:-4},
-      safety_compliance:{score:85,trend:'up',delta:1},
-    })).run();
-
-  const bpRisks = [
-    {id:'risk-bp-1',title:'Diesel Price Surge',description:'Diesel prices up 18% in 30 days. Fleet consumes 45,000 litres/month. R243k monthly cost increase with no fuel surcharge pass-through.',severity:'high',category:'financial',probability:0.85,impact:2900000},
-    {id:'risk-bp-2',title:'Driver Shortage — Code 14 EC',description:'Professional driver vacancy rate at 15%. 8 of 52 routes understaffed. Delivery delays impacting SLA compliance on Shoprite contract.',severity:'medium',category:'people',probability:0.58,impact:1800000},
-    {id:'risk-bp-3',title:'N3 Toll Road Closure',description:'SANRAL scheduled maintenance on N3 between Harrismith and Durban. 14-day partial closure. Alternative routes add 120km and 2 hours per trip.',severity:'medium',category:'operations',probability:0.92,impact:950000},
-  ];
-  for (const r of bpRisks) {
-    await db.prepare('INSERT OR IGNORE INTO risk_alerts (id,tenant_id,title,description,severity,category,probability,impact_value,recommended_actions) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(r.id,'bluepeak',r.title,r.description,r.severity,r.category,r.probability,r.impact,'[]').run();
-  }
-
-  const bpMetrics = [
-    {id:'pm-bp-1',name:'On-Time Delivery Rate',value:88.7,unit:'%',status:'amber',tg:92,ta:85,tr:80},
-    {id:'pm-bp-2',name:'Fleet Utilization',value:82.1,unit:'%',status:'green',tg:80,ta:70,tr:60},
-    {id:'pm-bp-3',name:'Fuel Efficiency',value:7.8,unit:'km/L',status:'green',tg:7.5,ta:7.0,tr:6.5},
-    {id:'pm-bp-4',name:'Cost per Kilometre',value:12.45,unit:'ZAR',status:'amber',tg:11,ta:13,tr:15},
-    {id:'pm-bp-5',name:'Vehicle Downtime',value:6.2,unit:'%',status:'green',tg:8,ta:12,tr:15},
-  ];
-  for (const m of bpMetrics) {
-    await db.prepare('INSERT OR IGNORE INTO process_metrics (id,tenant_id,name,value,unit,status,threshold_green,threshold_amber,threshold_red,trend,source_system) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(m.id,'bluepeak',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Sage Pastel').run();
-  }
-
   const bpClusters = [
     {id:'cc-bp-supply',name:'Route Optimization Catalyst',domain:'supply-chain',desc:'Real-time route planning, fuel optimization, fleet scheduling',status:'active',agents:3,done:567,prog:9,rate:93.4,trust:90.2,tier:'assisted',subs:[{name:'Route Planning',enabled:true,description:'Dynamic route optimization with traffic and weather'},{name:'Fuel Optimization',enabled:true,description:'Fuel consumption tracking and efficiency coaching'},{name:'Fleet Scheduling',enabled:true,description:'Vehicle and driver assignment optimization'},{name:'Load Optimization',enabled:false,description:'Weight distribution and capacity planning'},{name:'Cross-Docking',enabled:true,description:'Hub transfer optimization to minimize handling time'}]},
     {id:'cc-bp-fin',name:'Transport Finance Catalyst',domain:'finance',desc:'Fuel cost tracking, trip costing, customer billing automation',status:'active',agents:2,done:345,prog:4,rate:95.8,trust:93.1,tier:'assisted',subs:[{name:'Trip Costing',enabled:true,description:'Automated per-trip cost calculation'},{name:'Customer Billing',enabled:true,description:'POD-based automated invoice generation'},{name:'Accounts Receivable',enabled:true,description:'Debtor aging and follow-up automation'},{name:'Fuel Surcharge Calculator',enabled:true,description:'Automated fuel surcharge adjustment based on diesel price index'},{name:'Fleet Depreciation',enabled:false,description:'Vehicle depreciation tracking and replacement forecasting'}]},
@@ -578,15 +380,6 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'bluepeak',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
-
-  await db.prepare('INSERT OR IGNORE INTO process_flows (id,tenant_id,name,steps,variants,avg_duration,conformance_rate,bottlenecks) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('pf-bp-1','bluepeak','Load-to-Delivery',JSON.stringify([
-      {id:'s1',name:'Order Assignment',avgDuration:0.5,throughput:80,status:'healthy'},
-      {id:'s2',name:'Loading',avgDuration:1.5,throughput:75,status:'degraded'},
-      {id:'s3',name:'Transit',avgDuration:8.0,throughput:72,status:'healthy'},
-      {id:'s4',name:'Delivery',avgDuration:1.0,throughput:70,status:'healthy'},
-      {id:'s5',name:'POD & Invoicing',avgDuration:0.5,throughput:68,status:'bottleneck'},
-    ]),5,11.5,84,'["Loading — dock congestion at JHB depot","POD & Invoicing — manual paperwork delays"]').run();
 
   // Graph Entities
   const bpEntities = [
@@ -655,39 +448,6 @@ export async function seedTestCompanies(db: D1Database) {
     '{"instance":"novatech.oraclecloud.com","api_version":"24B","base_url":"https://novatech.oraclecloud.com","modules":["Financials","HCM","SCM"]}',
     '5min',345678).run();
 
-  await db.prepare('INSERT OR IGNORE INTO health_scores (id,tenant_id,overall_score,dimensions) VALUES (?,?,?,?)')
-    .bind('hs-nt','novatech',88,JSON.stringify({
-      financial_health:{score:92,trend:'up',delta:5},
-      operational_efficiency:{score:85,trend:'up',delta:2},
-      customer_retention:{score:94,trend:'up',delta:3},
-      product_innovation:{score:87,trend:'stable',delta:0},
-      talent_acquisition:{score:81,trend:'down',delta:-2},
-      engineering_velocity:{score:89,trend:'up',delta:4},
-    })).run();
-
-  const ntRisks = [
-    {id:'risk-nt-1',title:'Churn Risk — Enterprise Tier',description:'Top 3 enterprise customers (R12M ARR combined) showing usage decline -35% over 60 days. Contract renewals in Q3. Risk of losing 28% of enterprise revenue.',severity:'critical',category:'revenue',probability:0.72,impact:12000000},
-    {id:'risk-nt-2',title:'Cloud Infrastructure Cost Overrun',description:'AWS spend tracking 42% above budget. Unoptimized EC2 instances and S3 lifecycle policies. R480k monthly overspend.',severity:'medium',category:'financial',probability:0.88,impact:5800000},
-    {id:'risk-nt-3',title:'Key Engineer Retention Risk',description:'3 senior engineers (platform team) received competing offers. Departure would delay Q3 roadmap by 6-8 weeks.',severity:'high',category:'people',probability:0.55,impact:3200000},
-  ];
-  for (const r of ntRisks) {
-    await db.prepare('INSERT OR IGNORE INTO risk_alerts (id,tenant_id,title,description,severity,category,probability,impact_value,recommended_actions) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(r.id,'novatech',r.title,r.description,r.severity,r.category,r.probability,r.impact,'[]').run();
-  }
-
-  const ntMetrics = [
-    {id:'pm-nt-1',name:'Monthly Recurring Revenue',value:4250000,unit:'ZAR',status:'green',tg:4000000,ta:3500000,tr:3000000},
-    {id:'pm-nt-2',name:'Customer Churn Rate',value:2.8,unit:'%',status:'green',tg:3.5,ta:5.0,tr:7.0},
-    {id:'pm-nt-3',name:'System Uptime',value:99.97,unit:'%',status:'green',tg:99.9,ta:99.5,tr:99.0},
-    {id:'pm-nt-4',name:'Net Promoter Score',value:72,unit:'NPS',status:'green',tg:60,ta:40,tr:20},
-    {id:'pm-nt-5',name:'Sprint Velocity',value:84,unit:'story points',status:'green',tg:75,ta:60,tr:45},
-    {id:'pm-nt-6',name:'Customer Acquisition Cost',value:18500,unit:'ZAR',status:'amber',tg:15000,ta:20000,tr:25000},
-  ];
-  for (const m of ntMetrics) {
-    await db.prepare('INSERT OR IGNORE INTO process_metrics (id,tenant_id,name,value,unit,status,threshold_green,threshold_amber,threshold_red,trend,source_system) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(m.id,'novatech',m.name,m.value,m.unit,m.status,m.tg,m.ta,m.tr,'[]','Oracle Fusion').run();
-  }
-
   const ntClusters = [
     {id:'cc-nt-sales',name:'Revenue Operations Catalyst',domain:'sales',desc:'Churn prediction, upsell identification, pipeline health, renewal management',status:'active',agents:5,done:1234,prog:18,rate:95.7,trust:93.4,tier:'transactional',subs:[{name:'Churn Prediction',enabled:true,description:'ML model predicting customer churn probability'},{name:'Upsell Engine',enabled:true,description:'Cross-sell and upsell opportunity identification'},{name:'Pipeline Health',enabled:true,description:'Deal velocity and win-rate tracking'},{name:'Renewal Management',enabled:false,description:'Automated renewal reminders and processing'},{name:'Win/Loss Analysis',enabled:true,description:'Post-deal analysis to improve conversion strategies'},{name:'Territory Planning',enabled:false,description:'Account territory assignment optimization using revenue potential'}]},
     {id:'cc-nt-fin',name:'SaaS Finance Catalyst',domain:'finance',desc:'Revenue recognition, ARR tracking, cash flow forecasting, cost optimization',status:'active',agents:3,done:678,prog:8,rate:97.2,trust:95.8,tier:'assisted',subs:[{name:'Revenue Recognition',enabled:true,description:'ASC 606 compliant revenue recognition'},{name:'ARR Tracking',enabled:true,description:'Real-time ARR, MRR, and expansion metrics'},{name:'Invoice Reconciliation',enabled:true,description:'Subscription billing reconciliation'},{name:'Cost Optimization',enabled:false,description:'Cloud and vendor spend optimization'},{name:'Unit Economics',enabled:true,description:'CAC, LTV, and payback period tracking per cohort'}]},
@@ -703,25 +463,6 @@ export async function seedTestCompanies(db: D1Database) {
     await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(c.id,'novatech',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
   }
-
-  const ntAnomalies= [
-    {id:'an-nt-1',metric:'API Response Time P99',expected:200,actual:850,deviation:325,severity:'critical',hypothesis:'Database connection pool exhaustion during peak — missing index on user_sessions table'},
-    {id:'an-nt-2',metric:'Free-to-Paid Conversion',expected:8.5,actual:5.2,deviation:-38.8,severity:'high',hypothesis:'Onboarding flow regression after v2.4 deploy — step 3 completion dropped 40%'},
-  ];
-  for (const a of ntAnomalies) {
-    await db.prepare('INSERT OR IGNORE INTO anomalies (id,tenant_id,metric,expected_value,actual_value,deviation,severity,hypothesis) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(a.id,'novatech',a.metric,a.expected,a.actual,a.deviation,a.severity,a.hypothesis).run();
-  }
-
-  await db.prepare('INSERT OR IGNORE INTO process_flows (id,tenant_id,name,steps,variants,avg_duration,conformance_rate,bottlenecks) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('pf-nt-1','novatech','Lead-to-Revenue',JSON.stringify([
-      {id:'s1',name:'Lead Capture',avgDuration:0.1,throughput:500,status:'healthy'},
-      {id:'s2',name:'Qualification',avgDuration:2.0,throughput:200,status:'healthy'},
-      {id:'s3',name:'Demo & POC',avgDuration:14.0,throughput:80,status:'degraded'},
-      {id:'s4',name:'Proposal',avgDuration:5.0,throughput:60,status:'healthy'},
-      {id:'s5',name:'Negotiation',avgDuration:10.0,throughput:45,status:'bottleneck'},
-      {id:'s6',name:'Closed Won',avgDuration:1.0,throughput:30,status:'healthy'},
-    ]),12,32.1,68,'["Demo & POC — SE capacity constraint","Negotiation — legal review delays"]').run();
 
   // Graph Entities
   const ntEntities = [
@@ -812,12 +553,4 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(e.id,'novatech','Oracle Fusion',e.empNum,e.first,e.last,e.dept,e.pos).run();
   }
 
-  // Scenarios
-  await db.prepare('INSERT OR IGNORE INTO scenarios (id,tenant_id,title,description,input_query,variables,results,status) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('sc-nt-1','novatech','AWS Cost Optimization Sprint','Rightsize EC2 instances and implement S3 lifecycle policies','What if we optimize our AWS infrastructure spend?','["ec2_instances","s3_storage","reserved_instances"]',
-      JSON.stringify({npv_impact:3200000,risk_change:'-5%',opportunity_cost:'2 engineering weeks',recommendation:'Implement reserved instances for baseline, spot for burst. Expected 35% cost reduction.'}),'completed').run();
-
-  // Correlation Events
-  await db.prepare('INSERT OR IGNORE INTO correlation_events (id,tenant_id,source_system,source_event,target_system,target_impact,confidence,lag_days) VALUES (?,?,?,?,?,?,?,?)')
-    .bind('ce-nt-1','novatech','Product Analytics','Feature adoption drop > 20% in 30d','CRM','Customer churn probability +18%',0.87,45).run();
 }
