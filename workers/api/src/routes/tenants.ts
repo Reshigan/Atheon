@@ -176,7 +176,7 @@ tenants.post('/:id/reset', async (c) => {
   const tenant = await c.env.DB.prepare('SELECT id, name FROM tenants WHERE id = ?').bind(id).first();
   if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
 
-  // Delete all Apex/Pulse insight data for this tenant
+  // Delete all Apex/Pulse insight data + catalyst data for this tenant
   const insightTables = [
     'health_scores',
     'risk_alerts',
@@ -186,6 +186,10 @@ tenants.post('/:id/reset', async (c) => {
     'process_flows',
     'correlation_events',
     'scenarios',
+    'catalyst_actions',
+    'agent_deployments',
+    'mind_queries',
+    'notifications',
   ];
 
   let deletedTotal = 0;

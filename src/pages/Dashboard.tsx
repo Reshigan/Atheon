@@ -123,15 +123,18 @@ export function Dashboard() {
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const now = new Date();
-  const metricsOverTime = Array.from({ length: 12 }, (_, i) => {
+  const hasMetrics = metrics.length > 0;
+  const hasHealth = !!health?.overall;
+  const hasData = hasMetrics || hasHealth || dimensions.length > 0;
+  const metricsOverTime = hasData ? Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
-    const baseValue = metrics.length > 0 ? metrics[0].value : 40;
+    const baseValue = metrics.length > 0 ? metrics[0].value : (health?.overall ?? 0);
     return {
       month: monthNames[d.getMonth()],
       value: +(baseValue * (0.85 + i * 0.03) + Math.sin(i * 0.8) * 3).toFixed(1),
       revenue: +(baseValue * (0.82 + i * 0.035) + Math.cos(i * 0.6) * 2).toFixed(1),
     };
-  });
+  }) : [];
 
   const piePalette = [ACCENT, ACCENT_B, SKY, BRONZE, CHART_LIGHT];
   const pieData = dimensions.slice(0, 5).map((dim, i) => ({
@@ -142,10 +145,10 @@ export function Dashboard() {
 
   const topDimensions = [...dimensions].sort((a, b) => b.score - a.score).slice(0, 5);
 
-  const momData = monthNames.map((m, i) => ({
+  const momData = hasData ? monthNames.map((m, i) => ({
     month: m,
     change: +(avgDelta * (0.5 + Math.sin(i * 0.5) * 0.8)).toFixed(1),
-  }));
+  })) : [];
 
   if (loading) {
     return (
@@ -218,7 +221,17 @@ export function Dashboard() {
       )}
 
       {/* MAIN GRID */}
-      {activeTab === 'overview' && (
+      {activeTab === 'overview' && !hasData && (
+        <DashCard>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <TrendingUp className="w-12 h-12 t-muted mb-4 opacity-30" />
+            <p className="text-sm font-medium t-primary">No data yet</p>
+            <p className="text-xs t-muted mt-1">Run a catalyst from the Catalysts page to generate dashboard insights,</p>
+            <p className="text-xs t-muted">or use the Company Reset button to start fresh.</p>
+          </div>
+        </DashCard>
+      )}
+      {activeTab === 'overview' && hasData && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* LEFT COLUMN */}
         <div className="lg:col-span-5 space-y-5">
