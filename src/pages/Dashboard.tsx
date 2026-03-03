@@ -126,14 +126,23 @@ export function Dashboard() {
   const hasMetrics = metrics.length > 0;
   const hasHealth = !!health?.overall;
   const hasData = hasMetrics || hasHealth || dimensions.length > 0;
+  // Derive the primary and secondary metric from actual catalyst-generated data
+  const primaryMetric = metrics.length > 0 ? metrics[0] : null;
+  const secondaryMetric = metrics.length > 1 ? metrics[1] : null;
+  const primaryMetricLabel = primaryMetric ? primaryMetric.name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Health Score';
+  const secondaryMetricLabel = secondaryMetric ? secondaryMetric.name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : null;
+
   const metricsOverTime = hasData ? Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
-    const baseValue = metrics.length > 0 ? metrics[0].value : (health?.overall ?? 0);
-    return {
+    const baseValue = primaryMetric ? primaryMetric.value : (health?.overall ?? 0);
+    const entry: Record<string, string | number> = {
       month: monthNames[d.getMonth()],
       value: +(baseValue * (0.85 + i * 0.03) + Math.sin(i * 0.8) * 3).toFixed(1),
-      revenue: +(baseValue * (0.82 + i * 0.035) + Math.cos(i * 0.6) * 2).toFixed(1),
     };
+    if (secondaryMetric) {
+      entry.secondary = +(secondaryMetric.value * (0.82 + i * 0.035) + Math.cos(i * 0.6) * 2).toFixed(1);
+    }
+    return entry;
   }) : [];
 
   const piePalette = [ACCENT, ACCENT_B, SKY, BRONZE, CHART_LIGHT];
@@ -326,11 +335,13 @@ export function Dashboard() {
               <p className="text-sm font-semibold t-primary">Metrics Over Time</p>
               <div className="flex items-center gap-3">
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium" style={{ color: ACCENT }}>
-                  <span className="w-2 h-2 rounded-full" style={{ background: ACCENT }} /> Health Score
+                  <span className="w-2 h-2 rounded-full" style={{ background: ACCENT }} /> {primaryMetricLabel}
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium t-muted">
-                  <span className="w-2 h-2 rounded-full" style={{ background: CHART_LIGHT }} /> Revenue
-                </span>
+                {secondaryMetricLabel && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium t-muted">
+                    <span className="w-2 h-2 rounded-full" style={{ background: CHART_LIGHT }} /> {secondaryMetricLabel}
+                  </span>
+                )}
               </div>
             </div>
             <div className="h-64">
@@ -340,8 +351,8 @@ export function Dashboard() {
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "12px", fontSize: "11px" }} />
-                  <Bar dataKey="value" name="Health" radius={[4, 4, 0, 0]} fill={ACCENT} />
-                  <Bar dataKey="revenue" name="Revenue" radius={[4, 4, 0, 0]} fill={CHART_LIGHT} />
+                  <Bar dataKey="value" name={primaryMetricLabel} radius={[4, 4, 0, 0]} fill={ACCENT} />
+                  {secondaryMetricLabel && <Bar dataKey="secondary" name={secondaryMetricLabel} radius={[4, 4, 0, 0]} fill={CHART_LIGHT} />}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -450,11 +461,11 @@ export function Dashboard() {
           <DashCard>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-sm font-semibold t-primary">Revenue Trend</p>
+                <p className="text-sm font-semibold t-primary">{primaryMetricLabel} Trend</p>
                 <p className="text-[10px] t-muted">Last 12 months</p>
               </div>
               <Badge variant="success">
-                {metrics.length > 0 ? `+${((metrics[0].value / (metrics[0].value * 0.96) - 1) * 100).toFixed(1)}%` : "--"}
+                {primaryMetric ? `+${((primaryMetric.value / (primaryMetric.value * 0.96) - 1) * 100).toFixed(1)}%` : "--"}
               </Badge>
             </div>
             <div className="h-48">
