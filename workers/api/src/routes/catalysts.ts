@@ -151,7 +151,8 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
   // Step 3: Risk Alert — only generate risk for this catalyst's domain category
   const t2 = Date.now();
   await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'running', `Scanning ${riskCategory} risk indicators for ${domain}...`, 0);
-  const riskSeverity = Math.random() > 0.6 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low';
+  const riskRand = Math.random();
+  const riskSeverity = riskRand > 0.6 ? 'high' : riskRand > 0.4 ? 'medium' : 'low';
   const riskImpact = riskSeverity === 'high' ? Math.floor(500000 + Math.random() * 500000) : riskSeverity === 'medium' ? Math.floor(200000 + Math.random() * 300000) : Math.floor(50000 + Math.random() * 100000);
   try {
     await db.prepare(
@@ -223,7 +224,7 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
       ).bind(
         crypto.randomUUID(), tenantId,
         `${domain} throughput`,
-        deviation > 15 ? 'high' : deviation > 5 ? 'medium' : 'low',
+        Math.abs(deviation) > 15 ? 'high' : Math.abs(deviation) > 5 ? 'medium' : 'low',
         expected, actual, deviation,
         `Catalyst "${catalystName}" detected an anomalous pattern in ${domain} throughput.`,
         'open', now
