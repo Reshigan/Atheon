@@ -79,7 +79,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v12';
+const MIGRATION_VERSION = 'v14';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
@@ -114,6 +114,7 @@ app.use('*', async (c, next) => {
         CREATE TABLE IF NOT EXISTS webhooks (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), url TEXT NOT NULL, secret TEXT NOT NULL, events TEXT NOT NULL DEFAULT '["*"]', active INTEGER NOT NULL DEFAULT 1, retry_count INTEGER NOT NULL DEFAULT 0, last_triggered TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
         CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'document', mime_type TEXT NOT NULL DEFAULT 'application/octet-stream', size INTEGER NOT NULL DEFAULT 0, r2_key TEXT, uploaded_by TEXT, stored_in_r2 INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
         CREATE TABLE IF NOT EXISTS email_queue (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), recipients TEXT NOT NULL, subject TEXT NOT NULL, html_body TEXT NOT NULL, text_body TEXT, status TEXT NOT NULL DEFAULT 'pending', sent_at TEXT, error TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+        CREATE TABLE IF NOT EXISTS execution_logs (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), action_id TEXT NOT NULL, step_number INTEGER NOT NULL, step_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'running', detail TEXT, duration_ms INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now')));
       `;
 
       // Execute each CREATE TABLE separately
@@ -146,6 +147,8 @@ app.use('*', async (c, next) => {
         'CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(tenant_id, type)',
         'CREATE INDEX IF NOT EXISTS idx_email_queue_tenant ON email_queue(tenant_id)',
         'CREATE INDEX IF NOT EXISTS idx_email_queue_status ON email_queue(status)',
+        'CREATE INDEX IF NOT EXISTS idx_execution_logs_tenant ON execution_logs(tenant_id)',
+        'CREATE INDEX IF NOT EXISTS idx_execution_logs_action ON execution_logs(action_id)',
       ];
 
       for (const idx of indexes) {
@@ -199,20 +202,7 @@ app.use('*', async (c, next) => {
         // Column may already exist — ignore
       }
 
-      // v12 migration: Clear seeded Apex/Pulse insights — now populated by catalyst execution
-      const insightCleanup = [
-        'DELETE FROM health_scores',
-        'DELETE FROM risk_alerts',
-        'DELETE FROM executive_briefings',
-        'DELETE FROM process_metrics',
-        'DELETE FROM anomalies',
-        'DELETE FROM process_flows',
-        'DELETE FROM correlation_events',
-        'DELETE FROM scenarios',
-      ];
-      for (const sql of insightCleanup) {
-        try { await c.env.DB.prepare(sql).run(); } catch { /* table may not exist */ }
-      }
+      // Insight data (health_scores, risk_alerts, etc.) is populated by catalyst execution only — not seeded
 
       // Seed with demo data
       await seedDatabase(c.env.DB);

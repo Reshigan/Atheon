@@ -190,6 +190,7 @@ tenants.post('/:id/reset', async (c) => {
     'agent_deployments',
     'mind_queries',
     'notifications',
+    'execution_logs',
   ];
 
   let deletedTotal = 0;

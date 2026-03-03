@@ -8,9 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import type { HealthScore, Briefing, Risk, ScenarioItem } from "@/lib/api";
+import { Portal } from "@/components/ui/portal";
 import {
  Crown, TrendingUp, TrendingDown, Minus, AlertTriangle, FileText,
- Play, ArrowRight, BarChart3, Shield, Lightbulb, Loader2, AlertCircle, X
+ Play, ArrowRight, BarChart3, Shield, Lightbulb, Loader2, AlertCircle, X,
+ Plus, ChevronRight, ChevronLeft, Trash2
 } from "lucide-react";
 
 
@@ -33,25 +35,54 @@ export function ApexPage() {
  const [creatingScenario, setCreatingScenario] = useState(false);
  const [actionError, setActionError] = useState<string | null>(null);
 
- const handleNewScenario = async () => {
+ // Scenario Builder Modal state
+ const [showScenarioBuilder, setShowScenarioBuilder] = useState(false);
+ const [builderStep, setBuilderStep] = useState(1);
+ const [scenarioTitle, setScenarioTitle] = useState('');
+ const [scenarioDescription, setScenarioDescription] = useState('');
+ const [scenarioModelType, setScenarioModelType] = useState('what-if');
+ const [scenarioQuery, setScenarioQuery] = useState('');
+ const [scenarioVariables, setScenarioVariables] = useState<Array<{ name: string; baseValue: string }>>([{ name: '', baseValue: '' }]);
+
+ const resetScenarioBuilder = () => {
+ setBuilderStep(1);
+ setScenarioTitle('');
+ setScenarioDescription('');
+ setScenarioModelType('what-if');
+ setScenarioQuery('');
+ setScenarioVariables([{ name: '', baseValue: '' }]);
+ };
+
+ const handleCreateScenario = async () => {
  if (creatingScenario) return;
  setCreatingScenario(true);
  setActionError(null);
  try {
+ const vars = scenarioVariables.filter(v => v.name.trim());
  const result = await api.apex.createScenario({
- title: `Scenario ${scenarios.length + 1}`,
- description: 'New what-if analysis',
- input_query: 'What if revenue drops by 10%?',
- variables: ['revenue', 'margin', 'headcount']});
+ title: scenarioTitle || `Scenario ${scenarios.length + 1}`,
+ description: scenarioDescription || `${scenarioModelType} analysis`,
+ input_query: scenarioQuery || `${scenarioModelType} analysis: ${vars.map(v => v.name).join(', ')}`,
+ variables: vars.map(v => v.name),
+ model_type: scenarioModelType,
+ base_values: Object.fromEntries(vars.map(v => [v.name, v.baseValue])),
+ });
  if (result.id) {
  const s = await api.apex.scenarios();
  setScenarios(s.scenarios);
  }
+ setShowScenarioBuilder(false);
+ resetScenarioBuilder();
  } catch (err) {
  setActionError(err instanceof Error ? err.message : 'Failed to create scenario');
  }
  setCreatingScenario(false);
  };
+
+ const addVariable = () => setScenarioVariables(prev => [...prev, { name: '', baseValue: '' }]);
+ const removeVariable = (idx: number) => setScenarioVariables(prev => prev.filter((_, i) => i !== idx));
+ const updateVariable = (idx: number, field: 'name' | 'baseValue', value: string) =>
+ setScenarioVariables(prev => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
 
  useEffect(() => {
  async function load() {
@@ -325,7 +356,7 @@ export function ApexPage() {
  <div className="space-y-6">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Scenario Analysis</h3>
- <Button variant="primary" size="sm" onClick={handleNewScenario} title="Create a new what-if scenario analysis"><Play size={14} /> New Scenario</Button>
+ <Button variant="primary" size="sm" onClick={() => { resetScenarioBuilder(); setShowScenarioBuilder(true); }} title="Create a new what-if scenario analysis"><Plus size={14} /> New Scenario</Button>
  </div>
  {scenarios.length === 0 && (
  <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -360,6 +391,155 @@ export function ApexPage() {
  ))}
  </div>
  </TabPanel>
+ )}
+
+ {/* Scenario Builder Modal */}
+ {showScenarioBuilder && (
+ <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-5 max-h-[90vh] overflow-y-auto">
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
+ <BarChart3 size={18} className="text-accent" /> Scenario Builder
+ </h3>
+ <button onClick={() => setShowScenarioBuilder(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ </div>
+
+ {/* Step Indicator */}
+ <div className="flex items-center gap-2">
+ {[1, 2, 3].map((s) => (
+ <div key={s} className="flex items-center gap-2 flex-1">
+ <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+ builderStep >= s ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted border border-[var(--border-card)]'
+ }`}>{s}</div>
+ <span className={`text-[10px] ${builderStep >= s ? 't-primary font-medium' : 't-muted'}`}>
+ {s === 1 ? 'Details' : s === 2 ? 'Model' : 'Variables'}
+ </span>
+ {s < 3 && <div className={`flex-1 h-0.5 ${builderStep > s ? 'bg-accent' : 'bg-[var(--border-card)]'}`} />}
+ </div>
+ ))}
+ </div>
+
+ {/* Step 1: Scenario Details */}
+ {builderStep === 1 && (
+ <div className="space-y-3">
+ <div>
+ <label className="text-xs t-muted">Scenario Title</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={scenarioTitle}
+ onChange={e => setScenarioTitle(e.target.value)}
+ placeholder="e.g. Revenue decline impact analysis"
+ autoFocus
+ />
+ </div>
+ <div>
+ <label className="text-xs t-muted">Description</label>
+ <textarea
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary resize-none"
+ rows={3}
+ value={scenarioDescription}
+ onChange={e => setScenarioDescription(e.target.value)}
+ placeholder="Describe the scenario you want to model..."
+ />
+ </div>
+ </div>
+ )}
+
+ {/* Step 2: Model Type */}
+ {builderStep === 2 && (
+ <div className="space-y-3">
+ <label className="text-xs t-muted">Select Analysis Model</label>
+ <div className="grid grid-cols-2 gap-3">
+ {[
+ { id: 'what-if', label: 'What-If', desc: 'Change one or more variables and see the impact' },
+ { id: 'sensitivity', label: 'Sensitivity', desc: 'Determine which variables have the most effect' },
+ { id: 'monte-carlo', label: 'Monte Carlo', desc: 'Simulate thousands of random outcomes' },
+ { id: 'stress-test', label: 'Stress Test', desc: 'Test extreme scenarios against your model' },
+ ].map(m => (
+ <button
+ key={m.id}
+ onClick={() => setScenarioModelType(m.id)}
+ className={`p-3 rounded-lg border text-left transition-all ${
+ scenarioModelType === m.id
+ ? 'bg-accent/10 border-accent/40 ring-1 ring-accent/30'
+ : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
+ }`}
+ >
+ <span className={`text-sm font-medium ${scenarioModelType === m.id ? 'text-accent' : 't-primary'}`}>{m.label}</span>
+ <p className="text-[10px] t-muted mt-1">{m.desc}</p>
+ </button>
+ ))}
+ </div>
+ <div>
+ <label className="text-xs t-muted">Analysis Query</label>
+ <input
+ className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={scenarioQuery}
+ onChange={e => setScenarioQuery(e.target.value)}
+ placeholder="e.g. What if revenue drops by 10%?"
+ />
+ </div>
+ </div>
+ )}
+
+ {/* Step 3: Variables */}
+ {builderStep === 3 && (
+ <div className="space-y-3">
+ <div className="flex items-center justify-between">
+ <label className="text-xs t-muted">Input Variables</label>
+ <button onClick={addVariable} className="text-xs text-accent hover:text-accent/80 flex items-center gap-1">
+ <Plus size={12} /> Add Variable
+ </button>
+ </div>
+ {scenarioVariables.map((v, idx) => (
+ <div key={idx} className="flex items-center gap-2">
+ <input
+ className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={v.name}
+ onChange={e => updateVariable(idx, 'name', e.target.value)}
+ placeholder="Variable name (e.g. revenue)"
+ />
+ <input
+ className="w-32 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ value={v.baseValue}
+ onChange={e => updateVariable(idx, 'baseValue', e.target.value)}
+ placeholder="Base value"
+ />
+ {scenarioVariables.length > 1 && (
+ <button onClick={() => removeVariable(idx)} className="text-red-400 hover:text-red-300 p-1">
+ <Trash2 size={14} />
+ </button>
+ )}
+ </div>
+ ))}
+ <p className="text-[10px] t-muted">Define the variables you want to vary in your {scenarioModelType} analysis and their baseline values.</p>
+ </div>
+ )}
+
+ {/* Navigation Buttons */}
+ <div className="flex items-center justify-between pt-2">
+ <div>
+ {builderStep > 1 && (
+ <Button variant="secondary" size="sm" onClick={() => setBuilderStep(s => s - 1)}>
+ <ChevronLeft size={14} /> Back
+ </Button>
+ )}
+ </div>
+ <div className="flex gap-2">
+ <Button variant="secondary" size="sm" onClick={() => setShowScenarioBuilder(false)}>Cancel</Button>
+ {builderStep < 3 ? (
+ <Button variant="primary" size="sm" onClick={() => setBuilderStep(s => s + 1)} disabled={builderStep === 1 && !scenarioTitle.trim()}>
+ Next <ChevronRight size={14} />
+ </Button>
+ ) : (
+ <Button variant="primary" size="sm" onClick={handleCreateScenario} disabled={creatingScenario || scenarioVariables.every(v => !v.name.trim())}>
+ {creatingScenario ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Create Scenario
+ </Button>
+ )}
+ </div>
+ </div>
+ </div>
+ </div></Portal>
  )}
  </div>
  );

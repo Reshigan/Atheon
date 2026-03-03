@@ -193,6 +193,18 @@ export const api = {
       }
       return res.json() as Promise<ManualExecuteResult>;
     },
+    executionLogs: (actionId?: string) =>
+      request<{ logs: ExecutionLogEntry[]; total: number }>(`/api/catalysts/execution-logs${qs({ action_id: actionId })}`) ,
+    executionLogsForAction: (actionId: string) =>
+      request<{ logs: ExecutionLogEntry[]; total: number }>(`/api/catalysts/execution-logs/${actionId}`),
+    resolveException: (actionId: string, notes?: string) =>
+      request<{ success: boolean; status: string }>(`/api/catalysts/actions/${actionId}/resolve`, {
+        method: 'PUT', body: JSON.stringify({ resolution_notes: notes || 'Resolved by admin' }),
+      }),
+    escalateException: (actionId: string, notes?: string, escalateTo?: string) =>
+      request<{ success: boolean; status: string; escalationLevel: string }>(`/api/catalysts/actions/${actionId}/escalate`, {
+        method: 'PUT', body: JSON.stringify({ escalation_notes: notes, escalated_to: escalateTo }),
+      }),
   },
 
   memory: {
@@ -733,6 +745,17 @@ export interface ManualExecuteResult {
   startDatetime: string;
   endDatetime: string;
   fileName: string | null;
+}
+
+export interface ExecutionLogEntry {
+  id: string;
+  actionId: string;
+  stepNumber: number;
+  stepName: string;
+  status: string;
+  detail: string;
+  durationMs: number | null;
+  createdAt: string;
 }
 
 export interface NotificationItem {

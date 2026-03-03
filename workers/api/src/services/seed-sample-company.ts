@@ -383,20 +383,6 @@ export async function seedSampleCompany(db: D1Database) {
   // ══════════════════════════════════════════════════════════
 
   // ── Health Score ──
-  await db.prepare('INSERT INTO health_scores (id, tenant_id, overall_score, dimensions) VALUES (?, ?, ?, ?)').bind(
-    'hs-protea', 'protea', 74,
-    JSON.stringify({
-      financial_health: { score: 79, trend: 'up', delta: 2 },
-      operational_efficiency: { score: 72, trend: 'stable', delta: 0 },
-      risk_exposure: { score: 65, trend: 'down', delta: -3 },
-      talent_stability: { score: 81, trend: 'up', delta: 1 },
-      market_position: { score: 76, trend: 'up', delta: 4 },
-      supply_chain_resilience: { score: 68, trend: 'down', delta: -2 },
-      innovation_index: { score: 70, trend: 'up', delta: 3 },
-      customer_satisfaction: { score: 78, trend: 'stable', delta: 0 },
-    })
-  ).run();
-
   // ── Risk Alerts ──
   const risks = [
     { id: 'risk-protea-1', title: 'Raw Material Price Surge — Sasol Chemicals', desc: 'Petrochemical feedstock prices up 18% MoM. Estimated R1.8M impact on COGS if sustained through Q2. Current contracts expire in 45 days.', severity: 'critical', cat: 'procurement', prob: 0.82, impact: 1800000 },
@@ -407,20 +393,9 @@ export async function seedSampleCompany(db: D1Database) {
   ];
 
   for (const r of risks) {
-    await db.prepare('INSERT INTO risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, recommended_actions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(r.id, 'protea', r.title, r.desc, r.severity, r.cat, r.prob, r.impact, '["Investigate immediately","Escalate to management","Activate contingency plan"]').run();
   }
 
   // ── Executive Briefing ──
-  await db.prepare('INSERT INTO executive_briefings (id, tenant_id, title, summary, risks, opportunities, kpi_movements, decisions_needed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(
-    'brief-protea', 'protea', 'Daily Executive Briefing — 23 Feb 2026',
-    'Business health at 74 (-1.2 pts). Manufacturing output impacted by load shedding. Revenue tracking 2.3% above forecast despite disruptions. Raw material costs spiking — procurement action required.',
-    JSON.stringify(['Sasol chemical price surge — R1.8M COGS impact', 'Load shedding Stage 4+ — 30% output reduction', 'Shoprite payment dispute — R601K overdue']),
-    JSON.stringify(['Woolworths increasing order volume +15% for NaturaGlow range', 'Takealot marketplace expansion opportunity', 'New Clicks listing approved for 3 SKUs']),
-    JSON.stringify([{ kpi: 'Revenue', movement: '+2.3%', period: 'MTD' }, { kpi: 'Gross Margin', movement: '-1.8%', period: '7d' }, { kpi: 'Cash Position', movement: '-R1.2M', period: 'WoW' }, { kpi: 'OTIF', movement: '-4.5%', period: '7d' }]),
-    JSON.stringify(['Approve alternative chemical supplier (R2.1M contract)', 'Decide on additional generator capacity (R450K capex)', 'Review Shoprite disputed line items'])
-  ).run();
-
   // ── Process Metrics ──
   const metrics = [
     { id: 'pm-protea-1', name: 'Order-to-Cash Cycle', value: 5.8, unit: 'days', status: 'green', tg: 7, ta: 10, tr: 14, trend: '[6.2,6.0,5.9,5.8,5.7,5.8]', source: 'SAP S/4HANA' },
@@ -434,8 +409,6 @@ export async function seedSampleCompany(db: D1Database) {
   ];
 
   for (const m of metrics) {
-    await db.prepare('INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(m.id, 'protea', m.name, m.value, m.unit, m.status, m.tg, m.ta, m.tr, m.trend, m.source).run();
   }
 
   // ── Anomalies ──
@@ -446,8 +419,6 @@ export async function seedSampleCompany(db: D1Database) {
   ];
 
   for (const a of anomalies) {
-    await db.prepare('INSERT INTO anomalies (id, tenant_id, metric, severity, expected_value, actual_value, deviation, hypothesis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(a.id, 'protea', a.metric, a.severity, a.expected, a.actual, a.deviation, a.hypothesis).run();
   }
 
   // ── Catalyst Clusters ──
@@ -532,31 +503,6 @@ export async function seedSampleCompany(db: D1Database) {
   }
 
   // ── Process Flows ──
-  await db.prepare('INSERT INTO process_flows (id, tenant_id, name, steps, variants, avg_duration, conformance_rate, bottlenecks) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(
-    'pf-protea-1', 'protea', 'Order-to-Cash',
-    JSON.stringify([
-      { id: 's1', name: 'Order Entry', avgDuration: 0.3, throughput: 150, status: 'healthy' },
-      { id: 's2', name: 'Credit Check', avgDuration: 0.2, throughput: 148, status: 'healthy' },
-      { id: 's3', name: 'Production', avgDuration: 2.5, throughput: 120, status: 'degraded' },
-      { id: 's4', name: 'Quality Check', avgDuration: 0.5, throughput: 118, status: 'healthy' },
-      { id: 's5', name: 'Shipping', avgDuration: 1.8, throughput: 110, status: 'degraded' },
-      { id: 's6', name: 'Invoicing', avgDuration: 0.3, throughput: 108, status: 'healthy' },
-      { id: 's7', name: 'Collection', avgDuration: 0.2, throughput: 105, status: 'healthy' },
-    ]), 10, 5.8, 79, '["Production — load shedding causing delays","Shipping — OTIF dropping below target"]'
-  ).run();
-
-  await db.prepare('INSERT INTO process_flows (id, tenant_id, name, steps, variants, avg_duration, conformance_rate, bottlenecks) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(
-    'pf-protea-2', 'protea', 'Procure-to-Pay',
-    JSON.stringify([
-      { id: 's1', name: 'Requisition', avgDuration: 0.5, throughput: 80, status: 'healthy' },
-      { id: 's2', name: 'Approval', avgDuration: 1.0, throughput: 75, status: 'healthy' },
-      { id: 's3', name: 'PO Creation', avgDuration: 0.3, throughput: 73, status: 'healthy' },
-      { id: 's4', name: 'Goods Receipt', avgDuration: 4.0, throughput: 60, status: 'bottleneck' },
-      { id: 's5', name: 'Invoice Match', avgDuration: 1.2, throughput: 58, status: 'healthy' },
-      { id: 's6', name: 'Payment', avgDuration: 1.5, throughput: 56, status: 'healthy' },
-    ]), 8, 8.5, 72, '["Goods Receipt — Nampak delays + import clearance","Invoice Match — 3-way match exceptions at 22%"]'
-  ).run();
-
   // ── Correlation Events ──
   const correlations = [
     { id: 'ce-protea-1', source_sys: 'Eskom', source_evt: 'Load shedding Stage 4+', target_sys: 'SAP PP', target_impact: 'Production output -30%', confidence: 0.97, lag: 0 },
@@ -566,43 +512,9 @@ export async function seedSampleCompany(db: D1Database) {
   ];
 
   for (const c of correlations) {
-    await db.prepare('INSERT INTO correlation_events (id, tenant_id, source_system, source_event, target_system, target_impact, confidence, lag_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(c.id, 'protea', c.source_sys, c.source_evt, c.target_sys, c.target_impact, c.confidence, c.lag).run();
   }
 
   // ── Scenarios ──
-  await db.prepare('INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(
-    'sc-protea-1', 'protea',
-    'Switch to Alternative Chemical Supplier',
-    'Replace Sasol with AECI for primary chemical feedstock',
-    'What if we switch from Sasol to AECI for our primary chemical supply?',
-    '["procurement_cost","lead_time","quality_risk","supply_continuity"]',
-    JSON.stringify({
-      cost_change: '+R1.2M/year (+8%)',
-      lead_time_impact: '+3 days avg',
-      quality_risk: 'Medium — AECI product requires reformulation testing',
-      supply_continuity: 'Improved — reduces single-supplier dependency by 35%',
-      recommendation: 'Dual-source: 60% Sasol, 40% AECI. Run 90-day pilot with AECI on Industrial range first.',
-    }),
-    'completed'
-  ).run();
-
-  await db.prepare('INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(
-    'sc-protea-2', 'protea',
-    'Invest in Solar + Battery Backup',
-    'Install 500kW solar with 1MWh battery at Johannesburg Plant 1',
-    'What is the ROI of installing solar and battery backup at Plant 1?',
-    '["capex","opex_savings","production_uptime","payback_period"]',
-    JSON.stringify({
-      capex: 'R8.5M (solar panels + battery + installation)',
-      annual_savings: 'R2.4M (electricity + reduced generator diesel)',
-      uptime_improvement: '+18% during load shedding periods',
-      payback_period: '3.5 years',
-      recommendation: 'Proceed — NPV positive at R4.2M over 10 years. Apply for Section 12B tax incentive.',
-    }),
-    'completed'
-  ).run();
-
   // ── Catalyst Actions (Issues for manual processing — with exceptions) ──
   const catalystActions = [
     {

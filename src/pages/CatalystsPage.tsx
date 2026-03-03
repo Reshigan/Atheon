@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, ERPConnection } from "@/lib/api";
+import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, ERPConnection, ExecutionLogEntry } from "@/lib/api";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
- Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2, AlertCircle
+ Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2, AlertCircle,
+ ScrollText, ArrowUpRight, MessageSquare
 } from "lucide-react";
 import type { AutonomyTier } from "@/types";
 import { useAppStore } from "@/stores/appStore";
@@ -47,6 +48,17 @@ export function CatalystsPage() {
  const [governance, setGovernance] = useState<GovernanceData | null>(null);
  const [loading, setLoading] = useState(true);
  const [updatingAction, setUpdatingAction] = useState<string | null>(null);
+
+ // Execution Logs state
+ const [executionLogs, setExecutionLogs] = useState<ExecutionLogEntry[]>([]);
+ const [logsLoading, setLogsLoading] = useState(false);
+ const [selectedLogAction, setSelectedLogAction] = useState<string | null>(null);
+
+ // Exception Management state
+ const [resolveNotes, setResolveNotes] = useState('');
+ const [activeNotesAction, setActiveNotesAction] = useState<string | null>(null);
+ const [resolvingAction, setResolvingAction] = useState<string | null>(null);
+ const [escalatingAction, setEscalatingAction] = useState<string | null>(null);
 
  // Manual Execution state
  const [showManualExec, setShowManualExec] = useState(false);
@@ -325,11 +337,59 @@ export function CatalystsPage() {
  setTogglingSubCatalyst(null);
  };
 
- const exceptionCount = actions.filter(a => a.status === 'exception').length;
+ const exceptionCount = actions.filter(a => a.status === 'exception' || a.status === 'escalated').length;
+
+ // Load execution logs when tab changes or action selected
+ const loadExecutionLogs = async (actionId?: string) => {
+ setLogsLoading(true);
+ try {
+ const result = actionId
+ ? await api.catalysts.executionLogsForAction(actionId)
+ : await api.catalysts.executionLogs();
+ setExecutionLogs(result.logs);
+ } catch { setExecutionLogs([]); }
+ setLogsLoading(false);
+ };
+
+ const handleResolveException = async (actionId: string) => {
+ setResolvingAction(actionId);
+ try {
+ await api.catalysts.resolveException(actionId, (activeNotesAction === actionId ? resolveNotes : '') || undefined);
+ const ind = industry !== 'general' ? industry : undefined;
+ const a = await api.catalysts.actions(undefined, undefined, ind);
+ setActions(a.actions);
+ setResolveNotes('');
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Failed to resolve exception');
+ }
+ setResolvingAction(null);
+ };
+
+ const handleEscalateException = async (actionId: string) => {
+ setEscalatingAction(actionId);
+ try {
+ await api.catalysts.escalateException(actionId);
+ const ind = industry !== 'general' ? industry : undefined;
+ const a = await api.catalysts.actions(undefined, undefined, ind);
+ setActions(a.actions);
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Failed to escalate exception');
+ }
+ setEscalatingAction(null);
+ };
+
+ // Auto-load execution logs when tab is activated
+ useEffect(() => {
+ if (activeTab === 'execution-logs') {
+ loadExecutionLogs(selectedLogAction || undefined);
+ }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [activeTab]);
 
  const tabs = [
  { id: 'clusters', label: 'Catalyst Clusters', icon: <Bot size={14} /> },
  { id: 'actions', label: 'Action Log', icon: <Zap size={14} />, count: actions.length },
+ { id: 'execution-logs', label: 'Execution Logs', icon: <ScrollText size={14} /> },
  { id: 'exceptions', label: 'Exceptions', icon: <AlertTriangle size={14} />, count: exceptionCount },
  ...(isAdmin ? [{ id: 'governance', label: 'Governance', icon: <Shield size={14} /> }] : []),
  ];
@@ -711,13 +771,170 @@ export function CatalystsPage() {
  </TabPanel>
  )}
 
+ {/* Execution Logs Tab */}
+ {activeTab === 'execution-logs' && (
+ <TabPanel>
+ <div className="space-y-4">
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
+ <ScrollText size={18} className="text-accent" /> Execution Logs
+ </h3>
+ <div className="flex items-center gap-2">
+ <select
+ className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
+ value={selectedLogAction || ''}
+ onChange={(e) => {
+ const val = e.target.value || null;
+ setSelectedLogAction(val);
+ loadExecutionLogs(val || undefined);
+ }}
+ >
+ <option value="">All recent logs</option>
+ {actions.map(a => (
+ <option key={a.id} value={a.id}>{a.catalystName} — {a.action.slice(0, 40)}</option>
+ ))}
+ </select>
+ <Button variant="secondary" size="sm" onClick={() => loadExecutionLogs(selectedLogAction || undefined)}>
+ <Loader2 size={12} className={logsLoading ? 'animate-spin' : ''} /> Refresh
+ </Button>
+ </div>
+ </div>
+
+ {logsLoading && (
+ <div className="flex items-center justify-center py-8">
+ <Loader2 className="w-6 h-6 text-accent animate-spin" />
+ </div>
+ )}
+
+ {!logsLoading && executionLogs.length === 0 && (
+ <div className="text-center py-12 text-gray-500">
+ <ScrollText size={32} className="mx-auto mb-2 opacity-50" />
+ <p className="text-sm">No execution logs yet</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst to generate step-by-step execution logs.</p>
+ </div>
+ )}
+
+ {!logsLoading && executionLogs.length > 0 && (
+ <div className="relative">
+ {/* Timeline line */}
+ <div className="absolute left-[19px] top-6 bottom-2 w-0.5 bg-[var(--border-card)]" />
+
+ <div className="space-y-1">
+ {executionLogs.map((log) => (
+ <div key={log.id} className="relative flex items-start gap-3 pl-1">
+ {/* Timeline dot */}
+ <div className={`relative z-10 w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
+ log.status === 'completed' ? 'bg-emerald-500/20' :
+ log.status === 'running' ? 'bg-accent/20' :
+ log.status === 'failed' ? 'bg-red-500/20' : 'bg-gray-500/20'
+ }`}>
+ {log.status === 'completed' ? <CheckCircle size={10} className="text-emerald-400" /> :
+ log.status === 'running' ? <Loader2 size={10} className="text-accent animate-spin" /> :
+ log.status === 'failed' ? <XCircle size={10} className="text-red-400" /> :
+ <Clock size={10} className="text-gray-400" />}
+ </div>
+
+ <div className="flex-1 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] min-w-0">
+ <div className="flex items-center justify-between gap-2">
+ <div className="flex items-center gap-2 min-w-0">
+ <Badge variant={log.status === 'completed' ? 'success' : log.status === 'running' ? 'info' : log.status === 'failed' ? 'danger' : 'warning'} size="sm">
+ Step {log.stepNumber}
+ </Badge>
+ <span className="text-sm font-medium t-primary truncate">{log.stepName}</span>
+ </div>
+ {log.durationMs !== null && log.durationMs > 0 && (
+ <span className="text-[10px] text-gray-400 flex-shrink-0">{log.durationMs}ms</span>
+ )}
+ </div>
+ <p className="text-xs t-muted mt-1">{log.detail}</p>
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+ </div>
+ </TabPanel>
+ )}
+
  {activeTab === 'exceptions' && (
  <TabPanel>
- <div className="space-y-3">
- {actions.filter(a => a.status === 'exception').map((action) => renderActionCard(action, true))}
+ <div className="space-y-4">
+ <div className="flex items-center justify-between">
+ <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
+ <AlertTriangle size={18} className="text-red-400" /> Exception Management
+ </h3>
+ <p className="text-xs t-muted">{exceptionCount} exception{exceptionCount !== 1 ? 's' : ''} requiring review</p>
+ </div>
+
  {exceptionCount === 0 && (
- <div className="text-center py-12 text-gray-500"><CheckCircle size={32} className="mx-auto mb-2 text-emerald-500 opacity-50" /><p className="text-sm">No exceptions — all clear</p></div>
+ <div className="text-center py-12 text-gray-500">
+ <CheckCircle size={32} className="mx-auto mb-2 text-emerald-500 opacity-50" />
+ <p className="text-sm">No exceptions — all clear</p>
+ <p className="text-xs t-muted mt-1">All catalyst actions are running normally.</p>
+ </div>
  )}
+
+ {actions.filter(a => a.status === 'exception' || a.status === 'escalated').map((action) => {
+ const outputData = action.outputData as Record<string, string> | undefined;
+ return (
+ <Card key={action.id} className="ring-1 ring-red-500/30 bg-red-500/[0.02]">
+ <div className="flex items-start justify-between">
+ <div className="flex items-start gap-3">
+ <AlertTriangle size={16} className="text-red-400 mt-0.5" />
+ <div>
+ <h3 className="text-sm font-semibold t-primary">{action.action}</h3>
+ <p className="text-xs t-secondary mt-0.5">{action.catalystName}</p>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ <Badge variant={action.status === 'escalated' ? 'warning' : 'danger'}>{action.status}</Badge>
+ <span className="text-xs t-secondary">{new Date(action.createdAt).toLocaleDateString()}</span>
+ </div>
+ </div>
+
+ {outputData && (
+ <div className="mt-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+ {outputData.exception_type && (
+ <Badge variant="danger" size="sm" className="mb-2">{outputData.exception_type.replace(/_/g, ' ')}</Badge>
+ )}
+ <p className="text-xs text-red-500/80">{outputData.exception_detail || outputData.detail || 'Exception occurred during catalyst execution'}</p>
+ {outputData.suggested_action && (
+ <div className="mt-2 p-2 rounded bg-amber-500/[0.08] border border-accent/20">
+ <p className="text-xs text-amber-700"><strong>Suggested:</strong> {outputData.suggested_action}</p>
+ </div>
+ )}
+ </div>
+ )}
+
+ {/* Resolution Actions */}
+ {isAdmin && (action.status === 'exception' || action.status === 'escalated') && (
+ <div className="mt-3 space-y-2">
+ <div className="flex items-center gap-2">
+ <input
+ className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
+ placeholder="Resolution notes (optional)..."
+ value={activeNotesAction === action.id ? resolveNotes : ''}
+ onChange={(e) => { setActiveNotesAction(action.id); setResolveNotes(e.target.value); }}
+ onClick={(e) => e.stopPropagation()}
+ />
+ </div>
+ <div className="flex gap-2">
+ <Button variant="success" size="sm" onClick={(e) => { e.stopPropagation(); handleResolveException(action.id); }} disabled={resolvingAction === action.id}>
+ {resolvingAction === action.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Resolve
+ </Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); handleEscalateException(action.id); }} disabled={escalatingAction === action.id}>
+ {escalatingAction === action.id ? <Loader2 size={12} className="animate-spin" /> : <ArrowUpRight size={12} />} Escalate
+ </Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); handleApprove(action.id); }} disabled={updatingAction === action.id}>
+ <MessageSquare size={12} /> Override & Approve
+ </Button>
+ </div>
+ </div>
+ )}
+ </Card>
+ );
+ })}
  </div>
  </TabPanel>
  )}

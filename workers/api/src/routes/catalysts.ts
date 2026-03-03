@@ -7,35 +7,57 @@ import { INDUSTRY_TEMPLATES, getTemplateForIndustry } from '../services/catalyst
 const catalysts = new Hono<AppBindings>();
 
 /**
+ * Write an execution log entry.
+ */
+async function writeLog(db: D1Database, tenantId: string, actionId: string, stepNumber: number, stepName: string, status: string, detail: string, durationMs?: number): Promise<void> {
+  try {
+    await db.prepare(
+      'INSERT INTO execution_logs (id, tenant_id, action_id, step_number, step_name, status, detail, duration_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(crypto.randomUUID(), tenantId, actionId, stepNumber, stepName, status, detail, durationMs ?? null).run();
+  } catch { /* execution_logs table may not exist yet */ }
+}
+
+/**
  * Generate Apex/Pulse insight data for a tenant after catalyst execution.
  * Creates health scores, risk alerts, executive briefings, process metrics, and anomalies.
+ * Now emits step-by-step execution logs for visibility.
  */
-async function generateInsightsForTenant(db: D1Database, tenantId: string, catalystName: string, domain: string): Promise<void> {
+async function generateInsightsForTenant(db: D1Database, tenantId: string, catalystName: string, domain: string, actionId?: string): Promise<void> {
   const now = new Date().toISOString();
-  const dimNames = ['financial', 'operational', 'compliance', 'strategic', 'technology'];
+  const logId = actionId || 'system';
+  let step = 1;
 
-  // Build dimensions JSON object matching health_scores schema: { dimension: { score, trend, delta } }
+  // Step 1: Initialisation
+  const t0 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Initialisation', 'completed', `Catalyst "${catalystName}" execution started for ${domain} domain`, Date.now() - t0);
+  step++;
+
+  // Step 2: Health Score Calculation
+  const t1 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Health Score Calculation', 'running', 'Computing dimensional health scores...', 0);
+  const dimNames = ['financial', 'operational', 'compliance', 'strategic', 'technology'];
   const dimensionsObj: Record<string, { score: number; trend: string; delta: number }> = {};
   let totalScore = 0;
   for (const dim of dimNames) {
-    const score = Math.floor(60 + Math.random() * 35); // 60-95
+    const score = Math.floor(60 + Math.random() * 35);
     const delta = Math.round((Math.random() * 10 - 3) * 10) / 10;
     const trend = delta > 0.5 ? 'improving' : delta < -0.5 ? 'declining' : 'stable';
     dimensionsObj[dim] = { score, trend, delta };
     totalScore += score;
   }
   const overallScore = Math.round(totalScore / dimNames.length);
-
-  // Schema: health_scores (id, tenant_id, overall_score REAL, dimensions TEXT, calculated_at TEXT)
   try {
-    // Delete existing then insert fresh
     await db.prepare('DELETE FROM health_scores WHERE tenant_id = ?').bind(tenantId).run();
     await db.prepare(
       'INSERT INTO health_scores (id, tenant_id, overall_score, dimensions, calculated_at) VALUES (?, ?, ?, ?, ?)'
     ).bind(crypto.randomUUID(), tenantId, overallScore, JSON.stringify(dimensionsObj), now).run();
   } catch { /* table may not exist */ }
+  await writeLog(db, tenantId, logId, step, 'Health Score Calculation', 'completed', `Overall score: ${overallScore} across ${dimNames.length} dimensions`, Date.now() - t1);
+  step++;
 
-  // Schema: risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, impact_unit, recommended_actions, status, detected_at)
+  // Step 3: Risk Alert Generation
+  const t2 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'running', 'Scanning for risk indicators...', 0);
   const riskTemplates = [
     { title: `${domain} compliance gap detected`, desc: `A compliance gap was identified in the ${domain} domain during catalyst analysis.`, severity: 'high', probability: 0.7, impact: 850000, category: 'compliance' },
     { title: `Revenue forecasting anomaly in ${domain}`, desc: `Revenue projections in ${domain} show unexpected deviation from historical patterns.`, severity: 'medium', probability: 0.5, impact: 420000, category: 'financial' },
@@ -49,8 +71,12 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
       ).bind(crypto.randomUUID(), tenantId, risk.title, risk.desc, risk.severity, risk.category, risk.probability, risk.impact, 'ZAR', JSON.stringify(['Review findings', 'Assign remediation owner']), 'active', now).run();
     } catch { /* skip */ }
   }
+  await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'completed', `${riskTemplates.length} risk alerts generated`, Date.now() - t2);
+  step++;
 
-  // Schema: executive_briefings (id, tenant_id, title, summary, risks, opportunities, kpi_movements, decisions_needed, generated_at)
+  // Step 4: Executive Briefing Generation
+  const t3 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Executive Briefing', 'running', 'Generating executive briefing...', 0);
   try {
     await db.prepare(
       'INSERT INTO executive_briefings (id, tenant_id, title, summary, risks, opportunities, kpi_movements, decisions_needed, generated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -65,8 +91,12 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
       now
     ).run();
   } catch { /* skip */ }
+  await writeLog(db, tenantId, logId, step, 'Executive Briefing', 'completed', 'Executive briefing generated successfully', Date.now() - t3);
+  step++;
 
-  // Schema: process_metrics (id, tenant_id, name, value, unit, status, trend, source_system, measured_at)
+  // Step 5: Process Metrics Capture
+  const t4 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Process Metrics', 'running', 'Capturing process metrics...', 0);
   const processMetrics = [
     { name: `${domain} Throughput`, value: Math.floor(80 + Math.random() * 20), unit: 'tps', status: 'green' },
     { name: `${domain} Latency`, value: Math.floor(50 + Math.random() * 150), unit: 'ms', status: 'amber' },
@@ -79,8 +109,12 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
       ).bind(crypto.randomUUID(), tenantId, metric.name, metric.value, metric.unit, metric.status, JSON.stringify([metric.value * 0.9, metric.value * 0.95, metric.value]), catalystName, now).run();
     } catch { /* skip */ }
   }
+  await writeLog(db, tenantId, logId, step, 'Process Metrics', 'completed', `${processMetrics.length} metrics captured`, Date.now() - t4);
+  step++;
 
-  // Schema: anomalies (id, tenant_id, metric, severity, expected_value, actual_value, deviation, hypothesis, status, detected_at)
+  // Step 6: Anomaly Detection
+  const t5 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'running', 'Running anomaly detection...', 0);
   try {
     const expected = 100;
     const actual = Math.round(expected * (1 + (Math.random() * 0.4 - 0.1)));
@@ -95,6 +129,11 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
       'open', now
     ).run();
   } catch { /* skip */ }
+  await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', 'Anomaly scan complete', Date.now() - t5);
+  step++;
+
+  // Step 7: Finalisation
+  await writeLog(db, tenantId, logId, step, 'Finalisation', 'completed', `Catalyst execution complete. Total duration: ${Date.now() - t0}ms`, Date.now() - t0);
 }
 
 // Safe JSON parse that handles plain text strings
@@ -725,10 +764,10 @@ catalysts.post('/manual-execute', async (c) => {
     }
   }
 
-  // Generate Apex/Pulse insights from catalyst execution
+  // Generate Apex/Pulse insights from catalyst execution (pass actionId for execution logs)
   const clusterDomain = (cluster.domain as string) || 'finance';
   try {
-    await generateInsightsForTenant(c.env.DB, tenantId, catalystName, clusterDomain);
+    await generateInsightsForTenant(c.env.DB, tenantId, catalystName, clusterDomain, actionId);
   } catch {
     // Insight generation is non-critical — don't block the response
   }
@@ -749,6 +788,139 @@ catalysts.post('/manual-execute', async (c) => {
     endDatetime,
     fileName,
   }, 201);
+});
+
+// GET /api/catalysts/execution-logs - Get execution logs for an action or all recent logs
+catalysts.get('/execution-logs', async (c) => {
+  const tenantId = getTenantId(c);
+  const actionId = c.req.query('action_id');
+  const limit = parseInt(c.req.query('limit') || '100');
+
+  let query: string;
+  const binds: unknown[] = [tenantId];
+
+  if (actionId) {
+    query = 'SELECT * FROM execution_logs WHERE tenant_id = ? AND action_id = ? ORDER BY step_number ASC LIMIT ?';
+    binds.push(actionId, limit);
+  } else {
+    query = 'SELECT * FROM execution_logs WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?';
+    binds.push(limit);
+  }
+
+  try {
+    const results = await c.env.DB.prepare(query).bind(...binds).all();
+    const logs = results.results.map((r: Record<string, unknown>) => ({
+      id: r.id,
+      actionId: r.action_id,
+      stepNumber: r.step_number,
+      stepName: r.step_name,
+      status: r.status,
+      detail: r.detail,
+      durationMs: r.duration_ms,
+      createdAt: r.created_at,
+    }));
+    return c.json({ logs, total: logs.length });
+  } catch {
+    return c.json({ logs: [], total: 0 });
+  }
+});
+
+// GET /api/catalysts/execution-logs/:actionId - Get logs for a specific action
+catalysts.get('/execution-logs/:actionId', async (c) => {
+  const tenantId = getTenantId(c);
+  const actionId = c.req.param('actionId');
+
+  try {
+    const results = await c.env.DB.prepare(
+      'SELECT * FROM execution_logs WHERE tenant_id = ? AND action_id = ? ORDER BY step_number ASC'
+    ).bind(tenantId, actionId).all();
+
+    const logs = results.results.map((r: Record<string, unknown>) => ({
+      id: r.id,
+      actionId: r.action_id,
+      stepNumber: r.step_number,
+      stepName: r.step_name,
+      status: r.status,
+      detail: r.detail,
+      durationMs: r.duration_ms,
+      createdAt: r.created_at,
+    }));
+    return c.json({ logs, total: logs.length });
+  } catch {
+    return c.json({ logs: [], total: 0 });
+  }
+});
+
+// PUT /api/catalysts/actions/:id/resolve - Resolve an exception with notes
+catalysts.put('/actions/:id/resolve', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{ resolution_notes?: string; resolved_by?: string }>();
+  const tenantId = getTenantId(c);
+
+  const action = await c.env.DB.prepare('SELECT * FROM catalyst_actions WHERE id = ? AND tenant_id = ?').bind(id, tenantId).first();
+  if (!action) return c.json({ error: 'Action not found' }, 404);
+
+  await c.env.DB.prepare(
+    'UPDATE catalyst_actions SET status = ?, output_data = ?, completed_at = datetime(\'now\') WHERE id = ?'
+  ).bind(
+    'resolved',
+    JSON.stringify({
+      ...(safeJsonParse(action.output_data as string) as Record<string, unknown> || {}),
+      resolution_notes: body.resolution_notes || 'Resolved by admin',
+      resolved_by: body.resolved_by || 'admin',
+      resolved_at: new Date().toISOString(),
+    }),
+    id
+  ).run();
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), tenantId, 'catalyst.exception.resolved', 'catalysts', id,
+    JSON.stringify({ resolution_notes: body.resolution_notes, resolved_by: body.resolved_by }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({ success: true, status: 'resolved' });
+});
+
+// PUT /api/catalysts/actions/:id/escalate - Escalate an exception
+catalysts.put('/actions/:id/escalate', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{ escalation_notes?: string; escalated_to?: string }>();
+  const tenantId = getTenantId(c);
+
+  const action = await c.env.DB.prepare('SELECT * FROM catalyst_actions WHERE id = ? AND tenant_id = ?').bind(id, tenantId).first();
+  if (!action) return c.json({ error: 'Action not found' }, 404);
+
+  const currentLevel = (action.escalation_level as string) || null;
+  const nextLevel = !currentLevel ? 'L1' : currentLevel === 'L1' ? 'L2' : currentLevel === 'L2' ? 'L3' : 'L3';
+
+  await c.env.DB.prepare(
+    'UPDATE catalyst_actions SET status = ?, escalation_level = ?, output_data = ? WHERE id = ?'
+  ).bind(
+    'escalated',
+    nextLevel,
+    JSON.stringify({
+      ...(safeJsonParse(action.output_data as string) as Record<string, unknown> || {}),
+      escalation_notes: body.escalation_notes || 'Escalated by admin',
+      escalated_to: body.escalated_to || nextLevel,
+      escalated_at: new Date().toISOString(),
+    }),
+    id
+  ).run();
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), tenantId, 'catalyst.exception.escalated', 'catalysts', id,
+    JSON.stringify({ escalation_level: nextLevel, escalated_to: body.escalated_to, notes: body.escalation_notes }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({ success: true, status: 'escalated', escalationLevel: nextLevel });
 });
 
 // GET /api/catalysts/execution-stats - Execution engine stats
