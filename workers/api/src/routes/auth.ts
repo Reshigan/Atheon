@@ -746,4 +746,38 @@ auth.post('/sso/callback', async (c) => {
   });
 });
 
+// POST /api/auth/admin-reset - Reset any user's password (gated behind JWT_SECRET header)
+auth.post('/admin-reset', async (c) => {
+  const secret = c.req.header('X-Admin-Secret');
+  if (!secret || secret !== c.env.JWT_SECRET) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const { data: body, errors } = await getValidatedJsonBody<{ email: string; new_password: string }>(c, [
+    { field: 'email', type: 'email', required: true },
+    { field: 'new_password', type: 'string', required: true, minLength: 8 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  const user = await c.env.DB.prepare('SELECT id, tenant_id, email, name, role FROM users WHERE email = ?').bind(body.email).first();
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+
+  const newHash = await hashPassword(body.new_password);
+  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, user.id).run();
+
+  // Clear any login lockout
+  await c.env.CACHE.delete(`login_attempts:${body.email}`);
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), user.tenant_id, user.id, 'admin_password_reset', 'auth', 'user', JSON.stringify({ email: body.email }), 'success').run();
+
+  return c.json({ success: true, email: user.email, name: user.name, role: user.role });
+});
+
 export default auth;
