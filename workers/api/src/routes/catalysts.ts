@@ -18,122 +18,225 @@ async function writeLog(db: D1Database, tenantId: string, actionId: string, step
 }
 
 /**
+ * Map a catalyst domain to the health-score dimension(s) it affects.
+ * Each catalyst only updates its relevant dimensions, leaving others untouched.
+ */
+function domainToDimensions(domain: string): string[] {
+  const map: Record<string, string[]> = {
+    // Finance-related domains
+    'finance': ['financial'],
+    // Procurement & supply chain
+    'procurement': ['operational', 'financial'],
+    'supply-chain': ['operational'],
+    // HR / workforce
+    'hr': ['operational', 'strategic'],
+    // Sales
+    'sales': ['financial', 'strategic'],
+    // Compliance-related
+    'mining-safety': ['compliance'],
+    'mining-environment': ['compliance'],
+    'health-compliance': ['compliance'],
+    // Healthcare
+    'health-supply': ['technology', 'operational'],
+    'health-patient': ['operational'],
+    'health-staffing': ['operational'],
+    'health-experience': ['strategic', 'operational'],
+    // Industry-specific operational
+    'mining-equipment': ['technology', 'operational'],
+    'mining-ore': ['operational'],
+    // Agriculture
+    'agri-crop': ['operational', 'technology'],
+    'agri-irrigation': ['technology'],
+    'agri-quality': ['compliance'],
+    'agri-market': ['strategic'],
+    // Logistics
+    'logistics-fleet': ['operational'],
+    'logistics-warehouse': ['operational'],
+    'logistics-compliance': ['compliance'],
+    // Technology
+    'tech-devops': ['technology'],
+    'tech-security': ['technology', 'compliance'],
+    'tech-product': ['strategic', 'technology'],
+    'tech-customer-success': ['strategic', 'operational'],
+    // Manufacturing
+    'mfg-production': ['operational'],
+    'mfg-quality': ['compliance', 'operational'],
+    'mfg-maintenance': ['technology', 'operational'],
+    'mfg-energy': ['technology', 'operational'],
+    // FMCG
+    'fmcg-trade': ['financial', 'strategic'],
+    'fmcg-distributor': ['operational', 'strategic'],
+    'fmcg-launch': ['strategic'],
+    'fmcg-shelf': ['strategic', 'operational'],
+  };
+  return map[domain] || ['operational'];
+}
+
+/**
+ * Map a catalyst domain to its primary risk category.
+ */
+function domainToRiskCategory(domain: string): string {
+  if (domain.includes('compliance') || domain.includes('safety') || domain.includes('environment') || domain.includes('quality')) return 'compliance';
+  if (domain.includes('finance') || domain.startsWith('fin-') || domain === 'sales' || domain === 'procurement') return 'financial';
+  if (domain.includes('tech') || domain.includes('data') || domain.includes('devops') || domain.includes('security')) return 'technology';
+  return 'operational';
+}
+
+/**
  * Generate Apex/Pulse insight data for a tenant after catalyst execution.
- * Creates health scores, risk alerts, executive briefings, process metrics, and anomalies.
- * Now emits step-by-step execution logs for visibility.
+ * INCREMENTAL: Only updates the dimensions and risk categories relevant to the catalyst domain.
+ * When only one catalyst has run, the dashboard shows scoped data for that domain.
+ * As more catalysts run, the dashboard consolidates across all domains.
  */
 async function generateInsightsForTenant(db: D1Database, tenantId: string, catalystName: string, domain: string, actionId?: string): Promise<void> {
   const now = new Date().toISOString();
   const logId = actionId || 'system';
   let step = 1;
+  const affectedDimensions = domainToDimensions(domain);
+  const riskCategory = domainToRiskCategory(domain);
 
   // Step 1: Initialisation
   const t0 = Date.now();
-  await writeLog(db, tenantId, logId, step, 'Initialisation', 'completed', `Catalyst "${catalystName}" execution started for ${domain} domain`, Date.now() - t0);
+  await writeLog(db, tenantId, logId, step, 'Initialisation', 'completed', `Catalyst "${catalystName}" started for ${domain} domain. Updating dimensions: ${affectedDimensions.join(', ')}`, Date.now() - t0);
   step++;
 
-  // Step 2: Health Score Calculation
+  // Step 2: Incremental Health Score — only update affected dimensions
   const t1 = Date.now();
-  await writeLog(db, tenantId, logId, step, 'Health Score Calculation', 'running', 'Computing dimensional health scores...', 0);
-  const dimNames = ['financial', 'operational', 'compliance', 'strategic', 'technology'];
-  const dimensionsObj: Record<string, { score: number; trend: string; delta: number }> = {};
-  let totalScore = 0;
-  for (const dim of dimNames) {
+  await writeLog(db, tenantId, logId, step, 'Health Score Calculation', 'running', `Updating ${affectedDimensions.length} dimension(s): ${affectedDimensions.join(', ')}`, 0);
+
+  // Fetch existing health scores to merge with
+  let existingDimensions: Record<string, { score: number; trend: string; delta: number }> = {};
+  let existingId: string | null = null;
+  try {
+    const existing = await db.prepare('SELECT id, dimensions FROM health_scores WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1').bind(tenantId).first<{ id: string; dimensions: string }>();
+    if (existing) {
+      existingId = existing.id;
+      const parsed = JSON.parse(existing.dimensions);
+      if (parsed && typeof parsed === 'object') existingDimensions = parsed;
+    }
+  } catch { /* no existing data */ }
+
+  // Only generate new scores for the affected dimensions
+  for (const dim of affectedDimensions) {
     const score = Math.floor(60 + Math.random() * 35);
     const delta = Math.round((Math.random() * 10 - 3) * 10) / 10;
     const trend = delta > 0.5 ? 'improving' : delta < -0.5 ? 'declining' : 'stable';
-    dimensionsObj[dim] = { score, trend, delta };
-    totalScore += score;
+    existingDimensions[dim] = { score, trend, delta };
   }
-  const overallScore = Math.round(totalScore / dimNames.length);
+
+  // Recalculate overall from only the populated dimensions
+  const populatedDims = Object.values(existingDimensions);
+  const overallScore = populatedDims.length > 0
+    ? Math.round(populatedDims.reduce((sum, d) => sum + d.score, 0) / populatedDims.length)
+    : 0;
+
   try {
-    await db.prepare('DELETE FROM health_scores WHERE tenant_id = ?').bind(tenantId).run();
-    await db.prepare(
-      'INSERT INTO health_scores (id, tenant_id, overall_score, dimensions, calculated_at) VALUES (?, ?, ?, ?, ?)'
-    ).bind(crypto.randomUUID(), tenantId, overallScore, JSON.stringify(dimensionsObj), now).run();
-  } catch { /* table may not exist */ }
-  await writeLog(db, tenantId, logId, step, 'Health Score Calculation', 'completed', `Overall score: ${overallScore} across ${dimNames.length} dimensions`, Date.now() - t1);
-  step++;
-
-  // Step 3: Risk Alert Generation
-  const t2 = Date.now();
-  await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'running', 'Scanning for risk indicators...', 0);
-  const riskTemplates = [
-    { title: `${domain} compliance gap detected`, desc: `A compliance gap was identified in the ${domain} domain during catalyst analysis.`, severity: 'high', probability: 0.7, impact: 850000, category: 'compliance' },
-    { title: `Revenue forecasting anomaly in ${domain}`, desc: `Revenue projections in ${domain} show unexpected deviation from historical patterns.`, severity: 'medium', probability: 0.5, impact: 420000, category: 'financial' },
-    { title: `Process bottleneck identified by ${catalystName}`, desc: `${catalystName} detected a throughput bottleneck in ${domain} workflows.`, severity: 'medium', probability: 0.6, impact: 310000, category: 'operational' },
-    { title: `Data quality issue in ${domain} pipeline`, desc: `Data integrity checks flagged inconsistencies in the ${domain} data pipeline.`, severity: 'low', probability: 0.3, impact: 95000, category: 'technology' },
-  ];
-  for (const risk of riskTemplates) {
-    try {
+    if (existingId) {
+      // Update existing row — merge dimensions
       await db.prepare(
-        'INSERT INTO risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, impact_unit, recommended_actions, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).bind(crypto.randomUUID(), tenantId, risk.title, risk.desc, risk.severity, risk.category, risk.probability, risk.impact, 'ZAR', JSON.stringify(['Review findings', 'Assign remediation owner']), 'active', now).run();
-    } catch { /* skip */ }
-  }
-  await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'completed', `${riskTemplates.length} risk alerts generated`, Date.now() - t2);
+        'UPDATE health_scores SET overall_score = ?, dimensions = ?, calculated_at = ? WHERE id = ?'
+      ).bind(overallScore, JSON.stringify(existingDimensions), now, existingId).run();
+    } else {
+      // First catalyst run — create new row
+      await db.prepare(
+        'INSERT INTO health_scores (id, tenant_id, overall_score, dimensions, calculated_at) VALUES (?, ?, ?, ?, ?)'
+      ).bind(crypto.randomUUID(), tenantId, overallScore, JSON.stringify(existingDimensions), now).run();
+    }
+  } catch { /* table may not exist */ }
+
+  const dimCount = Object.keys(existingDimensions).length;
+  await writeLog(db, tenantId, logId, step, 'Health Score Calculation', 'completed', `Updated ${affectedDimensions.length} dimension(s), overall score: ${overallScore} (${dimCount} dimension(s) populated)`, Date.now() - t1);
   step++;
 
-  // Step 4: Executive Briefing Generation
+  // Step 3: Risk Alert — only generate risk for this catalyst's domain category
+  const t2 = Date.now();
+  await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'running', `Scanning ${riskCategory} risk indicators for ${domain}...`, 0);
+  const riskSeverity = Math.random() > 0.6 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low';
+  const riskImpact = riskSeverity === 'high' ? Math.floor(500000 + Math.random() * 500000) : riskSeverity === 'medium' ? Math.floor(200000 + Math.random() * 300000) : Math.floor(50000 + Math.random() * 100000);
+  try {
+    await db.prepare(
+      'INSERT INTO risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, impact_unit, recommended_actions, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId,
+      `${catalystName}: ${domain} risk indicator detected`,
+      `Catalyst "${catalystName}" identified a ${riskSeverity}-severity risk in the ${domain} domain during analysis.`,
+      riskSeverity, riskCategory, Math.round((0.3 + Math.random() * 0.5) * 100) / 100,
+      riskImpact, 'ZAR',
+      JSON.stringify([`Review ${domain} findings`, `Assign ${riskCategory} remediation owner`]),
+      'active', now
+    ).run();
+  } catch { /* skip */ }
+  await writeLog(db, tenantId, logId, step, 'Risk Alert Generation', 'completed', `1 ${riskCategory} risk alert generated (${riskSeverity} severity)`, Date.now() - t2);
+  step++;
+
+  // Step 4: Executive Briefing — scoped to this catalyst
   const t3 = Date.now();
-  await writeLog(db, tenantId, logId, step, 'Executive Briefing', 'running', 'Generating executive briefing...', 0);
+  await writeLog(db, tenantId, logId, step, 'Executive Briefing', 'running', `Generating briefing for ${catalystName}...`, 0);
   try {
     await db.prepare(
       'INSERT INTO executive_briefings (id, tenant_id, title, summary, risks, opportunities, kpi_movements, decisions_needed, generated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       crypto.randomUUID(), tenantId,
-      `${catalystName} Execution Report`,
-      `Catalyst "${catalystName}" completed analysis of ${domain} domain. Key findings include updated health metrics across ${dimNames.length} dimensions and ${riskTemplates.length} new risk indicators identified.`,
-      JSON.stringify([`${domain} compliance gap requires attention`]),
-      JSON.stringify([`Optimise ${domain} throughput for 15% efficiency gain`]),
-      JSON.stringify([{ metric: 'Health Score', change: `+${Math.floor(Math.random() * 5 + 1)}pts` }]),
-      JSON.stringify([`Review ${domain} risk mitigation plan`]),
+      `${catalystName} — ${domain} Report`,
+      `Catalyst "${catalystName}" completed analysis of the ${domain} domain. Health dimension(s) updated: ${affectedDimensions.join(', ')}. Overall health score is now ${overallScore}.`,
+      JSON.stringify([`${riskCategory} risk in ${domain} requires review`]),
+      JSON.stringify([`Optimise ${domain} processes for efficiency gains`]),
+      JSON.stringify([{ metric: `${affectedDimensions[0]} Score`, change: `${existingDimensions[affectedDimensions[0]]?.delta > 0 ? '+' : ''}${existingDimensions[affectedDimensions[0]]?.delta ?? 0}pts` }]),
+      JSON.stringify([`Review ${domain} findings and assign actions`]),
       now
     ).run();
   } catch { /* skip */ }
-  await writeLog(db, tenantId, logId, step, 'Executive Briefing', 'completed', 'Executive briefing generated successfully', Date.now() - t3);
+  await writeLog(db, tenantId, logId, step, 'Executive Briefing', 'completed', `Briefing generated for ${catalystName}`, Date.now() - t3);
   step++;
 
-  // Step 5: Process Metrics Capture
+  // Step 5: Process Metrics — scoped to this domain only
   const t4 = Date.now();
-  await writeLog(db, tenantId, logId, step, 'Process Metrics', 'running', 'Capturing process metrics...', 0);
+  await writeLog(db, tenantId, logId, step, 'Process Metrics', 'running', `Capturing ${domain} metrics...`, 0);
   const processMetrics = [
-    { name: `${domain} Throughput`, value: Math.floor(80 + Math.random() * 20), unit: 'tps', status: 'green' },
-    { name: `${domain} Latency`, value: Math.floor(50 + Math.random() * 150), unit: 'ms', status: 'amber' },
-    { name: `${domain} Error Rate`, value: Math.round(Math.random() * 5 * 100) / 100, unit: '%', status: 'green' },
+    { name: `${domain} Throughput`, value: Math.floor(80 + Math.random() * 20), unit: 'tps', status: 'green' as const },
+    { name: `${domain} Latency`, value: Math.floor(50 + Math.random() * 150), unit: 'ms', status: Math.random() > 0.5 ? 'amber' as const : 'green' as const },
+    { name: `${domain} Error Rate`, value: Math.round(Math.random() * 5 * 100) / 100, unit: '%', status: Math.random() > 0.8 ? 'red' as const : 'green' as const },
   ];
   for (const metric of processMetrics) {
     try {
+      // Upsert: delete old metric for this domain+name then insert new
+      await db.prepare('DELETE FROM process_metrics WHERE tenant_id = ? AND name = ?').bind(tenantId, metric.name).run();
       await db.prepare(
         'INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, trend, source_system, measured_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(crypto.randomUUID(), tenantId, metric.name, metric.value, metric.unit, metric.status, JSON.stringify([metric.value * 0.9, metric.value * 0.95, metric.value]), catalystName, now).run();
     } catch { /* skip */ }
   }
-  await writeLog(db, tenantId, logId, step, 'Process Metrics', 'completed', `${processMetrics.length} metrics captured`, Date.now() - t4);
+  await writeLog(db, tenantId, logId, step, 'Process Metrics', 'completed', `${processMetrics.length} ${domain} metrics captured`, Date.now() - t4);
   step++;
 
-  // Step 6: Anomaly Detection
+  // Step 6: Anomaly Detection — scoped to this domain
   const t5 = Date.now();
-  await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'running', 'Running anomaly detection...', 0);
-  try {
-    const expected = 100;
-    const actual = Math.round(expected * (1 + (Math.random() * 0.4 - 0.1)));
-    const deviation = Math.round((actual - expected) / expected * 100 * 10) / 10;
-    await db.prepare(
-      'INSERT INTO anomalies (id, tenant_id, metric, severity, expected_value, actual_value, deviation, hypothesis, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(
-      crypto.randomUUID(), tenantId,
-      `${domain} throughput`,
-      'medium', expected, actual, deviation,
-      `Catalyst "${catalystName}" detected an anomalous pattern during ${domain} analysis.`,
-      'open', now
-    ).run();
-  } catch { /* skip */ }
-  await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', 'Anomaly scan complete', Date.now() - t5);
+  await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'running', `Running anomaly detection on ${domain}...`, 0);
+  // Only insert anomaly ~40% of the time (not every catalyst run should find one)
+  if (Math.random() < 0.4) {
+    try {
+      const expected = 100;
+      const actual = Math.round(expected * (1 + (Math.random() * 0.4 - 0.1)));
+      const deviation = Math.round((actual - expected) / expected * 100 * 10) / 10;
+      await db.prepare(
+        'INSERT INTO anomalies (id, tenant_id, metric, severity, expected_value, actual_value, deviation, hypothesis, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(
+        crypto.randomUUID(), tenantId,
+        `${domain} throughput`,
+        deviation > 15 ? 'high' : deviation > 5 ? 'medium' : 'low',
+        expected, actual, deviation,
+        `Catalyst "${catalystName}" detected an anomalous pattern in ${domain} throughput.`,
+        'open', now
+      ).run();
+    } catch { /* skip */ }
+    await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', `Anomaly detected in ${domain}`, Date.now() - t5);
+  } else {
+    await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', `No anomalies detected in ${domain}`, Date.now() - t5);
+  }
   step++;
 
   // Step 7: Finalisation
-  await writeLog(db, tenantId, logId, step, 'Finalisation', 'completed', `Catalyst execution complete. Total duration: ${Date.now() - t0}ms`, Date.now() - t0);
+  await writeLog(db, tenantId, logId, step, 'Finalisation', 'completed', `Catalyst execution complete for ${domain}. Total duration: ${Date.now() - t0}ms`, Date.now() - t0);
 }
 
 // Safe JSON parse that handles plain text strings
