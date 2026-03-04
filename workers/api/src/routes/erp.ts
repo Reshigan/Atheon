@@ -365,10 +365,10 @@ erp.post('/sync/:connection_id', async (c) => {
   if (adapter && config.access_token) {
     // Decrypt tokens for use
     const decryptedToken = isEncrypted(config.access_token)
-      ? await decrypt(config.access_token, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET)
+      ? await decrypt(config.access_token, c.env.ENCRYPTION_KEY)
       : config.access_token;
     const decryptedSecret = config.client_secret && isEncrypted(config.client_secret)
-      ? await decrypt(config.client_secret, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET)
+      ? await decrypt(config.client_secret, c.env.ENCRYPTION_KEY)
       : config.client_secret || '';
 
     // Real sync via ERP adapter
@@ -437,10 +437,10 @@ erp.post('/connections/:id/test', async (c) => {
 
   // Decrypt tokens for use
   const decryptedToken = isEncrypted(config.access_token)
-    ? await decrypt(config.access_token, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET)
+    ? await decrypt(config.access_token, c.env.ENCRYPTION_KEY)
     : config.access_token;
   const decryptedSecret = config.client_secret && isEncrypted(config.client_secret)
-    ? await decrypt(config.client_secret, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET)
+    ? await decrypt(config.client_secret, c.env.ENCRYPTION_KEY)
     : config.client_secret || '';
 
   const credentials: ERPCredentials = {
@@ -504,7 +504,7 @@ erp.post('/oauth/authorize', async (c) => {
   const encryptedConfig = {
     ...JSON.parse(conn.config as string || '{}'),
     client_id: body.client_id,
-    client_secret: await encrypt(body.client_secret, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET),
+    client_secret: await encrypt(body.client_secret, c.env.ENCRYPTION_KEY),
     base_url: body.base_url,
     auth_url: body.auth_url,
     token_url: body.token_url,
@@ -545,8 +545,8 @@ erp.post('/oauth/callback', async (c) => {
     // Encrypt tokens before storing
     const encryptedTokenConfig = {
       ...existingConfig,
-      access_token: await encrypt(tokenResponse.access_token, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET),
-      refresh_token: tokenResponse.refresh_token ? await encrypt(tokenResponse.refresh_token, c.env.ENCRYPTION_KEY || c.env.JWT_SECRET) : undefined,
+      access_token: await encrypt(tokenResponse.access_token, c.env.ENCRYPTION_KEY),
+      refresh_token: tokenResponse.refresh_token ? await encrypt(tokenResponse.refresh_token, c.env.ENCRYPTION_KEY) : undefined,
       token_type: tokenResponse.token_type,
       token_expires_at: new Date(Date.now() + tokenResponse.expires_in * 1000).toISOString(),
     };

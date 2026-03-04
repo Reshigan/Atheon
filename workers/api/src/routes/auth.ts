@@ -753,11 +753,20 @@ auth.post('/sso/callback', async (c) => {
   });
 });
 
-// POST /api/auth/admin-reset - Reset any user's password (gated behind JWT_SECRET header)
+// POST /api/auth/admin-reset - Reset any user's password (requires superadmin JWT)
 auth.post('/admin-reset', async (c) => {
-  const secret = c.req.header('X-Admin-Secret');
-  if (!secret || secret !== c.env.JWT_SECRET) {
-    return c.json({ error: 'Not found' }, 404);
+  // H1 fix: Use proper JWT auth instead of raw JWT_SECRET header comparison
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const payload = await verifyToken(authHeader.replace('Bearer ', ''), c.env.JWT_SECRET);
+  if (!payload) {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+  // Only superadmin and support_admin can reset passwords
+  if (payload.role !== 'superadmin' && payload.role !== 'support_admin') {
+    return c.json({ error: 'Forbidden — superadmin or support_admin role required' }, 403);
   }
 
   const { data: body, errors } = await getValidatedJsonBody<{ email: string; new_password: string }>(c, [

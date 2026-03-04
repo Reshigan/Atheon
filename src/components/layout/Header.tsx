@@ -182,6 +182,7 @@ export function Header() {
           onClick={() => setMobileSidebarOpen(true)}
           className="lg:hidden p-1.5 -ml-1 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
           title="Open navigation menu"
+          aria-label="Open navigation menu"
         >
           <Menu size={18} />
         </button>
@@ -272,6 +273,7 @@ export function Header() {
           onClick={() => navigate('/chat')}
           className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
           title="Messages"
+          aria-label="Open chat messages"
         >
           <MessageCircle size={15} />
         </button>
@@ -282,6 +284,7 @@ export function Header() {
             onClick={openNotifications}
             className="relative p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
             title="Notifications"
+            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           >
             <Bell size={15} />
             {unreadCount > 0 && (
@@ -365,6 +368,7 @@ export function Header() {
           onClick={toggleTheme}
           className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
           title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
@@ -373,6 +377,7 @@ export function Header() {
           onClick={() => navigate('/settings')}
           className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
           title="Settings"
+          aria-label="Open settings"
         >
           <Settings size={15} />
         </button>

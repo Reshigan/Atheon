@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { OnboardingModal } from "@/components/common/OnboardingModal";
 import { HelpButton } from "@/components/common/HelpButton";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,7 @@ export function AppLayout() {
         )}
       >
         <div className="p-4 sm:p-5 lg:p-6">
+          <Breadcrumbs />
           <Outlet />
         </div>
       </main>
