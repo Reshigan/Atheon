@@ -310,8 +310,8 @@ for (const prefix of protectedPrefixes) {
 // admin: company admin with full tenant access
 const platformAdminPrefixes = ['tenants'];
 for (const prefix of platformAdminPrefixes) {
-  app.use(`/api/${prefix}/*`, requireRole('superadmin'));
-  app.use(`/api/v1/${prefix}/*`, requireRole('superadmin'));
+  app.use(`/api/${prefix}/*`, requireRole('superadmin', 'support_admin', 'admin'));
+  app.use(`/api/v1/${prefix}/*`, requireRole('superadmin', 'support_admin', 'admin'));
 }
 const platformAdminRoutePrefixes = ['iam', 'controlplane', 'erp', 'audit', 'connectivity'];
 for (const prefix of platformAdminRoutePrefixes) {

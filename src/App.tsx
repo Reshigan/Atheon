@@ -66,7 +66,7 @@ export default function App() {
           <Route path="/connectivity" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ConnectivityPage /></ProtectedRoute>} />
           <Route path="/audit" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><AuditPage /></ProtectedRoute>} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/tenants" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><TenantsPage /></ProtectedRoute>} />
+          <Route path="/tenants" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><TenantsPage /></ProtectedRoute>} />
           <Route path="/iam" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IAMPage /></ProtectedRoute>} />
           <Route path="/control-plane" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
           <Route path="/canonical-api" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><CanonicalApiPage /></ProtectedRoute>} />

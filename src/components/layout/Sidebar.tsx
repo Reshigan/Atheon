@@ -20,8 +20,8 @@ type NavItem = {
 
 // Role hierarchy (level):
 // superadmin (120)    — Full platform access incl. Tenants, IAM, ERP, Connectivity, Audit
-// support_admin (110) — Same as superadmin minus Tenants; system accounts
-// admin (100)         — Company admin: own tenant + IAM, Control Plane, ERP, Connectivity, Audit
+// support_admin (110) — Same as superadmin; system accounts
+// admin (100)         — Company admin: Tenants, IAM, Control Plane, ERP, Connectivity, Audit
 // executive (90)      — C-Suite: Dashboard, Apex, Pulse, Catalysts, Mind, Memory, Chat
 // manager (70)        — Department: Dashboard, Pulse, Catalysts, Mind, Memory, Chat
 // analyst (50)        — Read-only: Dashboard, Pulse, Mind, Chat
@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
   { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'GraphRAG', roles: MANAGER_ROLES },
   { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI', roles: STANDARD_ROLES },
   // Platform — admin + support roles
-  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
+  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management', roles: PLATFORM_ADMIN_ROLES },
   { path: '/iam', label: 'IAM', icon: IconIAM, section: 'platform', sublabel: 'Identity & Access', roles: PLATFORM_ADMIN_ROLES },
   { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management', roles: PLATFORM_ADMIN_ROLES },
   { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, section: 'platform', sublabel: 'Unified API', roles: PLATFORM_ADMIN_ROLES },
