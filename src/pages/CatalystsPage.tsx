@@ -40,7 +40,7 @@ const statusBadgeVariant = (status: string): 'success' | 'warning' | 'danger' | 
 
 export function CatalystsPage() {
  const user = useAppStore((s) => s.user);
- const isAdmin = user?.role === 'admin' || user?.role === 'executive';
+ const isAdmin = user?.role === 'superadmin' || user?.role === 'support_admin' || user?.role === 'admin' || user?.role === 'executive';
  const { activeTab, setActiveTab } = useTabState('clusters');
  const [expandedAction, setExpandedAction] = useState<string | null>(null);
  const [clusters, setClusters] = useState<ClusterItem[]>([]);
