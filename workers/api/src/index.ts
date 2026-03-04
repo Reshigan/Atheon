@@ -209,13 +209,13 @@ app.use('*', async (c, next) => {
       // access Tenants, IAM, Control Plane, etc. in the new RBAC hierarchy.
       try {
         await c.env.DB.prepare(
-          "UPDATE users SET role = 'superadmin' WHERE email = 'admin@vantax.co.za' AND role = 'admin'"
+          "UPDATE users SET role = 'superadmin' WHERE email = 'admin@vantax.co.za' AND role = 'admin' AND tenant_id = 'vantax'"
         ).run();
         await c.env.DB.prepare(
-          "UPDATE users SET role = 'support_admin' WHERE email = 'atheon@vantax.co.za' AND role = 'admin'"
+          "UPDATE users SET role = 'support_admin' WHERE email = 'atheon@vantax.co.za' AND role = 'admin' AND tenant_id = 'vantax'"
         ).run();
         await c.env.DB.prepare(
-          "UPDATE users SET role = 'support_admin' WHERE email = 'essen@vantax.co.za' AND role = 'admin'"
+          "UPDATE users SET role = 'support_admin' WHERE email = 'essen@vantax.co.za' AND role = 'admin' AND tenant_id = 'vantax'"
         ).run();
       } catch { /* users may not exist yet — seed will create them with correct roles */ }
 
