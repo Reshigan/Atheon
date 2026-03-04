@@ -9,7 +9,7 @@ import type { Tenant, IAMUser, CatalystIndustryTemplate, CatalystClusterTemplate
 import {
  Building2, Cloud, Server, GitBranch, Users, Bot, Shield,
  ChevronDown, ChevronUp, CheckCircle, XCircle, Plus, Layers, Loader2, X,
- Zap, ToggleLeft, ToggleRight, Database, Mail, HardDrive, Upload, Settings, Trash2, ArrowLeft
+ Zap, ToggleLeft, ToggleRight, Database, Mail, HardDrive, Upload, Settings, Trash2, ArrowLeft, AlertCircle
 } from "lucide-react";
 import { IconCheck, IconCross } from "@/components/icons/AtheonIcons";
 
@@ -40,6 +40,7 @@ export function TenantsPage() {
  const [showOnboard, setShowOnboard] = useState(false);
  const [onboardForm, setOnboardForm] = useState({ name: '', slug: '', industry: 'general', plan: 'starter', deploymentModel: 'saas', region: 'af-south-1' });
  const [onboarding, setOnboarding] = useState(false);
+ const [actionError, setActionError] = useState<string | null>(null);
 
  // Manage Users modal state
  const [showManageUsers, setShowManageUsers] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export function TenantsPage() {
  setTenants(res.tenants);
  setShowOnboard(false);
  setOnboardForm({ name: '', slug: '', industry: 'general', plan: 'starter', deploymentModel: 'saas', region: 'af-south-1' });
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to create tenant'); }
  setOnboarding(false);
  };
 
@@ -122,7 +123,7 @@ export function TenantsPage() {
  setTenantUsers(res.users);
  setAddUserForm({ email: '', name: '', role: 'analyst' });
  setShowAddUser(false);
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to add user'); }
  setAddingUser(false);
  };
 
@@ -140,7 +141,7 @@ export function TenantsPage() {
  setCatalystForm({ name: '', domain: 'finance', autonomy_tier: 'assisted' });
  const res = await api.tenants.list();
  setTenants(res.tenants);
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to deploy catalyst'); }
  setDeployingCatalyst(false);
  };
 
@@ -151,7 +152,7 @@ export function TenantsPage() {
  try {
  const res = await api.catalysts.templates();
  setTemplates(res.templates);
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to load templates'); }
  setLoadingTemplates(false);
  }, [templates.length]);
 
@@ -198,7 +199,8 @@ export function TenantsPage() {
  // Refresh tenants
  const tenRes = await api.tenants.list();
  setTenants(tenRes.tenants);
- } catch {
+ } catch (err) {
+ setActionError(err instanceof Error ? err.message : 'Failed to deploy template');
  setDeployStep('customize');
  }
  };
@@ -227,7 +229,7 @@ export function TenantsPage() {
  try {
  await api.catalysts.toggleSubCatalyst(clusterId, subName, showDeployCatalyst || undefined);
  if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to toggle sub-catalyst'); }
  setTogglingSubCatalyst(null);
  };
 
@@ -242,7 +244,7 @@ export function TenantsPage() {
  }, showDeployCatalyst || undefined);
  setConfiguringSub(null);
  if (showDeployCatalyst) await loadTenantClusters(showDeployCatalyst);
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to save data source'); }
  setSavingDataSource(false);
  };
 
@@ -299,7 +301,7 @@ export function TenantsPage() {
  const res = await api.tenants.list();
  setTenants(res.tenants);
  setShowEditEntitlements(null);
- } catch { /* silent */ }
+ } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to save entitlements'); }
  setSavingEntitlements(false);
  };
 
@@ -343,6 +345,14 @@ export function TenantsPage() {
  </div>
  <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)} title="Create a new tenant (client) and initial configuration"><Plus size={14} /> Onboard Tenant</Button>
  </div>
+
+ {actionError && (
+ <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+ <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
+ <p className="text-sm text-red-400 flex-1">{actionError}</p>
+ <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+ </div>
+ )}
 
  {/* Onboard Modal */}
  {showOnboard && (
