@@ -113,9 +113,9 @@ export function ApexPage() {
 
  const tabs = [
  { id: 'health', label: 'Business Health', icon: <Crown size={14} /> },
- { id: 'briefing', label: 'Executive Briefing', icon: <FileText size={14} /> },
- { id: 'risks', label: 'Risk Alerts', icon: <AlertTriangle size={14} />, count: risks.length },
- { id: 'scenarios', label: 'Scenario Modelling', icon: <BarChart3 size={14} /> },
+ { id: 'briefing', label: 'Leadership Summary', icon: <FileText size={14} /> },
+ { id: 'risks', label: 'Risk Overview', icon: <AlertTriangle size={14} />, count: risks.length },
+ { id: 'scenarios', label: 'What-If Analysis', icon: <BarChart3 size={14} /> },
  ];
 
  if (loading) {
@@ -130,7 +130,7 @@ export function ApexPage() {
  <div className="space-y-6 animate-fadeIn">
  <div>
  <h1 className="text-3xl sm:text-4xl font-bold t-primary" >Atheon Apex</h1>
- <p className="text-sm t-muted mt-1">Executive Intelligence — C-Suite Command Centre</p>
+ <p className="text-sm t-muted mt-1">Your strategic overview — insights that matter, when they matter</p>
  </div>
 
  {actionError && (
@@ -161,12 +161,12 @@ export function ApexPage() {
  </Card>
 
  <Card className="lg:col-span-2">
- <h3 className="text-lg font-semibold t-primary mb-4">Dimension Breakdown</h3>
+ <h3 className="text-lg font-semibold t-primary mb-4">Performance Areas</h3>
  {dimensions.length === 0 && (
  <div className="flex flex-col items-center justify-center py-12 text-center">
  <Crown className="w-10 h-10 t-muted mb-3 opacity-30" />
  <p className="text-sm t-muted">No dimensions available yet.</p>
- <p className="text-xs t-muted mt-1">Run a catalyst from the Catalysts page to generate health insights.</p>
+ <p className="text-xs t-muted mt-1">Run a catalyst from the Catalysts page to start generating insights.</p>
  </div>
  )}
  <div className="space-y-4">
@@ -338,7 +338,7 @@ export function ApexPage() {
  <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div className="flex items-center gap-2 mb-3">
  <FileText className="w-4 h-4 text-accent" />
- <h4 className="text-sm font-semibold t-primary">Risk Assessment Report</h4>
+ <h4 className="text-sm font-semibold t-primary">Risk Review</h4>
  </div>
 
  {/* Risk Matrix Summary */}
@@ -366,7 +366,7 @@ export function ApexPage() {
 
  {/* Impact Analysis */}
  <div className="mb-4">
- <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Impact Analysis</h5>
+ <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">What This Means</h5>
  <p className="text-sm t-muted leading-relaxed">
  This {risk.severity}-severity risk in the <span className="font-medium t-primary">{risk.category}</span> domain
  has a <span className="font-medium t-primary">{Math.round(risk.probability * 100)}%</span> probability of occurrence.
@@ -377,7 +377,7 @@ export function ApexPage() {
 
  {/* Risk Score Visual */}
  <div className="mb-4">
- <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Risk Score</h5>
+ <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Severity Gauge</h5>
  <div className="flex items-center gap-3">
  <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
  <div className="h-full rounded-full transition-all duration-700" style={{
@@ -394,7 +394,7 @@ export function ApexPage() {
  <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div className="flex items-center gap-2 mb-3">
  <Shield className="w-4 h-4 text-accent" />
- <h4 className="text-sm font-semibold t-primary">Mitigation Plan</h4>
+ <h4 className="text-sm font-semibold t-primary">Recommended Next Steps</h4>
  </div>
  <div className="space-y-2.5">
  {risk.recommendedActions.map((action, i) => (
@@ -439,7 +439,7 @@ export function ApexPage() {
  <TabPanel>
  <div className="space-y-6">
  <div className="flex items-center justify-between">
- <h3 className="text-lg font-semibold t-primary">Scenario Analysis</h3>
+ <h3 className="text-lg font-semibold t-primary">What-If Analysis</h3>
  <Button variant="primary" size="sm" onClick={() => { resetScenarioBuilder(); setShowScenarioBuilder(true); }} title="Create a new what-if scenario analysis"><Plus size={14} /> New Scenario</Button>
  </div>
  {scenarios.length === 0 && (
@@ -474,7 +474,7 @@ export function ApexPage() {
       <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
        <div className="flex items-center gap-2 mb-3">
         <BarChart3 className="w-4 h-4 text-accent" />
-        <h4 className="text-sm font-semibold t-primary">Scenario Analysis Report</h4>
+        <h4 className="text-sm font-semibold t-primary">Results Overview</h4>
        </div>
 
        {/* Key Metrics Grid */}
@@ -489,7 +489,7 @@ export function ApexPage() {
 
        {/* Analysis Narrative */}
        <div className="mb-4">
-        <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Analysis Summary</h5>
+        <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Key Findings</h5>
         <p className="text-sm t-muted leading-relaxed">
          The <span className="font-medium t-primary">{scenario.title}</span> scenario analysis
          evaluated {scenario.variables.length > 0 ? `the impact of changes to ${scenario.variables.join(', ')}` : 'the projected outcomes'}.
@@ -501,7 +501,7 @@ export function ApexPage() {
        {/* All Results Table */}
        {resultEntries.length > 4 && (
         <div className="mb-4">
-         <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Full Results</h5>
+         <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Detailed Results</h5>
          <div className="space-y-1.5">
           {resultEntries.slice(4).map(([key, val]) => (
            <div key={key} className="flex items-center justify-between py-1.5 border-b border-[var(--border-card)] last:border-0">
@@ -515,7 +515,7 @@ export function ApexPage() {
 
        {/* Recommendations */}
        <div>
-        <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Recommendations</h5>
+        <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">What to Watch</h5>
         <div className="space-y-2">
          {scenario.variables.map((variable, i) => (
           <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">

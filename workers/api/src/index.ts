@@ -271,10 +271,18 @@ for (const prefix of protectedPrefixes) {
 }
 
 // Bug #3 fix: Server-side role enforcement for admin-only routes
-const adminOnlyPrefixes = ['tenants', 'iam', 'controlplane'];
-for (const prefix of adminOnlyPrefixes) {
-  app.use(`/api/${prefix}/*`, requireRole('admin', 'executive'));
-  app.use(`/api/v1/${prefix}/*`, requireRole('admin', 'executive'));
+// superadmin: full platform access (tenants, IAM, controlplane, etc.)
+// support_admin: configure catalysts, manage users, IAM, ERP, connectivity
+// admin: company admin with full tenant access
+const platformAdminPrefixes = ['tenants'];
+for (const prefix of platformAdminPrefixes) {
+  app.use(`/api/${prefix}/*`, requireRole('superadmin'));
+  app.use(`/api/v1/${prefix}/*`, requireRole('superadmin'));
+}
+const supportAdminPrefixes = ['iam', 'controlplane'];
+for (const prefix of supportAdminPrefixes) {
+  app.use(`/api/${prefix}/*`, requireRole('superadmin', 'support_admin', 'admin'));
+  app.use(`/api/v1/${prefix}/*`, requireRole('superadmin', 'support_admin', 'admin'));
 }
 
 // Mount route modules (both /api/ and /api/v1/ for backward compatibility)

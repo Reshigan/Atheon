@@ -80,12 +80,14 @@ iam.get('/roles', async (c) => {
   ).bind(tenantId).all();
 
   const roles = [
-    { id: 'admin', name: 'Administrator', description: 'Full platform access', level: 100 },
-    { id: 'executive', name: 'Executive', description: 'C-Suite view with approval authority', level: 90 },
-    { id: 'manager', name: 'Manager', description: 'Department-level management', level: 70 },
-    { id: 'analyst', name: 'Analyst', description: 'Read-only analytics access', level: 50 },
-    { id: 'operator', name: 'Operator', description: 'Operational task execution', level: 40 },
-    { id: 'viewer', name: 'Viewer', description: 'Dashboard viewing only', level: 10 },
+    { id: 'superadmin', name: 'Super Admin', description: 'Full platform access — can create and reset companies, manage all tenants', level: 120 },
+    { id: 'support_admin', name: 'Support Admin', description: 'Configure catalysts, manage users and roles, ERP connections, and system connectivity', level: 110 },
+    { id: 'admin', name: 'Company Admin', description: 'Full access within own tenant — manage users, catalysts, and settings', level: 100 },
+    { id: 'executive', name: 'Executive', description: 'C-Suite strategic view — Apex intelligence, briefings, risk alerts, and approvals', level: 90 },
+    { id: 'manager', name: 'Manager', description: 'Department-level access — dashboards, catalysts, process intelligence, and team oversight', level: 70 },
+    { id: 'analyst', name: 'Analyst', description: 'Read-only analytics — dashboards, process metrics, conversational AI, and reports', level: 50 },
+    { id: 'operator', name: 'Operator', description: 'Operational execution — dashboards, catalyst tasks, and process monitoring', level: 40 },
+    { id: 'viewer', name: 'Viewer', description: 'View-only access — dashboard overview only', level: 10 },
   ].map(r => ({
     ...r,
     userCount: (results.results.find((u: Record<string, unknown>) => u.role === r.id) as Record<string, unknown> | undefined)?.user_count || 0,

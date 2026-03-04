@@ -18,24 +18,41 @@ type NavItem = {
   roles?: UserRole[];
 };
 
-const ADMIN_ROLES: UserRole[] = ['admin', 'executive'];
-const POWER_ROLES: UserRole[] = ['admin', 'executive', 'manager'];
+// Role hierarchy:
+// superadmin   — Can create/reset companies, full platform access
+// support_admin — Can configure catalysts, manage users, IAM, ERP, connectivity
+// admin        — Company admin with full access to own tenant
+// executive    — C-Suite view: Apex, Pulse, Dashboard, Chat, Mind, Memory
+// manager      — Department level: Dashboard, Apex, Pulse, Catalysts, Chat
+// analyst      — Read-only analytics: Dashboard, Pulse, Chat, Mind
+// operator     — Operational execution: Dashboard, Catalysts, Pulse, Chat
+// viewer       — Dashboard only
+
+const SUPERADMIN_ROLES: UserRole[] = ['superadmin'];
+const SUPPORT_ROLES: UserRole[] = ['superadmin', 'support_admin'];
+const PLATFORM_ADMIN_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin'];
+const EXECUTIVE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive'];
+const MANAGER_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager'];
+const STANDARD_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager', 'analyst', 'operator'];
 
 const navItems: NavItem[] = [
+  // Intelligence — visible based on role
   { path: '/dashboard', label: 'Dashboard', icon: IconDashboard, section: 'intelligence' },
-  { path: '/apex', label: 'Apex', icon: IconApex, section: 'intelligence', sublabel: 'Executive Intelligence', roles: POWER_ROLES },
-  { path: '/pulse', label: 'Pulse', icon: IconPulse, section: 'intelligence', sublabel: 'Process Intelligence' },
-  { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, section: 'intelligence', sublabel: 'Autonomous Execution' },
-  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM' },
-  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'GraphRAG' },
-  { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI' },
-  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management', roles: ADMIN_ROLES },
-  { path: '/iam', label: 'IAM', icon: IconIAM, section: 'platform', sublabel: 'Identity & Access', roles: ADMIN_ROLES },
-  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management', roles: ADMIN_ROLES },
-  { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, section: 'platform', sublabel: 'Unified API', roles: ADMIN_ROLES },
-  { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, section: 'platform', sublabel: 'System Connectors', roles: ADMIN_ROLES },
-  { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'system', sublabel: 'MCP + A2A', roles: ADMIN_ROLES },
-  { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: ADMIN_ROLES },
+  { path: '/apex', label: 'Apex', icon: IconApex, section: 'intelligence', sublabel: 'Executive Intelligence', roles: EXECUTIVE_ROLES },
+  { path: '/pulse', label: 'Pulse', icon: IconPulse, section: 'intelligence', sublabel: 'Process Intelligence', roles: STANDARD_ROLES },
+  { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, section: 'intelligence', sublabel: 'Autonomous Execution', roles: MANAGER_ROLES },
+  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM', roles: STANDARD_ROLES },
+  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'GraphRAG', roles: MANAGER_ROLES },
+  { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI', roles: STANDARD_ROLES },
+  // Platform — admin + support roles
+  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
+  { path: '/iam', label: 'IAM', icon: IconIAM, section: 'platform', sublabel: 'Identity & Access', roles: SUPPORT_ROLES },
+  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management', roles: SUPPORT_ROLES },
+  { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, section: 'platform', sublabel: 'Unified API', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, section: 'platform', sublabel: 'System Connectors', roles: SUPPORT_ROLES },
+  // System — admin + support roles
+  { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'system', sublabel: 'MCP + A2A', roles: SUPPORT_ROLES },
+  { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
 ];
 
 /** Atheon logo mark — geometric triangle with sage/sky/bronze palette */

@@ -18,7 +18,7 @@ export interface User {
   permissions: string[];
 }
 
-export type UserRole = 'admin' | 'executive' | 'manager' | 'analyst' | 'operator';
+export type UserRole = 'superadmin' | 'support_admin' | 'admin' | 'executive' | 'manager' | 'analyst' | 'operator' | 'viewer';
 
 export interface Tenant {
   id: string;
