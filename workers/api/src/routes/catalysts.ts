@@ -175,7 +175,7 @@ function isAdminRole(role: string | undefined): boolean {
  * Check if a role can override tenant_id (cross-tenant access).
  */
 function canCrossTenant(role: string | undefined): boolean {
-  return role === 'superadmin' || role === 'support_admin' || role === 'admin' || role === 'system_admin';
+  return role === 'superadmin' || role === 'support_admin' || role === 'system_admin';
 }
 
 /**

@@ -152,7 +152,7 @@ iam.post('/users', async (c) => {
   const passwordHash = await hashPassword(tempPassword);
   const id = crypto.randomUUID();
   const role = body.role || 'analyst';
-  const permissions = body.permissions || (role === 'admin' ? ['*'] : ['read']);
+  const permissions = body.permissions || (role === 'superadmin' || role === 'support_admin' || role === 'admin' ? ['*'] : ['read']);
 
   await c.env.DB.prepare(
     'INSERT INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'

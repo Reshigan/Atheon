@@ -55,7 +55,7 @@ export function tenantIsolation() {
       // Check tenant_id query param — if provided, it MUST match the JWT tenant_id
       // Exception: system admins can access any tenant
       const queryTenantId = c.req.query('tenant_id');
-      if (queryTenantId && queryTenantId !== authCtx.tenantId && authCtx.role !== 'system_admin' && authCtx.role !== 'superadmin') {
+      if (queryTenantId && queryTenantId !== authCtx.tenantId && authCtx.role !== 'system_admin' && authCtx.role !== 'superadmin' && authCtx.role !== 'support_admin') {
         return c.json({
           error: 'Forbidden',
           message: 'You can only access data for your own tenant',
