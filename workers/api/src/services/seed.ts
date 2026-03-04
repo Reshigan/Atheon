@@ -35,7 +35,7 @@ export async function seedDatabase(db: D1Database) {
   const users = [
     { id: 'user-1', tenant_id: 'vantax', email: 'admin@vantax.co.za', name: 'Reshigan', role: 'superadmin', permissions: '["*"]' },
     { id: 'user-essen', tenant_id: 'vantax', email: 'essen@vantax.co.za', name: 'Essen Naidoo', role: 'superadmin', permissions: '["*"]' },
-    { id: 'user-essen-ag', tenant_id: 'vantax', email: 'esse.naidoo@agentum.com.au', name: 'Essen Naidoo', role: 'superadmin', permissions: '["*"]' },
+    { id: 'user-essen-ag', tenant_id: 'vantax', email: 'essen.naidoo@agentum.com.au', name: 'Essen Naidoo', role: 'superadmin', permissions: '["*"]' },
     { id: 'user-reshigan', tenant_id: 'vantax', email: 'reshigan@vantax.co.za', name: 'Reshigan', role: 'superadmin', permissions: '["*"]' },
     { id: 'user-system', tenant_id: 'vantax', email: 'atheon@vantax.co.za', name: 'Atheon System', role: 'support_admin', permissions: '["*"]' },
     { id: 'user-2', tenant_id: 'vantax', email: 'exec@vantax.co.za', name: 'Sarah Chen', role: 'executive', permissions: '["apex.*","pulse.read","catalysts.approve"]' },
