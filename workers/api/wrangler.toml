@@ -2,6 +2,11 @@ name = "atheon-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
+# Custom domain route — ensures atheon-api.vantax.co.za persists across deploys
+routes = [
+  { pattern = "atheon-api.vantax.co.za/*", zone_name = "vantax.co.za" }
+]
+
 [vars]
 ENVIRONMENT = "production"
 
