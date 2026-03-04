@@ -90,7 +90,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v19';
+const MIGRATION_VERSION = 'v20';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
@@ -288,19 +288,19 @@ app.use('*', async (c, next) => {
         await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES ('protea-user-7','protea','intern@protea-mfg.co.za','Naledi Mahlangu','viewer','','[\"dashboard.read\"]','active')").run();
       } catch { /* ignore — users may already exist from fresh seed */ }
 
-      // v18: Set default passwords for superadmin accounts that don't have one
+      // v20: Force-set default passwords for superadmin accounts (overwrite any stale hashes)
       const superadminPasswordAccounts = [
         'admin@vantax.co.za',
         'essen.naidoo@agentum.com.au',
       ];
       for (const saEmail of superadminPasswordAccounts) {
         try {
-          const sa = await c.env.DB.prepare('SELECT id, password_hash FROM users WHERE email = ?').bind(saEmail).first();
-          if (sa && !sa.password_hash) {
+          const sa = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(saEmail).first();
+          if (sa) {
             const hash = await hashPassword('Admin123');
             await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(hash, sa.id).run();
           }
-        } catch (err) { console.error(`v18: failed to set password for ${saEmail}:`, err); }
+        } catch (err) { console.error(`v20: failed to set password for ${saEmail}:`, err); }
       }
 
       // Seed with demo data
