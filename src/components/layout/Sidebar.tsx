@@ -18,15 +18,15 @@ type NavItem = {
   roles?: UserRole[];
 };
 
-// Role hierarchy:
-// superadmin   — Can create/reset companies, full platform access
-// support_admin — Can configure catalysts, manage users, IAM, ERP, connectivity
-// admin        — Company admin with full access to own tenant
-// executive    — C-Suite view: Apex, Pulse, Dashboard, Chat, Mind, Memory
-// manager      — Department level: Dashboard, Apex, Pulse, Catalysts, Chat
-// analyst      — Read-only analytics: Dashboard, Pulse, Chat, Mind
-// operator     — Operational execution: Dashboard, Catalysts, Pulse, Chat
-// viewer       — Dashboard only
+// Role hierarchy (level):
+// superadmin (120)    — Full platform access incl. Tenants, IAM, ERP, Connectivity, Audit
+// support_admin (110) — Same as superadmin minus Tenants; system accounts
+// admin (100)         — Company admin: own tenant + IAM, Control Plane, ERP, Connectivity, Audit
+// executive (90)      — C-Suite: Dashboard, Apex, Pulse, Catalysts, Mind, Memory, Chat
+// manager (70)        — Department: Dashboard, Pulse, Catalysts, Mind, Memory, Chat
+// analyst (50)        — Read-only: Dashboard, Pulse, Mind, Chat
+// operator (40)       — Operational: Dashboard, Pulse, Catalysts, Mind, Chat
+// viewer (10)         — Dashboard + Settings only
 
 const SUPERADMIN_ROLES: UserRole[] = ['superadmin'];
 // SUPPORT_ROLES kept as reference but IAM/ERP/etc now use PLATFORM_ADMIN_ROLES so admin can manage their tenant
