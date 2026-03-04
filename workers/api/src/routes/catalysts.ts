@@ -398,7 +398,7 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
         'open', now
       ).run();
     } catch (err) { console.error('generateInsights: anomaly insert failed:', err); }
-    await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', `Anomaly detectedin ${domainLabel} — flagged for review`, Date.now() - t5);
+    await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', `Anomaly detected in ${domainLabel} — flagged for review`, Date.now() - t5);
   } else {
     await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'completed', `No anomalies detected in ${domainLabel}`, Date.now() - t5);
   }
@@ -1236,7 +1236,7 @@ catalysts.get('/execution-logs', async (c) => {
   }
 });
 
-// GET /api/catalysts/execution-logs/:actionId- Get logs for a specific action
+// GET /api/catalysts/execution-logs/:actionId - Get logs for a specific action
 catalysts.get('/execution-logs/:actionId', async (c) => {
   const tenantId = getTenantId(c);
   const actionId = c.req.param('actionId');
@@ -1263,7 +1263,7 @@ catalysts.get('/execution-logs/:actionId', async (c) => {
   }
 });
 
-// PUT /api/catalysts/actions/:id/resolve- Resolve an exception with notes
+// PUT /api/catalysts/actions/:id/resolve - Resolve an exception with notes
 catalysts.put('/actions/:id/resolve', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ resolution_notes?: string; resolved_by?: string }>();
