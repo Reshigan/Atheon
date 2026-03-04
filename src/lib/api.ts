@@ -1,7 +1,7 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'https://atheon-api.reshigan-085.workers.dev';
 
 let authToken: string | null = localStorage.getItem('atheon_token');
-let tenantOverrideId: string | null = null;
+let tenantOverrideId: string | null = localStorage.getItem('atheon_tenant_override');
 
 export function setToken(token: string | null) {
   authToken = token;
@@ -19,6 +19,11 @@ export function getToken(): string | null {
 /** Set a global tenant override for cross-tenant access (superadmin/support_admin) */
 export function setTenantOverride(tenantId: string | null) {
   tenantOverrideId = tenantId;
+  if (tenantId) {
+    localStorage.setItem('atheon_tenant_override', tenantId);
+  } else {
+    localStorage.removeItem('atheon_tenant_override');
+  }
 }
 
 export function getTenantOverride(): string | null {

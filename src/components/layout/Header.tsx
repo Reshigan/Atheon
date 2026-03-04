@@ -162,7 +162,9 @@ export function Header() {
       setTenantOverride(tenant.id);
     }
     setShowCompanyDropdown(false);
-    // Force page reload to refresh all data with new tenant context
+    // Navigate to dashboard to refresh data with new tenant context
+    navigate('/dashboard');
+    // Reload to ensure all cached data is refreshed
     window.location.reload();
   };
 

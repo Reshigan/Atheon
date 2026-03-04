@@ -94,9 +94,9 @@ export const useAppStore = create<AppState>((set) => ({
   theme: savedTheme || 'light',
   accentColor: savedAccent || 'indigo',
   onboardingDismissed: savedOnboarding,
-  activeTenantId: null,
-  activeTenantName: null,
-  activeTenantIndustry: null,
+  activeTenantId: typeof window !== 'undefined' ? localStorage.getItem('atheon-active-tenant-id') : null,
+  activeTenantName: typeof window !== 'undefined' ? localStorage.getItem('atheon-active-tenant-name') : null,
+  activeTenantIndustry: (typeof window !== 'undefined' ? localStorage.getItem('atheon-active-tenant-industry') : null) as IndustryVertical | null,
   setUser: (user) => set({ user }),
   setCurrentLayer: (layer) => set({ currentLayer: layer }),
   mobileSidebarOpen: false,
@@ -132,6 +132,16 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setActiveTenant: (tenantId, tenantName, tenantIndustry) => {
     set({ activeTenantId: tenantId, activeTenantName: tenantName, activeTenantIndustry: tenantIndustry });
+    // Persist to localStorage for page reload survival
+    if (tenantId) {
+      localStorage.setItem('atheon-active-tenant-id', tenantId);
+      localStorage.setItem('atheon-active-tenant-name', tenantName || '');
+      localStorage.setItem('atheon-active-tenant-industry', tenantIndustry || '');
+    } else {
+      localStorage.removeItem('atheon-active-tenant-id');
+      localStorage.removeItem('atheon-active-tenant-name');
+      localStorage.removeItem('atheon-active-tenant-industry');
+    }
     // Also update industry filter to match the selected tenant's industry
     if (tenantIndustry) {
       set({ industry: tenantIndustry });

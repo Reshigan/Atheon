@@ -19,11 +19,16 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setUser = useAppStore((s) => s.setUser);
+  const setIndustry = useAppStore((s) => s.setIndustry);
   const existingUser = useAppStore((s) => s.user);
 
-  const handleAuthResult = (res: { token: string; user: { id: string; email: string; name: string; role: string; tenantId: string; tenantName?: string; permissions: string[] } }) => {
+  const handleAuthResult = (res: { token: string; user: { id: string; email: string; name: string; role: string; tenantId: string; tenantName?: string; tenantIndustry?: string; permissions: string[] } }) => {
     setToken(res.token);
     setUser({ id: res.user.id, email: res.user.email, name: res.user.name, role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator', tenantId: res.user.tenantId, tenantName: res.user.tenantName, permissions: res.user.permissions });
+    // Set industry from the user's tenant
+    if (res.user.tenantIndustry && res.user.tenantIndustry !== 'general') {
+      setIndustry(res.user.tenantIndustry as import('@/types').IndustryVertical);
+    }
     navigate('/dashboard');
   };
 
