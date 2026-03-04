@@ -6,6 +6,12 @@ import { getWelcomeEmailTemplate, sendOrQueueEmail } from '../services/email';
 
 const iam = new Hono<AppBindings>();
 
+/** Role hierarchy levels — higher number = more privilege */
+const ROLE_LEVELS: Record<string, number> = {
+  superadmin: 120, support_admin: 110, admin: 100, executive: 90,
+  manager: 70, analyst: 50, operator: 40, viewer: 10,
+};
+
 function getTenantId(c: { get: (key: string) => unknown }): string {
   const auth = c.get('auth') as AuthContext | undefined;
   if (!auth?.tenantId) throw new Error('No tenant context available');
@@ -152,6 +158,15 @@ iam.post('/users', async (c) => {
   const passwordHash = await hashPassword(tempPassword);
   const id = crypto.randomUUID();
   const role = body.role || 'analyst';
+
+  // Prevent privilege escalation: caller cannot assign a role higher than their own
+  const auth = c.get('auth') as AuthContext | undefined;
+  const callerLevel = ROLE_LEVELS[auth?.role || ''] ?? 0;
+  const requestedLevel = ROLE_LEVELS[role] ?? 0;
+  if (requestedLevel > callerLevel) {
+    return c.json({ error: 'Forbidden', message: `Cannot assign role "${role}" — exceeds your own privilege level` }, 403);
+  }
+
   const permissions = body.permissions || (role === 'superadmin' || role === 'support_admin' || role === 'admin' ? ['*'] : ['read']);
 
   await c.env.DB.prepare(

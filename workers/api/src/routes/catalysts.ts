@@ -590,8 +590,8 @@ catalysts.delete('/clusters/:id', async (c) => {
   }
 
   const tenantId = auth.tenantId;
-  // Admin can delete from any tenant by providing query param
-  const targetTenant = c.req.query('tenant_id') || tenantId;
+  // Only superadmin/support_admin can delete from other tenants via query param
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || tenantId) : tenantId;
 
   await c.env.DB.prepare('DELETE FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(id, targetTenant).run();
 
