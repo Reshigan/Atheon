@@ -12,6 +12,9 @@ const ROLE_LEVELS: Record<string, number> = {
   manager: 70, analyst: 50, operator: 40, viewer: 10,
 };
 
+/** Only roles in ROLE_LEVELS are valid — reject unknown strings like 'system_admin' */
+const VALID_ROLES = new Set(Object.keys(ROLE_LEVELS));
+
 function getTenantId(c: { get: (key: string) => unknown }): string {
   const auth = c.get('auth') as AuthContext | undefined;
   if (!auth?.tenantId) throw new Error('No tenant context available');
@@ -158,6 +161,11 @@ iam.post('/users', async (c) => {
   const passwordHash = await hashPassword(tempPassword);
   const id = crypto.randomUUID();
   const role = body.role || 'analyst';
+
+  // Reject unknown role strings (e.g. 'system_admin') that could bypass hierarchy checks
+  if (!VALID_ROLES.has(role)) {
+    return c.json({ error: 'Invalid role', message: `Role "${role}" is not valid. Valid roles: ${[...VALID_ROLES].join(', ')}` }, 400);
+  }
 
   // Prevent privilege escalation: caller cannot assign a role higher than their own
   const auth = c.get('auth') as AuthContext | undefined;

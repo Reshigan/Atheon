@@ -527,6 +527,12 @@ catalysts.post('/deploy-template', async (c) => {
   if (!body.tenant_id) return c.json({ error: 'tenant_id is required' }, 400);
   if (!body.industry) return c.json({ error: 'industry is required' }, 400);
 
+  // Only superadmin/support_admin can deploy to a different tenant
+  const callerTenant = auth.tenantId;
+  if (body.tenant_id !== callerTenant && !canCrossTenant(auth.role)) {
+    return c.json({ error: 'Forbidden', message: 'You can only deploy templates to your own tenant' }, 403);
+  }
+
   // Verify tenant exists
   const tenant = await c.env.DB.prepare('SELECT id FROM tenants WHERE id = ?').bind(body.tenant_id).first();
   if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
