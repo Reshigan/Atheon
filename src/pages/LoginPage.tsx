@@ -5,7 +5,7 @@ import { useAppStore } from "@/stores/appStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, UserPlus } from "lucide-react";
-import { api, setToken, getToken } from "@/lib/api";
+import { api, setToken, getToken, setTenantOverride } from "@/lib/api";
 
 type AuthMode= 'login' | 'register';
 
@@ -20,10 +20,14 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const setUser = useAppStore((s) => s.setUser);
   const setIndustry = useAppStore((s) => s.setIndustry);
+  const setActiveTenant = useAppStore((s) => s.setActiveTenant);
   const existingUser = useAppStore((s) => s.user);
 
   const handleAuthResult = (res: { token: string; user: { id: string; email: string; name: string; role: string; tenantId: string; tenantName?: string; tenantIndustry?: string; permissions: string[] } }) => {
     setToken(res.token);
+    // Clear any stale tenant override from a previous session
+    setTenantOverride(null);
+    setActiveTenant(null, null, null);
     setUser({ id: res.user.id, email: res.user.email, name: res.user.name, role: res.user.role as 'admin' | 'executive' | 'manager' | 'analyst' | 'operator', tenantId: res.user.tenantId, tenantName: res.user.tenantName, permissions: res.user.permissions });
     // Set industry from the user's tenant
     if (res.user.tenantIndustry && res.user.tenantIndustry !== 'general') {
