@@ -29,7 +29,8 @@ type NavItem = {
 // viewer       — Dashboard only
 
 const SUPERADMIN_ROLES: UserRole[] = ['superadmin'];
-const SUPPORT_ROLES: UserRole[] = ['superadmin', 'support_admin'];
+// SUPPORT_ROLES kept as reference but IAM/ERP/etc now use PLATFORM_ADMIN_ROLES so admin can manage their tenant
+// const SUPPORT_ROLES: UserRole[] = ['superadmin', 'support_admin'];
 const PLATFORM_ADMIN_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin'];
 const EXECUTIVE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive'];
 const MANAGER_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager'];
