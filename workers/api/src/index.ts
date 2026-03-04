@@ -266,6 +266,9 @@ app.use('*', async (c, next) => {
           "UPDATE users SET role = 'superadmin' WHERE email = 'essen@vantax.co.za' AND role IN ('admin','support_admin') AND tenant_id = 'vantax'"
         ).run();
         await c.env.DB.prepare(
+          "UPDATE users SET role = 'superadmin' WHERE email = 'essen.naidoo@agentum.com.au' AND role IN ('admin','support_admin') AND tenant_id = 'vantax'"
+        ).run();
+        await c.env.DB.prepare(
           "UPDATE users SET role = 'support_admin' WHERE email = 'atheon@vantax.co.za' AND role = 'admin' AND tenant_id = 'vantax'"
         ).run();
       } catch { /* users may not exist yet — seed will create them with correct roles */ }
