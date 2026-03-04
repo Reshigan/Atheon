@@ -24,8 +24,8 @@ export function LoginPage() {
   const setActiveTenant = useAppStore((s) => s.setActiveTenant);
   const existingUser = useAppStore((s) => s.user);
 
-  const handleAuthResult = (res: { token: string; user: { id: string; email: string; name: string; role: string; tenantId: string; tenantName?: string; tenantIndustry?: string; permissions: string[] } }) => {
-    setToken(res.token);
+  const handleAuthResult = (res: { token: string; refreshToken?: string; user: { id: string; email: string; name: string; role: string; tenantId: string; tenantName?: string; tenantIndustry?: string; permissions: string[] } }) => {
+    setToken(res.token, res.refreshToken || null);
     // Clear any stale tenant override from a previous session
     setTenantOverride(null);
     setActiveTenant(null, null, null);

@@ -7,7 +7,8 @@ import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import type { Metric, AnomalyItem, ProcessItem, CorrelationItem } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
-import { Activity, AlertTriangle, GitBranch, Link2, ArrowRight, Loader2 } from "lucide-react";
+import { Activity, AlertTriangle, GitBranch, Link2, ArrowRight } from "lucide-react";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
 export function PulsePage() {
  const industry = useAppStore((s) => s.industry);
@@ -41,10 +42,22 @@ export function PulsePage() {
  { id: 'correlations', label: 'Correlations', icon: <Link2 size={14} /> },
  ];
 
+ // M4/U12: Skeleton loading instead of spinner
  if (loading) {
  return (
- <div className="flex items-center justify-center h-96">
- <Loader2 className="w-8 h-8 text-accent animate-spin" />
+ <div className="space-y-6 animate-fadeIn">
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+ <Activity className="w-5 h-5 text-emerald-400" />
+ </div>
+ <div>
+ <h1 className="text-2xl font-bold t-primary">Atheon Pulse</h1>
+ <p className="text-sm t-muted">Process Intelligence - Operational Nervous System</p>
+ </div>
+ </div>
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+ {[1,2,3,4].map(i => <SkeletonCard key={i} />)}
+ </div>
  </div>
  );
  }

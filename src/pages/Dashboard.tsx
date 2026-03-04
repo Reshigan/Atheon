@@ -1,12 +1,13 @@
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/ui/sparkline";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth } from "@/lib/api";
 import {
-  TrendingUp, TrendingDown, Minus, Loader2, Info, SlidersHorizontal,
-  ChevronRight, AlertTriangle,
+  TrendingUp, TrendingDown, Minus, Info, SlidersHorizontal,
+  ChevronRight, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -70,36 +71,49 @@ export function Dashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "health" | "risks">("overview");
   const [timeFilter, setTimeFilter] = useState<"7d" | "30d" | "90d" | "12m">("30d");
   const [showFilters, setShowFilters] = useState(false);
+  // U1: Auto-refresh indicator
+  const [autoRefresh, setAutoRefresh] = useState<0 | 30 | 60>(0);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pieId = useId();
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const ind = industry !== 'general' ? industry : undefined;
-        const [h, r, m, a, c, act, cp] = await Promise.allSettled([
-          api.apex.health(undefined, ind),
-          api.apex.risks(undefined, ind),
-          api.pulse.metrics(undefined, ind),
-          api.pulse.anomalies(undefined, ind),
-          api.catalysts.clusters(undefined, ind),
-          api.catalysts.actions(undefined, undefined, ind),
-          api.controlplane.health(undefined, ind),
-        ]);
-        if (h.status === "fulfilled") setHealth(h.value);
-        if (r.status === "fulfilled") setRisks(r.value.risks);
-        if (m.status === "fulfilled") setMetrics(m.value.metrics);
-        if (a.status === "fulfilled") setAnomalies(a.value.anomalies);
-        if (c.status === "fulfilled") setClusters(c.value.clusters);
-        if (act.status === "fulfilled") setActions(act.value.actions);
-        if (cp.status === "fulfilled") setCpHealth(cp.value);
-      } catch {
-        /* silently handle */
-      }
-      setLoading(false);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const ind = industry !== 'general' ? industry : undefined;
+      const [h, r, m, a, c, act, cp] = await Promise.allSettled([
+        api.apex.health(undefined, ind),
+        api.apex.risks(undefined, ind),
+        api.pulse.metrics(undefined, ind),
+        api.pulse.anomalies(undefined, ind),
+        api.catalysts.clusters(undefined, ind),
+        api.catalysts.actions(undefined, undefined, ind),
+        api.controlplane.health(undefined, ind),
+      ]);
+      if (h.status === "fulfilled") setHealth(h.value);
+      if (r.status === "fulfilled") setRisks(r.value.risks);
+      if (m.status === "fulfilled") setMetrics(m.value.metrics);
+      if (a.status === "fulfilled") setAnomalies(a.value.anomalies);
+      if (c.status === "fulfilled") setClusters(c.value.clusters);
+      if (act.status === "fulfilled") setActions(act.value.actions);
+      if (cp.status === "fulfilled") setCpHealth(cp.value);
+    } catch {
+      /* silently handle */
     }
-    load();
+    setLoading(false);
+    setLastRefreshed(new Date());
   }, [industry]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // U1: Auto-refresh timer
+  useEffect(() => {
+    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    if (autoRefresh > 0) {
+      refreshTimerRef.current = setInterval(() => { loadData(); }, autoRefresh * 1000);
+    }
+    return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
+  }, [autoRefresh, loadData]);
 
   const overallScore = health?.overall ?? 0;
   const dimEntries = health?.dimensions ? Object.values(health.dimensions) : [];
@@ -159,12 +173,9 @@ export function Dashboard() {
     change: +(avgDelta * (0.5 + Math.sin(i * 0.5) * 0.8)).toFixed(1),
   })) : [];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
-      </div>
-    );
+  // U12: Progressive skeleton loading instead of spinner
+  if (loading && !health) {
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -203,10 +214,33 @@ export function Dashboard() {
               </button>
             ))}
           </div>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information" onClick={() => setActiveTab('overview')}>
+          {/* U1: Auto-refresh controls */}
+          <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
+            {([0, 30, 60] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setAutoRefresh(s)}
+                className="px-2 py-1.5 text-[10px] font-medium rounded-md transition-all"
+                style={autoRefresh === s ? { background: "var(--bg-card-solid)", color: "var(--text-primary)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" } : { color: "var(--text-muted)" }}
+                aria-label={s === 0 ? 'Disable auto-refresh' : `Auto-refresh every ${s} seconds`}
+              >
+                {s === 0 ? 'Off' : `${s}s`}
+              </button>
+            ))}
+          </div>
+          <button
+            className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all"
+            style={{ background: "var(--bg-secondary)" }}
+            title={`Last refreshed: ${lastRefreshed.toLocaleTimeString()}`}
+            onClick={() => loadData()}
+            aria-label="Refresh dashboard data"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information" onClick={() => setActiveTab('overview')} aria-label="Dashboard info">
             <Info size={14} />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: showFilters ? 'var(--accent)' : 'var(--bg-secondary)', color: showFilters ? '#fff' : undefined }} title="Toggle filters" onClick={() => setShowFilters(!showFilters)}>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: showFilters ? 'var(--accent)' : 'var(--bg-secondary)', color: showFilters ? '#fff' : undefined }} title="Toggle filters" onClick={() => setShowFilters(!showFilters)} aria-label="Toggle dashboard filters">
             <SlidersHorizontal size={14} />
           </button>
         </div>

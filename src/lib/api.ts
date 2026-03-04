@@ -1,14 +1,35 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'https://atheon-api.reshigan-085.workers.dev';
+// M5 fix: Use env variable with production fallback (not personal Workers subdomain)
+export const API_URL = import.meta.env.VITE_API_URL || 'https://atheon-api.vantax.co.za';
 
 let authToken: string | null = localStorage.getItem('atheon_token');
+let refreshToken: string | null = localStorage.getItem('atheon_refresh_token');
 let tenantOverrideId: string | null = localStorage.getItem('atheon_tenant_override');
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
 
-export function setToken(token: string | null) {
+// M6: Rate limit state exposed to UI
+export interface RateLimitInfo {
+  limit: number | null;
+  remaining: number | null;
+  resetAt: number | null;
+}
+let lastRateLimitInfo: RateLimitInfo = { limit: null, remaining: null, resetAt: null };
+export function getRateLimitInfo(): RateLimitInfo { return lastRateLimitInfo; }
+
+export function setToken(token: string | null, refresh?: string | null) {
   authToken = token;
   if (token) {
     localStorage.setItem('atheon_token', token);
   } else {
     localStorage.removeItem('atheon_token');
+  }
+  if (refresh !== undefined) {
+    refreshToken = refresh;
+    if (refresh) {
+      localStorage.setItem('atheon_refresh_token', refresh);
+    } else {
+      localStorage.removeItem('atheon_refresh_token');
+    }
   }
 }
 
@@ -36,6 +57,24 @@ function qs(params: Record<string, string | undefined>): string {
   return entries.length ? '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '';
 }
 
+// H4: Attempt to refresh the access token using the stored refresh token
+async function attemptTokenRefresh(): Promise<boolean> {
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json() as { token: string; refreshToken?: string };
+    setToken(data.token, data.refreshToken || refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -57,6 +96,47 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers,
   });
+
+  // M6: Read rate limit headers from response
+  const rlLimit = res.headers.get('X-RateLimit-Limit');
+  const rlRemaining = res.headers.get('X-RateLimit-Remaining');
+  if (rlLimit || rlRemaining) {
+    lastRateLimitInfo = {
+      limit: rlLimit ? parseInt(rlLimit, 10) : lastRateLimitInfo.limit,
+      remaining: rlRemaining ? parseInt(rlRemaining, 10) : lastRateLimitInfo.remaining,
+      resetAt: null,
+    };
+  }
+
+  // H4: 401 interceptor — attempt token refresh and retry once
+  if (res.status === 401 && authToken && !path.startsWith('/api/auth/')) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = attemptTokenRefresh().finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+    }
+    const refreshed = await refreshPromise;
+
+    if (refreshed) {
+      // Retry the original request with the new token
+      headers['Authorization'] = `Bearer ${authToken}`;
+      const retryRes = await fetch(`${API_URL}${finalPath}`, { ...options, headers });
+      if (!retryRes.ok) {
+        const err = await retryRes.json().catch(() => ({ error: retryRes.statusText }));
+        throw new Error((err as Record<string, string>).error || retryRes.statusText);
+      }
+      return retryRes.json() as Promise<T>;
+    } else {
+      // Refresh failed — clear tokens and redirect to login
+      setToken(null, null);
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login?session_expired=1';
+      }
+      throw new Error('Session expired. Please log in again.');
+    }
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));

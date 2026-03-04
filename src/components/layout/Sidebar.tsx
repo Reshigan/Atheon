@@ -104,14 +104,16 @@ export function Sidebar() {
       <aside
         className="fixed left-0 top-0 h-full z-40 w-14 hidden md:flex flex-col items-center py-3 transition-colors duration-200"
         style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-card)', boxShadow: '2px 0 12px rgba(100, 120, 180, 0.06)' }}
+        role="navigation"
+        aria-label="Main navigation"
       >
         <div className="mb-5 mt-0.5">
-          <Link to="/dashboard" className="block" title="Go to Dashboard">
+          <Link to="/dashboard" className="block" title="Go to Dashboard" aria-label="Go to Dashboard">
             <AtheonSidebarLogo />
           </Link>
         </div>
 
-        <nav className="flex-1 flex flex-col items-center gap-0.5 overflow-y-auto scrollbar-thin w-full px-1.5">
+        <nav className="flex-1 flex flex-col items-center gap-0.5 overflow-y-auto scrollbar-thin w-full px-1.5" aria-label="Primary navigation">
           {visibleItems.map((item) => {
             const isActive = location.pathname === item.path ||
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -162,10 +164,16 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile sidebar */}
-      <aside className={cn(
-        'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-64 md:hidden',
-        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
-      )} style={{ background: 'var(--bg-modal)', borderRight: '1px solid var(--border-card)', boxShadow: '4px 0 24px rgba(100, 120, 180, 0.10)' }}>
+      <aside
+        className={cn(
+          'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-64 md:hidden',
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+        style={{ background: 'var(--bg-modal)', borderRight: '1px solid var(--border-card)', boxShadow: '4px 0 24px rgba(100, 120, 180, 0.10)' }}
+        role="navigation"
+        aria-label="Mobile navigation"
+        aria-hidden={!mobileSidebarOpen}
+      >
         <div className="flex items-center justify-between px-4 h-14" style={{ borderBottom: '1px solid var(--border-card)' }}>
           <div className="flex items-center gap-2.5">
             <AtheonSidebarLogo />
@@ -174,12 +182,12 @@ export function Sidebar() {
               <p className="text-[10px] t-muted tracking-wide uppercase">Enterprise Intelligence</p>
             </div>
           </div>
-          <button onClick={closeMobile} className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all" title="Close navigation menu">
+          <button onClick={closeMobile} className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all" title="Close navigation menu" aria-label="Close navigation menu">
             <X size={18} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto scrollbar-thin py-2 px-2">
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-2 px-2" aria-label="Mobile navigation links">
           {(() => {
             let prevSection = '';
             return visibleItems.map((item) => {

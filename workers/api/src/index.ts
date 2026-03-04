@@ -55,12 +55,21 @@ app.use('*', cors({
   credentials: true,
 }));
 
-// Security S8: X-Request-ID correlation header
+// Security S8: X-Request-ID correlation header + H6: Security headers (CSRF protection)
 app.use('*', async (c, next) => {
   const requestId = c.req.header('X-Request-ID') || crypto.randomUUID();
   c.set('requestId' as never, requestId as never);
   await next();
   c.header('X-Request-ID', requestId);
+  // H6: CSRF protection — enforce SameSite=Strict on any Set-Cookie headers
+  const existingCookie = c.res.headers.get('Set-Cookie');
+  if (existingCookie && !existingCookie.includes('SameSite')) {
+    c.res.headers.set('Set-Cookie', `${existingCookie}; SameSite=Strict; Secure`);
+  }
+  // Additional security headers
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
 });
 
 // Request size limiter (1MB max)

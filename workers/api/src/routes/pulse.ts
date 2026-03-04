@@ -9,12 +9,23 @@ function getTenantId(c: { get: (key: string) => unknown }): string {
   return auth?.tenantId || 'vantax';
 }
 
+// M2: Helper to parse pagination params
+function getPagination(c: { req: { query: (k: string) => string | undefined } }): { limit: number; offset: number } {
+  const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '100', 10) || 100, 1), 500);
+  const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
+  return { limit, offset };
+}
+
 // GET /api/pulse/metrics
 pulse.get('/metrics', async (c) => {
   const tenantId = getTenantId(c);
+  const { limit, offset } = getPagination(c);
   const results = await c.env.DB.prepare(
-    'SELECT * FROM process_metrics WHERE tenant_id = ? ORDER BY name ASC'
-  ).bind(tenantId).all();
+    'SELECT * FROM process_metrics WHERE tenant_id = ? ORDER BY name ASC LIMIT ? OFFSET ?'
+  ).bind(tenantId, limit, offset).all();
+  const countResult = await c.env.DB.prepare(
+    'SELECT COUNT(*) as count FROM process_metrics WHERE tenant_id = ?'
+  ).bind(tenantId).first<{ count: number }>();
 
   const formatted = results.results.map((m: Record<string, unknown>) => ({
     id: m.id,
@@ -32,7 +43,7 @@ pulse.get('/metrics', async (c) => {
     measuredAt: m.measured_at,
   }));
 
-  return c.json({ metrics: formatted, total: formatted.length });
+  return c.json({ metrics: formatted, total: countResult?.count || formatted.length, limit, offset });
 });
 
 // POST /api/pulse/metrics
@@ -91,7 +102,7 @@ pulse.get('/anomalies', async (c) => {
     detectedAt: a.detected_at,
   }));
 
-  return c.json({ anomalies: formatted, total: formatted.length });
+  return c.json({ anomalies: formatted, total: formatted.length, limit: formatted.length, offset: 0 });
 });
 
 // PUT /api/pulse/anomalies/:id
@@ -123,7 +134,7 @@ pulse.get('/processes', async (c) => {
     bottlenecks: JSON.parse(f.bottlenecks as string || '[]'),
   }));
 
-  return c.json({ processes: formatted, total: formatted.length });
+  return c.json({ processes: formatted, total: formatted.length, limit: formatted.length, offset: 0 });
 });
 
 // GET /api/pulse/correlations
@@ -144,7 +155,7 @@ pulse.get('/correlations', async (c) => {
     detectedAt: ce.detected_at,
   }));
 
-  return c.json({ correlations: formatted, total: formatted.length });
+  return c.json({ correlations: formatted, total: formatted.length, limit: formatted.length, offset: 0 });
 });
 
 // GET /api/pulse/summary (aggregated overview)
