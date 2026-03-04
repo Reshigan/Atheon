@@ -165,6 +165,20 @@ function friendlyRiskTitle(severity: string, domain: string): string {
 }
 
 /**
+ * Check if a role has admin-level privileges (superadmin, support_admin, admin, or system_admin).
+ */
+function isAdminRole(role: string | undefined): boolean {
+  return role === 'superadmin' || role === 'support_admin' || role === 'admin' || role === 'system_admin';
+}
+
+/**
+ * Check if a role can override tenant_id (cross-tenant access).
+ */
+function canCrossTenant(role: string | undefined): boolean {
+  return role === 'superadmin' || role === 'support_admin' || role === 'admin' || role === 'system_admin';
+}
+
+/**
  * Generate a human-friendly risk description.
  */
 function friendlyRiskDescription(severity: string, domain: string, catalystName: string): string {
@@ -299,10 +313,13 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
     { name: `${domainLabel} — Response Time`, value: Math.floor(50 + Math.random() * 150), unit: 'ms', status: Math.random() > 0.5 ? 'amber' as const : 'green' as const },
     { name: `${domainLabel} — Error Rate`, value: Math.round(Math.random() * 5 * 100) / 100, unit: '%', status: Math.random() > 0.8 ? 'red' as const : 'green' as const },
   ];
+  // Clean up any old-format metrics for this domain (pre-friendly-label format)
+  try {
+    await db.prepare("DELETE FROM process_metrics WHERE tenant_id = ? AND name LIKE ?").bind(tenantId, `${domain} %`).run();
+    await db.prepare("DELETE FROM process_metrics WHERE tenant_id = ? AND name LIKE ?").bind(tenantId, `${domainLabel} —%`).run();
+  } catch { /* skip */ }
   for (const metric of processMetrics) {
     try {
-      // Upsert: delete old metric for this domain+name then insert new
-      await db.prepare('DELETE FROM process_metrics WHERE tenant_id = ? AND name = ?').bind(tenantId, metric.name).run();
       await db.prepare(
         'INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, trend, source_system, measured_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(crypto.randomUUID(), tenantId, metric.name, metric.value, metric.unit, metric.status, JSON.stringify([metric.value * 0.9, metric.value * 0.95, metric.value]), catalystName, now).run();
@@ -314,6 +331,11 @@ async function generateInsightsForTenant(db: D1Database, tenantId: string, catal
   // Step 6: Anomaly Detection — scoped to this domain
   const t5 = Date.now();
   await writeLog(db, tenantId, logId, step, 'Anomaly Detection', 'running', `Scanning ${domainLabel} for unusual patterns...`, 0);
+  // Clean up old-format anomaly rows for this domain
+  try {
+    await db.prepare("DELETE FROM anomalies WHERE tenant_id = ? AND metric = ?").bind(tenantId, `${domain} throughput`).run();
+    await db.prepare("DELETE FROM anomalies WHERE tenant_id = ? AND metric = ?").bind(tenantId, `${domainLabel} throughput`).run();
+  } catch { /* skip */ }
   // Only insert anomaly ~40% of the time (not every catalyst run should find one)
   if (Math.random() < 0.4) {
     try {
@@ -361,7 +383,7 @@ function getTenantId(c: { get: (key: string) => unknown }): string {
 catalysts.get('/clusters', async (c) => {
   const auth = c.get('auth') as AuthContext | undefined;
   const defaultTenantId = auth?.tenantId || 'vantax';
-  const tenantId = (auth?.role === 'admin' || auth?.role === 'system_admin') ? (c.req.query('tenant_id') || defaultTenantId) : defaultTenantId;
+  const tenantId = canCrossTenant(auth?.role) ? (c.req.query('tenant_id') || defaultTenantId) : defaultTenantId;
   const results = await c.env.DB.prepare(
     'SELECT * FROM catalyst_clusters WHERE tenant_id = ? ORDER BY domain ASC'
   ).bind(tenantId).all();
@@ -449,7 +471,7 @@ catalysts.post('/clusters', async (c) => {
 
   // Admin can override tenant_id for creating clusters on behalf of other tenants
   const auth = c.get('auth') as AuthContext | undefined;
-  const targetTenant = (auth?.role === 'admin' || auth?.role === 'system_admin') && raw.tenant_id ? raw.tenant_id : tenantId;
+  const targetTenant = canCrossTenant(auth?.role) && raw.tenant_id ? raw.tenant_id : tenantId;
 
   if (!raw.name || raw.name.length < 1) return c.json({ error: 'name is required' }, 400);
   if (raw.name.length > 100) return c.json({ error: 'name must be 100 characters or less' }, 400);
@@ -489,7 +511,7 @@ catalysts.get('/templates', async (c) => {
 // POST /api/catalysts/deploy-template - Deploy all catalyst clusters for an industry template
 catalysts.post('/deploy-template', async (c) => {
   const auth = c.get('auth') as AuthContext | undefined;
-  if (!auth || (auth.role !== 'admin' && auth.role !== 'system_admin')) {
+  if (!auth || !isAdminRole(auth.role)) {
     return c.json({ error: 'Forbidden', message: 'Only admins can deploy catalyst templates' }, 403);
   }
 
@@ -563,7 +585,7 @@ catalysts.post('/deploy-template', async (c) => {
 catalysts.delete('/clusters/:id', async (c) => {
   const id = c.req.param('id');
   const auth = c.get('auth') as AuthContext | undefined;
-  if (!auth || (auth.role !== 'admin' && auth.role !== 'system_admin')) {
+  if (!auth || !isAdminRole(auth.role)) {
     return c.json({ error: 'Forbidden', message: 'Only admins can delete catalyst clusters' }, 403);
   }
 
@@ -590,12 +612,12 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
   const clusterId = c.req.param('clusterId');
   const subName = decodeURIComponent(c.req.param('subName'));
   const auth = c.get('auth') as AuthContext | undefined;
-  if (!auth || (auth.role !== 'admin' && auth.role !== 'executive' && auth.role !== 'system_admin')) {
+  if (!auth || (!isAdminRole(auth.role) && auth.role !== 'executive')) {
     return c.json({ error: 'Forbidden', message: 'Only admins can toggle sub-catalysts' }, 403);
   }
 
   // Admin can manage clusters of other tenants via tenant_id query param
-  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
 
   const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
@@ -625,7 +647,7 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/data-source', async (
   const clusterId = c.req.param('clusterId');
   const subName = decodeURIComponent(c.req.param('subName'));
   const auth = c.get('auth') as AuthContext | undefined;
-  if (!auth || (auth.role !== 'admin' && auth.role !== 'executive' && auth.role !== 'system_admin')) {
+  if (!auth || (!isAdminRole(auth.role) && auth.role !== 'executive')) {
     return c.json({ error: 'Forbidden', message: 'Only admins can configure data sources' }, 403);
   }
 
@@ -651,7 +673,7 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/data-source', async (
   }
 
   // Admin can manage clusters of other tenants via tenant_id query param
-  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
 
   const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
@@ -681,12 +703,12 @@ catalysts.delete('/clusters/:clusterId/sub-catalysts/:subName/data-source', asyn
   const clusterId = c.req.param('clusterId');
   const subName = decodeURIComponent(c.req.param('subName'));
   const auth = c.get('auth') as AuthContext | undefined;
-  if (!auth || (auth.role !== 'admin' && auth.role !== 'executive' && auth.role !== 'system_admin')) {
+  if (!auth || (!isAdminRole(auth.role) && auth.role !== 'executive')) {
     return c.json({ error: 'Forbidden', message: 'Only admins can configure data sources' }, 403);
   }
 
   // Admin can manage clusters of other tenants via tenant_id query param
-  const targetTenant = (auth.role === 'admin' || auth.role === 'system_admin') ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
 
   const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
   if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
