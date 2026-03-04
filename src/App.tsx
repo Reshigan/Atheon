@@ -42,7 +42,7 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 }
 
 const SUPERADMIN_ROLES: UserRole[] = ['superadmin'];
-const SUPPORT_ROLES: UserRole[] = ['superadmin', 'support_admin'];
+// SUPPORT_ROLES removed — IAM/Control Plane/ERP/Connectivity now use PLATFORM_ADMIN_ROLES
 const PLATFORM_ADMIN_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin'];
 const EXECUTIVE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive'];
 const MANAGER_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager'];
@@ -63,14 +63,14 @@ export default function App() {
           <Route path="/mind" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><MindPage /></ProtectedRoute>} />
           <Route path="/memory" element={<ProtectedRoute allowedRoles={MANAGER_ROLES}><MemoryPage /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><ChatPage /></ProtectedRoute>} />
-          <Route path="/connectivity" element={<ProtectedRoute allowedRoles={SUPPORT_ROLES}><ConnectivityPage /></ProtectedRoute>} />
+          <Route path="/connectivity" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ConnectivityPage /></ProtectedRoute>} />
           <Route path="/audit" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><AuditPage /></ProtectedRoute>} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/tenants" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><TenantsPage /></ProtectedRoute>} />
-          <Route path="/iam" element={<ProtectedRoute allowedRoles={SUPPORT_ROLES}><IAMPage /></ProtectedRoute>} />
-          <Route path="/control-plane" element={<ProtectedRoute allowedRoles={SUPPORT_ROLES}><ControlPlanePage /></ProtectedRoute>} />
+          <Route path="/iam" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IAMPage /></ProtectedRoute>} />
+          <Route path="/control-plane" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
           <Route path="/canonical-api" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><CanonicalApiPage /></ProtectedRoute>} />
-          <Route path="/erp-adapters" element={<ProtectedRoute allowedRoles={SUPPORT_ROLES}><ERPAdaptersPage /></ProtectedRoute>} />
+          <Route path="/erp-adapters" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ERPAdaptersPage /></ProtectedRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>
