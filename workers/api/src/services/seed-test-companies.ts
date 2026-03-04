@@ -35,6 +35,8 @@ export async function seedTestCompanies(db: D1Database) {
     { id:'hv-ceo',   email:'ceo@highveld-steel.co.za',   name:'Johan van der Merwe', role:'executive' },
     { id:'hv-ops',   email:'ops@highveld-steel.co.za',   name:'Sipho Ndlovu', role:'manager' },
     { id:'hv-analyst', email:'analyst@highveld-steel.co.za', name:'Lindiwe Khumalo', role:'analyst' },
+    { id:'hv-operator', email:'operator@highveld-steel.co.za', name:'Bongani Nkosi', role:'operator' },
+    { id:'hv-viewer', email:'viewer@highveld-steel.co.za', name:'Nomvula Dlamini', role:'viewer' },
   ];
   for (const u of hvUsers) {
     await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')
@@ -166,8 +168,11 @@ export async function seedTestCompanies(db: D1Database) {
 
   const glUsers = [
     {id:'gl-admin',email:'admin@greenleaf-organics.co.za',name:'Sarah van Niekerk',role:'admin'},
-    {id:'gl-ops',  email:'ops@greenleaf-organics.co.za',  name:'Mandla Dube',role:'manager'},
+    {id:'gl-exec', email:'ceo@greenleaf-organics.co.za',   name:'Jan du Plessis',role:'executive'},
+    {id:'gl-ops',  email:'ops@greenleaf-organics.co.za',   name:'Mandla Dube',role:'manager'},
     {id:'gl-fin',  email:'finance@greenleaf-organics.co.za',name:'Riana Pretorius',role:'analyst'},
+    {id:'gl-operator',email:'operator@greenleaf-organics.co.za',name:'Themba Moyo',role:'operator'},
+    {id:'gl-viewer',email:'viewer@greenleaf-organics.co.za',name:'Anele Sithole',role:'viewer'},
   ];
   for (const u of glUsers) {
     await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')
@@ -260,6 +265,8 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'mb-ceo',  email:'ceo@medibridge.co.za',  name:'Dr. James Nkosi',role:'executive'},
     {id:'mb-ops',  email:'ops@medibridge.co.za',  name:'Sister Nomsa Zulu',role:'manager'},
     {id:'mb-fin',  email:'finance@medibridge.co.za',name:'Rajesh Naicker',role:'analyst'},
+    {id:'mb-operator',email:'operator@medibridge.co.za',name:'Precious Mthethwa',role:'operator'},
+    {id:'mb-viewer',email:'viewer@medibridge.co.za',name:'Dr. Zanele Mkhize',role:'viewer'},
   ];
   for (const u of mbUsers) {
     await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')
@@ -353,7 +360,11 @@ export async function seedTestCompanies(db: D1Database) {
 
   const bpUsers = [
     {id:'bp-admin',email:'admin@bluepeak-logistics.co.za',name:'Pieter Botha',role:'admin'},
-    {id:'bp-ops',  email:'ops@bluepeak-logistics.co.za',  name:'Kagiso Molefe',role:'manager'},
+    {id:'bp-exec', email:'ceo@bluepeak-logistics.co.za',   name:'Francois du Toit',role:'executive'},
+    {id:'bp-ops',  email:'ops@bluepeak-logistics.co.za',   name:'Kagiso Molefe',role:'manager'},
+    {id:'bp-analyst',email:'analyst@bluepeak-logistics.co.za',name:'Zandile Mkhwanazi',role:'analyst'},
+    {id:'bp-operator',email:'operator@bluepeak-logistics.co.za',name:'Tshepo Motaung',role:'operator'},
+    {id:'bp-viewer',email:'viewer@bluepeak-logistics.co.za',name:'Lerato Phiri',role:'viewer'},
   ];
   for (const u of bpUsers) {
     await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')
@@ -436,6 +447,8 @@ export async function seedTestCompanies(db: D1Database) {
     {id:'nt-cto',  email:'cto@novatech.co.za',  name:'Michael Chen',role:'executive'},
     {id:'nt-vpsales',email:'vpsales@novatech.co.za',name:'David Mabaso',role:'manager'},
     {id:'nt-analyst',email:'analyst@novatech.co.za',name:'Fatima Osman',role:'analyst'},
+    {id:'nt-operator',email:'operator@novatech.co.za',name:'Siyanda Cele',role:'operator'},
+    {id:'nt-viewer',email:'viewer@novatech.co.za',name:'Hlengiwe Zwane',role:'viewer'},
   ];
   for (const u of ntUsers) {
     await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')

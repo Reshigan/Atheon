@@ -31,12 +31,18 @@ export async function seedDatabase(db: D1Database) {
       .bind(e.tenant_id, e.layers, e.catalyst_clusters, e.max_agents, e.max_users, e.autonomy_tiers, e.llm_tiers, e.features, e.sso_enabled, e.api_access, e.custom_branding, e.data_retention_days).run();
   }
 
-  // Seed Users
+  // Seed Users — covers all 8 RBAC tiers for the vantax platform tenant
   const users = [
     { id: 'user-1', tenant_id: 'vantax', email: 'admin@vantax.co.za', name: 'Reshigan', role: 'superadmin', permissions: '["*"]' },
-    { id: 'user-2', tenant_id: 'vantax', email: 'exec@vantax.co.za', name: 'Sarah Chen', role: 'executive', permissions: '["apex.*","pulse.read","catalysts.approve"]' },
     { id: 'user-essen', tenant_id: 'vantax', email: 'essen@vantax.co.za', name: 'Essen Naidoo', role: 'superadmin', permissions: '["*"]' },
+    { id: 'user-essen-ag', tenant_id: 'vantax', email: 'essen.naidoo@agentum.com.au', name: 'Essen Naidoo', role: 'superadmin', permissions: '["*"]' },
+    { id: 'user-reshigan', tenant_id: 'vantax', email: 'reshigan@vantax.co.za', name: 'Reshigan', role: 'superadmin', permissions: '["*"]' },
     { id: 'user-system', tenant_id: 'vantax', email: 'atheon@vantax.co.za', name: 'Atheon System', role: 'support_admin', permissions: '["*"]' },
+    { id: 'user-2', tenant_id: 'vantax', email: 'exec@vantax.co.za', name: 'Sarah Chen', role: 'executive', permissions: '["apex.*","pulse.read","catalysts.approve"]' },
+    { id: 'user-mgr', tenant_id: 'vantax', email: 'manager@vantax.co.za', name: 'David Khumalo', role: 'manager', permissions: '["pulse.*","catalysts.read","catalysts.execute","mind.query","memory.read"]' },
+    { id: 'user-analyst', tenant_id: 'vantax', email: 'analyst@vantax.co.za', name: 'Fatima Osman', role: 'analyst', permissions: '["pulse.read","mind.query","apex.read"]' },
+    { id: 'user-operator', tenant_id: 'vantax', email: 'operator@vantax.co.za', name: 'Thabo Ndlovu', role: 'operator', permissions: '["pulse.read","catalysts.read","catalysts.execute","mind.query"]' },
+    { id: 'user-viewer', tenant_id: 'vantax', email: 'viewer@vantax.co.za', name: 'Lerato Mabaso', role: 'viewer', permissions: '["dashboard.read"]' },
     { id: 'user-3', tenant_id: 'freshco', email: 'admin@freshco.co.za', name: 'James Mthembu', role: 'admin', permissions: '["*"]' },
     { id: 'user-4', tenant_id: 'deepmine', email: 'admin@deepmine.co.za', name: 'Pieter van der Berg', role: 'admin', permissions: '["*"]' },
     { id: 'user-5', tenant_id: 'medilife', email: 'admin@medilife.co.za', name: 'Dr. Aisha Patel', role: 'admin', permissions: '["*"]' },

@@ -47,6 +47,8 @@ export async function seedSampleCompany(db: D1Database) {
     { id: 'protea-user-2', email: 'cfo@protea-mfg.co.za', name: 'Lindiwe Nkosi', role: 'executive', permissions: '["apex.*","pulse.read","catalysts.approve"]' },
     { id: 'protea-user-3', email: 'ops@protea-mfg.co.za', name: 'Johan van Wyk', role: 'manager', permissions: '["pulse.*","catalysts.read","catalysts.execute"]' },
     { id: 'protea-user-4', email: 'finance@protea-mfg.co.za', name: 'Priya Govender', role: 'analyst', permissions: '["pulse.read","apex.read"]' },
+    { id: 'protea-user-6', email: 'warehouse@protea-mfg.co.za', name: 'Mandla Sithole', role: 'operator', permissions: '["pulse.read","catalysts.read","catalysts.execute","mind.query"]' },
+    { id: 'protea-user-7', email: 'intern@protea-mfg.co.za', name: 'Naledi Mahlangu', role: 'viewer', permissions: '["dashboard.read"]' },
     { id: 'protea-user-5', email: 'hr@protea-mfg.co.za', name: 'Sipho Dlamini', role: 'analyst', permissions: '["pulse.read"]' },
   ];
   for (const u of users) {

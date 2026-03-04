@@ -79,7 +79,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v16';
+const MIGRATION_VERSION = 'v17';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
@@ -219,6 +219,24 @@ app.use('*', async (c, next) => {
           "UPDATE users SET role = 'support_admin' WHERE email = 'atheon@vantax.co.za' AND role = 'admin' AND tenant_id = 'vantax'"
         ).run();
       } catch { /* users may not exist yet — seed will create them with correct roles */ }
+
+      // v17: Seed missing role-tier users for existing databases
+      // seedDatabase() uses plain INSERT (not OR IGNORE) so it aborts on duplicates.
+      // seedSampleCompany() has an early-return guard if protea tenant exists.
+      // These INSERT OR IGNORE statements ensure the new users get created on existing DBs.
+      try {
+        // Vantax platform tenant — new role tiers
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-mgr','vantax','manager@vantax.co.za','David Khumalo','manager','[\"pulse.*\",\"catalysts.read\",\"catalysts.execute\",\"mind.query\",\"memory.read\"]')").run();
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-analyst','vantax','analyst@vantax.co.za','Fatima Osman','analyst','[\"pulse.read\",\"mind.query\",\"apex.read\"]')").run();
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-operator','vantax','operator@vantax.co.za','Thabo Ndlovu','operator','[\"pulse.read\",\"catalysts.read\",\"catalysts.execute\",\"mind.query\"]')").run();
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-viewer','vantax','viewer@vantax.co.za','Lerato Mabaso','viewer','[\"dashboard.read\"]')").run();
+        // New superadmin accounts
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-essen-ag','vantax','essen.naidoo@agentum.com.au','Essen Naidoo','superadmin','[\"*\"]')").run();
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-reshigan','vantax','reshigan@vantax.co.za','Reshigan','superadmin','[\"*\"]')").run();
+        // Protea tenant — new role tiers
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES ('protea-user-6','protea','warehouse@protea-mfg.co.za','Mandla Sithole','operator','','[\"pulse.read\",\"catalysts.read\",\"catalysts.execute\",\"mind.query\"]','active')").run();
+        await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES ('protea-user-7','protea','intern@protea-mfg.co.za','Naledi Mahlangu','viewer','','[\"dashboard.read\"]','active')").run();
+      } catch { /* ignore — users may already exist from fresh seed */ }
 
       // Seed with demo data
       await seedDatabase(c.env.DB);
