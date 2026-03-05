@@ -12,10 +12,16 @@ import { encrypt, decrypt, isEncrypted } from '../services/encryption';
 
 const notifications = new Hono<AppBindings>();
 
-function getTenantId(c: { get: (key: string) => unknown }): string {
+/** Superadmin/support_admin can override tenant via ?tenant_id= query param */
+const CROSS_TENANT_ROLES = new Set(['superadmin', 'support_admin']);
+function getTenantId(c: { get: (key: string) => unknown; req: { query: (key: string) => string | undefined } }): string {
   const auth = c.get('auth') as AuthContext | undefined;
   if (!auth?.tenantId) throw new Error('No tenant context available');
-  return auth.tenantId;
+  const defaultTenantId = auth.tenantId;
+  if (CROSS_TENANT_ROLES.has(auth?.role || '')) {
+    return c.req.query('tenant_id') || defaultTenantId;
+  }
+  return defaultTenantId;
 }
 
 // GET /api/notifications

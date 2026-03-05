@@ -15,10 +15,16 @@ const ROLE_LEVELS: Record<string, number> = {
 /** Only roles in ROLE_LEVELS are valid — reject unknown strings like 'system_admin' */
 const VALID_ROLES = new Set(Object.keys(ROLE_LEVELS));
 
-function getTenantId(c: { get: (key: string) => unknown }): string {
+/** Superadmin/support_admin can override tenant via ?tenant_id= query param */
+const CROSS_TENANT_ROLES = new Set(['superadmin', 'support_admin']);
+function getTenantId(c: { get: (key: string) => unknown; req: { query: (key: string) => string | undefined } }): string {
   const auth = c.get('auth') as AuthContext | undefined;
   if (!auth?.tenantId) throw new Error('No tenant context available');
-  return auth.tenantId;
+  const defaultTenantId = auth.tenantId;
+  if (CROSS_TENANT_ROLES.has(auth?.role || '')) {
+    return c.req.query('tenant_id') || defaultTenantId;
+  }
+  return defaultTenantId;
 }
 
 // M12: Pagination helper

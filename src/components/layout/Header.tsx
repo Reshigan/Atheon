@@ -156,6 +156,10 @@ export function Header() {
 
   const handleSelectTenant = (tenant: Tenant) => {
     setActiveTenant(tenant.id, tenant.name, tenant.industry as IndustryVertical);
+    // Update industry selector to match selected company's industry
+    if (tenant.industry) {
+      setIndustry(tenant.industry as IndustryVertical);
+    }
     // Set tenant override for API calls (null if it's user's own tenant)
     if (tenant.id === user?.tenantId) {
       setTenantOverride(null);
@@ -163,9 +167,7 @@ export function Header() {
       setTenantOverride(tenant.id);
     }
     setShowCompanyDropdown(false);
-    // Navigate to dashboard to refresh data with new tenant context
-    navigate('/dashboard');
-    // Reload to ensure all cached data is refreshed
+    // Reload to ensure all cached data is refreshed with new tenant context
     window.location.reload();
   };
 
@@ -214,8 +216,14 @@ export function Header() {
                   <p className="text-[10px] font-medium t-muted uppercase tracking-wider">Switch Company</p>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
-                  {tenants.map((t) => {
+                  {/* Pin user's own company at top, then sort rest alphabetically */}
+                  {[...tenants].sort((a, b) => {
+                    if (a.id === user?.tenantId) return -1;
+                    if (b.id === user?.tenantId) return 1;
+                    return a.name.localeCompare(b.name);
+                  }).map((t) => {
                     const isActive = t.id === activeTenantId;
+                    const isOwnCompany = t.id === user?.tenantId;
                     const industryLabel = industries.find(i => i.value === t.industry)?.label || t.industry;
                     return (
                       <button
@@ -227,7 +235,7 @@ export function Header() {
                         <Building2 size={13} className={isActive ? 'text-accent flex-shrink-0' : 't-muted flex-shrink-0'} />
                         <div className="flex-1 min-w-0">
                           <p className={`text-[12px] leading-tight truncate ${isActive ? 'font-medium t-primary' : 't-secondary'}`}>{t.name}</p>
-                          <p className="text-[10px] t-muted">{industryLabel} &middot; {t.plan}</p>
+                          <p className="text-[10px] t-muted">{isOwnCompany ? 'Your company' : industryLabel} &middot; {t.plan}</p>
                         </div>
                         {isActive && <Check size={12} className="text-accent flex-shrink-0" />}
                       </button>
