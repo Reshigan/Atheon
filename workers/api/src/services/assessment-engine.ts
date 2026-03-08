@@ -1312,8 +1312,8 @@ export async function generateTechnicalReportPDF(
     ['Annual Licence', `R ${formatZAR(sizing.annual_licence_revenue)}`, `R ${formatZAR(config.onprem_licence_fee_pa)}`],
   ];
 
-  for (const [label, saas, onprem] of compRows) {
-    if (compRows.indexOf([label, saas, onprem]) % 2 === 0) {
+  compRows.forEach(([label, saas, onprem], idx) => {
+    if (idx % 2 === 0) {
       doc.setFillColor(...lightBg);
       doc.rect(14, y - 3, pageW - 28, 6, 'F');
     }
@@ -1323,7 +1323,7 @@ export async function generateTechnicalReportPDF(
     doc.text(saas, 100, y);
     doc.text(onprem, 145, y);
     y += 6;
-  }
+  });
 
   techFooter();
 
