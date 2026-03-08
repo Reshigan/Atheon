@@ -28,6 +28,7 @@ import storage from './routes/storage';
 import realtime from './routes/realtime';
 import deployments from './routes/deployments';
 import assessments from './routes/assessments';
+import agentRoutes from './routes/agent-routes';
 
 // Export Durable Object class for Cloudflare runtime
 export { DashboardRoom };
@@ -406,18 +407,12 @@ app.get('/healthz', async (c) => {
 
 // Tenant isolation middleware for protected routes (supports both /api/ and /api/v1/ prefixes)
 // Auth routes are excluded (login/register don't have JWT yet)
-const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments'];
+const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments'];
 for (const prefix of protectedPrefixes) {
   app.use(`/api/${prefix}/*`, tenantIsolation());
   app.use(`/api/v1/${prefix}/*`, tenantIsolation());
 }
-// Deployments: selective tenant isolation — exclude /agent/* sub-routes (they use X-Licence-Key, not JWT)
-app.use('/api/deployments', tenantIsolation());
-app.use('/api/deployments/:id', tenantIsolation());
-app.use('/api/deployments/:id/*', tenantIsolation());
-app.use('/api/v1/deployments', tenantIsolation());
-app.use('/api/v1/deployments/:id', tenantIsolation());
-app.use('/api/v1/deployments/:id/*', tenantIsolation());
+// Agent routes are mounted at /api/agent — outside tenantIsolation (they use X-Licence-Key, not JWT)
 
 // Bug #3 fix: Server-side role enforcement for admin-only routes
 // superadmin: full platform access (tenants, IAM, controlplane, etc.)
@@ -447,6 +442,9 @@ for (const [name, handler] of routeModules) {
   app.route(`/api/${name}`, handler);
   app.route(`/api/v1/${name}`, handler);
 }
+// Agent routes mounted separately — no tenantIsolation middleware
+app.route('/api/agent', agentRoutes);
+app.route('/api/v1/agent', agentRoutes);
 
 // HTML escape helper to prevent injection in email bodies
 function escapeHtml(str: string): string {

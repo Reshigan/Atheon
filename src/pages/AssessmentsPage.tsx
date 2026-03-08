@@ -165,7 +165,7 @@ function ListView({ assessments, loading, onView, onDelete }: {
           {assessments.map(a => {
             const results = a.results as AssessmentResults | null;
             const catalystCount = results?.catalyst_scores?.length || 0;
-            const totalSaving = results?.catalyst_scores?.reduce((sum: number, c: CatalystScore) => sum + (c.annual_saving_zar || 0), 0) || 0;
+            const totalSaving = results?.catalyst_scores?.reduce((sum: number, c: CatalystScore) => sum + (c.estimated_annual_saving_zar || 0), 0) || 0;
 
             return (
               <tr key={a.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
@@ -595,9 +595,8 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 
   const catalysts = results.catalyst_scores || [];
   const sizing = results.technical_sizing;
-  const totalSaving = catalysts.reduce((s: number, c: CatalystScore) => s + (c.annual_saving_zar || 0), 0);
-  const priorityMap: Record<string, number> = { critical: 10, high: 7, medium: 5, low: 2 };
-  const avgPriority = catalysts.length > 0 ? (catalysts.reduce((s: number, c: CatalystScore) => s + (priorityMap[c.priority] || 0), 0) / catalysts.length).toFixed(1) : '0';
+  const totalSaving = catalysts.reduce((s: number, c: CatalystScore) => s + (c.estimated_annual_saving_zar || 0), 0);
+  const avgPriority = catalysts.length > 0 ? (catalysts.reduce((s: number, c: CatalystScore) => s + (c.priority || 0), 0) / catalysts.length).toFixed(1) : '0';
 
   return (
     <div className="space-y-6">
@@ -607,7 +606,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
           { label: 'Total Annual Saving', value: `R ${(totalSaving / 1000).toFixed(0)}k` },
           { label: 'Catalysts Identified', value: catalysts.length.toString() },
           { label: 'Avg Priority', value: avgPriority },
-          { label: 'Payback Period', value: sizing ? `${((sizing.total_infra_cost_pm * 12) / Math.max(totalSaving, 1)).toFixed(1)} yrs` : '—' },
+          { label: 'Payback Period', value: sizing ? `${((sizing.total_infra_cost_pm_saas * 12) / Math.max(totalSaving, 1)).toFixed(1)} yrs` : '—' },
         ].map(m => (
           <div key={m.label} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
@@ -644,8 +643,8 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-card)' }}>
-                {[...catalysts].sort((a: CatalystScore, b: CatalystScore) => (priorityMap[b.priority] || 0) - (priorityMap[a.priority] || 0)).map((c: CatalystScore) => (
-                  <CatalystRow key={c.name} catalyst={c} />
+                {[...catalysts].sort((a: CatalystScore, b: CatalystScore) => (a.priority || 0) - (b.priority || 0)).map((c: CatalystScore) => (
+                  <CatalystRow key={c.catalyst_name} catalyst={c} />
                 ))}
               </tbody>
             </table>
@@ -673,35 +672,35 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg p-4" style={{ background: 'var(--bg-secondary)' }}>
                 <h4 className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>SaaS (Cloudflare)</h4>
-                <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>R {sizing.total_infra_cost_pm.toLocaleString()}/mo</p>
+                <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>R {sizing.total_infra_cost_pm_saas.toLocaleString()}/mo</p>
                 <div className="text-xs mt-2 space-y-1" style={{ color: 'var(--text-secondary)' }}>
-                  <p>API calls: R {sizing.estimated_api_calls_pm.toLocaleString()}</p>
-                  <p>D1 storage: {sizing.estimated_d1_storage_gb.toFixed(2)} GB</p>
-                  <p>R2 storage: {sizing.estimated_r2_storage_gb.toFixed(2)} GB</p>
-                  <p>Vectorize queries: {sizing.estimated_vectorize_queries_pm.toLocaleString()}</p>
-                  <p>AI tokens: {sizing.estimated_ai_tokens_pm.toLocaleString()}</p>
+                  <p>API calls: {sizing.total_monthly_api_calls.toLocaleString()}</p>
+                  <p>D1 storage: {sizing.total_db_size_gb.toFixed(2)} GB</p>
+                  <p>R2 storage: {sizing.total_storage_gb.toFixed(2)} GB</p>
+                  <p>Vectorize queries: {sizing.total_monthly_vector_queries.toLocaleString()}</p>
+                  <p>AI tokens: {sizing.total_monthly_llm_tokens.toLocaleString()}</p>
                 </div>
               </div>
               <div className="rounded-lg p-4" style={{ background: 'var(--bg-secondary)' }}>
                 <h4 className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>On-Premise</h4>
                 <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>R {sizing.monthly_licence_revenue.toLocaleString()}/mo revenue</p>
                 <div className="text-xs mt-2 space-y-1" style={{ color: 'var(--text-secondary)' }}>
-                  <p>Model: {sizing.deployment_model}</p>
-                  <p>Infra cost: R {sizing.total_infra_cost_pm.toLocaleString()}/mo</p>
+                  <p>Infra cost: R {sizing.total_infra_cost_pm_onprem.toLocaleString()}/mo</p>
+                  <p>Margin: {sizing.gross_margin_pct_onprem.toFixed(1)}%</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Margin */}
-          {sizing.gross_margin_pct !== undefined && (
+          {sizing.gross_margin_pct_saas !== undefined && (
             <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-              <h3 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Gross Margin</h3>
-              <p className="text-2xl font-semibold" style={{ color: sizing.gross_margin_pct >= 50 ? 'var(--color-success, #10b981)' : 'var(--color-warning, #f59e0b)' }}>
-                {sizing.gross_margin_pct.toFixed(1)}%
+              <h3 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Gross Margin (SaaS)</h3>
+              <p className="text-2xl font-semibold" style={{ color: sizing.gross_margin_pct_saas >= 50 ? 'var(--color-success, #10b981)' : 'var(--color-warning, #f59e0b)' }}>
+                {sizing.gross_margin_pct_saas.toFixed(1)}%
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                (Monthly licence revenue - Total infra cost) / Monthly licence revenue
+                (Monthly licence revenue - SaaS infra cost) / Monthly licence revenue
               </p>
             </div>
           )}
@@ -733,7 +732,8 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 function CatalystRow({ catalyst }: { catalyst: CatalystScore }) {
   const [expanded, setExpanded] = useState(false);
   const c = catalyst;
-  const priorityColor = {
+  const priorityLabel = c.priority <= 1 ? 'critical' : c.priority <= 2 ? 'high' : c.priority <= 3 ? 'medium' : 'low';
+  const priorityColor: Record<string, string> = {
     critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -748,15 +748,15 @@ function CatalystRow({ catalyst }: { catalyst: CatalystScore }) {
       >
         <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
           <span className="mr-1">{expanded ? '▾' : '▸'}</span>
-          {c.name}
+          {c.catalyst_name}
         </td>
         <td className="px-4 py-3">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColor[c.priority] || priorityColor.low}`}>
-            {c.priority}
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColor[priorityLabel] || priorityColor.low}`}>
+            {priorityLabel}
           </span>
         </td>
         <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
-          R {(c.annual_saving_zar / 1000).toFixed(0)}k
+          R {(c.estimated_annual_saving_zar / 1000).toFixed(0)}k
         </td>
         <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.confidence}</td>
         <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.sub_catalysts?.length || 0}</td>
@@ -768,7 +768,7 @@ function CatalystRow({ catalyst }: { catalyst: CatalystScore }) {
               {c.sub_catalysts.map((sc: SubCatalystScore, i: number) => (
                 <div key={i} className="flex justify-between text-xs">
                   <span style={{ color: 'var(--text-secondary)' }}>{sc.name}</span>
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>R {(sc.saving_zar / 1000).toFixed(0)}k</span>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>R {(sc.estimated_annual_saving_zar / 1000).toFixed(0)}k</span>
                 </div>
               ))}
             </div>

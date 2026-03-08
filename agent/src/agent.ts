@@ -91,7 +91,7 @@ async function selfUpdate(targetVersion: string): Promise<void> {
 // ── Error Reporting ─────────────────────────────────────────────────────
 async function reportError(message: string, code?: string, severity?: string): Promise<void> {
   try {
-    await fetch(`${CONTROL_PLANE_URL}/api/deployments/agent/error`, {
+    await fetch(`${CONTROL_PLANE_URL}/api/agent/error`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ async function sendHeartbeat(): Promise<void> {
     const resourceUsage = getResourceUsage();
     const healthScore = localHealth.healthy ? 100 : 0;
 
-    const response = await fetch(`${CONTROL_PLANE_URL}/api/deployments/agent/heartbeat`, {
+    const response = await fetch(`${CONTROL_PLANE_URL}/api/agent/heartbeat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

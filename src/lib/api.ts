@@ -1041,29 +1041,63 @@ export interface AssessmentResults {
 }
 
 export interface CatalystScore {
-  name: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  catalyst_name: string;
+  domain: string;
+  priority: number;
+  deploy_order: number;
+  estimated_annual_saving_zar: number;
+  saving_components: { label: string; amount_zar: number; methodology: string }[];
+  data_insights: string[];
   confidence: 'high' | 'medium' | 'low';
-  annual_saving_zar: number;
   sub_catalysts: SubCatalystScore[];
+  estimated_monthly_api_calls: number;
+  estimated_monthly_vector_queries: number;
+  estimated_monthly_llm_tokens: number;
+  estimated_db_size_mb: number;
 }
 
 export interface SubCatalystScore {
   name: string;
-  saving_zar: number;
-  driver: string;
-  assumption: string;
+  recommended: boolean;
+  priority_within_cluster: number;
+  estimated_monthly_volume: number;
+  volume_unit: string;
+  estimated_monthly_api_calls: number;
+  estimated_monthly_llm_tokens: number;
+  estimated_annual_saving_zar: number;
+  deploy_prerequisite?: string;
 }
 
 export interface TechnicalSizing {
-  deployment_model: string;
-  estimated_api_calls_pm: number;
-  estimated_d1_storage_gb: number;
-  estimated_r2_storage_gb: number;
-  estimated_vectorize_queries_pm: number;
-  estimated_ai_tokens_pm: number;
-  per_catalyst_sizing: Record<string, unknown>[];
-  total_infra_cost_pm: number;
+  total_monthly_api_calls: number;
+  total_monthly_vector_queries: number;
+  total_monthly_llm_tokens: number;
+  total_db_size_gb: number;
+  total_storage_gb: number;
+  total_kv_reads_monthly: number;
+  cost_cf_workers: number;
+  cost_cf_d1: number;
+  cost_cf_vectorize: number;
+  cost_cf_workers_ai: number;
+  cost_cf_r2: number;
+  cost_cf_kv: number;
+  total_infra_cost_pm_saas: number;
+  total_infra_cost_pm_onprem: number;
   monthly_licence_revenue: number;
-  gross_margin_pct: number;
+  annual_licence_revenue: number;
+  gross_margin_pm_saas: number;
+  gross_margin_pct_saas: number;
+  gross_margin_pm_onprem: number;
+  gross_margin_pct_onprem: number;
+  catalyst_sizing: Array<{
+    catalyst_name: string;
+    sub_catalysts: Array<{
+      name: string;
+      monthly_api_calls: number;
+      monthly_llm_tokens: number;
+      monthly_vector_queries: number;
+      cost_pm_zar: number;
+    }>;
+    total_cost_pm_zar: number;
+  }>;
 }
