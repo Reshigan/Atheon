@@ -6,6 +6,7 @@ import {
   IconDashboard, IconApex, IconPulse, IconCatalysts, IconMind, IconMemory,
   IconChat, IconClients, IconIAM, IconControlPlane, IconCanonicalApi,
   IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
+  IconNetwork, IconBarChart,
 } from "@/components/icons/AtheonIcons";
 import type { UserRole } from "@/types";
 
@@ -55,6 +56,9 @@ const navItems: NavItem[] = [
   // System — admin + support roles
   { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'system', sublabel: 'MCP + A2A', roles: PLATFORM_ADMIN_ROLES },
   { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
+  // Superadmin — hybrid deployment & assessment tools
+  { path: '/deployments', label: 'Deployments', icon: IconNetwork, section: 'superadmin', sublabel: 'Hybrid & On-Premise', roles: SUPERADMIN_ROLES },
+  { path: '/assessments', label: 'Assessments', icon: IconBarChart, section: 'superadmin', sublabel: 'Pre-Sale Analysis', roles: SUPERADMIN_ROLES },
 ];
 
 /** Atheon logo mark — geometric triangle with sage/sky/bronze palette */
@@ -196,7 +200,7 @@ export function Sidebar() {
               const Icon = item.icon;
               const showSectionHeader = prevSection !== item.section;
               prevSection = item.section;
-              const sectionLabels: Record<string, string> = { intelligence: 'Intelligence', platform: 'Platform', system: 'System' };
+              const sectionLabels: Record<string, string> = { intelligence: 'Intelligence', platform: 'Platform', system: 'System', superadmin: 'Superadmin' };
 
               return (
                 <div key={item.path}>

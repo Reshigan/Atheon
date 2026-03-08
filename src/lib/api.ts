@@ -405,6 +405,74 @@ export const api = {
         body: JSON.stringify({ ids }),
       }),
   },
+
+  // ── Hybrid Deployment Management ──────────────────────────────────────
+  deployments: {
+    list: () =>
+      request<{ deployments: ManagedDeployment[]; total: number }>('/api/deployments'),
+    get: (id: string) =>
+      request<ManagedDeployment>(`/api/deployments/${id}`),
+    create: (data: CreateDeploymentRequest) =>
+      request<CreateDeploymentResponse>('/api/deployments', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<{ success: boolean }>(`/api/deployments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    pushConfig: (id: string, config: Record<string, unknown>) =>
+      request<{ success: boolean; message: string }>(`/api/deployments/${id}/push-config`, { method: 'POST', body: JSON.stringify(config) }),
+    pushUpdate: (id: string, version: string) =>
+      request<{ success: boolean; message: string }>(`/api/deployments/${id}/push-update`, { method: 'POST', body: JSON.stringify({ version }) }),
+    getLogs: (id: string) =>
+      request<{ logs: AgentErrorLog[] }>(`/api/deployments/${id}/logs`),
+    revoke: (id: string) =>
+      request<{ success: boolean; message: string }>(`/api/deployments/${id}`, { method: 'DELETE' }),
+  },
+
+  // ── Pre-Assessment Tool ───────────────────────────────────────────────
+  assessments: {
+    list: () =>
+      request<{ assessments: Assessment[]; total: number }>('/api/assessments'),
+    get: (id: string) =>
+      request<Assessment>(`/api/assessments/${id}`),
+    create: (data: { prospect_name: string; prospect_industry: string; erp_connection_id?: string; config: Record<string, unknown> }) =>
+      request<{ id: string; status: string }>('/api/assessments', { method: 'POST', body: JSON.stringify(data) }),
+    status: (id: string) =>
+      request<{ status: string; progress: string }>(`/api/assessments/${id}/status`),
+    delete: (id: string) =>
+      request<{ success: boolean }>(`/api/assessments/${id}`, { method: 'DELETE' }),
+    getDefaultConfig: () =>
+      request<Record<string, unknown>>('/api/assessments/config/defaults'),
+    saveDefaultConfig: (config: Record<string, unknown>) =>
+      request<{ success: boolean }>('/api/assessments/config/defaults', { method: 'PUT', body: JSON.stringify(config) }),
+    downloadBusiness: async (id: string) => {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`${API_URL}/api/assessments/${id}/report/business`, { headers });
+      if (!res.ok) throw new Error('Failed to download business report');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `business-case-${id}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    },
+    downloadTechnical: async (id: string) => {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`${API_URL}/api/assessments/${id}/report/technical`, { headers });
+      if (!res.ok) throw new Error('Failed to download technical report');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `technical-sizing-${id}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    },
+    downloadExcel: async (id: string) => {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`${API_URL}/api/assessments/${id}/report/excel`, { headers });
+      if (!res.ok) throw new Error('Failed to download Excel model');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `financial-model-${id}.xlsx`; a.click();
+      URL.revokeObjectURL(url);
+    },
+  },
 };
 
 // Types for API responses
@@ -885,4 +953,117 @@ export interface NotificationItem {
   metadata: Record<string, unknown> | null;
   read: boolean;
   createdAt: string;
+}
+
+// ── Hybrid Deployment Types ─────────────────────────────────────────────
+export interface ManagedDeployment {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  tenantSlug?: string;
+  name: string;
+  deploymentType: 'hybrid' | 'on-premise';
+  status: 'pending' | 'provisioning' | 'active' | 'degraded' | 'offline' | 'suspended';
+  licenceKey: string;
+  licenceExpiresAt: string | null;
+  agentVersion: string | null;
+  apiVersion: string | null;
+  customerApiUrl: string | null;
+  region: string;
+  lastHeartbeat: string | null;
+  healthScore: number;
+  config: Record<string, unknown>;
+  resourceUsage: { cpuPct?: number; memMb?: number; diskGb?: number; activeUsers?: number };
+  errorLog?: AgentErrorLog[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDeploymentRequest {
+  tenant_id: string;
+  name: string;
+  deployment_type?: 'hybrid' | 'on-premise';
+  region?: string;
+  licence_expires_at?: string;
+  config?: Record<string, unknown>;
+}
+
+export interface CreateDeploymentResponse {
+  id: string;
+  licenceKey: string;
+  status: string;
+  installConfig: {
+    deploymentId: string;
+    licenceKey: string;
+    controlPlaneUrl: string;
+    heartbeatIntervalSeconds: number;
+    agentImage: string;
+    initialConfig: Record<string, unknown>;
+    envFile: string;
+    installCommand: string;
+  };
+  message: string;
+}
+
+export interface AgentErrorLog {
+  ts: string;
+  message: string;
+  code?: string;
+  severity: string;
+}
+
+// ── Assessment Types ────────────────────────────────────────────────────
+export interface Assessment {
+  id: string;
+  tenantId: string;
+  tenantName?: string;
+  prospectName: string;
+  prospectIndustry: string;
+  erpConnectionId: string | null;
+  status: 'pending' | 'running' | 'complete' | 'failed';
+  config: Record<string, unknown>;
+  dataSnapshot: Record<string, unknown>;
+  results: AssessmentResults;
+  businessReportKey: string | null;
+  technicalReportKey: string | null;
+  excelModelKey: string | null;
+  createdBy: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface AssessmentResults {
+  catalyst_scores?: CatalystScore[];
+  technical_sizing?: TechnicalSizing;
+  volume_snapshot?: Record<string, unknown>;
+  narrative?: string;
+  error?: string;
+}
+
+export interface CatalystScore {
+  name: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  confidence: 'high' | 'medium' | 'low';
+  annual_saving_zar: number;
+  sub_catalysts: SubCatalystScore[];
+}
+
+export interface SubCatalystScore {
+  name: string;
+  saving_zar: number;
+  driver: string;
+  assumption: string;
+}
+
+export interface TechnicalSizing {
+  deployment_model: string;
+  estimated_api_calls_pm: number;
+  estimated_d1_storage_gb: number;
+  estimated_r2_storage_gb: number;
+  estimated_vectorize_queries_pm: number;
+  estimated_ai_tokens_pm: number;
+  per_catalyst_sizing: Record<string, unknown>[];
+  total_infra_cost_pm: number;
+  monthly_licence_revenue: number;
+  gross_margin_pct: number;
 }

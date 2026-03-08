@@ -26,6 +26,8 @@ import connectivity from './routes/connectivity';
 import notifications from './routes/notifications';
 import storage from './routes/storage';
 import realtime from './routes/realtime';
+import deployments from './routes/deployments';
+import assessments from './routes/assessments';
 
 // Export Durable Object class for Cloudflare runtime
 export { DashboardRoom };
@@ -50,7 +52,7 @@ app.use('*', cors({
     return null as unknown as string;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key'],
   exposeHeaders: ['Content-Length', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Request-ID'],
   maxAge: 86400,
   credentials: true,
@@ -90,7 +92,7 @@ app.use('/api/*', apiRateLimiter);
 // At runtime, Workers can't read files, so CREATE TABLE IF NOT EXISTS ensures idempotent setup.
 // New tables MUST be added to migrations/ files first, then mirrored here for runtime safety.
 // Migration files: 0001_init.sql, 0002_erp_sample_data.sql, 0003_extended_tables.sql
-const MIGRATION_VERSION = 'v20';
+const MIGRATION_VERSION = 'v21';
 app.use('*', async (c, next) => {
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
@@ -126,6 +128,8 @@ app.use('*', async (c, next) => {
         CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'document', mime_type TEXT NOT NULL DEFAULT 'application/octet-stream', size INTEGER NOT NULL DEFAULT 0, r2_key TEXT, uploaded_by TEXT, stored_in_r2 INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
         CREATE TABLE IF NOT EXISTS email_queue (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), recipients TEXT NOT NULL, subject TEXT NOT NULL, html_body TEXT NOT NULL, text_body TEXT, status TEXT NOT NULL DEFAULT 'pending', sent_at TEXT, error TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
         CREATE TABLE IF NOT EXISTS execution_logs (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), action_id TEXT NOT NULL, step_number INTEGER NOT NULL, step_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'running', detail TEXT, duration_ms INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+        CREATE TABLE IF NOT EXISTS managed_deployments (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, deployment_type TEXT NOT NULL DEFAULT 'hybrid', status TEXT NOT NULL DEFAULT 'pending', licence_key TEXT NOT NULL UNIQUE, licence_expires_at TEXT, agent_version TEXT, api_version TEXT, customer_api_url TEXT, region TEXT DEFAULT 'af-south-1', last_heartbeat TEXT, health_score REAL NOT NULL DEFAULT 0, config TEXT NOT NULL DEFAULT '{}', resource_usage TEXT NOT NULL DEFAULT '{}', error_log TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+        CREATE TABLE IF NOT EXISTS assessments (id TEXT PRIMARY KEY, tenant_id TEXT, prospect_name TEXT NOT NULL, prospect_industry TEXT NOT NULL, erp_connection_id TEXT, status TEXT NOT NULL DEFAULT 'pending', config TEXT NOT NULL DEFAULT '{}', data_snapshot TEXT, results TEXT, business_report_key TEXT, technical_report_key TEXT, excel_model_key TEXT, created_by TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT);
       `;
 
       // Execute each CREATE TABLE separately
@@ -160,6 +164,9 @@ app.use('*', async (c, next) => {
         'CREATE INDEX IF NOT EXISTS idx_email_queue_status ON email_queue(status)',
         'CREATE INDEX IF NOT EXISTS idx_execution_logs_tenant ON execution_logs(tenant_id)',
         'CREATE INDEX IF NOT EXISTS idx_execution_logs_action ON execution_logs(action_id)',
+        'CREATE INDEX IF NOT EXISTS idx_managed_deployments_tenant ON managed_deployments(tenant_id)',
+        'CREATE INDEX IF NOT EXISTS idx_managed_deployments_licence ON managed_deployments(licence_key)',
+        'CREATE INDEX IF NOT EXISTS idx_assessments_tenant ON assessments(tenant_id)',
       ];
 
       for (const idx of indexes) {
@@ -349,6 +356,7 @@ app.get('/', (c) => {
       notifications: '/api/v1/notifications',
       storage: '/api/v1/storage',
       realtime: '/api/v1/realtime',
+      assessments: '/api/v1/assessments',
     },
     protocols: {
       mcp: '/api/v1/connectivity/mcp',
@@ -398,7 +406,7 @@ app.get('/healthz', async (c) => {
 
 // Tenant isolation middleware for protected routes (supports both /api/ and /api/v1/ prefixes)
 // Auth routes are excluded (login/register don't have JWT yet)
-const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime'];
+const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments'];
 for (const prefix of protectedPrefixes) {
   app.use(`/api/${prefix}/*`, tenantIsolation());
   app.use(`/api/v1/${prefix}/*`, tenantIsolation());
@@ -426,6 +434,7 @@ const routeModules: [string, typeof auth][] = [
   ['erp', erp], ['controlplane', controlplane], ['audit', audit],
   ['connectivity', connectivity], ['notifications', notifications],
   ['storage', storage], ['realtime', realtime],
+  ['deployments', deployments], ['assessments', assessments],
 ];
 for (const [name, handler] of routeModules) {
   app.route(`/api/${name}`, handler);

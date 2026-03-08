@@ -17,6 +17,8 @@ import { CanonicalApiPage } from "@/pages/CanonicalApiPage";
 import { ERPAdaptersPage } from "@/pages/ERPAdaptersPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { MarketingPage } from "@/pages/MarketingPage";
+import { DeploymentsPage } from "@/pages/DeploymentsPage";
+import { AssessmentsPage } from "@/pages/AssessmentsPage";
 import { useAppStore } from "@/stores/appStore";
 import type { UserRole } from "@/types";
 
@@ -72,6 +74,8 @@ export default function App() {
           <Route path="/control-plane" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
           <Route path="/canonical-api" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><CanonicalApiPage /></ProtectedRoute>} />
           <Route path="/erp-adapters" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ERPAdaptersPage /></ProtectedRoute>} />
+          <Route path="/deployments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><DeploymentsPage /></ProtectedRoute>} />
+          <Route path="/assessments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><AssessmentsPage /></ProtectedRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>
