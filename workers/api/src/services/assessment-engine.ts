@@ -568,197 +568,429 @@ export async function generateBusinessReportPDF(
   narrativeSummary: string,
   snapshot: VolumeSnapshot
 ): Promise<ArrayBuffer> {
-  // Use jsPDF for PDF generation
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
 
-  // Page 1 — Cover
-  doc.setFillColor(27, 58, 107); // #1B3A6B
-  doc.rect(0, 0, pageW, 80, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(28);
-  doc.text('ATHEON', pageW / 2, 30, { align: 'center' });
-  doc.setFontSize(14);
-  doc.text(`${prospectName} — AI Catalyst Assessment`, pageW / 2, 45, { align: 'center' });
-  doc.setFontSize(10);
-  doc.text('Prepared by GONXT Technology | Atheon Intelligence Platform', pageW / 2, 58, { align: 'center' });
-  doc.text(`Date: ${new Date().toLocaleDateString('en-ZA')} | Confidential`, pageW / 2, 68, { align: 'center' });
-
-  // Page 2 — Executive Summary
-  doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('Executive Summary', 10, 10);
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
+  // ── Colour palette ──
+  const navy  = [27, 58, 107] as const;   // #1B3A6B
+  const teal  = [0, 150, 136] as const;   // #009688
+  const gold  = [255, 179, 0] as const;   // #FFB300
+  const slate = [55, 71, 79] as const;    // #37474F
+  const lightBg = [245, 248, 255] as const; // #F5F8FF
+  const white = [255, 255, 255] as const;
 
   const totalSaving = scores.reduce((s, c) => s + c.estimated_annual_saving_zar, 0);
   const annualLicence = config.deployment_model === 'saas'
     ? sizing.annual_licence_revenue
     : config.deployment_model === 'hybrid' ? config.hybrid_licence_fee_pa : config.onprem_licence_fee_pa;
   const paybackMonths = annualLicence > 0 && totalSaving > 0 ? Math.round((annualLicence / totalSaving) * 12) : 0;
+  const roi = annualLicence > 0 ? Math.round((totalSaving / annualLicence) * 100) : 0;
 
-  // Metric boxes
-  const boxes = [
-    { label: 'Total Est. Annual Savings', value: `R ${formatZAR(totalSaving)}` },
-    { label: 'Catalysts Identified', value: `${scores.length}` },
-    { label: 'Recommended Start', value: scores[0]?.catalyst_name || 'N/A' },
-    { label: 'Payback Period', value: `${paybackMonths} months` },
+  // Helper: page header bar
+  function pageHeader(title: string) {
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageW, 18, 'F');
+    // Accent line
+    doc.setFillColor(...teal);
+    doc.rect(0, 18, pageW, 1.5, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(13);
+    doc.text(title, 14, 12);
+    // Page number
+    doc.setFontSize(7);
+    doc.text(`${prospectName} | Confidential`, pageW - 14, 12, { align: 'right' });
+  }
+
+  // Helper: footer
+  function pageFooter() {
+    doc.setFontSize(6);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Prepared by GONXT Technology | Atheon Intelligence Platform', 14, pageH - 8);
+    doc.text(`Generated ${new Date().toLocaleDateString('en-ZA')}`, pageW - 14, pageH - 8, { align: 'right' });
+  }
+
+  // ═══════════════════════════════════════════════
+  // PAGE 1 — Cover
+  // ═══════════════════════════════════════════════
+  // Full-page navy background
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, pageW, pageH, 'F');
+
+  // Accent stripe
+  doc.setFillColor(...teal);
+  doc.rect(0, 85, pageW, 3, 'F');
+
+  // Logo area
+  doc.setTextColor(...white);
+  doc.setFontSize(42);
+  doc.text('ATHEON', pageW / 2, 50, { align: 'center' });
+  doc.setFontSize(11);
+  doc.text('INTELLIGENCE PLATFORM', pageW / 2, 62, { align: 'center' });
+
+  // Gold accent line
+  doc.setFillColor(...gold);
+  doc.rect(pageW / 2 - 30, 68, 60, 0.8, 'F');
+
+  // Title block
+  doc.setFontSize(20);
+  doc.text('AI Catalyst Assessment', pageW / 2, 105, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text('Business Case & Value Proposition', pageW / 2, 115, { align: 'center' });
+
+  // Client name
+  doc.setFillColor(255, 255, 255, 0.1 as never);
+  doc.setFontSize(16);
+  doc.text(prospectName, pageW / 2, 140, { align: 'center' });
+
+  // Meta info
+  doc.setFontSize(9);
+  doc.setTextColor(180, 200, 230);
+  doc.text(`Date: ${new Date().toLocaleDateString('en-ZA')}`, pageW / 2, 160, { align: 'center' });
+  doc.text(`ERP System: ${snapshot.erp_system}`, pageW / 2, 168, { align: 'center' });
+  doc.text(`Data Period: ${snapshot.months_of_data} months of transaction data`, pageW / 2, 176, { align: 'center' });
+  doc.text('CONFIDENTIAL — For Authorised Recipients Only', pageW / 2, 190, { align: 'center' });
+
+  // Bottom accent
+  doc.setFillColor(...gold);
+  doc.rect(0, pageH - 12, pageW, 12, 'F');
+  doc.setTextColor(...navy);
+  doc.setFontSize(8);
+  doc.text('GONXT Technology (Pty) Ltd | www.gonxt.tech | Atheon Intelligence Platform', pageW / 2, pageH - 5, { align: 'center' });
+
+  // ═══════════════════════════════════════════════
+  // PAGE 2 — Executive Summary
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  pageHeader('Executive Summary');
+
+  // KPI Boxes — 2 rows of 3
+  const kpis = [
+    { label: 'Total Est. Annual Savings', value: `R ${formatZAR(totalSaving)}`, color: teal },
+    { label: 'AI Catalysts Identified', value: `${scores.length}`, color: navy },
+    { label: 'Payback Period', value: `${paybackMonths} months`, color: gold },
+    { label: 'Return on Investment', value: `${roi}%`, color: teal },
+    { label: 'Recommended First Catalyst', value: scores[0]?.catalyst_name || 'N/A', color: navy },
+    { label: 'Data Completeness', value: `${snapshot.data_completeness_pct}%`, color: gold },
   ];
 
-  const boxW = (pageW - 20) / 4;
-  boxes.forEach((box, i) => {
-    const x = 10 + i * boxW;
-    doc.setFillColor(239, 244, 255); // #EFF4FF
-    doc.rect(x, 22, boxW - 4, 25, 'F');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text(box.label, x + 2, 28);
+  const kpiW = (pageW - 30) / 3;
+  kpis.forEach((kpi, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const x = 10 + col * (kpiW + 5);
+    const ky = 28 + row * 30;
+
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(x, ky, kpiW, 25, 2, 2, 'F');
+    // Left accent bar
+    doc.setFillColor(kpi.color[0], kpi.color[1], kpi.color[2]);
+    doc.rect(x, ky, 2, 25, 'F');
+
+    doc.setFontSize(7);
+    doc.setTextColor(120, 120, 120);
+    doc.text(kpi.label, x + 6, ky + 8);
     doc.setFontSize(14);
-    doc.setTextColor(27, 58, 107);
-    doc.text(box.value, x + 2, 40);
+    doc.setTextColor(...slate);
+    const valText = doc.splitTextToSize(kpi.value, kpiW - 10);
+    doc.text(valText[0], x + 6, ky + 19);
   });
 
-  // Narrative
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  const narrativeLines = doc.splitTextToSize(narrativeSummary, pageW - 20);
-  doc.text(narrativeLines, 10, 58);
+  // Narrative section
+  let y = 95;
+  doc.setFontSize(11);
+  doc.setTextColor(...navy);
+  doc.text('Assessment Overview', 14, y);
+  y += 2;
+  doc.setFillColor(...teal);
+  doc.rect(14, y, 30, 0.5, 'F');
+  y += 7;
 
-  const dataSource = `${snapshot.erp_system} | ${snapshot.months_of_data} months of transaction data`;
+  doc.setFontSize(9);
+  doc.setTextColor(...slate);
+  const narrativeLines = doc.splitTextToSize(narrativeSummary, pageW - 28);
+  doc.text(narrativeLines, 14, y);
+  y += narrativeLines.length * 4.5 + 8;
+
+  // Data source callout box
+  doc.setFillColor(245, 245, 245);
+  doc.roundedRect(14, y, pageW - 28, 18, 2, 2, 'F');
+  doc.setFillColor(...navy);
+  doc.rect(14, y, 2, 18, 'F');
   doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text(`Data source: ${dataSource}`, 10, 58 + narrativeLines.length * 5 + 8);
+  doc.setTextColor(...navy);
+  doc.text('DATA SOURCE', 20, y + 6);
+  doc.setTextColor(...slate);
+  doc.setFontSize(8);
+  doc.text(`${snapshot.erp_system} | ${snapshot.months_of_data} months | ${snapshot.monthly_invoices} invoices/month | ${snapshot.employee_count} employees | ${snapshot.active_customer_count} customers`, 20, y + 13);
 
-  // Page 3 — Savings by Catalyst
+  pageFooter();
+
+  // ═══════════════════════════════════════════════
+  // PAGE 3 — Savings by Catalyst (visual bar chart)
+  // ═══════════════════════════════════════════════
   doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('Savings by Catalyst', 10, 10);
+  pageHeader('Savings by Catalyst');
 
-  // Table headers
-  const cols = ['Priority', 'Catalyst', 'Key Sub-Catalysts', 'Est. Annual Saving', 'Confidence'];
-  const colX = [10, 30, 70, 130, 175];
-  let y = 25;
-  doc.setFillColor(27, 58, 107);
-  doc.rect(8, y - 5, pageW - 16, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
-  cols.forEach((col, i) => doc.text(col, colX[i], y));
-
-  doc.setTextColor(0, 0, 0);
+  // Horizontal bar chart
+  y = 28;
+  doc.setFontSize(10);
+  doc.setTextColor(...navy);
+  doc.text('Estimated Annual Savings by AI Catalyst', 14, y);
   y += 8;
+
+  const maxSaving = Math.max(...scores.map(s => s.estimated_annual_saving_zar), 1);
+  const barMaxW = pageW - 90;
+  const barColors = [[0,150,136],[27,58,107],[255,179,0],[76,175,80],[156,39,176],[233,30,99],[63,81,181]] as const;
+
+  scores.forEach((cat, idx) => {
+    const barW = (cat.estimated_annual_saving_zar / maxSaving) * barMaxW;
+    const color = barColors[idx % barColors.length];
+
+    // Label
+    doc.setFontSize(8);
+    doc.setTextColor(...slate);
+    const labelLines = doc.splitTextToSize(cat.catalyst_name, 55);
+    doc.text(labelLines[0], 14, y + 4);
+
+    // Bar
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.roundedRect(72, y, Math.max(barW, 2), 7, 1, 1, 'F');
+
+    // Value
+    doc.setFontSize(7);
+    doc.setTextColor(...slate);
+    doc.text(`R ${formatZAR(cat.estimated_annual_saving_zar)}`, 72 + Math.max(barW, 2) + 3, y + 5);
+
+    y += 12;
+  });
+
+  // Summary table
+  y += 8;
+  doc.setFillColor(...navy);
+  doc.rect(14, y, pageW - 28, 8, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(8);
+  const tCols = ['#', 'Catalyst', 'Domain', 'Sub-Catalysts', 'Est. Annual Saving', 'Confidence'];
+  const tX = [16, 24, 68, 100, 145, 182];
+  tCols.forEach((col, i) => doc.text(col, tX[i], y + 5.5));
+
+  y += 10;
+  doc.setTextColor(...slate);
   scores.forEach((cat, idx) => {
     if (idx % 2 === 0) {
-      doc.setFillColor(239, 244, 255);
-      doc.rect(8, y - 4, pageW - 16, 7, 'F');
+      doc.setFillColor(...lightBg);
+      doc.rect(14, y - 3.5, pageW - 28, 7, 'F');
     }
-    doc.setFontSize(8);
-    doc.text(`${cat.priority}`, colX[0], y);
-    doc.text(cat.catalyst_name, colX[1], y);
-    doc.text(cat.sub_catalysts.slice(0, 2).map(s => s.name).join(', '), colX[2], y);
-    doc.text(`R ${formatZAR(cat.estimated_annual_saving_zar)}`, colX[3], y);
-    doc.text(cat.confidence, colX[4], y);
+    doc.setFontSize(7);
+    doc.text(`${cat.priority}`, tX[0], y);
+    doc.text(cat.catalyst_name.substring(0, 25), tX[1], y);
+    doc.text(cat.domain, tX[2], y);
+    doc.text(`${cat.sub_catalysts.length}`, tX[3], y);
+    doc.setTextColor(...navy);
+    doc.text(`R ${formatZAR(cat.estimated_annual_saving_zar)}`, tX[4], y);
+    // Confidence badge
+    const confColor = cat.confidence === 'high' ? teal : cat.confidence === 'medium' ? gold : [200,200,200] as const;
+    doc.setFillColor(confColor[0], confColor[1], confColor[2]);
+    doc.roundedRect(tX[5], y - 3, 14, 5, 1, 1, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(6);
+    doc.text(cat.confidence.toUpperCase(), tX[5] + 2, y);
+    doc.setTextColor(...slate);
+    doc.setFontSize(7);
     y += 7;
   });
 
-  doc.setFontSize(7);
-  doc.setTextColor(120, 120, 120);
-  doc.text('All savings estimates based on industry benchmarks applied to your actual transaction data.', 10, y + 5);
+  // Grand total
+  y += 2;
+  doc.setFillColor(...teal);
+  doc.rect(14, y - 3.5, pageW - 28, 8, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(9);
+  doc.text('TOTAL ESTIMATED ANNUAL SAVINGS', 16, y + 1);
+  doc.text(`R ${formatZAR(totalSaving)}`, tX[4], y + 1);
 
-  // Pages 4–N — Catalyst Deep Dives (top 5)
+  doc.setFontSize(6);
+  doc.setTextColor(150, 150, 150);
+  doc.text('All savings estimates based on industry benchmarks applied to actual ERP transaction data.', 14, y + 12);
+
+  pageFooter();
+
+  // ═══════════════════════════════════════════════
+  // PAGES 4–N — Catalyst Deep Dives (top 5)
+  // ═══════════════════════════════════════════════
   const topCatalysts = scores.slice(0, 5);
   for (const cat of topCatalysts) {
     doc.addPage();
-    doc.setFillColor(27, 58, 107);
-    doc.rect(0, 0, pageW, 15, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.text(`${cat.catalyst_name} — ${cat.domain}`, 10, 10);
+    pageHeader(`Catalyst Deep Dive: ${cat.catalyst_name}`);
 
-    let py = 25;
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    doc.text('Why we recommend this', 10, py);
+    // Header info bar
+    let py = 26;
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(14, py, pageW - 28, 16, 2, 2, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(...slate);
+    doc.text(`Domain: ${cat.domain}`, 18, py + 6);
+    doc.text(`Priority: ${cat.priority}`, 80, py + 6);
+    doc.text(`Confidence: ${cat.confidence.toUpperCase()}`, 120, py + 6);
+    doc.setTextColor(...navy);
+    doc.text(`Est. Annual Saving: R ${formatZAR(cat.estimated_annual_saving_zar)}`, 18, py + 13);
+    py += 22;
+
+    // Data Insights
+    doc.setFontSize(10);
+    doc.setTextColor(...navy);
+    doc.text('Key Data Insights', 14, py);
+    doc.setFillColor(...teal);
+    doc.rect(14, py + 1.5, 25, 0.5, 'F');
     py += 8;
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
+    doc.setTextColor(...slate);
     for (const insight of cat.data_insights) {
-      const lines = doc.splitTextToSize(`• ${insight}`, pageW - 20);
-      doc.text(lines, 10, py);
-      py += lines.length * 5;
+      doc.setFillColor(...teal);
+      doc.circle(17, py - 1, 1, 'F');
+      const lines = doc.splitTextToSize(insight, pageW - 36);
+      doc.text(lines, 22, py);
+      py += lines.length * 4 + 3;
     }
 
-    // Savings breakdown
-    py += 5;
-    doc.setFontSize(11);
-    doc.text('Savings Breakdown', 10, py);
+    // Savings breakdown with visual bars
+    py += 4;
+    doc.setFontSize(10);
+    doc.setTextColor(...navy);
+    doc.text('Savings Breakdown', 14, py);
+    doc.setFillColor(...teal);
+    doc.rect(14, py + 1.5, 25, 0.5, 'F');
     py += 8;
-    doc.setFontSize(8);
+
+    const catMaxSave = Math.max(...cat.saving_components.map(c => c.amount_zar), 1);
     for (const comp of cat.saving_components) {
-      doc.text(`${comp.label}: R ${formatZAR(comp.amount_zar)}`, 12, py);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`(${comp.methodology})`, 12, py + 4);
-      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(8);
+      doc.setTextColor(...slate);
+      doc.text(comp.label, 18, py);
+      doc.text(`R ${formatZAR(comp.amount_zar)}`, 130, py);
+
+      // Mini bar
+      const miniBarW = (comp.amount_zar / catMaxSave) * 50;
+      doc.setFillColor(...teal);
+      doc.roundedRect(150, py - 3, Math.max(miniBarW, 1), 4, 0.5, 0.5, 'F');
+
+      doc.setFontSize(6);
+      doc.setTextColor(150, 150, 150);
+      doc.text(comp.methodology, 18, py + 4);
+      doc.setTextColor(...slate);
       py += 10;
     }
 
     // Sub-catalyst deployment sequence
-    py += 5;
-    doc.setFontSize(11);
-    doc.text('Sub-Catalyst Deployment Sequence', 10, py);
+    py += 4;
+    doc.setFontSize(10);
+    doc.setTextColor(...navy);
+    doc.text('Sub-Catalyst Deployment Sequence', 14, py);
+    doc.setFillColor(...teal);
+    doc.rect(14, py + 1.5, 25, 0.5, 'F');
     py += 8;
-    doc.setFontSize(9);
+
+    doc.setFontSize(8);
     cat.sub_catalysts.forEach((sc, i) => {
-      doc.text(`${i + 1}. ${sc.name} — ${sc.estimated_monthly_volume} ${sc.volume_unit}/month`, 12, py);
+      // Step number circle
+      doc.setFillColor(...navy);
+      doc.circle(19, py - 1, 3, 'F');
+      doc.setTextColor(...white);
+      doc.setFontSize(6);
+      doc.text(`${i + 1}`, 17.5, py);
+
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      doc.text(`${sc.name}`, 26, py);
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`${sc.estimated_monthly_volume} ${sc.volume_unit}/month | R ${formatZAR(sc.estimated_annual_saving_zar)}/year`, 26, py + 4);
       if (sc.deploy_prerequisite) {
-        doc.setTextColor(120, 120, 120);
-        doc.text(`Deploy after: ${sc.deploy_prerequisite}`, 16, py + 4);
-        doc.setTextColor(0, 0, 0);
+        doc.text(`Prerequisite: ${sc.deploy_prerequisite}`, 26, py + 8);
         py += 4;
       }
-      py += 6;
+      py += 10;
     });
+
+    pageFooter();
   }
 
-  // Last Page — Deployment Roadmap
+  // ═══════════════════════════════════════════════
+  // LAST PAGE — Deployment Roadmap & Next Steps
+  // ═══════════════════════════════════════════════
   doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('Deployment Roadmap', 10, 10);
+  pageHeader('Deployment Roadmap');
 
-  doc.setTextColor(0, 0, 0);
-  let ry = 28;
+  y = 28;
   const phases = [
-    { label: 'Phase 1 (Month 1–2)', catalysts: scores.filter(c => c.deploy_order <= 2) },
-    { label: 'Phase 2 (Month 3–4)', catalysts: scores.filter(c => c.deploy_order >= 3 && c.deploy_order <= 4) },
-    { label: 'Phase 3 (Month 5–6)', catalysts: scores.filter(c => c.deploy_order >= 5) },
+    { label: 'Phase 1 — Quick Wins (Month 1–2)', desc: 'Deploy highest-impact catalysts with fastest payback', catalysts: scores.filter(c => c.deploy_order <= 2), color: teal },
+    { label: 'Phase 2 — Core Expansion (Month 3–4)', desc: 'Extend AI coverage to operational processes', catalysts: scores.filter(c => c.deploy_order >= 3 && c.deploy_order <= 4), color: navy },
+    { label: 'Phase 3 — Full Intelligence (Month 5–6)', desc: 'Complete platform deployment with advanced analytics', catalysts: scores.filter(c => c.deploy_order >= 5), color: gold },
   ];
 
   for (const phase of phases) {
     if (phase.catalysts.length === 0) continue;
-    doc.setFontSize(12);
-    doc.text(phase.label, 10, ry);
-    ry += 7;
+
+    // Phase header
+    doc.setFillColor(phase.color[0], phase.color[1], phase.color[2]);
+    doc.roundedRect(14, y, pageW - 28, 8, 1, 1, 'F');
+    doc.setTextColor(...white);
     doc.setFontSize(9);
+    doc.text(phase.label, 18, y + 5.5);
+    y += 11;
+
+    doc.setFontSize(7);
+    doc.setTextColor(120, 120, 120);
+    doc.text(phase.desc, 18, y);
+    y += 5;
+
+    doc.setFontSize(8);
     for (const cat of phase.catalysts) {
-      doc.text(`• ${cat.catalyst_name} — R ${formatZAR(cat.estimated_annual_saving_zar)}/year`, 14, ry);
-      ry += 5;
+      doc.setTextColor(...slate);
+      doc.text(`\u2022 ${cat.catalyst_name}`, 22, y);
+      doc.setTextColor(...navy);
+      doc.text(`R ${formatZAR(cat.estimated_annual_saving_zar)}/year`, 140, y);
+      y += 5;
     }
-    ry += 5;
+    y += 6;
   }
 
+  // Investment Summary Box
+  y += 4;
+  doc.setFillColor(...lightBg);
+  doc.roundedRect(14, y, pageW - 28, 38, 3, 3, 'F');
+  doc.setFillColor(...navy);
+  doc.rect(14, y, 3, 38, 'F');
+
   doc.setFontSize(11);
-  doc.setTextColor(27, 58, 107);
-  doc.text('Ready to activate? Contact GONXT Technology.', pageW / 2, ry + 15, { align: 'center' });
+  doc.setTextColor(...navy);
+  doc.text('Investment Summary', 22, y + 9);
+  doc.setFontSize(8);
+  doc.setTextColor(...slate);
+  doc.text(`Platform Licence (${config.deployment_model.toUpperCase()}):`, 22, y + 17);
+  doc.text(`R ${formatZAR(annualLicence)}/year`, 120, y + 17);
+  doc.text('Estimated Annual Savings:', 22, y + 23);
+  doc.setTextColor(...teal);
+  doc.text(`R ${formatZAR(totalSaving)}/year`, 120, y + 23);
+  doc.setTextColor(...slate);
+  doc.text('Net Annual Benefit:', 22, y + 29);
+  doc.text(`R ${formatZAR(totalSaving - annualLicence)}/year`, 120, y + 29);
+  doc.text('Payback Period:', 22, y + 35);
+  doc.setTextColor(...navy);
+  doc.text(`${paybackMonths} months`, 120, y + 35);
+
+  // CTA
+  y += 50;
+  doc.setFillColor(...teal);
+  doc.roundedRect(pageW / 2 - 55, y, 110, 14, 3, 3, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(10);
+  doc.text('Ready to activate? Contact GONXT Technology', pageW / 2, y + 9, { align: 'center' });
+
+  pageFooter();
 
   return doc.output('arraybuffer');
 }
@@ -774,135 +1006,448 @@ export async function generateTechnicalReportPDF(
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
 
-  // Page 1 — Cover
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 60, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.text('Atheon Technical Sizing Report — INTERNAL', pageW / 2, 25, { align: 'center' });
-  doc.setFontSize(12);
-  doc.text(prospectName, pageW / 2, 38, { align: 'center' });
-  doc.text(`Date: ${new Date().toLocaleDateString('en-ZA')}`, pageW / 2, 48, { align: 'center' });
+  // ── Atheon Colour palette ──
+  const navy  = [27, 58, 107] as const;
+  const teal  = [0, 150, 136] as const;
+  const gold  = [255, 179, 0] as const;
+  const slate = [55, 71, 79] as const;
+  const lightBg = [245, 248, 255] as const;
+  const white = [255, 255, 255] as const;
+  const red   = [211, 47, 47] as const;
+  const green = [46, 125, 50] as const;
 
-  // Page 2 — Data Profile
-  doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('Data Profile', 10, 10);
-
-  const profileRows: [string, string][] = [
-    ['Monthly Invoices', `${snapshot.monthly_invoices}`],
-    ['Monthly Purchase Orders', `${snapshot.monthly_purchase_orders}`],
-    ['Monthly Journal Entries', `${snapshot.monthly_journal_entries}`],
-    ['Total AR Balance', `R ${formatZAR(snapshot.total_ar_balance)}`],
-    ['Total AP Balance', `R ${formatZAR(snapshot.total_ap_balance)}`],
-    ['Overdue Invoices', `${snapshot.overdue_invoice_count} (R ${formatZAR(snapshot.overdue_invoice_value)})`],
-    ['Total Revenue (12m)', `R ${formatZAR(snapshot.total_revenue_12m)}`],
-    ['Total Spend (12m)', `R ${formatZAR(snapshot.total_spend_12m)}`],
-    ['Employees', `${snapshot.employee_count}`],
-    ['Monthly Payroll', `R ${formatZAR(snapshot.total_monthly_payroll)}`],
-    ['Active Customers', `${snapshot.active_customer_count}`],
-    ['Active Suppliers', `${snapshot.active_supplier_count}`],
-    ['Products', `${snapshot.product_count}`],
-    ['Inventory Value', `R ${formatZAR(snapshot.total_inventory_value)}`],
-    ['Months of Data', `${snapshot.months_of_data}`],
-    ['Data Completeness', `${snapshot.data_completeness_pct}%`],
-    ['ERP System', snapshot.erp_system],
-  ];
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8);
-  let y = 25;
-  for (const [label, value] of profileRows) {
-    doc.text(label, 10, y);
-    doc.text(value, 100, y);
-    y += 5;
+  function techHeader(title: string) {
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageW, 18, 'F');
+    doc.setFillColor(...gold);
+    doc.rect(0, 18, pageW, 1.2, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(12);
+    doc.text(title, 14, 12);
+    doc.setFontSize(7);
+    doc.text('INTERNAL — GONXT Technology', pageW - 14, 12, { align: 'right' });
   }
 
-  // Page 3 — Infrastructure Sizing (SaaS)
-  doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('Infrastructure Sizing (SaaS)', 10, 10);
-
-  const saasRows: [string, string, string][] = [
-    ['Workers (base + API calls)', `${sizing.total_monthly_api_calls.toLocaleString()} calls/month`, `R ${formatZAR(sizing.cost_cf_workers)}`],
-    ['D1 Database', `${sizing.total_db_size_gb} GB`, `R ${formatZAR(sizing.cost_cf_d1)}`],
-    ['Vectorize', `${sizing.total_monthly_vector_queries.toLocaleString()} queries/month`, `R ${formatZAR(sizing.cost_cf_vectorize)}`],
-    ['Workers AI', `${sizing.total_monthly_llm_tokens.toLocaleString()} tokens/month`, `R ${formatZAR(sizing.cost_cf_workers_ai)}`],
-    ['R2 Storage', `${sizing.total_storage_gb} GB`, `R ${formatZAR(sizing.cost_cf_r2)}`],
-    ['KV Reads', `${sizing.total_kv_reads_monthly.toLocaleString()} reads/month`, `R ${formatZAR(sizing.cost_cf_kv)}`],
-  ];
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8);
-  y = 25;
-  doc.text('Service', 10, y);
-  doc.text('Monthly Volume', 80, y);
-  doc.text('Monthly ZAR', 150, y);
-  y += 6;
-  for (const [svc, vol, cost] of saasRows) {
-    doc.text(svc, 10, y);
-    doc.text(vol, 80, y);
-    doc.text(cost, 150, y);
-    y += 5;
+  function techFooter() {
+    doc.setFontSize(6);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Atheon Technical Sizing | ${prospectName} | ${new Date().toLocaleDateString('en-ZA')}`, 14, pageH - 8);
+    doc.text('CONFIDENTIAL', pageW - 14, pageH - 8, { align: 'right' });
   }
-  y += 3;
+
+  // ═══════════════════════════════════════════════
+  // PAGE 1 — Cover
+  // ═══════════════════════════════════════════════
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, pageW, pageH, 'F');
+  doc.setFillColor(...gold);
+  doc.rect(0, 80, pageW, 2, 'F');
+
+  doc.setTextColor(...white);
+  doc.setFontSize(36);
+  doc.text('ATHEON', pageW / 2, 45, { align: 'center' });
   doc.setFontSize(10);
-  doc.text(`Total Infrastructure Cost/month: R ${formatZAR(sizing.total_infra_cost_pm_saas)}`, 10, y);
-  y += 6;
-  doc.text(`Monthly Revenue: R ${formatZAR(sizing.monthly_licence_revenue)}`, 10, y);
-  y += 6;
-  doc.text(`Gross Margin: ${sizing.gross_margin_pct_saas}%`, 10, y);
+  doc.text('INTELLIGENCE PLATFORM', pageW / 2, 56, { align: 'center' });
 
-  // Page 4 — Infrastructure Sizing (On-Premise/Hybrid)
-  doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('Infrastructure Sizing (On-Premise / Hybrid)', 10, 10);
-
-  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(18);
+  doc.text('Technical Sizing Report', pageW / 2, 100, { align: 'center' });
   doc.setFontSize(9);
-  y = 28;
-  doc.text(`Support Cost (annual): R ${formatZAR(config.onprem_support_cost_pa)}`, 10, y); y += 6;
-  doc.text(`Update Cost (annual): R ${formatZAR(config.onprem_update_cost_pa)}`, 10, y); y += 6;
-  doc.text(`Total On-Prem Cost/month: R ${formatZAR(sizing.total_infra_cost_pm_onprem)}`, 10, y); y += 6;
-  doc.text(`On-Prem Licence Fee (annual): R ${formatZAR(config.onprem_licence_fee_pa)}`, 10, y); y += 6;
-  doc.text(`On-Prem Gross Margin: ${sizing.gross_margin_pct_onprem}%`, 10, y);
+  doc.setTextColor(180, 200, 230);
+  doc.text('Infrastructure, Capacity Planning & Cost Analysis', pageW / 2, 112, { align: 'center' });
 
-  // Last Page — Pricing Recommendation
-  doc.addPage();
-  doc.setFillColor(27, 58, 107);
-  doc.rect(0, 0, pageW, 15, 'F');
-  doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
-  doc.text('Pricing Recommendation', 10, 10);
+  doc.setTextColor(...white);
+  doc.text(prospectName, pageW / 2, 135, { align: 'center' });
 
-  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(9);
+  doc.setTextColor(180, 200, 230);
+  doc.text(`ERP: ${snapshot.erp_system} | ${snapshot.months_of_data} months data`, pageW / 2, 155, { align: 'center' });
+  doc.text(`Date: ${new Date().toLocaleDateString('en-ZA')}`, pageW / 2, 163, { align: 'center' });
+  doc.text('INTERNAL USE ONLY — NOT FOR DISTRIBUTION', pageW / 2, 180, { align: 'center' });
+
+  doc.setFillColor(...gold);
+  doc.rect(0, pageH - 10, pageW, 10, 'F');
+  doc.setTextColor(...navy);
+  doc.setFontSize(7);
+  doc.text('GONXT Technology (Pty) Ltd | Atheon Intelligence Platform', pageW / 2, pageH - 4, { align: 'center' });
+
+  // ═══════════════════════════════════════════════
+  // PAGE 2 — ERP Data Profile (with visual gauges)
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  techHeader('ERP Data Profile');
+
+  let y = 28;
+  // Data completeness gauge
   doc.setFontSize(10);
-  y = 28;
-  doc.text(`Recommended Tier: ${config.deployment_model.toUpperCase()}`, 10, y); y += 8;
+  doc.setTextColor(...navy);
+  doc.text('Data Quality Score', 14, y);
+  y += 4;
+  const completeness = snapshot.data_completeness_pct;
+  const gaugeW = 80;
+  doc.setFillColor(230, 230, 230);
+  doc.roundedRect(14, y, gaugeW, 6, 2, 2, 'F');
+  const fillColor = completeness >= 80 ? green : completeness >= 50 ? gold : red;
+  doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+  doc.roundedRect(14, y, gaugeW * (completeness / 100), 6, 2, 2, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(...slate);
+  doc.text(`${completeness}%`, gaugeW + 18, y + 4.5);
 
+  // System info
+  doc.text(`ERP System: ${snapshot.erp_system}`, 120, y + 4.5);
+  y += 14;
+
+  // Profile table — grouped into sections
+  const sections: { title: string; rows: [string, string][] }[] = [
+    { title: 'Transaction Volumes', rows: [
+      ['Monthly Invoices', `${snapshot.monthly_invoices.toLocaleString()}`],
+      ['Monthly Purchase Orders', `${snapshot.monthly_purchase_orders.toLocaleString()}`],
+      ['Monthly Journal Entries', `${snapshot.monthly_journal_entries.toLocaleString()}`],
+      ['Monthly Bank Transactions', `${snapshot.monthly_bank_transactions.toLocaleString()}`],
+    ]},
+    { title: 'Financial Position', rows: [
+      ['Total AR Balance', `R ${formatZAR(snapshot.total_ar_balance)}`],
+      ['Total AP Balance', `R ${formatZAR(snapshot.total_ap_balance)}`],
+      ['Overdue Invoices', `${snapshot.overdue_invoice_count} (R ${formatZAR(snapshot.overdue_invoice_value)})`],
+      ['Avg Invoice Value', `R ${formatZAR(snapshot.avg_invoice_value)}`],
+      ['Revenue (12m)', `R ${formatZAR(snapshot.total_revenue_12m)}`],
+      ['Spend (12m)', `R ${formatZAR(snapshot.total_spend_12m)}`],
+    ]},
+    { title: 'Organisation', rows: [
+      ['Employees', `${snapshot.employee_count}`],
+      ['Monthly Payroll', `R ${formatZAR(snapshot.total_monthly_payroll)}`],
+      ['Active Customers', `${snapshot.active_customer_count}`],
+      ['Active Suppliers', `${snapshot.active_supplier_count}`],
+      ['Products', `${snapshot.product_count}`],
+      ['Inventory Value', `R ${formatZAR(snapshot.total_inventory_value)}`],
+    ]},
+  ];
+
+  for (const section of sections) {
+    doc.setFillColor(...teal);
+    doc.roundedRect(14, y, pageW - 28, 7, 1, 1, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(8);
+    doc.text(section.title, 18, y + 5);
+    y += 9;
+
+    doc.setFontSize(7.5);
+    for (const [label, value] of section.rows) {
+      if (Math.floor((y - 28) / 5) % 2 === 0) {
+        doc.setFillColor(...lightBg);
+        doc.rect(14, y - 3, pageW - 28, 5, 'F');
+      }
+      doc.setTextColor(...slate);
+      doc.text(label, 18, y);
+      doc.setTextColor(...navy);
+      doc.text(value, 120, y);
+      y += 5;
+    }
+    y += 3;
+  }
+
+  techFooter();
+
+  // ═══════════════════════════════════════════════
+  // PAGE 3 — Infrastructure Sizing (SaaS) with bar chart
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  techHeader('Infrastructure Sizing — SaaS (Cloudflare)');
+
+  y = 28;
+  const saasItems = [
+    { svc: 'Workers (API)', vol: `${sizing.total_monthly_api_calls.toLocaleString()} calls/mo`, cost: sizing.cost_cf_workers },
+    { svc: 'D1 Database', vol: `${sizing.total_db_size_gb} GB`, cost: sizing.cost_cf_d1 },
+    { svc: 'Vectorize', vol: `${sizing.total_monthly_vector_queries.toLocaleString()} queries/mo`, cost: sizing.cost_cf_vectorize },
+    { svc: 'Workers AI', vol: `${sizing.total_monthly_llm_tokens.toLocaleString()} tokens/mo`, cost: sizing.cost_cf_workers_ai },
+    { svc: 'R2 Storage', vol: `${sizing.total_storage_gb} GB`, cost: sizing.cost_cf_r2 },
+    { svc: 'KV Cache', vol: `${sizing.total_kv_reads_monthly.toLocaleString()} reads/mo`, cost: sizing.cost_cf_kv },
+  ];
+
+  // Table header
+  doc.setFillColor(...navy);
+  doc.rect(14, y, pageW - 28, 8, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(8);
+  doc.text('Service', 18, y + 5.5);
+  doc.text('Monthly Volume', 90, y + 5.5);
+  doc.text('Cost (ZAR/mo)', 155, y + 5.5);
+  y += 10;
+
+  const maxCost = Math.max(...saasItems.map(i => i.cost), 1);
+  for (const item of saasItems) {
+    if (saasItems.indexOf(item) % 2 === 0) {
+      doc.setFillColor(...lightBg);
+      doc.rect(14, y - 3.5, pageW - 28, 7, 'F');
+    }
+    doc.setFontSize(7.5);
+    doc.setTextColor(...slate);
+    doc.text(item.svc, 18, y);
+    doc.text(item.vol, 90, y);
+    doc.setTextColor(...navy);
+    doc.text(`R ${formatZAR(item.cost)}`, 155, y);
+
+    // Mini cost bar
+    const barW = (item.cost / maxCost) * 25;
+    doc.setFillColor(...teal);
+    doc.roundedRect(180, y - 2.5, Math.max(barW, 1), 4, 0.5, 0.5, 'F');
+    y += 7;
+  }
+
+  // Totals row
+  y += 2;
+  doc.setFillColor(...navy);
+  doc.rect(14, y - 3.5, pageW - 28, 8, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(8);
+  doc.text('TOTAL INFRASTRUCTURE COST', 18, y + 1);
+  doc.text(`R ${formatZAR(sizing.total_infra_cost_pm_saas)}/month`, 155, y + 1);
+  y += 14;
+
+  // Revenue vs Cost comparison
+  doc.setFontSize(10);
+  doc.setTextColor(...navy);
+  doc.text('Revenue vs Cost Analysis', 14, y);
+  y += 8;
+
+  const revCostItems = [
+    { label: 'Monthly Revenue', value: sizing.monthly_licence_revenue, color: green },
+    { label: 'Monthly Infrastructure Cost', value: sizing.total_infra_cost_pm_saas, color: red },
+    { label: 'Monthly Gross Margin', value: sizing.gross_margin_pm_saas, color: teal },
+  ];
+  const maxRev = Math.max(...revCostItems.map(i => Math.abs(i.value)), 1);
+  for (const item of revCostItems) {
+    doc.setFontSize(8);
+    doc.setTextColor(...slate);
+    doc.text(item.label, 18, y + 4);
+    const barW = (Math.abs(item.value) / maxRev) * 80;
+    doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+    doc.roundedRect(90, y, Math.max(barW, 1), 7, 1, 1, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(7);
+    doc.text(`R ${formatZAR(item.value)}`, 92, y + 5);
+    y += 10;
+  }
+
+  // Margin badge
+  y += 5;
+  doc.setFillColor(sizing.gross_margin_pct_saas >= 70 ? green[0] : sizing.gross_margin_pct_saas >= 40 ? gold[0] : red[0],
+                    sizing.gross_margin_pct_saas >= 70 ? green[1] : sizing.gross_margin_pct_saas >= 40 ? gold[1] : red[1],
+                    sizing.gross_margin_pct_saas >= 70 ? green[2] : sizing.gross_margin_pct_saas >= 40 ? gold[2] : red[2]);
+  doc.roundedRect(14, y, 50, 12, 3, 3, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(10);
+  doc.text(`Gross Margin: ${sizing.gross_margin_pct_saas}%`, 18, y + 8);
+
+  techFooter();
+
+  // ═══════════════════════════════════════════════
+  // PAGE 4 — On-Premise / Hybrid Sizing
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  techHeader('Infrastructure Sizing — On-Premise / Hybrid');
+
+  y = 28;
+  doc.setFontSize(10);
+  doc.setTextColor(...navy);
+  doc.text('On-Premise Cost Structure', 14, y);
+  doc.setFillColor(...gold);
+  doc.rect(14, y + 2, 30, 0.5, 'F');
+  y += 10;
+
+  const onpremItems = [
+    { label: 'Annual Support Cost', value: config.onprem_support_cost_pa, monthly: config.onprem_support_cost_pa / 12 },
+    { label: 'Annual Update Cost', value: config.onprem_update_cost_pa, monthly: config.onprem_update_cost_pa / 12 },
+  ];
+
+  doc.setFillColor(...navy);
+  doc.rect(14, y, pageW - 28, 7, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(8);
+  doc.text('Cost Component', 18, y + 5);
+  doc.text('Annual (ZAR)', 110, y + 5);
+  doc.text('Monthly (ZAR)', 155, y + 5);
+  y += 9;
+
+  for (const item of onpremItems) {
+    doc.setFontSize(7.5);
+    doc.setTextColor(...slate);
+    doc.text(item.label, 18, y);
+    doc.text(`R ${formatZAR(item.value)}`, 110, y);
+    doc.text(`R ${formatZAR(item.monthly)}`, 155, y);
+    y += 6;
+  }
+  y += 2;
+  doc.setFillColor(...teal);
+  doc.rect(14, y - 3, pageW - 28, 7, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(8);
+  doc.text('TOTAL ON-PREM COST', 18, y + 1);
+  doc.text(`R ${formatZAR(sizing.total_infra_cost_pm_onprem)}/month`, 155, y + 1);
+  y += 14;
+
+  // Comparison table: SaaS vs On-Prem
+  doc.setFontSize(10);
+  doc.setTextColor(...navy);
+  doc.text('Deployment Model Comparison', 14, y);
+  y += 8;
+
+  doc.setFillColor(...navy);
+  doc.rect(14, y, pageW - 28, 7, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(8);
+  doc.text('Metric', 18, y + 5);
+  doc.text('SaaS', 100, y + 5);
+  doc.text('On-Premise', 145, y + 5);
+  y += 9;
+
+  const compRows = [
+    ['Monthly Infra Cost', `R ${formatZAR(sizing.total_infra_cost_pm_saas)}`, `R ${formatZAR(sizing.total_infra_cost_pm_onprem)}`],
+    ['Monthly Revenue', `R ${formatZAR(sizing.monthly_licence_revenue)}`, `R ${formatZAR(config.onprem_licence_fee_pa / 12)}`],
+    ['Gross Margin/month', `R ${formatZAR(sizing.gross_margin_pm_saas)}`, `R ${formatZAR(sizing.gross_margin_pm_onprem)}`],
+    ['Gross Margin %', `${sizing.gross_margin_pct_saas}%`, `${sizing.gross_margin_pct_onprem}%`],
+    ['Annual Licence', `R ${formatZAR(sizing.annual_licence_revenue)}`, `R ${formatZAR(config.onprem_licence_fee_pa)}`],
+  ];
+
+  for (const [label, saas, onprem] of compRows) {
+    if (compRows.indexOf([label, saas, onprem]) % 2 === 0) {
+      doc.setFillColor(...lightBg);
+      doc.rect(14, y - 3, pageW - 28, 6, 'F');
+    }
+    doc.setFontSize(7.5);
+    doc.setTextColor(...slate);
+    doc.text(label, 18, y);
+    doc.text(saas, 100, y);
+    doc.text(onprem, 145, y);
+    y += 6;
+  }
+
+  techFooter();
+
+  // ═══════════════════════════════════════════════
+  // PAGE 5 — Per-Catalyst Sizing
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  techHeader('Per-Catalyst Resource Sizing');
+
+  y = 28;
+  doc.setFillColor(...navy);
+  doc.rect(14, y, pageW - 28, 7, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(7);
+  doc.text('Catalyst', 18, y + 5);
+  doc.text('Sub-Catalysts', 65, y + 5);
+  doc.text('API Calls/mo', 100, y + 5);
+  doc.text('DB (MB)', 130, y + 5);
+  doc.text('Vectors/mo', 150, y + 5);
+  doc.text('LLM Tokens/mo', 175, y + 5);
+  y += 9;
+
+  for (const cs of sizing.catalyst_sizing) {
+    if (sizing.catalyst_sizing.indexOf(cs) % 2 === 0) {
+      doc.setFillColor(...lightBg);
+      doc.rect(14, y - 3, pageW - 28, 6, 'F');
+    }
+    doc.setFontSize(6.5);
+    doc.setTextColor(...slate);
+    const totalApi = cs.sub_catalysts.reduce((s, sc) => s + sc.monthly_api_calls, 0);
+    const totalVec = cs.sub_catalysts.reduce((s, sc) => s + sc.monthly_vector_queries, 0);
+    const totalLlm = cs.sub_catalysts.reduce((s, sc) => s + sc.monthly_llm_tokens, 0);
+    doc.text(cs.catalyst_name.substring(0, 28), 18, y);
+    doc.text(`${cs.sub_catalysts.length}`, 65, y);
+    doc.text(`${totalApi.toLocaleString()}`, 100, y);
+    doc.text(`${cs.total_cost_pm_zar}`, 130, y);
+    doc.text(`${totalVec.toLocaleString()}`, 150, y);
+    doc.text(`${totalLlm.toLocaleString()}`, 175, y);
+    y += 6;
+  }
+
+  techFooter();
+
+  // ═══════════════════════════════════════════════
+  // PAGE 6 — Pricing Recommendation
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  techHeader('Pricing Recommendation');
+
+  y = 32;
   const recLicence = config.deployment_model === 'saas'
     ? sizing.annual_licence_revenue
     : config.deployment_model === 'hybrid' ? config.hybrid_licence_fee_pa : config.onprem_licence_fee_pa;
-  doc.text(`Recommended Licence Fee: R ${formatZAR(recLicence)}/year`, 10, y); y += 8;
-  doc.text(`3-Year Contract Value: R ${formatZAR(recLicence * config.contract_years)}`, 10, y); y += 8;
-
   const recMargin = config.deployment_model === 'saas' ? sizing.gross_margin_pct_saas : sizing.gross_margin_pct_onprem;
-  doc.text(`Gross Margin at Recommended Price: ${recMargin}%`, 10, y);
+  const totalSaving = scores.reduce((s, c) => s + c.estimated_annual_saving_zar, 0);
+  const paybackMonths = totalSaving > 0 ? Math.round((recLicence / totalSaving) * 12) : 0;
+
+  // Recommendation box
+  doc.setFillColor(...lightBg);
+  doc.roundedRect(14, y, pageW - 28, 55, 3, 3, 'F');
+  doc.setFillColor(...navy);
+  doc.rect(14, y, 3, 55, 'F');
+
+  doc.setFontSize(12);
+  doc.setTextColor(...navy);
+  doc.text('Recommended Configuration', 22, y + 10);
+
+  doc.setFontSize(9);
+  doc.setTextColor(...slate);
+  const recItems = [
+    [`Deployment Model:`, config.deployment_model.toUpperCase()],
+    [`Annual Licence Fee:`, `R ${formatZAR(recLicence)}`],
+    [`${config.contract_years}-Year Contract Value:`, `R ${formatZAR(recLicence * config.contract_years)}`],
+    [`Gross Margin:`, `${recMargin}%`],
+    [`Payback Period:`, `${paybackMonths} months`],
+    [`Target Users:`, `${config.target_users}`],
+  ];
+  let iy = y + 18;
+  for (const [label, value] of recItems) {
+    doc.text(label, 22, iy);
+    doc.setTextColor(...navy);
+    doc.text(value, 100, iy);
+    doc.setTextColor(...slate);
+    iy += 7;
+  }
+
+  // Pricing tier comparison
+  y += 65;
+  doc.setFontSize(10);
+  doc.setTextColor(...navy);
+  doc.text('Pricing Tier Options', 14, y);
+  y += 8;
+
+  const tiers = [
+    { name: 'SaaS', licence: sizing.annual_licence_revenue, margin: sizing.gross_margin_pct_saas, color: teal, recommended: config.deployment_model === 'saas' },
+    { name: 'Hybrid', licence: config.hybrid_licence_fee_pa, margin: 0, color: gold, recommended: config.deployment_model === 'hybrid' },
+    { name: 'On-Premise', licence: config.onprem_licence_fee_pa, margin: sizing.gross_margin_pct_onprem, color: navy, recommended: config.deployment_model === 'on-premise' },
+  ];
+
+  const tierW = (pageW - 38) / 3;
+  tiers.forEach((tier, i) => {
+    const tx = 14 + i * (tierW + 5);
+    doc.setFillColor(tier.color[0], tier.color[1], tier.color[2]);
+    doc.roundedRect(tx, y, tierW, 35, 2, 2, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(10);
+    doc.text(tier.name, tx + tierW / 2, y + 10, { align: 'center' });
+    doc.setFontSize(8);
+    doc.text(`R ${formatZAR(tier.licence)}/year`, tx + tierW / 2, y + 20, { align: 'center' });
+    if (tier.recommended) {
+      doc.setFillColor(...gold);
+      doc.roundedRect(tx + 5, y + 26, tierW - 10, 6, 1, 1, 'F');
+      doc.setTextColor(...navy);
+      doc.setFontSize(6);
+      doc.text('RECOMMENDED', tx + tierW / 2, y + 30, { align: 'center' });
+    }
+  });
+
+  techFooter();
 
   return doc.output('arraybuffer');
 }
 
-// Excel Model generation
+// Excel Model generation — Atheon branded with comprehensive worksheets
 export async function generateExcelModel(
   scores: CatalystScore[],
   sizing: TechnicalSizing,
@@ -910,80 +1455,65 @@ export async function generateExcelModel(
   snapshot: VolumeSnapshot
 ): Promise<ArrayBuffer> {
   const XLSX = await import('xlsx');
-
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1 — Variables
-  const varsData: (string | number)[][] = [
-    ['Field', 'Value', 'Description', 'Unit'],
-    ['saas_price_per_user_pm', config.saas_price_per_user_pm, 'SaaS price per user per month', 'ZAR'],
-    ['onprem_licence_fee_pa', config.onprem_licence_fee_pa, 'On-premise licence fee per annum', 'ZAR'],
-    ['hybrid_licence_fee_pa', config.hybrid_licence_fee_pa, 'Hybrid licence fee per annum', 'ZAR'],
-    ['cf_cost_per_1m_api_calls', config.cf_cost_per_1m_api_calls, 'Cloudflare Workers cost per 1M API calls', 'ZAR'],
-    ['cf_d1_cost_per_gb_pm', config.cf_d1_cost_per_gb_pm, 'D1 database cost per GB per month', 'ZAR'],
-    ['cf_r2_cost_per_gb_pm', config.cf_r2_cost_per_gb_pm, 'R2 storage cost per GB per month', 'ZAR'],
-    ['cf_vectorize_cost_per_1m_queries', config.cf_vectorize_cost_per_1m_queries, 'Vectorize cost per 1M queries', 'ZAR'],
-    ['cf_workers_ai_cost_per_1m_tokens', config.cf_workers_ai_cost_per_1m_tokens, 'Workers AI cost per 1M tokens', 'ZAR'],
-    ['cf_kv_cost_per_1m_reads', config.cf_kv_cost_per_1m_reads, 'KV cost per 1M reads', 'ZAR'],
-    ['cf_base_pm', config.cf_base_pm, 'CF Workers fixed plan cost per month', 'ZAR'],
-    ['onprem_support_cost_pa', config.onprem_support_cost_pa, 'GONXT support overhead per annum', 'ZAR'],
-    ['onprem_update_cost_pa', config.onprem_update_cost_pa, 'Model update delivery per annum', 'ZAR'],
-    ['ar_savings_pct', config.ar_savings_pct, 'AR balance recovery rate', '%'],
-    ['ap_savings_pct', config.ap_savings_pct, 'AP processing saving rate', '%'],
-    ['invoice_recon_savings_pct', config.invoice_recon_savings_pct, 'Invoice reconciliation saving rate', '%'],
-    ['procurement_savings_pct', config.procurement_savings_pct, 'Procurement saving via supplier scoring', '%'],
-    ['workforce_savings_pct', config.workforce_savings_pct, 'Payroll saving via scheduling', '%'],
-    ['supply_chain_savings_pct', config.supply_chain_savings_pct, 'Inventory optimisation saving', '%'],
-    ['compliance_fine_avoidance_pct', config.compliance_fine_avoidance_pct, 'Revenue % as avoided fines', '%'],
-    ['maintenance_savings_pct', config.maintenance_savings_pct, 'Maintenance spend saving via prediction', '%'],
-    ['deployment_model', config.deployment_model, 'Deployment model', ''],
-    ['currency', config.currency, 'Display currency', ''],
-    ['exchange_rate_to_zar', config.exchange_rate_to_zar, 'Exchange rate to ZAR', ''],
-    ['target_users', config.target_users, 'Target number of users', ''],
-    ['contract_years', config.contract_years, 'Contract duration', 'years'],
+  // ═══════════════════════════════════════════════
+  // Sheet 1 — Executive Summary
+  // ═══════════════════════════════════════════════
+  const totalSaving = scores.reduce((s, c) => s + c.estimated_annual_saving_zar, 0);
+  const annualLicence = config.deployment_model === 'saas'
+    ? sizing.annual_licence_revenue
+    : config.deployment_model === 'hybrid' ? config.hybrid_licence_fee_pa : config.onprem_licence_fee_pa;
+  const paybackMonths = annualLicence > 0 && totalSaving > 0 ? Math.round((annualLicence / totalSaving) * 12) : 0;
+  const roi = annualLicence > 0 ? Math.round((totalSaving / annualLicence) * 100) : 0;
+
+  const summaryData: (string | number)[][] = [
+    ['ATHEON INTELLIGENCE PLATFORM — AI Catalyst Assessment Model'],
+    [''],
+    ['KEY METRICS', '', 'VALUE'],
+    ['Total Estimated Annual Savings', '', totalSaving],
+    ['AI Catalysts Identified', '', scores.length],
+    ['Recommended First Catalyst', '', scores[0]?.catalyst_name || 'N/A'],
+    ['Platform Licence (Annual)', '', annualLicence],
+    ['Net Annual Benefit', '', totalSaving - annualLicence],
+    ['Payback Period', '', `${paybackMonths} months`],
+    ['Return on Investment', '', `${roi}%`],
+    ['Deployment Model', '', config.deployment_model.toUpperCase()],
+    ['Contract Duration', '', `${config.contract_years} years`],
+    ['Target Users', '', config.target_users],
+    [''],
+    ['ERP DATA PROFILE'],
+    ['ERP System', '', snapshot.erp_system],
+    ['Months of Data', '', snapshot.months_of_data],
+    ['Data Completeness', '', `${snapshot.data_completeness_pct}%`],
+    ['Monthly Invoices', '', snapshot.monthly_invoices],
+    ['Monthly POs', '', snapshot.monthly_purchase_orders],
+    ['Employees', '', snapshot.employee_count],
+    ['Active Customers', '', snapshot.active_customer_count],
+    ['Active Suppliers', '', snapshot.active_supplier_count],
+    ['Total Revenue (12m)', '', snapshot.total_revenue_12m],
+    ['Total Spend (12m)', '', snapshot.total_spend_12m],
+    [''],
+    ['DEPLOYMENT ROADMAP'],
+    ['Phase 1 (Month 1-2)', '', scores.filter(c => c.deploy_order <= 2).map(c => c.catalyst_name).join(', ') || 'N/A'],
+    ['Phase 2 (Month 3-4)', '', scores.filter(c => c.deploy_order >= 3 && c.deploy_order <= 4).map(c => c.catalyst_name).join(', ') || 'N/A'],
+    ['Phase 3 (Month 5-6)', '', scores.filter(c => c.deploy_order >= 5).map(c => c.catalyst_name).join(', ') || 'N/A'],
+    [''],
+    ['Generated by Atheon Intelligence Platform | GONXT Technology (Pty) Ltd'],
+    [`Date: ${new Date().toLocaleDateString('en-ZA')} | CONFIDENTIAL`],
   ];
 
-  const varsSheet = XLSX.utils.aoa_to_sheet(varsData);
-  // Yellow highlight on value column (B)
-  for (let i = 1; i < varsData.length; i++) {
-    const cell = varsSheet[XLSX.utils.encode_cell({ r: i, c: 1 })];
-    if (cell) {
-      cell.s = { fill: { fgColor: { rgb: 'FFFF00' } } };
-    }
-  }
-  XLSX.utils.book_append_sheet(wb, varsSheet, 'Variables');
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  summarySheet['!cols'] = [{ wch: 35 }, { wch: 5 }, { wch: 45 }];
+  XLSX.utils.book_append_sheet(wb, summarySheet, 'Executive Summary');
 
-  // Sheet 2 — Volume Data
-  const volData: (string | number)[][] = [
-    ['Metric', 'Value', 'Description'],
-    ['monthly_invoices', snapshot.monthly_invoices, 'Average invoices per month'],
-    ['monthly_purchase_orders', snapshot.monthly_purchase_orders, 'Average POs per month'],
-    ['monthly_journal_entries', snapshot.monthly_journal_entries, 'Average journal entries per month'],
-    ['monthly_bank_transactions', snapshot.monthly_bank_transactions, 'Average bank transactions per month'],
-    ['total_ar_balance', snapshot.total_ar_balance, 'Total AR balance outstanding'],
-    ['total_ap_balance', snapshot.total_ap_balance, 'Total AP balance outstanding'],
-    ['overdue_invoice_count', snapshot.overdue_invoice_count, 'Number of overdue invoices'],
-    ['overdue_invoice_value', snapshot.overdue_invoice_value, 'Value of overdue invoices'],
-    ['avg_invoice_value', snapshot.avg_invoice_value, 'Average invoice value'],
-    ['total_revenue_12m', snapshot.total_revenue_12m, 'Total revenue last 12 months'],
-    ['total_spend_12m', snapshot.total_spend_12m, 'Total spend last 12 months'],
-    ['employee_count', snapshot.employee_count, 'Active employees'],
-    ['total_monthly_payroll', snapshot.total_monthly_payroll, 'Total monthly payroll'],
-    ['active_customer_count', snapshot.active_customer_count, 'Active customers'],
-    ['active_supplier_count', snapshot.active_supplier_count, 'Active suppliers'],
-    ['product_count', snapshot.product_count, 'Active products'],
-    ['total_inventory_value', snapshot.total_inventory_value, 'Total inventory value'],
-    ['months_of_data', snapshot.months_of_data, 'Months of historical data'],
-    ['data_completeness_pct', snapshot.data_completeness_pct, 'Data completeness score'],
-    ['erp_system', snapshot.erp_system, 'Source ERP system'],
-  ];
-
-  const volSheet = XLSX.utils.aoa_to_sheet(volData);
-  XLSX.utils.book_append_sheet(wb, volSheet, 'Volume Data');
-
-  // Sheet 3 — Catalyst Savings Model
+  // ═══════════════════════════════════════════════
+  // Sheet 2 — Catalyst Savings Model
+  // ═══════════════════════════════════════════════
   const savingsData: (string | number)[][] = [
-    ['Catalyst', 'Sub-Catalyst', 'Volume/Month', 'Unit', 'Savings Formula', 'Est. Annual Saving (ZAR)', 'Confidence'],
+    ['CATALYST SAVINGS MODEL'],
+    [''],
+    ['Priority', 'Catalyst', 'Domain', 'Sub-Catalyst', 'Volume/Month', 'Unit', 'Est. Annual Saving (ZAR)', 'Confidence', 'Deploy Order'],
   ];
 
   let grandTotal = 0;
@@ -991,42 +1521,185 @@ export async function generateExcelModel(
     let catTotal = 0;
     for (const sc of cat.sub_catalysts) {
       savingsData.push([
-        cat.catalyst_name, sc.name,
+        cat.priority, cat.catalyst_name, cat.domain, sc.name,
         sc.estimated_monthly_volume, sc.volume_unit,
-        `See Variables sheet`, sc.estimated_annual_saving_zar, cat.confidence,
+        sc.estimated_annual_saving_zar, cat.confidence, cat.deploy_order,
       ]);
       catTotal += sc.estimated_annual_saving_zar;
     }
-    savingsData.push([cat.catalyst_name + ' — SUBTOTAL', '', '', '', '', catTotal, '']);
+    savingsData.push(['', `${cat.catalyst_name} SUBTOTAL`, '', '', '', '', catTotal, '', '']);
     grandTotal += catTotal;
   }
-  savingsData.push(['GRAND TOTAL', '', '', '', '', grandTotal, '']);
+  savingsData.push(['', '', '', '', '', '', '', '', '']);
+  savingsData.push(['', 'GRAND TOTAL', '', '', '', '', grandTotal, '', '']);
 
   const savingsSheet = XLSX.utils.aoa_to_sheet(savingsData);
-  XLSX.utils.book_append_sheet(wb, savingsSheet, 'Catalyst Savings Model');
+  savingsSheet['!cols'] = [{ wch: 8 }, { wch: 28 }, { wch: 15 }, { wch: 30 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(wb, savingsSheet, 'Catalyst Savings');
 
-  // Sheet 4 — Infrastructure Cost Model
-  const infraData: (string | number | string)[][] = [
-    ['', 'SaaS', 'On-Premise'],
-    ['Workers (base + API)', sizing.cost_cf_workers, 0],
-    ['D1 Database', sizing.cost_cf_d1, 0],
-    ['Vectorize', sizing.cost_cf_vectorize, 0],
-    ['Workers AI', sizing.cost_cf_workers_ai, 0],
-    ['R2 Storage', sizing.cost_cf_r2, 0],
-    ['KV Reads', sizing.cost_cf_kv, 0],
-    ['Support Cost/month', 0, sizing.total_infra_cost_pm_onprem * 0.714], // ~120k/168k
-    ['Update Cost/month', 0, sizing.total_infra_cost_pm_onprem * 0.286], // ~48k/168k
-    ['Total Infra Cost/month', sizing.total_infra_cost_pm_saas, sizing.total_infra_cost_pm_onprem],
-    ['Monthly Revenue', sizing.monthly_licence_revenue, config.onprem_licence_fee_pa / 12],
-    ['Gross Margin/month', sizing.gross_margin_pm_saas, sizing.gross_margin_pm_onprem],
-    ['Gross Margin %', sizing.gross_margin_pct_saas, sizing.gross_margin_pct_onprem],
-    ['Payback Period (months)', grandTotal > 0 ? Math.round((sizing.annual_licence_revenue / grandTotal) * 12) : 0, grandTotal > 0 ? Math.round((config.onprem_licence_fee_pa / grandTotal) * 12) : 0],
+  // ═══════════════════════════════════════════════
+  // Sheet 3 — Catalyst Deep Dives
+  // ═══════════════════════════════════════════════
+  const deepDiveData: (string | number)[][] = [
+    ['CATALYST DEEP DIVES'],
+    [''],
+  ];
+
+  for (const cat of scores) {
+    deepDiveData.push([`${cat.catalyst_name} (${cat.domain})`, '', '', '', '']);
+    deepDiveData.push(['Priority', cat.priority, 'Confidence', cat.confidence, '']);
+    deepDiveData.push(['Est. Annual Saving', cat.estimated_annual_saving_zar, 'Deploy Order', cat.deploy_order, '']);
+    deepDiveData.push(['']);
+    deepDiveData.push(['Data Insights:']);
+    for (const insight of cat.data_insights) {
+      deepDiveData.push([`  - ${insight}`]);
+    }
+    deepDiveData.push(['']);
+    deepDiveData.push(['Savings Components:', 'Label', 'Amount (ZAR)', 'Methodology']);
+    for (const comp of cat.saving_components) {
+      deepDiveData.push(['', comp.label, comp.amount_zar, comp.methodology]);
+    }
+    deepDiveData.push(['']);
+    deepDiveData.push(['Sub-Catalysts:', 'Name', 'Volume/Month', 'Unit', 'Annual Saving (ZAR)']);
+    for (const sc of cat.sub_catalysts) {
+      deepDiveData.push(['', sc.name, sc.estimated_monthly_volume, sc.volume_unit, sc.estimated_annual_saving_zar]);
+    }
+    deepDiveData.push(['']);
+    deepDiveData.push(['─────────────────────────────────────────────']);
+    deepDiveData.push(['']);
+  }
+
+  const deepDiveSheet = XLSX.utils.aoa_to_sheet(deepDiveData);
+  deepDiveSheet['!cols'] = [{ wch: 45 }, { wch: 30 }, { wch: 20 }, { wch: 25 }, { wch: 20 }];
+  XLSX.utils.book_append_sheet(wb, deepDiveSheet, 'Catalyst Deep Dives');
+
+  // ═══════════════════════════════════════════════
+  // Sheet 4 — Volume Data (ERP Snapshot)
+  // ═══════════════════════════════════════════════
+  const volData: (string | number)[][] = [
+    ['ERP VOLUME DATA SNAPSHOT'],
+    [''],
+    ['Category', 'Metric', 'Value', 'Description'],
+    ['Transaction', 'Monthly Invoices', snapshot.monthly_invoices, 'Average invoices processed per month'],
+    ['Transaction', 'Monthly Purchase Orders', snapshot.monthly_purchase_orders, 'Average POs per month'],
+    ['Transaction', 'Monthly Journal Entries', snapshot.monthly_journal_entries, 'Average journal entries per month'],
+    ['Transaction', 'Monthly Bank Transactions', snapshot.monthly_bank_transactions, 'Average bank transactions per month'],
+    ['Financial', 'Total AR Balance', snapshot.total_ar_balance, 'Accounts receivable outstanding'],
+    ['Financial', 'Total AP Balance', snapshot.total_ap_balance, 'Accounts payable outstanding'],
+    ['Financial', 'Overdue Invoices (#)', snapshot.overdue_invoice_count, 'Number of overdue invoices'],
+    ['Financial', 'Overdue Invoice Value', snapshot.overdue_invoice_value, 'Value of overdue invoices (ZAR)'],
+    ['Financial', 'Avg Invoice Value', snapshot.avg_invoice_value, 'Average invoice amount (ZAR)'],
+    ['Financial', 'Revenue (12m)', snapshot.total_revenue_12m, 'Total revenue last 12 months (ZAR)'],
+    ['Financial', 'Spend (12m)', snapshot.total_spend_12m, 'Total spend last 12 months (ZAR)'],
+    ['Organisation', 'Employees', snapshot.employee_count, 'Active employee count'],
+    ['Organisation', 'Monthly Payroll', snapshot.total_monthly_payroll, 'Total monthly payroll (ZAR)'],
+    ['Organisation', 'Active Customers', snapshot.active_customer_count, 'Unique active customers'],
+    ['Organisation', 'Active Suppliers', snapshot.active_supplier_count, 'Unique active suppliers'],
+    ['Inventory', 'Products', snapshot.product_count, 'Active product SKUs'],
+    ['Inventory', 'Inventory Value', snapshot.total_inventory_value, 'Total inventory on hand (ZAR)'],
+    ['Data', 'Months of Data', snapshot.months_of_data, 'Historical data depth'],
+    ['Data', 'Data Completeness', snapshot.data_completeness_pct, 'Data quality score (%)'],
+    ['Data', 'ERP System', snapshot.erp_system, 'Source ERP platform'],
+  ];
+
+  const volSheet = XLSX.utils.aoa_to_sheet(volData);
+  volSheet['!cols'] = [{ wch: 15 }, { wch: 28 }, { wch: 20 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, volSheet, 'Volume Data');
+
+  // ═══════════════════════════════════════════════
+  // Sheet 5 — Infrastructure Cost Model
+  // ═══════════════════════════════════════════════
+  const infraData: (string | number)[][] = [
+    ['INFRASTRUCTURE COST MODEL'],
+    [''],
+    ['Service Component', 'Monthly Volume', 'SaaS Cost (ZAR/mo)', 'On-Premise Cost (ZAR/mo)'],
+    ['Workers (API Calls)', `${sizing.total_monthly_api_calls.toLocaleString()} calls`, sizing.cost_cf_workers, 0],
+    ['D1 Database', `${sizing.total_db_size_gb} GB`, sizing.cost_cf_d1, 0],
+    ['Vectorize (Embeddings)', `${sizing.total_monthly_vector_queries.toLocaleString()} queries`, sizing.cost_cf_vectorize, 0],
+    ['Workers AI (LLM)', `${sizing.total_monthly_llm_tokens.toLocaleString()} tokens`, sizing.cost_cf_workers_ai, 0],
+    ['R2 Object Storage', `${sizing.total_storage_gb} GB`, sizing.cost_cf_r2, 0],
+    ['KV Cache', `${sizing.total_kv_reads_monthly.toLocaleString()} reads`, sizing.cost_cf_kv, 0],
+    ['Support Overhead', '', 0, config.onprem_support_cost_pa / 12],
+    ['Update Delivery', '', 0, config.onprem_update_cost_pa / 12],
+    [''],
+    ['TOTALS', '', '', ''],
+    ['Total Infra Cost/month', '', sizing.total_infra_cost_pm_saas, sizing.total_infra_cost_pm_onprem],
+    ['Monthly Revenue', '', sizing.monthly_licence_revenue, config.onprem_licence_fee_pa / 12],
+    ['Gross Margin/month', '', sizing.gross_margin_pm_saas, sizing.gross_margin_pm_onprem],
+    ['Gross Margin %', '', sizing.gross_margin_pct_saas, sizing.gross_margin_pct_onprem],
+    ['Annual Licence Revenue', '', sizing.annual_licence_revenue, config.onprem_licence_fee_pa],
+    ['Payback Period (months)', '', grandTotal > 0 ? Math.round((sizing.annual_licence_revenue / grandTotal) * 12) : 0, grandTotal > 0 ? Math.round((config.onprem_licence_fee_pa / grandTotal) * 12) : 0],
   ];
 
   const infraSheet = XLSX.utils.aoa_to_sheet(infraData);
-  XLSX.utils.book_append_sheet(wb, infraSheet, 'Infrastructure Cost Model');
+  infraSheet['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 22 }];
+  XLSX.utils.book_append_sheet(wb, infraSheet, 'Infrastructure Costs');
 
-  // Write workbook to ArrayBuffer
+  // ═══════════════════════════════════════════════
+  // Sheet 6 — Assumptions & Variables
+  // ═══════════════════════════════════════════════
+  const varsData: (string | number)[][] = [
+    ['ASSESSMENT ASSUMPTIONS & CONFIGURATION'],
+    [''],
+    ['Parameter', 'Value', 'Unit', 'Description'],
+    ['SaaS Price/User/Month', config.saas_price_per_user_pm, 'ZAR', 'Per-user SaaS subscription price'],
+    ['On-Prem Licence/Year', config.onprem_licence_fee_pa, 'ZAR', 'Annual on-premise licence fee'],
+    ['Hybrid Licence/Year', config.hybrid_licence_fee_pa, 'ZAR', 'Annual hybrid licence fee'],
+    ['CF Workers/1M Calls', config.cf_cost_per_1m_api_calls, 'ZAR', 'Cloudflare Workers per 1M invocations'],
+    ['D1 Database/GB/Month', config.cf_d1_cost_per_gb_pm, 'ZAR', 'D1 storage cost per GB per month'],
+    ['R2 Storage/GB/Month', config.cf_r2_cost_per_gb_pm, 'ZAR', 'R2 object storage per GB per month'],
+    ['Vectorize/1M Queries', config.cf_vectorize_cost_per_1m_queries, 'ZAR', 'Vectorize embedding queries per 1M'],
+    ['Workers AI/1M Tokens', config.cf_workers_ai_cost_per_1m_tokens, 'ZAR', 'LLM inference per 1M tokens'],
+    ['KV/1M Reads', config.cf_kv_cost_per_1m_reads, 'ZAR', 'KV cache per 1M read operations'],
+    ['CF Base Plan', config.cf_base_pm, 'ZAR', 'Cloudflare Workers fixed plan cost'],
+    ['Support Overhead/Year', config.onprem_support_cost_pa, 'ZAR', 'GONXT annual support cost'],
+    ['Update Delivery/Year', config.onprem_update_cost_pa, 'ZAR', 'Model update delivery per annum'],
+    [''],
+    ['SAVINGS ASSUMPTIONS'],
+    ['AR Recovery Rate', config.ar_savings_pct, '%', 'Expected AR balance recovery improvement'],
+    ['AP Processing Savings', config.ap_savings_pct, '%', 'AP automation efficiency gain'],
+    ['Invoice Recon Savings', config.invoice_recon_savings_pct, '%', 'Reconciliation error reduction'],
+    ['Procurement Savings', config.procurement_savings_pct, '%', 'Supplier scoring and spend optimization'],
+    ['Workforce Savings', config.workforce_savings_pct, '%', 'Payroll scheduling optimization'],
+    ['Supply Chain Savings', config.supply_chain_savings_pct, '%', 'Inventory and demand optimization'],
+    ['Compliance Avoidance', config.compliance_fine_avoidance_pct, '%', 'Regulatory fine avoidance (% of revenue)'],
+    ['Maintenance Savings', config.maintenance_savings_pct, '%', 'Predictive maintenance improvement'],
+    [''],
+    ['GENERAL'],
+    ['Deployment Model', config.deployment_model, '', 'Selected deployment architecture'],
+    ['Currency', config.currency, '', 'Display currency'],
+    ['FX Rate to ZAR', config.exchange_rate_to_zar, '', 'Exchange rate multiplier'],
+    ['Target Users', config.target_users, '', 'Number of licensed users'],
+    ['Contract Duration', config.contract_years, 'years', 'Contract term length'],
+  ];
+
+  const varsSheet = XLSX.utils.aoa_to_sheet(varsData);
+  varsSheet['!cols'] = [{ wch: 28 }, { wch: 18 }, { wch: 8 }, { wch: 45 }];
+  XLSX.utils.book_append_sheet(wb, varsSheet, 'Assumptions');
+
+  // ═══════════════════════════════════════════════
+  // Sheet 7 — 3-Year Financial Projection
+  // ═══════════════════════════════════════════════
+  const projData: (string | number)[][] = [
+    ['3-YEAR FINANCIAL PROJECTION'],
+    [''],
+    ['Metric', 'Year 1', 'Year 2', 'Year 3', 'Total'],
+    ['Estimated Savings', totalSaving, Math.round(totalSaving * 1.1), Math.round(totalSaving * 1.2), Math.round(totalSaving * 3.3)],
+    ['Platform Licence Cost', annualLicence, Math.round(annualLicence * 1.03), Math.round(annualLicence * 1.06), Math.round(annualLicence * 3.09)],
+    ['Net Annual Benefit', totalSaving - annualLicence, Math.round(totalSaving * 1.1 - annualLicence * 1.03), Math.round(totalSaving * 1.2 - annualLicence * 1.06), Math.round(totalSaving * 3.3 - annualLicence * 3.09)],
+    ['Cumulative Savings', totalSaving, Math.round(totalSaving * 2.1), Math.round(totalSaving * 3.3), ''],
+    ['Cumulative Cost', annualLicence, Math.round(annualLicence * 2.03), Math.round(annualLicence * 3.09), ''],
+    ['Cumulative Net Benefit', totalSaving - annualLicence, Math.round(totalSaving * 2.1 - annualLicence * 2.03), Math.round(totalSaving * 3.3 - annualLicence * 3.09), ''],
+    [''],
+    ['ASSUMPTIONS'],
+    ['Annual savings growth', '10%', '', '', 'Conservative estimate based on AI maturity curve'],
+    ['Annual licence escalation', '3%', '', '', 'Standard contractual escalation'],
+  ];
+
+  const projSheet = XLSX.utils.aoa_to_sheet(projData);
+  projSheet['!cols'] = [{ wch: 25 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 45 }];
+  XLSX.utils.book_append_sheet(wb, projSheet, '3-Year Projection');
+
   const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
   return buf as ArrayBuffer;
 }
@@ -1048,7 +1721,7 @@ Write in a professional, confident tone. Reference specific data points. Do not 
   // Try LLM call if AI binding available
   if (ai) {
     try {
-      const result = await ai.run('@cf/meta/llama-3.1-8b-instruct', {
+      const result = await (ai as any).run('@cf/meta/llama-3.1-8b-instruct', {
         messages: [
           { role: 'system', content: 'You are a financial analyst at GONXT Technology writing assessment reports for Atheon AI platform prospects.' },
           { role: 'user', content: prompt },

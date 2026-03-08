@@ -1,6 +1,6 @@
 /**
  * Test Companies Seed Data
- * 5 companies across different ERP systems and industries for comprehensive testing
+ * 7 companies across different ERP systems and industries for comprehensive testing
  *
  * Companies:
  * 1. Highveld Steel Works - SAP S/4HANA - Mining/Steel Manufacturing
@@ -8,6 +8,8 @@
  * 3. MediBridge Clinics - Sage Business Cloud - Healthcare
  * 4. BluePeak Logistics - Sage Pastel - Logistics/Transport
  * 5. NovaTech Solutions - Oracle Fusion - Technology/SaaS
+ * 6. Protea Manufacturing (Medium) - Sage 300 - Manufacturing (100 employees)
+ * 7. Kapstadt Global Holdings (Large MNC) - SAP S/4HANA - Diversified Conglomerate (500+ employees, multi-currency)
  *
  * Default password for all test users: Atheon@Test2026
  */
@@ -148,13 +150,114 @@ export async function seedTestCompanies(db: D1Database) {
 
   // Employees
   const hvEmps = [
-    {id:'emp-hv-1',empNum:'HVS-001',first:'Johan',last:'van der Merwe',dept:'Executive',pos:'CEO'},
-    {id:'emp-hv-2',empNum:'HVS-042',first:'Sipho',last:'Ndlovu',dept:'Smelting Operations',pos:'Operations Manager'},
-    {id:'emp-hv-3',empNum:'HVS-105',first:'Lindiwe',last:'Khumalo',dept:'Finance',pos:'Senior Analyst'},
+    {id:'emp-hv-1',empNum:'HVS-001',first:'Johan',last:'van der Merwe',dept:'Executive',pos:'CEO',salary:180000},
+    {id:'emp-hv-2',empNum:'HVS-042',first:'Sipho',last:'Ndlovu',dept:'Smelting Operations',pos:'Operations Manager',salary:95000},
+    {id:'emp-hv-3',empNum:'HVS-105',first:'Lindiwe',last:'Khumalo',dept:'Finance',pos:'Senior Analyst',salary:72000},
+    {id:'emp-hv-4',empNum:'HVS-010',first:'Pieter',last:'Botha',dept:'Executive',pos:'CFO',salary:160000},
+    {id:'emp-hv-5',empNum:'HVS-020',first:'Thabo',last:'Mokoena',dept:'Smelting Operations',pos:'Furnace Supervisor',salary:65000},
+    {id:'emp-hv-6',empNum:'HVS-021',first:'David',last:'Pretorius',dept:'Smelting Operations',pos:'Furnace Operator',salary:38000},
+    {id:'emp-hv-7',empNum:'HVS-022',first:'Solomon',last:'Mahlangu',dept:'Smelting Operations',pos:'Furnace Operator',salary:38000},
+    {id:'emp-hv-8',empNum:'HVS-030',first:'Andries',last:'Nel',dept:'Rolling Mill',pos:'Mill Supervisor',salary:62000},
+    {id:'emp-hv-9',empNum:'HVS-031',first:'Bongani',last:'Zwane',dept:'Rolling Mill',pos:'Mill Operator',salary:36000},
+    {id:'emp-hv-10',empNum:'HVS-032',first:'Mandla',last:'Sithole',dept:'Rolling Mill',pos:'Mill Operator',salary:36000},
+    {id:'emp-hv-11',empNum:'HVS-040',first:'Grace',last:'Maseko',dept:'Quality Control',pos:'QC Manager',salary:75000},
+    {id:'emp-hv-12',empNum:'HVS-041',first:'Johannes',last:'van Wyk',dept:'Quality Control',pos:'Lab Technician',salary:42000},
+    {id:'emp-hv-13',empNum:'HVS-050',first:'Kagiso',last:'Molefe',dept:'Maintenance',pos:'Chief Engineer',salary:88000},
+    {id:'emp-hv-14',empNum:'HVS-051',first:'Tshepo',last:'Motaung',dept:'Maintenance',pos:'Electrician',salary:45000},
+    {id:'emp-hv-15',empNum:'HVS-052',first:'Jacob',last:'Erasmus',dept:'Maintenance',pos:'Fitter & Turner',salary:45000},
+    {id:'emp-hv-16',empNum:'HVS-060',first:'Nomsa',last:'Dlamini',dept:'HR',pos:'HR Manager',salary:68000},
+    {id:'emp-hv-17',empNum:'HVS-061',first:'Palesa',last:'Tau',dept:'HR',pos:'Payroll Clerk',salary:28000},
+    {id:'emp-hv-18',empNum:'HVS-070',first:'Rudi',last:'Smit',dept:'Safety',pos:'SHE Officer',salary:55000},
+    {id:'emp-hv-19',empNum:'HVS-080',first:'William',last:'Mabasa',dept:'Logistics',pos:'Dispatch Manager',salary:52000},
+    {id:'emp-hv-20',empNum:'HVS-081',first:'Daniel',last:'Fourie',dept:'Logistics',pos:'Warehouse Foreman',salary:35000},
+    {id:'emp-hv-21',empNum:'HVS-090',first:'Lerato',last:'Phiri',dept:'Procurement',pos:'Buyer',salary:48000},
+    {id:'emp-hv-22',empNum:'HVS-100',first:'Samuel',last:'Khumalo',dept:'Finance',pos:'Accountant',salary:55000},
+    {id:'emp-hv-23',empNum:'HVS-101',first:'Zandile',last:'Mkhwanazi',dept:'Finance',pos:'Cost Accountant',salary:52000},
+    {id:'emp-hv-24',empNum:'HVS-110',first:'Hendrik',last:'Venter',dept:'Sales',pos:'Sales Manager',salary:75000},
+    {id:'emp-hv-25',empNum:'HVS-111',first:'Themba',last:'Mthembu',dept:'Sales',pos:'Key Account Exec',salary:55000},
+    {id:'emp-hv-26',empNum:'HVS-120',first:'Michael',last:'Nkosi',dept:'Mining',pos:'Mine Foreman',salary:68000},
+    {id:'emp-hv-27',empNum:'HVS-121',first:'Francois',last:'du Toit',dept:'Mining',pos:'Blasting Specialist',salary:52000},
+    {id:'emp-hv-28',empNum:'HVS-122',first:'Aisha',last:'Patel',dept:'Mining',pos:'Geologist',salary:72000},
+    {id:'emp-hv-29',empNum:'HVS-130',first:'Siyanda',last:'Cele',dept:'IT',pos:'Systems Admin',salary:48000},
+    {id:'emp-hv-30',empNum:'HVS-140',first:'Hlengiwe',last:'Zwane',dept:'Admin',pos:'Office Manager',salary:35000},
   ];
   for (const e of hvEmps) {
-    await db.prepare('INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(e.id,'highveld','SAP S/4HANA',e.empNum,e.first,e.last,e.dept,e.pos).run();
+    await db.prepare("INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position,gross_salary,salary_frequency,status,hire_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(e.id,'highveld','SAP S/4HANA',e.empNum,e.first,e.last,e.dept,e.pos,e.salary,'monthly','active','2023-06-01').run();
+  }
+
+  // ── Highveld Invoices (steel sales — 12 months, ~40/month) ──
+  const hvInvoices: {id:string;num:string;cust:string;cname:string;date:string;due:string;total:number;paid:number;status:string;pstatus:string}[] = [];
+  const hvInvCustomers = [
+    {id:'cust-hv-1',name:'Aveng Group'},
+    {id:'cust-hv-2',name:'Murray & Roberts'},
+  ];
+  let hvInvIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    const dateStr = `${year}-${month}-15`;
+    const dueStr = `${year}-${month}-28`;
+    for (let j = 0; j < 40; j++) {
+      const cust = hvInvCustomers[j % 2];
+      const amount = 180000 + Math.round(Math.sin(hvInvIdx * 0.5) * 120000 + hvInvIdx * 500);
+      const isPaid = mo < 9;
+      const isOverdue = !isPaid && mo < 11;
+      hvInvoices.push({ id:`inv-hv-${hvInvIdx}`, num:`INV-HV-${String(hvInvIdx).padStart(5,'0')}`, cust:cust.id, cname:cust.name, date:dateStr, due:dueStr, total:amount, paid:isPaid?amount:0, status:'approved', pstatus:isPaid?'paid':(isOverdue?'overdue':'unpaid') });
+      hvInvIdx++;
+    }
+  }
+  for (const inv of hvInvoices) {
+    await db.prepare("INSERT OR IGNORE INTO erp_invoices (id,tenant_id,source_system,invoice_number,customer_id,customer_name,invoice_date,due_date,total,amount_paid,amount_due,status,payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(inv.id,'highveld','SAP S/4HANA',inv.num,inv.cust,inv.cname,inv.date,inv.due,inv.total,inv.paid,inv.total-inv.paid,inv.status,inv.pstatus).run();
+  }
+
+  // ── Highveld Purchase Orders (ore, energy, consumables — 12 months, ~25/month) ──
+  const hvPOs: {id:string;num:string;sup:string;sname:string;date:string;del:string;total:number;status:string}[] = [];
+  const hvPOSuppliers = [{id:'sup-hv-1',name:'Kumba Iron Ore'},{id:'sup-hv-2',name:'Eskom Holdings'}];
+  let hvPOIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 25; j++) {
+      const sup = hvPOSuppliers[j % 2];
+      const amount = j % 2 === 0 ? 2500000 + Math.round(Math.sin(hvPOIdx) * 800000) : 850000 + Math.round(Math.sin(hvPOIdx) * 200000);
+      hvPOs.push({ id:`po-hv-${hvPOIdx}`, num:`PO-HV-${String(hvPOIdx).padStart(5,'0')}`, sup:sup.id, sname:sup.name, date:`${year}-${month}-05`, del:`${year}-${month}-20`, total:amount, status:mo<10?'received':'open' });
+      hvPOIdx++;
+    }
+  }
+  for (const po of hvPOs) {
+    await db.prepare("INSERT OR IGNORE INTO erp_purchase_orders (id,tenant_id,source_system,po_number,supplier_id,supplier_name,order_date,delivery_date,total,status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+      .bind(po.id,'highveld','SAP S/4HANA',po.num,po.sup,po.sname,po.date,po.del,po.total,po.status).run();
+  }
+
+  // ── Highveld Journal Entries (20/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 1; j <= 20; j++) {
+      const jid = `je-hv-${mo * 20 + j}`;
+      const amt = 500000 + mo * 50000 + j * 10000;
+      await db.prepare("INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)")
+        .bind(jid,'highveld','SAP S/4HANA',`JE-HV-${String(mo*20+j).padStart(4,'0')}`,`${year}-${month}-28`,`Month-end closing entry ${j}`,amt,amt,'posted').run();
+    }
+  }
+
+  // ── Highveld Bank Transactions (30/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let d = 1; d <= 30; d++) {
+      const day = String(Math.min(d, 28)).padStart(2, '0');
+      const btId = `bt-hv-${mo * 30 + d}`;
+      if (d % 4 === 0) {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'highveld','SAP S/4HANA','ABSA-001',`${year}-${month}-${day}`,`Steel sales receipt`,`REC-HV-${mo}-${d}`,850000+d*10000,0,45000000).run();
+      } else {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,debit,credit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'highveld','SAP S/4HANA','ABSA-001',`${year}-${month}-${day}`,d%3===0?'Eskom electricity':'Iron ore payment',`PAY-HV-${mo}-${d}`,d%3===0?420000:1200000,0,45000000).run();
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -251,6 +354,109 @@ export async function seedTestCompanies(db: D1Database) {
       .bind(g.id,'greenleaf','Xero',g.code,g.name,g.type,g.balance).run();
   }
 
+  // ── GreenLeaf Employees (85 staff: farm workers, supervisors, sales, admin) ──
+  const glEmps = [
+    {id:'emp-gl-1',num:'GL001',first:'Jan',last:'du Plessis',dept:'Executive',pos:'CEO & Founder',salary:95000},
+    {id:'emp-gl-2',num:'GL002',first:'Sarah',last:'van Niekerk',dept:'Executive',pos:'Operations Director',salary:82000},
+    {id:'emp-gl-3',num:'GL003',first:'Mandla',last:'Dube',dept:'Farm Operations',pos:'Farm Manager - Stellenbosch',salary:55000},
+    {id:'emp-gl-4',num:'GL004',first:'Riana',last:'Pretorius',dept:'Finance',pos:'Financial Manager',salary:65000},
+    {id:'emp-gl-5',num:'GL005',first:'Themba',last:'Moyo',dept:'Farm Operations',pos:'Irrigation Specialist',salary:38000},
+    {id:'emp-gl-6',num:'GL006',first:'Anele',last:'Sithole',dept:'Farm Operations',pos:'Harvest Supervisor',salary:35000},
+    {id:'emp-gl-7',num:'GL007',first:'Pieter',last:'Joubert',dept:'Farm Operations',pos:'Tractor Operator',salary:22000},
+    {id:'emp-gl-8',num:'GL008',first:'Nomsa',last:'Nkosi',dept:'Farm Operations',pos:'Farm Worker',salary:18000},
+    {id:'emp-gl-9',num:'GL009',first:'Sipho',last:'Mthembu',dept:'Farm Operations',pos:'Farm Worker',salary:18000},
+    {id:'emp-gl-10',num:'GL010',first:'Grace',last:'Ndlovu',dept:'Farm Operations',pos:'Farm Worker',salary:18000},
+    {id:'emp-gl-11',num:'GL011',first:'Johannes',last:'Botha',dept:'Quality',pos:'QC Manager',salary:52000},
+    {id:'emp-gl-12',num:'GL012',first:'Lindiwe',last:'Khumalo',dept:'Quality',pos:'Lab Technician',salary:32000},
+    {id:'emp-gl-13',num:'GL013',first:'David',last:'van Wyk',dept:'Packhouse',pos:'Packhouse Manager',salary:45000},
+    {id:'emp-gl-14',num:'GL014',first:'Bongani',last:'Zwane',dept:'Packhouse',pos:'Packing Supervisor',salary:28000},
+    {id:'emp-gl-15',num:'GL015',first:'Palesa',last:'Tau',dept:'Sales',pos:'Sales Manager',salary:58000},
+    {id:'emp-gl-16',num:'GL016',first:'Hendrik',last:'Erasmus',dept:'Sales',pos:'Key Account Manager',salary:48000},
+    {id:'emp-gl-17',num:'GL017',first:'Zandile',last:'Mkhwanazi',dept:'Sales',pos:'Sales Coordinator',salary:32000},
+    {id:'emp-gl-18',num:'GL018',first:'Andries',last:'Nel',dept:'Logistics',pos:'Distribution Manager',salary:48000},
+    {id:'emp-gl-19',num:'GL019',first:'Solomon',last:'Mahlangu',dept:'Logistics',pos:'Delivery Driver',salary:22000},
+    {id:'emp-gl-20',num:'GL020',first:'Lerato',last:'Phiri',dept:'Admin',pos:'Office Manager',salary:30000},
+  ];
+  for (const e of glEmps) {
+    await db.prepare("INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position,gross_salary,salary_frequency,status,hire_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(e.id,'greenleaf','Xero',e.num,e.first,e.last,e.dept,e.pos,e.salary,'monthly','active','2024-02-01').run();
+  }
+
+  // ── GreenLeaf Invoices (produce sales — 12 months, ~30/month) ──
+  const glInvoices: {id:string;num:string;cust:string;cname:string;date:string;due:string;total:number;paid:number;status:string;pstatus:string}[] = [];
+  const glInvCustomers = [
+    {id:'cust-gl-1',name:'Woolworths Food'},
+    {id:'cust-gl-2',name:'Checkers FreshX'},
+    {id:'cust-gl-3',name:'Food Lovers Market'},
+  ];
+  let glInvIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    const dateStr = `${year}-${month}-15`;
+    const dueStr = `${year}-${month}-28`;
+    for (let j = 0; j < 30; j++) {
+      const cust = glInvCustomers[j % 3];
+      const amount = 8000 + Math.round(Math.sin(glInvIdx * 0.8) * 5000 + glInvIdx * 50);
+      const isPaid = mo < 9;
+      const isOverdue = !isPaid && mo < 11;
+      glInvoices.push({ id:`inv-gl-${glInvIdx}`, num:`INV-GL-${String(glInvIdx).padStart(5,'0')}`, cust:cust.id, cname:cust.name, date:dateStr, due:dueStr, total:amount, paid:isPaid?amount:0, status:'approved', pstatus:isPaid?'paid':(isOverdue?'overdue':'unpaid') });
+      glInvIdx++;
+    }
+  }
+  for (const inv of glInvoices) {
+    await db.prepare("INSERT OR IGNORE INTO erp_invoices (id,tenant_id,source_system,invoice_number,customer_id,customer_name,invoice_date,due_date,total,amount_paid,amount_due,status,payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(inv.id,'greenleaf','Xero',inv.num,inv.cust,inv.cname,inv.date,inv.due,inv.total,inv.paid,inv.total-inv.paid,inv.status,inv.pstatus).run();
+  }
+
+  // ── GreenLeaf Purchase Orders (seeds, fertilizer, packaging — 12 months, ~18/month) ──
+  const glPOs: {id:string;num:string;sup:string;sname:string;date:string;del:string;total:number;status:string}[] = [];
+  const glPOSuppliers = [{id:'sup-gl-1',name:'Starke Ayres Seeds'},{id:'sup-gl-2',name:'Omnia Fertilizer'}];
+  let glPOIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 18; j++) {
+      const sup = glPOSuppliers[j % 2];
+      const amount = j % 2 === 0 ? 25000 + Math.round(Math.sin(glPOIdx) * 12000) : 18000 + Math.round(Math.sin(glPOIdx) * 8000);
+      glPOs.push({ id:`po-gl-${glPOIdx}`, num:`PO-GL-${String(glPOIdx).padStart(5,'0')}`, sup:sup.id, sname:sup.name, date:`${year}-${month}-05`, del:`${year}-${month}-12`, total:amount, status:mo<10?'received':'open' });
+      glPOIdx++;
+    }
+  }
+  for (const po of glPOs) {
+    await db.prepare("INSERT OR IGNORE INTO erp_purchase_orders (id,tenant_id,source_system,po_number,supplier_id,supplier_name,order_date,delivery_date,total,status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+      .bind(po.id,'greenleaf','Xero',po.num,po.sup,po.sname,po.date,po.del,po.total,po.status).run();
+  }
+
+  // ── GreenLeaf Journal Entries (12/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 1; j <= 12; j++) {
+      const jid = `je-gl-${mo * 12 + j}`;
+      const amt = 15000 + mo * 2000 + j * 500;
+      await db.prepare("INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)")
+        .bind(jid,'greenleaf','Xero',`JE-GL-${String(mo*12+j).padStart(4,'0')}`,`${year}-${month}-28`,`Month-end closing entry ${j}`,amt,amt,'posted').run();
+    }
+  }
+
+  // ── GreenLeaf Bank Transactions (22/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let d = 1; d <= 22; d++) {
+      const day = String(Math.min(d, 28)).padStart(2, '0');
+      const btId = `bt-gl-${mo * 22 + d}`;
+      if (d % 3 === 0) {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'greenleaf','Xero','NED-001',`${year}-${month}-${day}`,`Produce sales receipt`,`REC-GL-${mo}-${d}`,35000+d*500,0,2800000).run();
+      } else {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,debit,credit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'greenleaf','Xero','NED-001',`${year}-${month}-${day}`,d%2===0?'Seed supplier payment':'Fertilizer purchase',`PAY-GL-${mo}-${d}`,d%2===0?12000:8500,0,2800000).run();
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // COMPANY 3: MEDIBRIDGE CLINICS — SAGE BUSINESS CLOUD — HEALTHCARE
   // ═══════════════════════════════════════════════════════════════════════════
@@ -340,13 +546,128 @@ export async function seedTestCompanies(db: D1Database) {
   }
 
   const mbEmps = [
-    {id:'emp-mb-1',empNum:'MB-001',first:'James',last:'Nkosi',dept:'Executive',pos:'CEO'},
-    {id:'emp-mb-2',empNum:'MB-015',first:'Nomsa',last:'Zulu',dept:'Nursing',pos:'Head of Nursing'},
-    {id:'emp-mb-3',empNum:'MB-042',first:'Priya',last:'Govender',dept:'Clinical',pos:'Medical Director'},
+    {id:'emp-mb-1',empNum:'MB-001',first:'James',last:'Nkosi',dept:'Executive',pos:'CEO',salary:165000},
+    {id:'emp-mb-2',empNum:'MB-015',first:'Nomsa',last:'Zulu',dept:'Nursing',pos:'Head of Nursing',salary:85000},
+    {id:'emp-mb-3',empNum:'MB-042',first:'Priya',last:'Govender',dept:'Clinical',pos:'Medical Director',salary:180000},
+    {id:'emp-mb-4',empNum:'MB-002',first:'Rajesh',last:'Naicker',dept:'Finance',pos:'CFO',salary:145000},
+    {id:'emp-mb-5',empNum:'MB-010',first:'Dr. Thabo',last:'Mokoena',dept:'Clinical',pos:'GP - Sandton Clinic',salary:120000},
+    {id:'emp-mb-6',empNum:'MB-011',first:'Dr. Sarah',last:'van der Berg',dept:'Clinical',pos:'GP - Rosebank Clinic',salary:120000},
+    {id:'emp-mb-7',empNum:'MB-012',first:'Dr. Fatima',last:'Khan',dept:'Clinical',pos:'GP - Centurion Clinic',salary:115000},
+    {id:'emp-mb-8',empNum:'MB-016',first:'Sister Grace',last:'Maseko',dept:'Nursing',pos:'Registered Nurse',salary:42000},
+    {id:'emp-mb-9',empNum:'MB-017',first:'Sister Lerato',last:'Phiri',dept:'Nursing',pos:'Registered Nurse',salary:42000},
+    {id:'emp-mb-10',empNum:'MB-018',first:'Sister Palesa',last:'Tau',dept:'Nursing',pos:'Registered Nurse',salary:42000},
+    {id:'emp-mb-11',empNum:'MB-019',first:'Bongani',last:'Zwane',dept:'Nursing',pos:'Enrolled Nurse',salary:28000},
+    {id:'emp-mb-12',empNum:'MB-020',first:'Mandla',last:'Sithole',dept:'Nursing',pos:'Enrolled Nurse',salary:28000},
+    {id:'emp-mb-13',empNum:'MB-025',first:'Sipho',last:'Ndlovu',dept:'Pharmacy',pos:'Pharmacist',salary:65000},
+    {id:'emp-mb-14',empNum:'MB-026',first:'Zandile',last:'Mkhwanazi',dept:'Pharmacy',pos:'Pharmacy Assistant',salary:22000},
+    {id:'emp-mb-15',empNum:'MB-030',first:'Johannes',last:'van Wyk',dept:'Radiology',pos:'Radiographer',salary:55000},
+    {id:'emp-mb-16',empNum:'MB-035',first:'David',last:'Pretorius',dept:'Pathology',pos:'Lab Technologist',salary:48000},
+    {id:'emp-mb-17',empNum:'MB-040',first:'Precious',last:'Mthethwa',dept:'Admin',pos:'Practice Manager - Sandton',salary:52000},
+    {id:'emp-mb-18',empNum:'MB-041',first:'Lindiwe',last:'Khumalo',dept:'Admin',pos:'Practice Manager - Rosebank',salary:52000},
+    {id:'emp-mb-19',empNum:'MB-043',first:'Kagiso',last:'Molefe',dept:'Billing',pos:'Medical Aid Claims Manager',salary:48000},
+    {id:'emp-mb-20',empNum:'MB-044',first:'Solomon',last:'Mahlangu',dept:'Billing',pos:'Claims Clerk',salary:25000},
+    {id:'emp-mb-21',empNum:'MB-045',first:'Nomsa',last:'Dlamini',dept:'Billing',pos:'Claims Clerk',salary:25000},
+    {id:'emp-mb-22',empNum:'MB-050',first:'Andries',last:'Nel',dept:'Finance',pos:'Accountant',salary:55000},
+    {id:'emp-mb-23',empNum:'MB-055',first:'Hlengiwe',last:'Zwane',dept:'Reception',pos:'Receptionist',salary:18000},
+    {id:'emp-mb-24',empNum:'MB-056',first:'Thandi',last:'Cele',dept:'Reception',pos:'Receptionist',salary:18000},
+    {id:'emp-mb-25',empNum:'MB-060',first:'Michael',last:'Chen',dept:'IT',pos:'Systems Administrator',salary:52000},
   ];
   for (const e of mbEmps) {
-    await db.prepare('INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(e.id,'medibridge','Sage Business Cloud',e.empNum,e.first,e.last,e.dept,e.pos).run();
+    await db.prepare("INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position,gross_salary,salary_frequency,status,hire_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(e.id,'medibridge','Sage Business Cloud',e.empNum,e.first,e.last,e.dept,e.pos,e.salary,'monthly','active','2024-03-01').run();
+  }
+
+  // ── MediBridge Products (medical supplies, pharmaceuticals) ──
+  const mbProducts = [
+    {id:'prod-mb-1',sku:'MED-SYRINGE-10',name:'Disposable Syringe 10ml',cat:'Medical Supplies',price:8,stock:5000},
+    {id:'prod-mb-2',sku:'MED-GLOVES-L',name:'Nitrile Gloves Large (Box 100)',cat:'Medical Supplies',price:180,stock:200},
+    {id:'prod-mb-3',sku:'MED-MASK-N95',name:'N95 Respirator Mask',cat:'PPE',price:45,stock:1000},
+    {id:'prod-mb-4',sku:'PHARM-AMOX-500',name:'Amoxicillin 500mg (30 caps)',cat:'Pharmaceuticals',price:85,stock:300},
+    {id:'prod-mb-5',sku:'PHARM-PARA-500',name:'Paracetamol 500mg (100 tabs)',cat:'Pharmaceuticals',price:42,stock:500},
+    {id:'prod-mb-6',sku:'PHARM-OMEP-20',name:'Omeprazole 20mg (28 caps)',cat:'Pharmaceuticals',price:120,stock:250},
+    {id:'prod-mb-7',sku:'DIAG-XRAY-FILM',name:'X-Ray Film 14x17',cat:'Diagnostics',price:350,stock:100},
+    {id:'prod-mb-8',sku:'DIAG-BLOOD-CBC',name:'CBC Blood Test Kit',cat:'Diagnostics',price:95,stock:400},
+    {id:'prod-mb-9',sku:'MED-BANDAGE-5',name:'Crepe Bandage 5cm',cat:'Medical Supplies',price:15,stock:800},
+    {id:'prod-mb-10',sku:'EQUIP-BP-MONITOR',name:'Digital BP Monitor',cat:'Equipment',price:2800,stock:15},
+  ];
+  for (const p of mbProducts) {
+    await db.prepare('INSERT OR IGNORE INTO erp_products (id,tenant_id,source_system,sku,name,category,selling_price,stock_on_hand) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(p.id,'medibridge','Sage Business Cloud',p.sku,p.name,p.cat,p.price,p.stock).run();
+  }
+
+  // ── MediBridge Invoices (patient consultations + medical aid claims — 12 months, ~35/month) ──
+  const mbInvoices: {id:string;num:string;cust:string;cname:string;date:string;due:string;total:number;paid:number;status:string;pstatus:string}[] = [];
+  const mbInvCustomers = [
+    {id:'cust-mb-1',name:'Discovery Health'},
+    {id:'cust-mb-2',name:'Momentum Medical Scheme'},
+    {id:'cust-mb-3',name:'GEMS (Government)'},
+  ];
+  let mbInvIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    const dateStr = `${year}-${month}-15`;
+    const dueStr = `${year}-${month}-28`;
+    for (let j = 0; j < 35; j++) {
+      const cust = mbInvCustomers[j % 3];
+      const amount = 1200 + Math.round(Math.sin(mbInvIdx * 0.6) * 800 + mbInvIdx * 20);
+      const isPaid = mo < 8;
+      const isOverdue = !isPaid && mo < 11;
+      mbInvoices.push({ id:`inv-mb-${mbInvIdx}`, num:`INV-MB-${String(mbInvIdx).padStart(5,'0')}`, cust:cust.id, cname:cust.name, date:dateStr, due:dueStr, total:amount, paid:isPaid?amount:0, status:'approved', pstatus:isPaid?'paid':(isOverdue?'overdue':'unpaid') });
+      mbInvIdx++;
+    }
+  }
+  for (const inv of mbInvoices) {
+    await db.prepare("INSERT OR IGNORE INTO erp_invoices (id,tenant_id,source_system,invoice_number,customer_id,customer_name,invoice_date,due_date,total,amount_paid,amount_due,status,payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(inv.id,'medibridge','Sage Business Cloud',inv.num,inv.cust,inv.cname,inv.date,inv.due,inv.total,inv.paid,inv.total-inv.paid,inv.status,inv.pstatus).run();
+  }
+
+  // ── MediBridge Purchase Orders (pharma, supplies, equipment — 12 months, ~22/month) ──
+  const mbPOs: {id:string;num:string;sup:string;sname:string;date:string;del:string;total:number;status:string}[] = [];
+  const mbPOSuppliers = [{id:'sup-mb-1',name:'Adcock Ingram'},{id:'sup-mb-2',name:'Cipla Medpro'},{id:'sup-mb-3',name:'Surgical Innovations'}];
+  let mbPOIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 22; j++) {
+      const sup = mbPOSuppliers[j % 3];
+      const amount = 8000 + Math.round(Math.sin(mbPOIdx) * 5000 + mbPOIdx * 100);
+      mbPOs.push({ id:`po-mb-${mbPOIdx}`, num:`PO-MB-${String(mbPOIdx).padStart(5,'0')}`, sup:sup.id, sname:sup.name, date:`${year}-${month}-05`, del:`${year}-${month}-10`, total:amount, status:mo<10?'received':'open' });
+      mbPOIdx++;
+    }
+  }
+  for (const po of mbPOs) {
+    await db.prepare("INSERT OR IGNORE INTO erp_purchase_orders (id,tenant_id,source_system,po_number,supplier_id,supplier_name,order_date,delivery_date,total,status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+      .bind(po.id,'medibridge','Sage Business Cloud',po.num,po.sup,po.sname,po.date,po.del,po.total,po.status).run();
+  }
+
+  // ── MediBridge Journal Entries (15/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 1; j <= 15; j++) {
+      const jid = `je-mb-${mo * 15 + j}`;
+      const amt = 25000 + mo * 3000 + j * 800;
+      await db.prepare("INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)")
+        .bind(jid,'medibridge','Sage Business Cloud',`JE-MB-${String(mo*15+j).padStart(4,'0')}`,`${year}-${month}-28`,`Month-end closing entry ${j}`,amt,amt,'posted').run();
+    }
+  }
+
+  // ── MediBridge Bank Transactions (28/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let d = 1; d <= 28; d++) {
+      const day = String(d).padStart(2, '0');
+      const btId = `bt-mb-${mo * 28 + d}`;
+      if (d % 4 === 0) {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'medibridge','Sage Business Cloud','STD-001',`${year}-${month}-${day}`,`Medical aid payment received`,`REC-MB-${mo}-${d}`,45000+d*500,0,8500000).run();
+      } else {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,debit,credit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'medibridge','Sage Business Cloud','STD-001',`${year}-${month}-${day}`,d%3===0?'Pharmaceutical supplier':'Medical supplies payment',`PAY-MB-${mo}-${d}`,d%3===0?18000:8500,0,8500000).run();
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -715,14 +1036,688 @@ export async function seedTestCompanies(db: D1Database) {
   }
 
   const ntEmps = [
-    {id:'emp-nt-1',empNum:'NT-001',first:'Aisha',last:'Patel',dept:'Executive',pos:'CEO & Founder'},
-    {id:'emp-nt-2',empNum:'NT-002',first:'Michael',last:'Chen',dept:'Technology',pos:'CTO'},
-    {id:'emp-nt-3',empNum:'NT-015',first:'David',last:'Mabaso',dept:'Sales',pos:'VP Sales'},
-    {id:'emp-nt-4',empNum:'NT-042',first:'Fatima',last:'Osman',dept:'Product',pos:'Product Analyst'},
+    {id:'emp-nt-1',empNum:'NT-001',first:'Aisha',last:'Patel',dept:'Executive',pos:'CEO & Founder',salary:200000},
+    {id:'emp-nt-2',empNum:'NT-002',first:'Michael',last:'Chen',dept:'Technology',pos:'CTO',salary:175000},
+    {id:'emp-nt-3',empNum:'NT-015',first:'David',last:'Mabaso',dept:'Sales',pos:'VP Sales',salary:145000},
+    {id:'emp-nt-4',empNum:'NT-042',first:'Fatima',last:'Osman',dept:'Product',pos:'Product Analyst',salary:65000},
+    {id:'emp-nt-5',empNum:'NT-003',first:'Rajesh',last:'Naicker',dept:'Executive',pos:'CFO',salary:160000},
+    {id:'emp-nt-6',empNum:'NT-004',first:'Siyanda',last:'Cele',dept:'Executive',pos:'COO',salary:155000},
+    {id:'emp-nt-7',empNum:'NT-010',first:'Pieter',last:'Joubert',dept:'Engineering',pos:'VP Engineering',salary:145000},
+    {id:'emp-nt-8',empNum:'NT-011',first:'Thabo',last:'Mokoena',dept:'Engineering',pos:'Senior Backend Dev',salary:95000},
+    {id:'emp-nt-9',empNum:'NT-012',first:'Grace',last:'Maseko',dept:'Engineering',pos:'Senior Frontend Dev',salary:92000},
+    {id:'emp-nt-10',empNum:'NT-013',first:'Bongani',last:'Zwane',dept:'Engineering',pos:'Full-Stack Dev',salary:78000},
+    {id:'emp-nt-11',empNum:'NT-014',first:'Mandla',last:'Sithole',dept:'Engineering',pos:'Full-Stack Dev',salary:78000},
+    {id:'emp-nt-12',empNum:'NT-020',first:'Lindiwe',last:'Khumalo',dept:'Engineering',pos:'DevOps Engineer',salary:88000},
+    {id:'emp-nt-13',empNum:'NT-021',first:'Johannes',last:'van Wyk',dept:'Engineering',pos:'QA Engineer',salary:72000},
+    {id:'emp-nt-14',empNum:'NT-022',first:'Sipho',last:'Ndlovu',dept:'Engineering',pos:'Data Engineer',salary:92000},
+    {id:'emp-nt-15',empNum:'NT-023',first:'Daniel',last:'Fourie',dept:'Engineering',pos:'ML Engineer',salary:98000},
+    {id:'emp-nt-16',empNum:'NT-030',first:'Palesa',last:'Tau',dept:'Product',pos:'Head of Product',salary:120000},
+    {id:'emp-nt-17',empNum:'NT-031',first:'Hendrik',last:'Erasmus',dept:'Product',pos:'UX Designer',salary:72000},
+    {id:'emp-nt-18',empNum:'NT-040',first:'Zandile',last:'Mkhwanazi',dept:'Sales',pos:'Enterprise AE',salary:85000},
+    {id:'emp-nt-19',empNum:'NT-041',first:'Themba',last:'Mthembu',dept:'Sales',pos:'Enterprise AE',salary:85000},
+    {id:'emp-nt-20',empNum:'NT-043',first:'Andries',last:'Nel',dept:'Sales',pos:'SDR Manager',salary:68000},
+    {id:'emp-nt-21',empNum:'NT-050',first:'Solomon',last:'Mahlangu',dept:'Customer Success',pos:'VP CS',salary:120000},
+    {id:'emp-nt-22',empNum:'NT-051',first:'Lerato',last:'Phiri',dept:'Customer Success',pos:'CSM',salary:65000},
+    {id:'emp-nt-23',empNum:'NT-052',first:'Nomsa',last:'Dlamini',dept:'Customer Success',pos:'CSM',salary:65000},
+    {id:'emp-nt-24',empNum:'NT-060',first:'Hlengiwe',last:'Zwane',dept:'Support',pos:'Support Lead',salary:58000},
+    {id:'emp-nt-25',empNum:'NT-061',first:'Jacob',last:'Erasmus',dept:'Support',pos:'Support Engineer',salary:45000},
+    {id:'emp-nt-26',empNum:'NT-070',first:'Riana',last:'Pretorius',dept:'Finance',pos:'Financial Controller',salary:85000},
+    {id:'emp-nt-27',empNum:'NT-071',first:'William',last:'Mabasa',dept:'Finance',pos:'Accounts Manager',salary:58000},
+    {id:'emp-nt-28',empNum:'NT-080',first:'Sarah',last:'van Niekerk',dept:'HR',pos:'People Ops Manager',salary:72000},
+    {id:'emp-nt-29',empNum:'NT-090',first:'Rudi',last:'Smit',dept:'Marketing',pos:'Head of Marketing',salary:110000},
+    {id:'emp-nt-30',empNum:'NT-091',first:'Anele',last:'Dube',dept:'Marketing',pos:'Content Manager',salary:55000},
   ];
   for (const e of ntEmps) {
-    await db.prepare('INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(e.id,'novatech','Oracle Fusion',e.empNum,e.first,e.last,e.dept,e.pos).run();
+    await db.prepare("INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position,gross_salary,salary_frequency,status,hire_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(e.id,'novatech','Oracle Fusion',e.empNum,e.first,e.last,e.dept,e.pos,e.salary,'monthly','active','2024-01-15').run();
+  }
+
+  // ── NovaTech Invoices (SaaS subscriptions + services — 12 months, ~38/month) ──
+  const ntInvoices: {id:string;num:string;cust:string;cname:string;date:string;due:string;total:number;paid:number;status:string;pstatus:string}[] = [];
+  const ntInvCustomers = [
+    {id:'cust-nt-1',name:'Standard Bank'},
+    {id:'cust-nt-2',name:'Vodacom Business'},
+    {id:'cust-nt-3',name:'Sanlam Group'},
+    {id:'cust-nt-4',name:'MTN Group'},
+  ];
+  let ntInvIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    const dateStr = `${year}-${month}-01`;
+    const dueStr = `${year}-${month}-15`;
+    for (let j = 0; j < 38; j++) {
+      const cust = ntInvCustomers[j % 4];
+      const amount = 45000 + Math.round(Math.sin(ntInvIdx * 0.4) * 25000 + ntInvIdx * 200);
+      const isPaid = mo < 9;
+      const isOverdue = !isPaid && mo < 11;
+      ntInvoices.push({ id:`inv-nt-${ntInvIdx}`, num:`INV-NT-${String(ntInvIdx).padStart(5,'0')}`, cust:cust.id, cname:cust.name, date:dateStr, due:dueStr, total:amount, paid:isPaid?amount:0, status:'approved', pstatus:isPaid?'paid':(isOverdue?'overdue':'unpaid') });
+      ntInvIdx++;
+    }
+  }
+  for (const inv of ntInvoices) {
+    await db.prepare("INSERT OR IGNORE INTO erp_invoices (id,tenant_id,source_system,invoice_number,customer_id,customer_name,invoice_date,due_date,total,amount_paid,amount_due,status,payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(inv.id,'novatech','Oracle Fusion',inv.num,inv.cust,inv.cname,inv.date,inv.due,inv.total,inv.paid,inv.total-inv.paid,inv.status,inv.pstatus).run();
+  }
+
+  // ── NovaTech Purchase Orders (cloud infra, SaaS tools, talent — 12 months, ~24/month) ──
+  const ntPOs: {id:string;num:string;sup:string;sname:string;date:string;del:string;total:number;status:string}[] = [];
+  const ntPOSuppliers = [{id:'sup-nt-1',name:'AWS South Africa'},{id:'sup-nt-2',name:'Offerzen Talent'}];
+  let ntPOIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 24; j++) {
+      const sup = ntPOSuppliers[j % 2];
+      const amount = j % 2 === 0 ? 380000 + Math.round(Math.sin(ntPOIdx) * 80000) : 65000 + Math.round(Math.sin(ntPOIdx) * 20000);
+      ntPOs.push({ id:`po-nt-${ntPOIdx}`, num:`PO-NT-${String(ntPOIdx).padStart(5,'0')}`, sup:sup.id, sname:sup.name, date:`${year}-${month}-05`, del:`${year}-${month}-10`, total:amount, status:mo<10?'received':'open' });
+      ntPOIdx++;
+    }
+  }
+  for (const po of ntPOs) {
+    await db.prepare("INSERT OR IGNORE INTO erp_purchase_orders (id,tenant_id,source_system,po_number,supplier_id,supplier_name,order_date,delivery_date,total,status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+      .bind(po.id,'novatech','Oracle Fusion',po.num,po.sup,po.sname,po.date,po.del,po.total,po.status).run();
+  }
+
+  // ── NovaTech Journal Entries (18/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 1; j <= 18; j++) {
+      const jid = `je-nt-${mo * 18 + j}`;
+      const amt = 120000 + mo * 10000 + j * 5000;
+      await db.prepare("INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)")
+        .bind(jid,'novatech','Oracle Fusion',`JE-NT-${String(mo*18+j).padStart(4,'0')}`,`${year}-${month}-28`,`Month-end closing entry ${j}`,amt,amt,'posted').run();
+    }
+  }
+
+  // ── NovaTech Bank Transactions (30/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let d = 1; d <= 30; d++) {
+      const day = String(Math.min(d, 28)).padStart(2, '0');
+      const btId = `bt-nt-${mo * 30 + d}`;
+      if (d % 3 === 0) {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'novatech','Oracle Fusion','INV-001',`${year}-${month}-${day}`,`SaaS subscription payment`,`REC-NT-${mo}-${d}`,125000+d*2000,0,12500000).run();
+      } else {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,debit,credit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'novatech','Oracle Fusion','INV-001',`${year}-${month}-${day}`,d%2===0?'AWS cloud infrastructure':'Engineering salaries',`PAY-NT-${mo}-${d}`,d%2===0?95000:280000,0,12500000).run();
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMPANY 6: PROTEA MANUFACTURING — SAGE 300 — MEDIUM MANUFACTURER (~100 employees)
+  // ═══════════════════════════════════════════════════════════════════════════
+  await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
+    .bind('protea','Protea Manufacturing (Pty) Ltd','protea','manufacturing','professional','active','saas','af-south-1').run();
+
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind('protea','["apex","pulse","catalysts","mind","memory"]','["finance","procurement","supply-chain","hr","sales","manufacturing-quality","manufacturing-production"]',20,100,'["read-only","assisted","transactional"]','["tier-1","tier-2"]','["scenario-modelling","process-mining","risk-alerts"]',0,1,0,365).run();
+
+  const pmUsers = [
+    { id:'pm-admin', email:'admin@protea-mfg.co.za', name:'Johan Botha', role:'admin' },
+    { id:'pm-ceo',   email:'ceo@protea-mfg.co.za',   name:'Pieter Venter', role:'executive' },
+    { id:'pm-ops',   email:'ops@protea-mfg.co.za',   name:'Sello Mahlangu', role:'manager' },
+    { id:'pm-fin',   email:'finance@protea-mfg.co.za', name:'Anita de Villiers', role:'analyst' },
+    { id:'pm-qa',    email:'quality@protea-mfg.co.za', name:'Themba Nkosi', role:'operator' },
+    { id:'pm-viewer', email:'viewer@protea-mfg.co.za', name:'Lerato Molefe', role:'viewer' },
+  ];
+  for (const u of pmUsers) {
+    await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(u.id,'protea',u.email,u.name,u.role,pwHash,'["*"]','active').run();
+  }
+
+  // ERP Connection
+  await db.prepare(
+    "INSERT OR IGNORE INTO erp_connections (id,tenant_id,adapter_id,name,status,config,sync_frequency,records_synced,connected_at) VALUES (?,?,?,?,?,?,?,?,datetime('now'))"
+  ).bind('conn-pm-sage','protea','erp-sage-300','Protea Sage 300 Production','connected',
+    '{"host":"sage300.protea-mfg.co.za","company":"PROTEA","database":"PROTEA_PROD","base_url":"https://sage300.protea-mfg.co.za"}',
+    'hourly',856420).run();
+
+  // Catalyst Clusters
+  const pmClusters = [
+    {id:'cc-pm-fin',name:'Finance Operations Catalyst',domain:'finance',desc:'Invoice processing, AR/AP automation, financial close optimization',status:'active',agents:4,done:412,prog:8,rate:95.2,trust:92.1,tier:'transactional',subs:[{name:'Accounts Receivable',enabled:true,description:'Automated AR aging and collection workflows'},{name:'Accounts Payable',enabled:true,description:'Invoice matching and payment scheduling'},{name:'Invoice Reconciliation',enabled:true,description:'3-way match: PO, GRN, Invoice'},{name:'Financial Close',enabled:true,description:'Automated month-end closing journal entries'},{name:'Cash Flow Forecasting',enabled:false,description:'AI-driven cash position prediction'}]},
+    {id:'cc-pm-proc',name:'Procurement Catalyst',domain:'procurement',desc:'Raw material sourcing, supplier evaluation, PO automation',status:'active',agents:3,done:287,prog:5,rate:93.8,trust:90.5,tier:'assisted',subs:[{name:'Supplier Scoring',enabled:true,description:'Automated supplier risk and performance rating'},{name:'PO Automation',enabled:true,description:'Purchase order creation and approval routing'},{name:'Spend Analytics',enabled:true,description:'Category-level spend analysis and savings identification'},{name:'Raw Material Sourcing',enabled:true,description:'Optimal sourcing recommendation based on price and quality'}]},
+    {id:'cc-pm-supply',name:'Supply Chain Catalyst',domain:'supply-chain',desc:'Inventory optimization, demand planning, warehouse management',status:'active',agents:3,done:198,prog:6,rate:91.5,trust:88.3,tier:'assisted',subs:[{name:'Inventory Optimization',enabled:true,description:'Safety stock and reorder point calculation'},{name:'Demand Forecasting',enabled:true,description:'ML-based demand prediction by product line'},{name:'Warehouse Management',enabled:true,description:'Pick path optimization and layout recommendation'},{name:'Supplier Lead Time',enabled:true,description:'Delivery performance tracking and prediction'}]},
+    {id:'cc-pm-hr',name:'Workforce Management Catalyst',domain:'hr',desc:'Shift scheduling, payroll automation, skills tracking',status:'active',agents:2,done:145,prog:3,rate:94.1,trust:91.2,tier:'read-only',subs:[{name:'Shift Scheduling',enabled:true,description:'Production line roster optimization'},{name:'Payroll Automation',enabled:true,description:'Automated payroll calculation and submission'},{name:'Skills Matrix',enabled:true,description:'Competency tracking and training gap analysis'},{name:'Leave Management',enabled:true,description:'Leave balance tracking and approval workflows'}]},
+    {id:'cc-pm-sales',name:'Sales & Distribution Catalyst',domain:'sales',desc:'Order management, pricing, delivery scheduling for manufactured products',status:'active',agents:2,done:167,prog:4,rate:93.4,trust:89.8,tier:'assisted',subs:[{name:'Order Management',enabled:true,description:'Automated order intake and production scheduling link'},{name:'Dynamic Pricing',enabled:false,description:'Market-based pricing recommendation'},{name:'Delivery Scheduling',enabled:true,description:'Optimized dispatch based on production capacity'},{name:'Customer Credit',enabled:true,description:'Real-time credit limit monitoring'}]},
+    {id:'cc-pm-quality',name:'Quality Control Catalyst',domain:'manufacturing-quality',desc:'Product quality monitoring, defect detection, batch traceability',status:'active',agents:3,done:234,prog:5,rate:96.3,trust:93.7,tier:'assisted',subs:[{name:'Defect Detection',enabled:true,description:'ML-based visual and statistical defect detection'},{name:'Batch Traceability',enabled:true,description:'Full raw material to finished product traceability'},{name:'Quality Metrics',enabled:true,description:'SPC charts, Cp/Cpk tracking and alerting'},{name:'Non-Conformance Management',enabled:true,description:'NCR workflow automation and root cause analysis'}]},
+    {id:'cc-pm-prod',name:'Production Planning Catalyst',domain:'manufacturing-production',desc:'Production scheduling, OEE optimization, downtime prediction',status:'active',agents:3,done:189,prog:4,rate:92.8,trust:89.6,tier:'assisted',subs:[{name:'Production Scheduling',enabled:true,description:'Capacity-constrained scheduling across work centers'},{name:'OEE Optimization',enabled:true,description:'Real-time OEE tracking with improvement recommendations'},{name:'Downtime Prediction',enabled:true,description:'ML-based equipment failure prediction'},{name:'Material Requirements',enabled:true,description:'MRP calculation and component shortage alerts'}]},
+  ];
+  for (const c of pmClusters) {
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(c.id,'protea',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
+  }
+
+  // Graph Entities
+  const pmEntities = [
+    {id:'ge-pm-1',type:'organisation',name:'Protea Manufacturing',props:'{"employees":102,"revenue":"R280M","founded":2001}'},
+    {id:'ge-pm-2',type:'department',name:'Production Floor',props:'{"headcount":45,"location":"Epping, Cape Town"}'},
+    {id:'ge-pm-3',type:'system',name:'Sage 300',props:'{"version":"2024.1","modules":["IC","OE","PO","AP","AR","GL"]}'},
+    {id:'ge-pm-4',type:'kpi',name:'Production Output',props:'{"target":15000,"actual":13200,"unit":"units/month"}'},
+  ];
+  for (const e of pmEntities) {
+    await db.prepare('INSERT OR IGNORE INTO graph_entities (id,tenant_id,type,name,properties,confidence,source) VALUES (?,?,?,?,?,?,?)')
+      .bind(e.id,'protea',e.type,e.name,e.props,0.93,'Sage 300').run();
+  }
+
+  // Customers
+  const pmCustomers = [
+    {id:'cust-pm-1',name:'Builders Warehouse',code:'BW-001',email:'procurement@builderswarehouse.co.za',phone:'+27215551001',currency:'ZAR',balance:3500000},
+    {id:'cust-pm-2',name:'Massmart Holdings',code:'MASS-001',email:'buying@massmart.co.za',phone:'+27215551002',currency:'ZAR',balance:4200000},
+    {id:'cust-pm-3',name:'Italtile',code:'ITAL-001',email:'orders@italtile.co.za',phone:'+27215551003',currency:'ZAR',balance:2800000},
+    {id:'cust-pm-4',name:'PG Bison',code:'PGB-001',email:'purchasing@pgbison.co.za',phone:'+27215551004',currency:'ZAR',balance:1900000},
+    {id:'cust-pm-5',name:'Cashbuild',code:'CASH-001',email:'orders@cashbuild.co.za',phone:'+27215551005',currency:'ZAR',balance:2100000},
+  ];
+  for (const c of pmCustomers) {
+    await db.prepare('INSERT OR IGNORE INTO erp_customers (id,tenant_id,external_id,source_system,name,contact_email,contact_phone,currency,credit_balance) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(c.id,'protea',c.code,'Sage 300',c.name,c.email,c.phone,c.currency,c.balance).run();
+  }
+
+  // Suppliers
+  const pmSuppliers = [
+    {id:'sup-pm-1',name:'SAPPI Southern Africa',code:'SAPPI-001',email:'sales@sappi.co.za',currency:'ZAR',rating:4.5},
+    {id:'sup-pm-2',name:'Hulamin Aluminium',code:'HULA-001',email:'sales@hulamin.co.za',currency:'ZAR',rating:4.2},
+    {id:'sup-pm-3',name:'PPC Cement',code:'PPC-001',email:'industrial@ppc.co.za',currency:'ZAR',rating:4.0},
+    {id:'sup-pm-4',name:'Foskor Chemicals',code:'FOSK-001',email:'trade@foskor.co.za',currency:'ZAR',rating:3.8},
+  ];
+  for (const s of pmSuppliers) {
+    await db.prepare('INSERT OR IGNORE INTO erp_suppliers (id,tenant_id,external_id,source_system,name,contact_email,currency,risk_score) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(s.id,'protea',s.code,'Sage 300',s.name,s.email,s.currency,s.rating).run();
+  }
+
+  // Products
+  const pmProducts = [
+    {id:'prod-pm-1',name:'Aluminium Window Frame 1500mm',sku:'AWF-1500',category:'Window Frames',price:2850,stock:1200,unit:'unit'},
+    {id:'prod-pm-2',name:'Steel Security Gate Standard',sku:'SSG-STD',category:'Security Products',price:4200,stock:800,unit:'unit'},
+    {id:'prod-pm-3',name:'Composite Roof Tile Classic',sku:'CRT-CLS',category:'Roofing',price:185,stock:25000,unit:'unit'},
+    {id:'prod-pm-4',name:'PVC Gutter 4m Length',sku:'PVC-G4M',category:'Rainwater',price:320,stock:5000,unit:'length'},
+    {id:'prod-pm-5',name:'Pressed Steel Door Frame',sku:'PSDF-01',category:'Door Frames',price:1650,stock:2000,unit:'unit'},
+    {id:'prod-pm-6',name:'Aluminium Sliding Door 2.4m',sku:'ASD-240',category:'Doors',price:8500,stock:400,unit:'unit'},
+    {id:'prod-pm-7',name:'Burglar Bar Set 900mm',sku:'BBS-900',category:'Security Products',price:980,stock:3000,unit:'set'},
+    {id:'prod-pm-8',name:'Galvanised Steel Palisade Panel',sku:'GSP-180',category:'Fencing',price:1450,stock:1500,unit:'panel'},
+  ];
+  for (const p of pmProducts) {
+    await db.prepare('INSERT OR IGNORE INTO erp_products (id,tenant_id,source_system,sku,name,category,unit_price,stock_on_hand,unit_of_measure) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(p.id,'protea','Sage 300',p.sku,p.name,p.category,p.price,p.stock,p.unit).run();
+  }
+
+  // GL Accounts
+  const pmGL = [
+    {id:'gl-pm-1',code:'1000',name:'Bank - FNB Current',type:'asset',balance:4200000},
+    {id:'gl-pm-2',code:'1100',name:'Trade Debtors',type:'asset',balance:8500000},
+    {id:'gl-pm-3',code:'1200',name:'Raw Material Inventory',type:'asset',balance:12000000},
+    {id:'gl-pm-4',code:'2000',name:'Trade Creditors',type:'liability',balance:-6800000},
+    {id:'gl-pm-5',code:'4000',name:'Sales Revenue',type:'revenue',balance:-280000000},
+    {id:'gl-pm-6',code:'5000',name:'Cost of Sales',type:'expense',balance:185000000},
+    {id:'gl-pm-7',code:'6000',name:'Operating Expenses',type:'expense',balance:62000000},
+  ];
+  for (const g of pmGL) {
+    await db.prepare('INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(g.id,'protea','Sage 300',g.code,`2026-01-31`,`GL Balance: ${g.name}`,Math.abs(g.balance),Math.abs(g.balance),'posted').run();
+  }
+
+  // Employees (100 staff — manufacturing workforce)
+  const pmEmps: {id:string;empNum:string;first:string;last:string;dept:string;pos:string;salary:number}[] = [
+    {id:'emp-pm-1',empNum:'PM-001',first:'Pieter',last:'Venter',dept:'Executive',pos:'Managing Director',salary:125000},
+    {id:'emp-pm-2',empNum:'PM-002',first:'Anita',last:'de Villiers',dept:'Finance',pos:'Financial Manager',salary:95000},
+    {id:'emp-pm-3',empNum:'PM-003',first:'Sello',last:'Mahlangu',dept:'Production',pos:'Operations Manager',salary:88000},
+    {id:'emp-pm-4',empNum:'PM-004',first:'Themba',last:'Nkosi',dept:'Quality',pos:'QC Manager',salary:78000},
+    {id:'emp-pm-5',empNum:'PM-005',first:'Riaan',last:'Botha',dept:'Sales',pos:'Sales Director',salary:110000},
+    {id:'emp-pm-6',empNum:'PM-006',first:'Zanele',last:'Mthembu',dept:'HR',pos:'HR Manager',salary:72000},
+    {id:'emp-pm-7',empNum:'PM-010',first:'Johan',last:'Erasmus',dept:'Production',pos:'Production Supervisor - Line A',salary:55000},
+    {id:'emp-pm-8',empNum:'PM-011',first:'Bongani',last:'Dlamini',dept:'Production',pos:'Production Supervisor - Line B',salary:55000},
+    {id:'emp-pm-9',empNum:'PM-012',first:'Mandla',last:'Zwane',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-10',empNum:'PM-013',first:'Sipho',last:'Ndlovu',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-11',empNum:'PM-014',first:'Thabo',last:'Mokoena',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-12',empNum:'PM-015',first:'Lucky',last:'Chabalala',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-13',empNum:'PM-016',first:'Joseph',last:'Sithole',dept:'Production',pos:'Welder',salary:32000},
+    {id:'emp-pm-14',empNum:'PM-017',first:'David',last:'Khumalo',dept:'Production',pos:'Welder',salary:32000},
+    {id:'emp-pm-15',empNum:'PM-018',first:'Patrick',last:'Tau',dept:'Production',pos:'CNC Operator',salary:35000},
+    {id:'emp-pm-16',empNum:'PM-019',first:'Simon',last:'Phiri',dept:'Production',pos:'CNC Operator',salary:35000},
+    {id:'emp-pm-17',empNum:'PM-020',first:'Moses',last:'Mahlangu',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-18',empNum:'PM-021',first:'Isaac',last:'Dube',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-19',empNum:'PM-022',first:'Daniel',last:'Mkhize',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-20',empNum:'PM-023',first:'Samuel',last:'Mbatha',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-21',empNum:'PM-024',first:'Peter',last:'Motaung',dept:'Production',pos:'Spray Painter',salary:30000},
+    {id:'emp-pm-22',empNum:'PM-025',first:'James',last:'Ngcobo',dept:'Production',pos:'Spray Painter',salary:30000},
+    {id:'emp-pm-23',empNum:'PM-026',first:'William',last:'Cele',dept:'Production',pos:'Quality Inspector',salary:32000},
+    {id:'emp-pm-24',empNum:'PM-027',first:'Thomas',last:'Mabaso',dept:'Production',pos:'Quality Inspector',salary:32000},
+    {id:'emp-pm-25',empNum:'PM-028',first:'Robert',last:'Nene',dept:'Production',pos:'Forklift Operator',salary:26000},
+    {id:'emp-pm-26',empNum:'PM-029',first:'Michael',last:'Zulu',dept:'Production',pos:'Forklift Operator',salary:26000},
+    {id:'emp-pm-27',empNum:'PM-030',first:'Paul',last:'Radebe',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-28',empNum:'PM-031',first:'George',last:'Sibiya',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-29',empNum:'PM-032',first:'Andrew',last:'Majola',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-30',empNum:'PM-033',first:'Steven',last:'Vilakazi',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-31',empNum:'PM-034',first:'Philip',last:'Ngwenya',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-32',empNum:'PM-035',first:'Emmanuel',last:'Tshabalala',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-33',empNum:'PM-036',first:'Vincent',last:'Shabangu',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-34',empNum:'PM-037',first:'Chris',last:'Maluleke',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-35',empNum:'PM-038',first:'Albert',last:'Mahlobo',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-36',empNum:'PM-039',first:'Richard',last:'Moloi',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-37',empNum:'PM-040',first:'Kenneth',last:'Langa',dept:'Warehouse',pos:'Warehouse Supervisor',salary:42000},
+    {id:'emp-pm-38',empNum:'PM-041',first:'Norman',last:'Buthelezi',dept:'Warehouse',pos:'Storeman',salary:26000},
+    {id:'emp-pm-39',empNum:'PM-042',first:'Leonard',last:'Gumede',dept:'Warehouse',pos:'Storeman',salary:26000},
+    {id:'emp-pm-40',empNum:'PM-043',first:'Gerald',last:'Masango',dept:'Warehouse',pos:'Picker/Packer',salary:22000},
+    {id:'emp-pm-41',empNum:'PM-044',first:'Dennis',last:'Mpanza',dept:'Warehouse',pos:'Picker/Packer',salary:22000},
+    {id:'emp-pm-42',empNum:'PM-045',first:'Brian',last:'Khoza',dept:'Warehouse',pos:'Picker/Packer',salary:22000},
+    {id:'emp-pm-43',empNum:'PM-046',first:'Raymond',last:'Nkabinde',dept:'Warehouse',pos:'Driver',salary:28000},
+    {id:'emp-pm-44',empNum:'PM-047',first:'Arthur',last:'Mofokeng',dept:'Warehouse',pos:'Driver',salary:28000},
+    {id:'emp-pm-45',empNum:'PM-050',first:'Hendrik',last:'Pretorius',dept:'Maintenance',pos:'Maintenance Manager',salary:65000},
+    {id:'emp-pm-46',empNum:'PM-051',first:'Jan',last:'du Plessis',dept:'Maintenance',pos:'Electrician',salary:42000},
+    {id:'emp-pm-47',empNum:'PM-052',first:'Frikkie',last:'Fourie',dept:'Maintenance',pos:'Fitter & Turner',salary:42000},
+    {id:'emp-pm-48',empNum:'PM-053',first:'Danie',last:'van Wyk',dept:'Maintenance',pos:'Maintenance Assistant',salary:25000},
+    {id:'emp-pm-49',empNum:'PM-060',first:'Riana',last:'Kruger',dept:'Finance',pos:'Bookkeeper',salary:42000},
+    {id:'emp-pm-50',empNum:'PM-061',first:'Elna',last:'Jacobs',dept:'Finance',pos:'Debtors Clerk',salary:32000},
+    {id:'emp-pm-51',empNum:'PM-062',first:'Marie',last:'Steyn',dept:'Finance',pos:'Creditors Clerk',salary:32000},
+    {id:'emp-pm-52',empNum:'PM-063',first:'Susan',last:'Marais',dept:'Finance',pos:'Payroll Officer',salary:38000},
+    {id:'emp-pm-53',empNum:'PM-070',first:'Louis',last:'Coetzee',dept:'Sales',pos:'Sales Manager',salary:75000},
+    {id:'emp-pm-54',empNum:'PM-071',first:'Charl',last:'Bester',dept:'Sales',pos:'Account Executive',salary:55000},
+    {id:'emp-pm-55',empNum:'PM-072',first:'Pierre',last:'Roux',dept:'Sales',pos:'Account Executive',salary:55000},
+    {id:'emp-pm-56',empNum:'PM-073',first:'Kobus',last:'Swanepoel',dept:'Sales',pos:'Sales Admin',salary:32000},
+    {id:'emp-pm-57',empNum:'PM-074',first:'Tanya',last:'Nel',dept:'Sales',pos:'Customer Service',salary:28000},
+    {id:'emp-pm-58',empNum:'PM-075',first:'Charmaine',last:'Potgieter',dept:'Sales',pos:'Customer Service',salary:28000},
+    {id:'emp-pm-59',empNum:'PM-080',first:'Mpho',last:'Masemola',dept:'Quality',pos:'QC Technician',salary:38000},
+    {id:'emp-pm-60',empNum:'PM-081',first:'Lesego',last:'Matlala',dept:'Quality',pos:'QC Technician',salary:38000},
+    {id:'emp-pm-61',empNum:'PM-082',first:'Calvin',last:'Mtshali',dept:'Quality',pos:'Lab Assistant',salary:28000},
+    {id:'emp-pm-62',empNum:'PM-090',first:'Lydia',last:'Motha',dept:'HR',pos:'HR Officer',salary:38000},
+    {id:'emp-pm-63',empNum:'PM-091',first:'Grace',last:'Sethole',dept:'Admin',pos:'Receptionist',salary:22000},
+    {id:'emp-pm-64',empNum:'PM-092',first:'Prudence',last:'Mkhwanazi',dept:'Admin',pos:'Office Admin',salary:25000},
+    {id:'emp-pm-65',empNum:'PM-093',first:'Nomvula',last:'Thwala',dept:'Admin',pos:'Cleaner',salary:18000},
+    {id:'emp-pm-66',empNum:'PM-094',first:'Florence',last:'Nzimande',dept:'Admin',pos:'Cleaner',salary:18000},
+    {id:'emp-pm-67',empNum:'PM-095',first:'Thandi',last:'Mazibuko',dept:'Admin',pos:'Security Guard',salary:20000},
+    {id:'emp-pm-68',empNum:'PM-096',first:'Sbusiso',last:'Hlongwane',dept:'Admin',pos:'Security Guard',salary:20000},
+    // Additional production workers to reach ~100
+    {id:'emp-pm-69',empNum:'PM-100',first:'Musa',last:'Mguni',dept:'Production',pos:'Apprentice Welder',salary:18000},
+    {id:'emp-pm-70',empNum:'PM-101',first:'Themba',last:'Ngubane',dept:'Production',pos:'Apprentice Welder',salary:18000},
+    {id:'emp-pm-71',empNum:'PM-102',first:'Nhlanhla',last:'Mthethwa',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-72',empNum:'PM-103',first:'Sibusiso',last:'Shezi',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-73',empNum:'PM-104',first:'Vusi',last:'Mkhwanazi',dept:'Production',pos:'CNC Operator',salary:35000},
+    {id:'emp-pm-74',empNum:'PM-105',first:'Alfred',last:'Mchunu',dept:'Production',pos:'Assembly Lead',salary:38000},
+    {id:'emp-pm-75',empNum:'PM-106',first:'Frank',last:'Kunene',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-76',empNum:'PM-107',first:'Henry',last:'Zondi',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-77',empNum:'PM-108',first:'Martin',last:'Simelane',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-78',empNum:'PM-109',first:'Ernest',last:'Xaba',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-79',empNum:'PM-110',first:'Eddie',last:'Mthiyane',dept:'Warehouse',pos:'Picker/Packer',salary:22000},
+    {id:'emp-pm-80',empNum:'PM-111',first:'Victor',last:'Mvelase',dept:'Warehouse',pos:'Driver',salary:28000},
+    {id:'emp-pm-81',empNum:'PM-112',first:'Edgar',last:'Phungula',dept:'Maintenance',pos:'Maintenance Assistant',salary:25000},
+    {id:'emp-pm-82',empNum:'PM-113',first:'Winston',last:'Shabane',dept:'Production',pos:'Spray Painter',salary:30000},
+    {id:'emp-pm-83',empNum:'PM-114',first:'Solomon',last:'Miya',dept:'Production',pos:'Quality Inspector',salary:32000},
+    {id:'emp-pm-84',empNum:'PM-115',first:'Aaron',last:'Madonsela',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-85',empNum:'PM-116',first:'Jacob',last:'Myeni',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-86',empNum:'PM-117',first:'Elias',last:'Fakude',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-87',empNum:'PM-118',first:'Walter',last:'Mabuza',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-88',empNum:'PM-119',first:'Petrus',last:'Kubheka',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-89',empNum:'PM-120',first:'Abraham',last:'Maphanga',dept:'Sales',pos:'Telesales',salary:25000},
+    {id:'emp-pm-90',empNum:'PM-121',first:'Jeremiah',last:'Ntshalintshali',dept:'IT',pos:'IT Technician',salary:38000},
+    {id:'emp-pm-91',empNum:'PM-122',first:'Lucas',last:'Hlatshwayo',dept:'Production',pos:'Shift Supervisor - Night',salary:48000},
+    {id:'emp-pm-92',empNum:'PM-123',first:'Charles',last:'Mthombeni',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-93',empNum:'PM-124',first:'Enoch',last:'Mabena',dept:'Production',pos:'Machine Operator',salary:28000},
+    {id:'emp-pm-94',empNum:'PM-125',first:'Cornelius',last:'Malinga',dept:'Production',pos:'Assembler',salary:25000},
+    {id:'emp-pm-95',empNum:'PM-126',first:'Alexander',last:'Zwane',dept:'Production',pos:'General Worker',salary:22000},
+    {id:'emp-pm-96',empNum:'PM-127',first:'Timothy',last:'Ndaba',dept:'Warehouse',pos:'Storeman',salary:26000},
+    {id:'emp-pm-97',empNum:'PM-128',first:'Benedict',last:'Naidoo',dept:'Finance',pos:'Cost Accountant',salary:55000},
+    {id:'emp-pm-98',empNum:'PM-129',first:'Lawrence',last:'Govender',dept:'Production',pos:'Production Planner',salary:52000},
+    {id:'emp-pm-99',empNum:'PM-130',first:'Gregory',last:'Pillay',dept:'Procurement',pos:'Buyer',salary:48000},
+    {id:'emp-pm-100',empNum:'PM-131',first:'Cedric',last:'van der Walt',dept:'Procurement',pos:'Buyer',salary:48000},
+  ];
+  for (const e of pmEmps) {
+    await db.prepare("INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position,gross_salary,salary_frequency,status,hire_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(e.id,'protea','Sage 300',e.empNum,e.first,e.last,e.dept,e.pos,e.salary,'monthly','active','2023-06-01').run();
+  }
+
+  // ── Protea Invoices (building products — 12 months, ~45/month) ──
+  const pmInvCustomers = [{id:'cust-pm-1',name:'Builders Warehouse'},{id:'cust-pm-2',name:'Massmart Holdings'},{id:'cust-pm-3',name:'Italtile'},{id:'cust-pm-4',name:'PG Bison'},{id:'cust-pm-5',name:'Cashbuild'}];
+  let pmInvIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 45; j++) {
+      const cust = pmInvCustomers[j % 5];
+      const amount = 35000 + Math.round(Math.sin(pmInvIdx * 0.3) * 15000 + pmInvIdx * 100);
+      const isPaid = mo < 9;
+      const isOverdue = !isPaid && mo < 11;
+      await db.prepare("INSERT OR IGNORE INTO erp_invoices (id,tenant_id,source_system,invoice_number,customer_id,customer_name,invoice_date,due_date,total,amount_paid,amount_due,status,payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        .bind(`inv-pm-${pmInvIdx}`,'protea','Sage 300',`INV-PM-${String(pmInvIdx).padStart(5,'0')}`,cust.id,cust.name,`${year}-${month}-01`,`${year}-${month}-30`,amount,isPaid?amount:0,isPaid?0:amount,'approved',isPaid?'paid':(isOverdue?'overdue':'unpaid')).run();
+      pmInvIdx++;
+    }
+  }
+
+  // ── Protea Purchase Orders (raw materials — 12 months, ~30/month) ──
+  const pmPOSuppliers = [{id:'sup-pm-1',name:'SAPPI Southern Africa'},{id:'sup-pm-2',name:'Hulamin Aluminium'},{id:'sup-pm-3',name:'PPC Cement'},{id:'sup-pm-4',name:'Foskor Chemicals'}];
+  let pmPOIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 30; j++) {
+      const sup = pmPOSuppliers[j % 4];
+      const amount = 45000 + Math.round(Math.sin(pmPOIdx) * 20000);
+      await db.prepare("INSERT OR IGNORE INTO erp_purchase_orders (id,tenant_id,source_system,po_number,supplier_id,supplier_name,order_date,delivery_date,total,status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+        .bind(`po-pm-${pmPOIdx}`,'protea','Sage 300',`PO-PM-${String(pmPOIdx).padStart(5,'0')}`,sup.id,sup.name,`${year}-${month}-03`,`${year}-${month}-12`,amount,mo<10?'received':'open').run();
+      pmPOIdx++;
+    }
+  }
+
+  // ── Protea Journal Entries (20/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 1; j <= 20; j++) {
+      const jid = `je-pm-${mo * 20 + j}`;
+      const amt = 85000 + mo * 5000 + j * 3000;
+      await db.prepare("INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)")
+        .bind(jid,'protea','Sage 300',`JE-PM-${String(mo*20+j).padStart(4,'0')}`,`${year}-${month}-28`,`Month-end closing entry ${j}`,amt,amt,'posted').run();
+    }
+  }
+
+  // ── Protea Bank Transactions (35/month × 12) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let d = 1; d <= 28; d++) {
+      const day = String(d).padStart(2, '0');
+      const btId = `bt-pm-${mo * 28 + d}`;
+      if (d % 3 === 0) {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'protea','Sage 300','FNB-001',`${year}-${month}-${day}`,`Customer payment received`,`REC-PM-${mo}-${d}`,85000+d*2000,0,4200000).run();
+      } else {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,debit,credit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btId,'protea','Sage 300','FNB-001',`${year}-${month}-${day}`,d%2===0?'Raw material supplier payment':'Production wages',`PAY-PM-${mo}-${d}`,d%2===0?65000:180000,0,4200000).run();
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMPANY 7: KAPSTADT GLOBAL HOLDINGS — SAP S/4HANA — LARGE MULTINATIONAL (~500+ employees, multi-currency)
+  // ═══════════════════════════════════════════════════════════════════════════
+  await db.prepare('INSERT OR IGNORE INTO tenants (id,name,slug,industry,plan,status,deployment_model,region) VALUES (?,?,?,?,?,?,?,?)')
+    .bind('kapstadt','Kapstadt Global Holdings Ltd','kapstadt','conglomerate','enterprise','active','hybrid','af-south-1').run();
+
+  await db.prepare('INSERT OR REPLACE INTO tenant_entitlements (tenant_id,layers,catalyst_clusters,max_agents,max_users,autonomy_tiers,llm_tiers,features,sso_enabled,api_access,custom_branding,data_retention_days) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind('kapstadt','["apex","pulse","catalysts","mind","memory"]','["finance","procurement","supply-chain","hr","sales","treasury","compliance","logistics","intercompany"]',80,500,'["read-only","assisted","transactional","autonomous"]','["tier-1","tier-2","tier-3","tier-4"]','["scenario-modelling","process-mining","graphrag","executive-briefings","risk-alerts","multi-currency","intercompany-recon","transfer-pricing"]',1,1,1,1095).run();
+
+  const kgUsers = [
+    { id:'kg-admin', email:'admin@kapstadt-global.com', name:'Heinrich Müller', role:'admin' },
+    { id:'kg-ceo',   email:'ceo@kapstadt-global.com',   name:'Francois du Toit', role:'executive' },
+    { id:'kg-cfo',   email:'cfo@kapstadt-global.com',   name:'Priya Naidoo', role:'executive' },
+    { id:'kg-coo',   email:'coo@kapstadt-global.com',   name:'James Mokoena', role:'executive' },
+    { id:'kg-fin',   email:'finance@kapstadt-global.com', name:'Christiaan van der Berg', role:'manager' },
+    { id:'kg-treasury', email:'treasury@kapstadt-global.com', name:'Nomsa Dladla', role:'manager' },
+    { id:'kg-analyst', email:'analyst@kapstadt-global.com', name:'Sipho Mahlangu', role:'analyst' },
+    { id:'kg-viewer', email:'viewer@kapstadt-global.com', name:'Lerato Moseneke', role:'viewer' },
+  ];
+  for (const u of kgUsers) {
+    await db.prepare('INSERT OR IGNORE INTO users (id,tenant_id,email,name,role,password_hash,permissions,status) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(u.id,'kapstadt',u.email,u.name,u.role,pwHash,'["*"]','active').run();
+  }
+
+  // ERP Connection
+  await db.prepare(
+    "INSERT OR IGNORE INTO erp_connections (id,tenant_id,adapter_id,name,status,config,sync_frequency,records_synced,connected_at) VALUES (?,?,?,?,?,?,?,?,datetime('now'))"
+  ).bind('conn-kg-sap','kapstadt','erp-sap-s4','Kapstadt SAP S/4HANA Central','connected',
+    '{"host":"s4hana.kapstadt-global.com","client":"200","system_id":"KGH","base_url":"https://s4hana.kapstadt-global.com","company_codes":["ZA01","NG01","KE01","UK01","DE01"]}',
+    'realtime',12450000).run();
+
+  // Catalyst Clusters
+  const kgClusters = [
+    {id:'cc-kg-fin',name:'Group Finance Catalyst',domain:'finance',desc:'Consolidated financial reporting, intercompany elimination, multi-currency AR/AP across 5 entities',status:'active',agents:8,done:2340,prog:24,rate:96.8,trust:94.5,tier:'transactional',subs:[{name:'Accounts Receivable',enabled:true,description:'Multi-entity AR aging and collection workflows'},{name:'Accounts Payable',enabled:true,description:'Cross-entity invoice matching and payment scheduling'},{name:'Invoice Reconciliation',enabled:true,description:'Intercompany 3-way match with FX handling'},{name:'Financial Consolidation',enabled:true,description:'Automated multi-entity consolidation with IFRS/GAAP compliance'},{name:'Intercompany Elimination',enabled:true,description:'Automated IC transaction matching and elimination entries'},{name:'Multi-Currency Revaluation',enabled:true,description:'Month-end FX revaluation across all currencies'}]},
+    {id:'cc-kg-treasury',name:'Treasury & Cash Management Catalyst',domain:'treasury',desc:'Global cash pooling, FX risk management, investment optimization',status:'active',agents:4,done:876,prog:12,rate:95.4,trust:93.2,tier:'assisted',subs:[{name:'Cash Pooling',enabled:true,description:'Notional and physical cash pooling across entities'},{name:'FX Hedging',enabled:true,description:'Forward contract recommendation and hedge accounting'},{name:'Cash Flow Forecasting',enabled:true,description:'AI-driven 13-week rolling cash forecast per entity'},{name:'Bank Reconciliation',enabled:true,description:'Multi-bank automated reconciliation across 12 banks'},{name:'Investment Management',enabled:false,description:'Short-term investment optimization for surplus cash'}]},
+    {id:'cc-kg-proc',name:'Strategic Procurement Catalyst',domain:'procurement',desc:'Group-level supplier consolidation, category management, and compliance across regions',status:'active',agents:5,done:1560,prog:18,rate:94.2,trust:91.8,tier:'assisted',subs:[{name:'Supplier Consolidation',enabled:true,description:'Group-wide supplier rationalization and volume aggregation'},{name:'Category Management',enabled:true,description:'Strategic sourcing by category across entities'},{name:'Contract Management',enabled:true,description:'Enterprise contract lifecycle management'},{name:'Spend Analytics',enabled:true,description:'Cross-entity spend visibility and savings tracking'},{name:'Compliance Monitoring',enabled:true,description:'BBBEE, local content, and regulatory compliance tracking'}]},
+    {id:'cc-kg-supply',name:'Global Supply Chain Catalyst',domain:'supply-chain',desc:'Multi-site inventory, cross-border logistics, demand planning across African and European operations',status:'active',agents:6,done:1890,prog:20,rate:93.5,trust:90.7,tier:'assisted',subs:[{name:'Multi-Site Inventory',enabled:true,description:'Real-time inventory visibility across 8 warehouses and 3 continents'},{name:'Cross-Border Logistics',enabled:true,description:'International shipping, customs, and duty optimization'},{name:'Demand Planning',enabled:true,description:'Regional demand forecasting with seasonal adjustments'},{name:'Distribution Network',enabled:true,description:'Optimal distribution center allocation and routing'},{name:'Supplier Lead Time',enabled:true,description:'Cross-border supplier performance and risk monitoring'}]},
+    {id:'cc-kg-hr',name:'Group HR & Workforce Catalyst',domain:'hr',desc:'Multi-jurisdiction payroll, expatriate management, talent pipeline across 5 countries',status:'active',agents:4,done:1234,prog:14,rate:95.1,trust:92.3,tier:'read-only',subs:[{name:'Multi-Country Payroll',enabled:true,description:'Automated payroll processing in ZAR, NGN, KES, GBP, EUR'},{name:'Expatriate Management',enabled:true,description:'Cross-border assignment tracking, tax equalization'},{name:'Talent Pipeline',enabled:true,description:'Group-wide succession planning and talent mobility'},{name:'Compliance & Labour Law',enabled:true,description:'Multi-jurisdiction labour law compliance monitoring'},{name:'Workforce Analytics',enabled:true,description:'Headcount, cost, and productivity analytics across regions'}]},
+    {id:'cc-kg-compliance',name:'Regulatory Compliance Catalyst',domain:'compliance',desc:'Multi-jurisdiction regulatory reporting, transfer pricing, BBBEE, IFRS, and tax compliance',status:'active',agents:3,done:678,prog:8,rate:97.2,trust:95.8,tier:'read-only',subs:[{name:'Transfer Pricing',enabled:true,description:'Arms-length testing and TP documentation automation'},{name:'BBBEE Compliance',enabled:true,description:'Annual scorecard calculation and certificate tracking'},{name:'Tax Compliance',enabled:true,description:'Multi-jurisdiction corporate tax computation and filing'},{name:'Regulatory Reporting',enabled:true,description:'Country-specific regulatory report generation (SARB, CBN, CBK)'},{name:'IFRS/GAAP Compliance',enabled:true,description:'Automated accounting standard compliance checking'}]},
+    {id:'cc-kg-sales',name:'Revenue Intelligence Catalyst',domain:'sales',desc:'Enterprise sales forecasting, customer lifetime value, pricing optimization across markets',status:'active',agents:4,done:1456,prog:16,rate:94.6,trust:91.9,tier:'assisted',subs:[{name:'Sales Forecasting',enabled:true,description:'AI-driven revenue prediction by region and product line'},{name:'Customer Lifetime Value',enabled:true,description:'CLV scoring and segment-based growth strategies'},{name:'Pricing Optimization',enabled:true,description:'Market-specific pricing recommendation engine'},{name:'Deal Intelligence',enabled:true,description:'Win/loss analysis and competitive positioning'},{name:'Territory Management',enabled:true,description:'Optimal territory design and quota setting'}]},
+    {id:'cc-kg-logistics',name:'Logistics & Freight Catalyst',domain:'logistics',desc:'Multi-modal transport optimization, customs management, and fleet tracking',status:'active',agents:4,done:987,prog:10,rate:93.8,trust:90.5,tier:'assisted',subs:[{name:'Route Optimization',enabled:true,description:'Multi-modal transport route and cost optimization'},{name:'Customs Management',enabled:true,description:'Automated HS code classification and duty calculation'},{name:'Fleet Tracking',enabled:true,description:'Real-time vehicle and container tracking across Africa'},{name:'Freight Cost Management',enabled:true,description:'Freight audit and cost allocation by entity'}]},
+    {id:'cc-kg-ic',name:'Intercompany Catalyst',domain:'intercompany',desc:'Automated intercompany invoicing, netting, and reconciliation across all group entities',status:'active',agents:3,done:2100,prog:22,rate:97.5,trust:96.1,tier:'transactional',subs:[{name:'IC Invoice Automation',enabled:true,description:'Automated intercompany invoice creation and matching'},{name:'IC Netting',enabled:true,description:'Multi-lateral netting to minimize cross-border payments'},{name:'IC Reconciliation',enabled:true,description:'Real-time intercompany balance reconciliation with FX'},{name:'IC Pricing',enabled:true,description:'Transfer pricing policy enforcement on IC transactions'}]},
+  ];
+  for (const c of kgClusters) {
+    await db.prepare('INSERT OR REPLACE INTO catalyst_clusters (id,tenant_id,name,domain,description,status,agent_count,tasks_completed,tasks_in_progress,success_rate,trust_score,autonomy_tier,sub_catalysts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(c.id,'kapstadt',c.name,c.domain,c.desc,c.status,c.agents,c.done,c.prog,c.rate,c.trust,c.tier,JSON.stringify(c.subs)).run();
+  }
+
+  // Graph Entities
+  const kgEntities = [
+    {id:'ge-kg-1',type:'organisation',name:'Kapstadt Global Holdings',props:'{"employees":520,"revenue":"R4.8B","founded":1992,"hq":"Cape Town","subsidiaries":5}'},
+    {id:'ge-kg-2',type:'subsidiary',name:'Kapstadt SA (Pty) Ltd',props:'{"employees":180,"revenue":"R2.1B","country":"South Africa","company_code":"ZA01"}'},
+    {id:'ge-kg-3',type:'subsidiary',name:'Kapstadt Nigeria Ltd',props:'{"employees":120,"revenue":"₦18B","country":"Nigeria","company_code":"NG01"}'},
+    {id:'ge-kg-4',type:'subsidiary',name:'Kapstadt East Africa Ltd',props:'{"employees":85,"revenue":"KES 3.2B","country":"Kenya","company_code":"KE01"}'},
+    {id:'ge-kg-5',type:'subsidiary',name:'Kapstadt UK Ltd',props:'{"employees":75,"revenue":"£28M","country":"United Kingdom","company_code":"UK01"}'},
+    {id:'ge-kg-6',type:'subsidiary',name:'Kapstadt GmbH',props:'{"employees":60,"revenue":"€24M","country":"Germany","company_code":"DE01"}'},
+    {id:'ge-kg-7',type:'system',name:'SAP S/4HANA Central',props:'{"version":"2025","modules":["FI","CO","MM","SD","PP","HR","TRM","IC"],"company_codes":5}'},
+    {id:'ge-kg-8',type:'kpi',name:'Group Revenue',props:'{"target":5200000000,"actual":4800000000,"unit":"ZAR/year","currencies":["ZAR","NGN","KES","GBP","EUR"]}'},
+  ];
+  for (const e of kgEntities) {
+    await db.prepare('INSERT OR IGNORE INTO graph_entities (id,tenant_id,type,name,properties,confidence,source) VALUES (?,?,?,?,?,?,?)')
+      .bind(e.id,'kapstadt',e.type,e.name,e.props,0.96,'SAP S/4HANA').run();
+  }
+
+  // Customers (enterprise-level, multi-country)
+  const kgCustomers = [
+    {id:'cust-kg-1',name:'Shoprite Holdings',code:'SHP-001',email:'procurement@shoprite.co.za',phone:'+27215551001',currency:'ZAR',balance:45000000},
+    {id:'cust-kg-2',name:'Dangote Group',code:'DAN-001',email:'purchasing@dangote.com.ng',phone:'+23412345678',currency:'NGN',balance:2800000000},
+    {id:'cust-kg-3',name:'Safaricom PLC',code:'SAF-001',email:'procurement@safaricom.co.ke',phone:'+254201234567',currency:'KES',balance:850000000},
+    {id:'cust-kg-4',name:'Tesco PLC',code:'TES-001',email:'buying@tesco.co.uk',phone:'+442071234567',currency:'GBP',balance:12000000},
+    {id:'cust-kg-5',name:'REWE Group',code:'REWE-001',email:'einkauf@rewe-group.de',phone:'+492211234567',currency:'EUR',balance:8500000},
+    {id:'cust-kg-6',name:'Pick n Pay',code:'PNP-001',email:'procurement@pnp.co.za',phone:'+27215552001',currency:'ZAR',balance:38000000},
+    {id:'cust-kg-7',name:'Woolworths Holdings',code:'WHL-001',email:'sourcing@woolworths.co.za',phone:'+27215553001',currency:'ZAR',balance:32000000},
+    {id:'cust-kg-8',name:'MTN Group',code:'MTN-001',email:'procurement@mtn.com',phone:'+27115554001',currency:'ZAR',balance:18000000},
+  ];
+  for (const c of kgCustomers) {
+    await db.prepare('INSERT OR IGNORE INTO erp_customers (id,tenant_id,external_id,source_system,name,contact_email,contact_phone,currency,credit_balance) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(c.id,'kapstadt',c.code,'SAP S/4HANA',c.name,c.email,c.phone,c.currency,c.balance).run();
+  }
+
+  // Suppliers (global supply chain)
+  const kgSuppliers = [
+    {id:'sup-kg-1',name:'Mondi Group',code:'MONDI-001',email:'sales@mondi.com',currency:'ZAR',rating:4.6},
+    {id:'sup-kg-2',name:'BASF SE',code:'BASF-001',email:'vertrieb@basf.de',currency:'EUR',rating:4.8},
+    {id:'sup-kg-3',name:'Olam International',code:'OLAM-001',email:'trade@olamgroup.com',currency:'USD',rating:4.3},
+    {id:'sup-kg-4',name:'Unilever Supply',code:'UNI-001',email:'supply@unilever.co.uk',currency:'GBP',rating:4.7},
+    {id:'sup-kg-5',name:'Bidvest Group',code:'BID-001',email:'corporate@bidvest.co.za',currency:'ZAR',rating:4.4},
+    {id:'sup-kg-6',name:'Maersk Logistics',code:'MAER-001',email:'logistics@maersk.com',currency:'USD',rating:4.5},
+  ];
+  for (const s of kgSuppliers) {
+    await db.prepare('INSERT OR IGNORE INTO erp_suppliers (id,tenant_id,external_id,source_system,name,contact_email,currency,risk_score) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(s.id,'kapstadt',s.code,'SAP S/4HANA',s.name,s.email,s.currency,s.rating).run();
+  }
+
+  // Products
+  const kgProducts = [
+    {id:'prod-kg-1',name:'Premium Maize Meal 10kg',sku:'KG-MM-10',category:'Staples',price:120,stock:250000,unit:'bag'},
+    {id:'prod-kg-2',name:'Sunflower Cooking Oil 5L',sku:'KG-SO-5L',category:'Oils',price:185,stock:180000,unit:'bottle'},
+    {id:'prod-kg-3',name:'Industrial Cleaning Solution 25L',sku:'KG-IC-25',category:'Industrial',price:450,stock:45000,unit:'drum'},
+    {id:'prod-kg-4',name:'Premium Tea Blend 500g',sku:'KG-TB-500',category:'Beverages',price:95,stock:320000,unit:'box'},
+    {id:'prod-kg-5',name:'Organic Rooibos Export 1kg',sku:'KG-RB-1K',category:'Export',price:280,stock:85000,unit:'pack'},
+    {id:'prod-kg-6',name:'Bottled Spring Water 6-pack',sku:'KG-BW-6P',category:'Beverages',price:65,stock:500000,unit:'6-pack'},
+    {id:'prod-kg-7',name:'Grain Sorghum Flour 5kg',sku:'KG-GS-5K',category:'Staples',price:78,stock:120000,unit:'bag'},
+    {id:'prod-kg-8',name:'Palm Oil Industrial 200L',sku:'KG-PO-200',category:'Industrial',price:8500,stock:5000,unit:'drum'},
+    {id:'prod-kg-9',name:'Frozen Vegetables Mixed 1kg',sku:'KG-FV-1K',category:'Frozen',price:42,stock:400000,unit:'pack'},
+    {id:'prod-kg-10',name:'Sugar Cane Refined 50kg',sku:'KG-SC-50',category:'Staples',price:680,stock:75000,unit:'bag'},
+  ];
+  for (const p of kgProducts) {
+    await db.prepare('INSERT OR IGNORE INTO erp_products (id,tenant_id,source_system,sku,name,category,unit_price,stock_on_hand,unit_of_measure) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(p.id,'kapstadt','SAP S/4HANA',p.sku,p.name,p.category,p.price,p.stock,p.unit).run();
+  }
+
+  // Employees (520 staff across 5 countries — seed representative sample of 80)
+  const kgEmps: {id:string;empNum:string;first:string;last:string;dept:string;pos:string;salary:number}[] = [
+    // C-Suite & Group Leadership
+    {id:'emp-kg-1',empNum:'KG-001',first:'Francois',last:'du Toit',dept:'Executive',pos:'Group CEO',salary:450000},
+    {id:'emp-kg-2',empNum:'KG-002',first:'Priya',last:'Naidoo',dept:'Executive',pos:'Group CFO',salary:380000},
+    {id:'emp-kg-3',empNum:'KG-003',first:'James',last:'Mokoena',dept:'Executive',pos:'Group COO',salary:350000},
+    {id:'emp-kg-4',empNum:'KG-004',first:'Heinrich',last:'Müller',dept:'Executive',pos:'Group CIO',salary:320000},
+    {id:'emp-kg-5',empNum:'KG-005',first:'Nomsa',last:'Dladla',dept:'Treasury',pos:'Group Treasurer',salary:280000},
+    // SA Operations
+    {id:'emp-kg-6',empNum:'KG-010',first:'Willem',last:'Steenkamp',dept:'SA Operations',pos:'MD South Africa',salary:250000},
+    {id:'emp-kg-7',empNum:'KG-011',first:'Thandi',last:'Maseko',dept:'SA Finance',pos:'SA Financial Director',salary:200000},
+    {id:'emp-kg-8',empNum:'KG-012',first:'Pieter',last:'Viljoen',dept:'SA Operations',pos:'SA Operations Director',salary:185000},
+    {id:'emp-kg-9',empNum:'KG-013',first:'Sipho',last:'Zulu',dept:'SA Sales',pos:'SA Sales Director',salary:175000},
+    {id:'emp-kg-10',empNum:'KG-014',first:'Lindiwe',last:'Nkosi',dept:'SA HR',pos:'SA HR Manager',salary:120000},
+    {id:'emp-kg-11',empNum:'KG-015',first:'Bongani',last:'Dlamini',dept:'SA Operations',pos:'Plant Manager',salary:130000},
+    {id:'emp-kg-12',empNum:'KG-016',first:'Mandla',last:'Sithole',dept:'SA Operations',pos:'Production Manager',salary:95000},
+    {id:'emp-kg-13',empNum:'KG-017',first:'Zanele',last:'Mthembu',dept:'SA Finance',pos:'SA Management Accountant',salary:95000},
+    {id:'emp-kg-14',empNum:'KG-018',first:'Johan',last:'Botha',dept:'SA Supply Chain',pos:'SA Logistics Manager',salary:110000},
+    {id:'emp-kg-15',empNum:'KG-019',first:'Riaan',last:'Erasmus',dept:'SA Procurement',pos:'SA Procurement Manager',salary:105000},
+    // Nigeria Operations
+    {id:'emp-kg-16',empNum:'KG-100',first:'Chukwuma',last:'Okonkwo',dept:'NG Operations',pos:'MD Nigeria',salary:220000},
+    {id:'emp-kg-17',empNum:'KG-101',first:'Amara',last:'Ibrahim',dept:'NG Finance',pos:'NG Financial Controller',salary:160000},
+    {id:'emp-kg-18',empNum:'KG-102',first:'Emeka',last:'Nwosu',dept:'NG Operations',pos:'NG Operations Manager',salary:130000},
+    {id:'emp-kg-19',empNum:'KG-103',first:'Funke',last:'Adeyemi',dept:'NG Sales',pos:'NG Sales Manager',salary:120000},
+    {id:'emp-kg-20',empNum:'KG-104',first:'Babajide',last:'Ogundimu',dept:'NG Logistics',pos:'NG Distribution Manager',salary:100000},
+    // Kenya Operations
+    {id:'emp-kg-21',empNum:'KG-200',first:'Daniel',last:'Kamau',dept:'KE Operations',pos:'MD East Africa',salary:200000},
+    {id:'emp-kg-22',empNum:'KG-201',first:'Grace',last:'Wanjiku',dept:'KE Finance',pos:'KE Financial Controller',salary:145000},
+    {id:'emp-kg-23',empNum:'KG-202',first:'Peter',last:'Odhiambo',dept:'KE Operations',pos:'KE Factory Manager',salary:110000},
+    {id:'emp-kg-24',empNum:'KG-203',first:'Faith',last:'Muthoni',dept:'KE Sales',pos:'KE Sales Manager',salary:105000},
+    {id:'emp-kg-25',empNum:'KG-204',first:'Joseph',last:'Kipchirchir',dept:'KE Logistics',pos:'KE Logistics Coordinator',salary:80000},
+    // UK Operations
+    {id:'emp-kg-26',empNum:'KG-300',first:'Edward',last:'Thompson',dept:'UK Operations',pos:'MD United Kingdom',salary:380000},
+    {id:'emp-kg-27',empNum:'KG-301',first:'Sarah',last:'Williams',dept:'UK Finance',pos:'UK Finance Director',salary:280000},
+    {id:'emp-kg-28',empNum:'KG-302',first:'Michael',last:'Davies',dept:'UK Sales',pos:'UK Commercial Director',salary:250000},
+    {id:'emp-kg-29',empNum:'KG-303',first:'Emma',last:'Robinson',dept:'UK Operations',pos:'UK Supply Chain Manager',salary:180000},
+    {id:'emp-kg-30',empNum:'KG-304',first:'David',last:'Taylor',dept:'UK HR',pos:'UK HR Manager',salary:160000},
+    // Germany Operations
+    {id:'emp-kg-31',empNum:'KG-400',first:'Klaus',last:'Schmidt',dept:'DE Operations',pos:'MD Germany',salary:350000},
+    {id:'emp-kg-32',empNum:'KG-401',first:'Anna',last:'Fischer',dept:'DE Finance',pos:'DE Finanzleiter',salary:260000},
+    {id:'emp-kg-33',empNum:'KG-402',first:'Thomas',last:'Weber',dept:'DE Operations',pos:'DE Betriebsleiter',salary:220000},
+    {id:'emp-kg-34',empNum:'KG-403',first:'Sabine',last:'Hoffmann',dept:'DE Sales',pos:'DE Vertriebsleiter',salary:200000},
+    {id:'emp-kg-35',empNum:'KG-404',first:'Stefan',last:'Becker',dept:'DE Logistics',pos:'DE Logistikleiter',salary:180000},
+    // Group Functions
+    {id:'emp-kg-36',empNum:'KG-500',first:'Christiaan',last:'van der Berg',dept:'Group Finance',pos:'Group Financial Controller',salary:220000},
+    {id:'emp-kg-37',empNum:'KG-501',first:'Ayanda',last:'Ngcobo',dept:'Group Finance',pos:'Consolidation Manager',salary:150000},
+    {id:'emp-kg-38',empNum:'KG-502',first:'Themba',last:'Khoza',dept:'Group Finance',pos:'Treasury Analyst',salary:110000},
+    {id:'emp-kg-39',empNum:'KG-503',first:'Lerato',last:'Moseneke',dept:'Group Finance',pos:'Tax Manager',salary:140000},
+    {id:'emp-kg-40',empNum:'KG-504',first:'Sipho',last:'Mahlangu',dept:'Group Finance',pos:'Transfer Pricing Analyst',salary:120000},
+    {id:'emp-kg-41',empNum:'KG-510',first:'Werner',last:'Pretorius',dept:'Group IT',pos:'Group IT Director',salary:220000},
+    {id:'emp-kg-42',empNum:'KG-511',first:'Nhlanhla',last:'Mthethwa',dept:'Group IT',pos:'SAP Basis Manager',salary:150000},
+    {id:'emp-kg-43',empNum:'KG-512',first:'Marco',last:'Ferreira',dept:'Group IT',pos:'Integration Architect',salary:160000},
+    {id:'emp-kg-44',empNum:'KG-520',first:'Palesa',last:'Motaung',dept:'Group HR',pos:'Group HR Director',salary:200000},
+    {id:'emp-kg-45',empNum:'KG-521',first:'Mbali',last:'Zondo',dept:'Group HR',pos:'Expat Management Lead',salary:130000},
+    {id:'emp-kg-46',empNum:'KG-530',first:'André',last:'Pretorius',dept:'Group Procurement',pos:'Group CPO',salary:250000},
+    {id:'emp-kg-47',empNum:'KG-531',first:'Nosipho',last:'Dlamini',dept:'Group Procurement',pos:'Category Manager',salary:110000},
+    {id:'emp-kg-48',empNum:'KG-540',first:'Ruhan',last:'van Rooyen',dept:'Group Legal',pos:'Group Legal Counsel',salary:250000},
+    {id:'emp-kg-49',empNum:'KG-541',first:'Kelebogile',last:'Kgosana',dept:'Group Compliance',pos:'Compliance Officer',salary:130000},
+    {id:'emp-kg-50',empNum:'KG-550',first:'Jacques',last:'du Plessis',dept:'Group Strategy',pos:'Group Strategy Director',salary:230000},
+    // Additional SA production/warehouse staff
+    {id:'emp-kg-51',empNum:'KG-020',first:'Lucky',last:'Chabalala',dept:'SA Operations',pos:'Shift Supervisor A',salary:65000},
+    {id:'emp-kg-52',empNum:'KG-021',first:'Joseph',last:'Mahlangu',dept:'SA Operations',pos:'Shift Supervisor B',salary:65000},
+    {id:'emp-kg-53',empNum:'KG-022',first:'Samuel',last:'Nkosi',dept:'SA Operations',pos:'Machine Operator',salary:35000},
+    {id:'emp-kg-54',empNum:'KG-023',first:'Isaac',last:'Khumalo',dept:'SA Operations',pos:'Machine Operator',salary:35000},
+    {id:'emp-kg-55',empNum:'KG-024',first:'Moses',last:'Cele',dept:'SA Operations',pos:'Machine Operator',salary:35000},
+    {id:'emp-kg-56',empNum:'KG-025',first:'Aaron',last:'Mabaso',dept:'SA Operations',pos:'Machine Operator',salary:35000},
+    {id:'emp-kg-57',empNum:'KG-026',first:'Philip',last:'Zwane',dept:'SA Operations',pos:'Packing Operator',salary:28000},
+    {id:'emp-kg-58',empNum:'KG-027',first:'Stephen',last:'Ngwenya',dept:'SA Operations',pos:'Packing Operator',salary:28000},
+    {id:'emp-kg-59',empNum:'KG-028',first:'Vincent',last:'Radebe',dept:'SA Warehouse',pos:'Warehouse Supervisor',salary:55000},
+    {id:'emp-kg-60',empNum:'KG-029',first:'Martin',last:'Sibiya',dept:'SA Warehouse',pos:'Forklift Driver',salary:30000},
+    {id:'emp-kg-61',empNum:'KG-030',first:'Frank',last:'Mvelase',dept:'SA Warehouse',pos:'Forklift Driver',salary:30000},
+    {id:'emp-kg-62',empNum:'KG-031',first:'Albert',last:'Phungula',dept:'SA Warehouse',pos:'Storeman',salary:28000},
+    {id:'emp-kg-63',empNum:'KG-032',first:'Dennis',last:'Myeni',dept:'SA Quality',pos:'QC Lab Technician',salary:45000},
+    {id:'emp-kg-64',empNum:'KG-033',first:'Ernest',last:'Fakude',dept:'SA Quality',pos:'QC Inspector',salary:38000},
+    {id:'emp-kg-65',empNum:'KG-034',first:'Walter',last:'Shabangu',dept:'SA Maintenance',pos:'Maintenance Supervisor',salary:65000},
+    {id:'emp-kg-66',empNum:'KG-035',first:'Petrus',last:'Kubheka',dept:'SA Maintenance',pos:'Millwright',salary:55000},
+    {id:'emp-kg-67',empNum:'KG-036',first:'Cornelius',last:'Maphanga',dept:'SA Maintenance',pos:'Electrician',salary:52000},
+    {id:'emp-kg-68',empNum:'KG-037',first:'Gregory',last:'Langa',dept:'SA Finance',pos:'Debtors Clerk',salary:32000},
+    {id:'emp-kg-69',empNum:'KG-038',first:'Benedict',last:'Nzimande',dept:'SA Finance',pos:'Creditors Clerk',salary:32000},
+    {id:'emp-kg-70',empNum:'KG-039',first:'Cedric',last:'Mazibuko',dept:'SA Finance',pos:'Payroll Administrator',salary:38000},
+    // Nigeria additional staff
+    {id:'emp-kg-71',empNum:'KG-105',first:'Oluwaseun',last:'Afolabi',dept:'NG Operations',pos:'Production Supervisor',salary:75000},
+    {id:'emp-kg-72',empNum:'KG-106',first:'Chidinma',last:'Eze',dept:'NG Finance',pos:'NG Accountant',salary:80000},
+    {id:'emp-kg-73',empNum:'KG-107',first:'Tunde',last:'Bakare',dept:'NG Sales',pos:'NG Account Manager',salary:70000},
+    // Kenya additional
+    {id:'emp-kg-74',empNum:'KG-205',first:'John',last:'Mutua',dept:'KE Operations',pos:'KE Production Lead',salary:65000},
+    {id:'emp-kg-75',empNum:'KG-206',first:'Mary',last:'Njeri',dept:'KE Finance',pos:'KE Bookkeeper',salary:55000},
+    // UK additional
+    {id:'emp-kg-76',empNum:'KG-305',first:'James',last:'Cooper',dept:'UK Sales',pos:'UK Key Account Manager',salary:200000},
+    {id:'emp-kg-77',empNum:'KG-306',first:'Lucy',last:'Evans',dept:'UK Operations',pos:'UK Warehouse Manager',salary:150000},
+    // Germany additional
+    {id:'emp-kg-78',empNum:'KG-405',first:'Michael',last:'König',dept:'DE Sales',pos:'DE Großkundenmanager',salary:180000},
+    {id:'emp-kg-79',empNum:'KG-406',first:'Laura',last:'Schneider',dept:'DE Operations',pos:'DE Qualitätsmanagerin',salary:160000},
+    {id:'emp-kg-80',empNum:'KG-407',first:'Markus',last:'Braun',dept:'DE Logistics',pos:'DE Transportkoordinator',salary:140000},
+  ];
+  for (const e of kgEmps) {
+    await db.prepare("INSERT OR IGNORE INTO erp_employees (id,tenant_id,source_system,employee_number,first_name,last_name,department,position,gross_salary,salary_frequency,status,hire_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(e.id,'kapstadt','SAP S/4HANA',e.empNum,e.first,e.last,e.dept,e.pos,e.salary,'monthly','active','2022-01-01').run();
+  }
+
+  // ── Kapstadt Invoices (large enterprise volumes — 12 months, ~80/month across entities) ──
+  const kgInvCustomers = [
+    {id:'cust-kg-1',name:'Shoprite Holdings'},{id:'cust-kg-2',name:'Dangote Group'},
+    {id:'cust-kg-3',name:'Safaricom PLC'},{id:'cust-kg-4',name:'Tesco PLC'},
+    {id:'cust-kg-5',name:'REWE Group'},{id:'cust-kg-6',name:'Pick n Pay'},
+    {id:'cust-kg-7',name:'Woolworths Holdings'},{id:'cust-kg-8',name:'MTN Group'},
+  ];
+  let kgInvIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 80; j++) {
+      const cust = kgInvCustomers[j % 8];
+      const amount = 150000 + Math.round(Math.sin(kgInvIdx * 0.2) * 80000 + kgInvIdx * 500);
+      const isPaid = mo < 9;
+      const isOverdue = !isPaid && mo < 11;
+      await db.prepare("INSERT OR IGNORE INTO erp_invoices (id,tenant_id,source_system,invoice_number,customer_id,customer_name,invoice_date,due_date,total,amount_paid,amount_due,status,payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        .bind(`inv-kg-${kgInvIdx}`,'kapstadt','SAP S/4HANA',`INV-KG-${String(kgInvIdx).padStart(6,'0')}`,cust.id,cust.name,`${year}-${month}-01`,`${year}-${month}-30`,amount,isPaid?amount:0,isPaid?0:amount,'approved',isPaid?'paid':(isOverdue?'overdue':'unpaid')).run();
+      kgInvIdx++;
+    }
+  }
+
+  // ── Kapstadt Purchase Orders (global supply chain — 12 months, ~50/month) ──
+  const kgPOSuppliers = [
+    {id:'sup-kg-1',name:'Mondi Group'},{id:'sup-kg-2',name:'BASF SE'},
+    {id:'sup-kg-3',name:'Olam International'},{id:'sup-kg-4',name:'Unilever Supply'},
+    {id:'sup-kg-5',name:'Bidvest Group'},{id:'sup-kg-6',name:'Maersk Logistics'},
+  ];
+  let kgPOIdx = 1;
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 0; j < 50; j++) {
+      const sup = kgPOSuppliers[j % 6];
+      const amount = 200000 + Math.round(Math.sin(kgPOIdx) * 100000);
+      await db.prepare("INSERT OR IGNORE INTO erp_purchase_orders (id,tenant_id,source_system,po_number,supplier_id,supplier_name,order_date,delivery_date,total,status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+        .bind(`po-kg-${kgPOIdx}`,'kapstadt','SAP S/4HANA',`PO-KG-${String(kgPOIdx).padStart(6,'0')}`,sup.id,sup.name,`${year}-${month}-02`,`${year}-${month}-15`,amount,mo<10?'received':'open').run();
+      kgPOIdx++;
+    }
+  }
+
+  // ── Kapstadt Journal Entries (40/month × 12 — complex multi-entity) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let j = 1; j <= 40; j++) {
+      const jid = `je-kg-${mo * 40 + j}`;
+      const amt = 500000 + mo * 30000 + j * 10000;
+      const desc = j <= 10 ? `ZA01 month-end closing ${j}` : j <= 18 ? `NG01 month-end closing ${j}` : j <= 25 ? `KE01 month-end closing ${j}` : j <= 32 ? `UK01 month-end closing ${j}` : `DE01 month-end closing ${j}`;
+      await db.prepare("INSERT OR IGNORE INTO erp_journal_entries (id,tenant_id,source_system,journal_number,journal_date,description,total_debit,total_credit,status) VALUES (?,?,?,?,?,?,?,?,?)")
+        .bind(jid,'kapstadt','SAP S/4HANA',`JE-KG-${String(mo*40+j).padStart(5,'0')}`,`${year}-${month}-28`,desc,amt,amt,'posted').run();
+    }
+  }
+
+  // ── Kapstadt Bank Transactions (60/month × 12 — multi-bank, multi-currency) ──
+  for (let mo = 0; mo < 12; mo++) {
+    const year = mo < 10 ? '2025' : '2026';
+    const month = mo < 10 ? String(mo + 3).padStart(2, '0') : String(mo - 9).padStart(2, '0');
+    for (let d = 1; d <= 28; d++) {
+      const day = String(d).padStart(2, '0');
+      // ZAR account
+      const btZar = `bt-kg-zar-${mo * 28 + d}`;
+      if (d % 3 === 0) {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btZar,'kapstadt','SAP S/4HANA','ABSA-ZAR-001',`${year}-${month}-${day}`,`Customer payment - ZA entity`,`REC-KG-ZA-${mo}-${d}`,450000+d*8000,0,85000000).run();
+      } else {
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,debit,credit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btZar,'kapstadt','SAP S/4HANA','ABSA-ZAR-001',`${year}-${month}-${day}`,d%2===0?'Supplier payment - ZA':'Salary run - ZA',`PAY-KG-ZA-${mo}-${d}`,d%2===0?280000:520000,0,85000000).run();
+      }
+      // GBP account (fewer transactions)
+      if (d <= 14) {
+        const btGbp = `bt-kg-gbp-${mo * 14 + d}`;
+        await db.prepare("INSERT OR IGNORE INTO erp_bank_transactions (id,tenant_id,source_system,bank_account,transaction_date,description,reference,credit,debit,balance) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .bind(btGbp,'kapstadt','SAP S/4HANA','HSBC-GBP-001',`${year}-${month}-${day}`,d%2===0?'UK customer payment':'UK operations funding',`REC-KG-UK-${mo}-${d}`,d%2===0?85000:0,d%2===0?0:65000,12000000).run();
+      }
+    }
   }
 
 }
