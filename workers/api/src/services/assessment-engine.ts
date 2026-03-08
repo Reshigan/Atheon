@@ -1111,42 +1111,45 @@ export async function runAssessment(
       narrative_summary: narrative,
     };
 
-    // 5b. Save results immediately so business case data is available even if report generation fails
-    await db.prepare(
-      "UPDATE assessments SET status = 'complete', results = ?, data_snapshot = ?, completed_at = datetime('now') WHERE id = ?"
-    ).bind(JSON.stringify(results), JSON.stringify(snapshot), assessmentId).run();
-
     // 6–7. Generate reports (each wrapped independently — failures are non-fatal)
-    const businessKey = `assessments/${assessmentId}/business-report.pdf`;
-    const technicalKey = `assessments/${assessmentId}/technical-report.pdf`;
-    const excelKey = `assessments/${assessmentId}/model.xlsx`;
+    let businessReportKey: string | null = null;
+    let technicalReportKey: string | null = null;
+    let excelModelKey: string | null = null;
 
     // Business PDF
     try {
+      const businessKey = `assessments/${assessmentId}/business-report.pdf`;
       const businessPdf = await generateBusinessReportPDF(catalystScores, technicalSizing, config, prospectName, narrative, snapshot);
       await storage.put(businessKey, businessPdf, { httpMetadata: { contentType: 'application/pdf' } });
-      await db.prepare('UPDATE assessments SET business_report_key = ? WHERE id = ?').bind(businessKey, assessmentId).run();
+      businessReportKey = businessKey;
     } catch (pdfErr) {
       console.error('Business PDF generation failed:', pdfErr);
     }
 
     // Technical PDF
     try {
+      const technicalKey = `assessments/${assessmentId}/technical-report.pdf`;
       const technicalPdf = await generateTechnicalReportPDF(catalystScores, technicalSizing, config, prospectName, snapshot);
       await storage.put(technicalKey, technicalPdf, { httpMetadata: { contentType: 'application/pdf' } });
-      await db.prepare('UPDATE assessments SET technical_report_key = ? WHERE id = ?').bind(technicalKey, assessmentId).run();
+      technicalReportKey = technicalKey;
     } catch (pdfErr) {
       console.error('Technical PDF generation failed:', pdfErr);
     }
 
     // Excel model
     try {
+      const excelKey = `assessments/${assessmentId}/model.xlsx`;
       const excelModel = await generateExcelModel(catalystScores, technicalSizing, config, snapshot);
       await storage.put(excelKey, excelModel, { httpMetadata: { contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } });
-      await db.prepare('UPDATE assessments SET excel_model_key = ? WHERE id = ?').bind(excelKey, assessmentId).run();
+      excelModelKey = excelKey;
     } catch (xlsxErr) {
       console.error('Excel model generation failed:', xlsxErr);
     }
+
+    // 8. Mark complete with all results and report keys in a single atomic update
+    await db.prepare(
+      "UPDATE assessments SET status = 'complete', results = ?, data_snapshot = ?, business_report_key = ?, technical_report_key = ?, excel_model_key = ?, completed_at = datetime('now') WHERE id = ?"
+    ).bind(JSON.stringify(results), JSON.stringify(snapshot), businessReportKey, technicalReportKey, excelModelKey, assessmentId).run();
 
   } catch (err) {
     console.error('Assessment engine error:', err);
