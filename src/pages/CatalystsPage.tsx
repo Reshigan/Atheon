@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry } from "@/lib/api";
+import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry, FieldMapping, ExecutionConfig, ExecutionResult } from "@/lib/api";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
  Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2, AlertCircle,
- ScrollText, ArrowUpRight, MessageSquare, Cog
+ ScrollText, ArrowUpRight, MessageSquare, Cog, Link2, Sparkles, BarChart3, Activity
 } from "lucide-react";
 import type { AutonomyTier } from "@/types";
 import { useAppStore } from "@/stores/appStore";
@@ -456,6 +456,120 @@ export function CatalystsPage() {
    setSchedSaving(false);
  };
 
+ // Field mapping configuration state
+ const [showFieldMappingConfig, setShowFieldMappingConfig] = useState(false);
+ const [fmClusterId, setFmClusterId] = useState('');
+ const [fmSubName, setFmSubName] = useState('');
+ const [fmMappings, setFmMappings] = useState<FieldMapping[]>([]);
+ const [fmSuggesting, setFmSuggesting] = useState(false);
+ const [fmSaving, setFmSaving] = useState(false);
+ const [fmError, setFmError] = useState<string | null>(null);
+ const [fmDataSources, setFmDataSources] = useState<DataSourceConfig[]>([]);
+
+ // Execution configuration state
+ const [showExecutionConfig, setShowExecutionConfig] = useState(false);
+ const [execClusterId, setExecClusterId] = useState('');
+ const [execSubName, setExecSubName] = useState('');
+ const [execMode, setExecMode] = useState<ExecutionConfig['mode']>('reconciliation');
+ const [execSaving, setExecSaving] = useState(false);
+ const [execCfgError, setExecCfgError] = useState<string | null>(null);
+
+ // Execution result state
+ const [showExecResult, setShowExecResult] = useState(false);
+ const [execResult, setExecResult] = useState<ExecutionResult | null>(null);
+ const [subExecuting, setSubExecuting] = useState<string | null>(null); // "clusterId:subName" currently executing
+
+ const openFieldMappingConfig = (clusterId: string, sub: SubCatalyst) => {
+   setFmClusterId(clusterId);
+   setFmSubName(sub.name);
+   setFmMappings(sub.field_mappings || []);
+   setFmDataSources(getSubDataSources(sub));
+   setFmError(null);
+   setShowFieldMappingConfig(true);
+ };
+
+ const handleSuggestMappings = async () => {
+   if (fmSuggesting) return;
+   setFmSuggesting(true);
+   setFmError(null);
+   try {
+     const result = await api.catalysts.suggestFieldMappings(fmClusterId, fmSubName);
+     setFmMappings(result.suggestions);
+   } catch (err) {
+     setFmError(err instanceof Error ? err.message : 'Failed to get suggestions');
+   }
+   setFmSuggesting(false);
+ };
+
+ const handleSaveFieldMappings = async () => {
+   if (fmSaving) return;
+   setFmSaving(true);
+   setFmError(null);
+   try {
+     await api.catalysts.setFieldMappings(fmClusterId, fmSubName, fmMappings);
+     const ind = industry !== 'general' ? industry : undefined;
+     const c = await api.catalysts.clusters(undefined, ind);
+     setClusters(c.clusters);
+     setShowFieldMappingConfig(false);
+   } catch (err) {
+     setFmError(err instanceof Error ? err.message : 'Failed to save field mappings');
+   }
+   setFmSaving(false);
+ };
+
+ const handleRemoveMapping = (index: number) => {
+   setFmMappings(prev => prev.filter((_, i) => i !== index));
+ };
+
+ const openExecutionConfig = (clusterId: string, sub: SubCatalyst) => {
+   setExecClusterId(clusterId);
+   setExecSubName(sub.name);
+   setExecMode(sub.execution_config?.mode || 'reconciliation');
+   setExecCfgError(null);
+   setShowExecutionConfig(true);
+ };
+
+ const handleSaveExecutionConfig = async () => {
+   if (execSaving) return;
+   setExecSaving(true);
+   setExecCfgError(null);
+   try {
+     await api.catalysts.setExecutionConfig(execClusterId, execSubName, { mode: execMode });
+     const ind = industry !== 'general' ? industry : undefined;
+     const c = await api.catalysts.clusters(undefined, ind);
+     setClusters(c.clusters);
+     setShowExecutionConfig(false);
+   } catch (err) {
+     setExecCfgError(err instanceof Error ? err.message : 'Failed to save execution config');
+   }
+   setExecSaving(false);
+ };
+
+ const handleExecuteSubCatalyst = async (clusterId: string, subName: string) => {
+   const key = `${clusterId}:${subName}`;
+   if (subExecuting) return;
+   setSubExecuting(key);
+   try {
+     const result = await api.catalysts.executeSubCatalyst(clusterId, subName);
+     setExecResult(result);
+     setShowExecResult(true);
+     // Refresh clusters to get updated last_execution
+     const ind = industry !== 'general' ? industry : undefined;
+     const c = await api.catalysts.clusters(undefined, ind);
+     setClusters(c.clusters);
+   } catch (err) {
+     setExecResult({
+       id: '', sub_catalyst: subName, cluster_id: clusterId,
+       executed_at: new Date().toISOString(), duration_ms: 0,
+       status: 'failed', mode: 'unknown',
+       summary: { total_records_source: 0, total_records_target: 0, matched: 0, unmatched_source: 0, unmatched_target: 0, discrepancies: 0 },
+       error: err instanceof Error ? err.message : 'Execution failed',
+     });
+     setShowExecResult(true);
+   }
+   setSubExecuting(null);
+ };
+
  const exceptionCount = actions.filter(a => a.status === 'exception' || a.status === 'escalated').length;
 
  // Load execution logs when tab changes or action selected
@@ -851,13 +965,48 @@ export function CatalystsPage() {
  {sub.schedule.time_of_day ? ` ${sub.schedule.time_of_day}` : ''}
  </span>
  )}
+ {sub.enabled && getSubDataSources(sub).length >= 2 && sub.field_mappings && sub.field_mappings.length > 0 && (
+ <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); handleExecuteSubCatalyst(cluster.id, sub.name); }} disabled={subExecuting === `${cluster.id}:${sub.name}`} title="Execute reconciliation/comparison">
+ {subExecuting === `${cluster.id}:${sub.name}`? <Loader2 size={10} className="mr-1 animate-spin" /> : <Activity size={10} className="mr-1" />} Execute
+ </Button>
+ )}
  {sub.enabled && (
  <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openQuickRun(cluster.id, cluster.name, sub.name); }} title="Quick run this sub-catalyst">
  <Play size={10} className="mr-1" /> Run
  </Button>
  )}
+ {sub.last_execution && (
+ <button
+ onClick={(e) => { e.stopPropagation(); setExecResult(sub.last_execution as ExecutionResult); setShowExecResult(true); }}
+ className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium ${
+   sub.last_execution.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+   sub.last_execution.status === 'partial' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+   'bg-red-500/10 text-red-400 border border-red-500/20'
+ }`}
+ title={`Last execution: ${sub.last_execution.status} — ${sub.last_execution.summary.matched} matched, ${sub.last_execution.summary.discrepancies} discrepancies`}
+ >
+ <BarChart3 size={8} />
+ {sub.last_execution.summary.matched} matched / {sub.last_execution.summary.discrepancies} disc.
+ </button>
+ )}
  {isAdmin && (
  <>
+ {getSubDataSources(sub).length >= 2 && (
+ <button
+ onClick={(e) => { e.stopPropagation(); openFieldMappingConfig(cluster.id, sub); }}
+ className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-500/10 transition-colors"
+ title="Configure field mappings"
+ >
+ <Link2 size={12} className={sub.field_mappings && sub.field_mappings.length > 0 ? 'text-teal-400' : 'text-gray-400'} />
+ </button>
+ )}
+ <button
+ onClick={(e) => { e.stopPropagation(); openExecutionConfig(cluster.id, sub); }}
+ className="h-6 w-6 flex items-center justify-center rounded hover:bg-orange-500/10 transition-colors"
+ title="Configure execution mode"
+ >
+ <Activity size={12} className={sub.execution_config ? 'text-orange-400' : 'text-gray-400'} />
+ </button>
  <button
  onClick={(e) => { e.stopPropagation(); openScheduleConfig(cluster.id, sub); }}
  className="h-6 w-6 flex items-center justify-center rounded hover:bg-indigo-500/10 transition-colors"
@@ -1723,6 +1872,270 @@ export function CatalystsPage() {
  {schedSaving ? <Loader2 size={14} className="animate-spin" /> : <Calendar size={14} />} Save Schedule
  </Button>
  </div>
+ </div>
+ </div>
+ </div></Portal>
+ )}
+
+ {/* Field Mapping Configuration Modal */}
+ {showFieldMappingConfig && (
+ <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowFieldMappingConfig(false)}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center gap-2">
+ <Link2 className="w-5 h-5 text-teal-400" />
+ <h3 className="text-lg font-semibold t-primary">Field Mappings</h3>
+ </div>
+ <button onClick={() => setShowFieldMappingConfig(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ </div>
+ <p className="text-xs t-secondary mb-3">Map data elements between sources for <span className="font-medium text-teal-400">{fmSubName}</span></p>
+
+ {/* Data Sources Summary */}
+ <div className="flex items-center gap-2 mb-4">
+ {fmDataSources.map((ds, i) => (
+ <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <span className="font-bold text-accent">#{i}</span>
+ {ds.type === 'erp' && <><Database size={10} className="text-blue-400" /> ERP</>}
+ {ds.type === 'email' && <><Mail size={10} className="text-purple-400" /> Email</>}
+ {ds.type === 'cloud_storage' && <><Cloud size={10} className="text-cyan-400" /> Cloud</>}
+ {ds.type === 'upload' && <><HardDrive size={10} className="text-amber-400" /> Upload</>}
+ {ds.type === 'custom_system' && <><Cog size={10} className="text-rose-400" /> {String(ds.config.system_name || 'Custom')}</>}
+ </span>
+ ))}
+ </div>
+
+ {/* Smart Suggest Button */}
+ <div className="mb-4">
+ <Button variant="secondary" size="sm" onClick={handleSuggestMappings} disabled={fmSuggesting || fmDataSources.length < 2}>
+ {fmSuggesting ? <Loader2 size={14} className="animate-spin mr-1" /> : <Sparkles size={14} className="mr-1" />}
+ Smart Suggest Mappings
+ </Button>
+ {fmDataSources.length < 2 && <span className="text-[10px] text-amber-400 ml-2">Need at least 2 data sources</span>}
+ </div>
+
+ {/* Existing Mappings */}
+ {fmMappings.length > 0 ? (
+ <div className="space-y-2 mb-4">
+ <div className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 text-[10px] font-semibold t-secondary px-2">
+ <span>Src</span><span>Source Field</span><span></span><span>Target Field</span><span>Match Type</span><span>Conf.</span><span></span>
+ </div>
+ {fmMappings.map((fm, i) => (
+ <div key={fm.id || i} className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 items-center p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <span className="text-[10px] font-bold text-accent">#{fm.source_index}</span>
+ <input
+   className="bg-transparent border border-[var(--border-card)] rounded px-2 py-1 text-xs t-primary"
+   value={fm.source_field}
+   onChange={e => setFmMappings(prev => prev.map((m, j) => j === i ? { ...m, source_field: e.target.value } : m))}
+ />
+ <span className="text-center text-gray-400">→</span>
+ <input
+   className="bg-transparent border border-[var(--border-card)] rounded px-2 py-1 text-xs t-primary"
+   value={fm.target_field}
+   onChange={e => setFmMappings(prev => prev.map((m, j) => j === i ? { ...m, target_field: e.target.value } : m))}
+ />
+ <select
+   className="bg-transparent border border-[var(--border-card)] rounded px-1 py-1 text-[10px] t-primary"
+   value={fm.match_type}
+   onChange={e => setFmMappings(prev => prev.map((m, j) => j === i ? { ...m, match_type: e.target.value as FieldMapping['match_type'] } : m))}
+ >
+   <option value="exact">Exact</option>
+   <option value="fuzzy">Fuzzy</option>
+   <option value="contains">Contains</option>
+   <option value="numeric_tolerance">Numeric ±</option>
+   <option value="date_range">Date Range</option>
+ </select>
+ <span className={`text-[10px] font-medium text-center ${fm.confidence >= 0.8 ? 'text-emerald-400' : fm.confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'}`}>
+   {(fm.confidence * 100).toFixed(0)}%
+ </span>
+ <button onClick={() => handleRemoveMapping(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/10 transition-colors">
+   <Trash2 size={12} className="text-red-400" />
+ </button>
+ </div>
+ ))}
+ </div>
+ ) : (
+ <div className="p-6 text-center bg-[var(--bg-secondary)] rounded-lg border border-dashed border-[var(--border-card)] mb-4">
+ <Link2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+ <p className="text-xs t-secondary">No field mappings configured</p>
+ <p className="text-[10px] t-muted mt-1">Click &quot;Smart Suggest&quot; to auto-detect matching fields</p>
+ </div>
+ )}
+
+ {/* Add Manual Mapping */}
+ <button
+   onClick={() => setFmMappings(prev => [...prev, {
+     id: crypto.randomUUID(), source_index: 0, target_index: 1,
+     source_field: '', target_field: '', match_type: 'exact',
+     confidence: 1.0, auto_suggested: false,
+   }])}
+   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 transition-colors mb-4"
+ >
+   <Plus size={12} /> Add Manual Mapping
+ </button>
+
+ {fmError && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2 mb-4">
+ <AlertTriangle size={14} /> {fmError}
+ </div>
+ )}
+
+ <div className="flex justify-end gap-3 pt-2">
+ <Button variant="secondary" size="sm" onClick={() => setShowFieldMappingConfig(false)}>Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleSaveFieldMappings} disabled={fmSaving}>
+ {fmSaving ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />} Save Mappings
+ </Button>
+ </div>
+ </div>
+ </div></Portal>
+ )}
+
+ {/* Execution Config Modal */}
+ {showExecutionConfig && (
+ <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowExecutionConfig(false)}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center gap-2">
+ <Activity className="w-5 h-5 text-orange-400" />
+ <h3 className="text-lg font-semibold t-primary">Execution Mode</h3>
+ </div>
+ <button onClick={() => setShowExecutionConfig(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ </div>
+ <p className="text-xs t-secondary mb-4">Configure how <span className="font-medium text-orange-400">{execSubName}</span> processes data</p>
+
+ <div className="space-y-2 mb-4">
+ {([
+   { mode: 'reconciliation' as const, label: 'Reconciliation', desc: 'Match and compare records between two data sources', icon: <Link2 size={14} /> },
+   { mode: 'validation' as const, label: 'Validation', desc: 'Check data quality and completeness in a single source', icon: <CheckCircle size={14} /> },
+   { mode: 'compare' as const, label: 'Comparison', desc: 'Side-by-side comparison of record counts between sources', icon: <BarChart3 size={14} /> },
+   { mode: 'extract' as const, label: 'Extract', desc: 'Pull and aggregate data from all configured sources', icon: <FileText size={14} /> },
+   { mode: 'sync' as const, label: 'Sync', desc: 'Synchronize records between data sources', icon: <ArrowUpRight size={14} /> },
+ ]).map(opt => (
+   <button
+     key={opt.mode}
+     onClick={() => setExecMode(opt.mode)}
+     className={`w-full flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${
+       execMode === opt.mode
+         ? 'bg-orange-500/10 border-orange-500/30 ring-1 ring-orange-500/20'
+         : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-orange-500/20'
+     }`}
+   >
+     <div className={`mt-0.5 ${execMode === opt.mode ? 'text-orange-400' : 'text-gray-400'}`}>{opt.icon}</div>
+     <div>
+       <p className={`text-sm font-medium ${execMode === opt.mode ? 'text-orange-400' : 't-primary'}`}>{opt.label}</p>
+       <p className="text-[10px] t-muted">{opt.desc}</p>
+     </div>
+   </button>
+ ))}
+ </div>
+
+ {execCfgError && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2 mb-4">
+ <AlertTriangle size={14} /> {execCfgError}
+ </div>
+ )}
+
+ <div className="flex justify-end gap-3 pt-2">
+ <Button variant="secondary" size="sm" onClick={() => setShowExecutionConfig(false)}>Cancel</Button>
+ <Button variant="primary" size="sm" onClick={handleSaveExecutionConfig} disabled={execSaving}>
+ {execSaving ? <Loader2 size={14} className="animate-spin" /> : <Activity size={14} />} Save Config
+ </Button>
+ </div>
+ </div>
+ </div></Portal>
+ )}
+
+ {/* Execution Result Modal */}
+ {showExecResult && execResult && (
+ <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowExecResult(false)}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center gap-2">
+ <BarChart3 className={`w-5 h-5 ${execResult.status === 'completed' ? 'text-emerald-400' : execResult.status === 'partial' ? 'text-amber-400' : 'text-red-400'}`} />
+ <h3 className="text-lg font-semibold t-primary">Execution Results</h3>
+ <Badge variant={execResult.status === 'completed' ? 'success' : execResult.status === 'partial' ? 'warning' : 'danger'}>
+   {execResult.status}
+ </Badge>
+ </div>
+ <button onClick={() => setShowExecResult(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ </div>
+
+ <div className="flex items-center gap-4 text-xs t-secondary mb-4">
+ <span><span className="font-medium t-primary">{execResult.sub_catalyst}</span></span>
+ <span>Mode: <span className="font-medium text-orange-400">{execResult.mode}</span></span>
+ <span>Duration: <span className="font-medium t-primary">{execResult.duration_ms}ms</span></span>
+ <span>At: <span className="font-medium t-primary">{new Date(execResult.executed_at).toLocaleString()}</span></span>
+ </div>
+
+ {execResult.error && (
+ <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2 mb-4">
+ <AlertTriangle size={14} /> {execResult.error}
+ </div>
+ )}
+
+ {/* Summary Grid */}
+ <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+ <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <span className="text-[10px] text-gray-400 block">Source Records</span>
+ <p className="text-lg font-bold t-primary">{execResult.summary.total_records_source}</p>
+ </div>
+ <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <span className="text-[10px] text-gray-400 block">Target Records</span>
+ <p className="text-lg font-bold t-primary">{execResult.summary.total_records_target}</p>
+ </div>
+ <div className="text-center p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+ <span className="text-[10px] text-emerald-400 block">Matched</span>
+ <p className="text-lg font-bold text-emerald-400">{execResult.summary.matched}</p>
+ </div>
+ <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+ <span className="text-[10px] text-amber-400 block">Unmatched (Src)</span>
+ <p className="text-lg font-bold text-amber-400">{execResult.summary.unmatched_source}</p>
+ </div>
+ <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+ <span className="text-[10px] text-amber-400 block">Unmatched (Tgt)</span>
+ <p className="text-lg font-bold text-amber-400">{execResult.summary.unmatched_target}</p>
+ </div>
+ <div className="text-center p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+ <span className="text-[10px] text-red-400 block">Discrepancies</span>
+ <p className="text-lg font-bold text-red-400">{execResult.summary.discrepancies}</p>
+ </div>
+ </div>
+
+ {/* Match Rate Progress */}
+ {execResult.summary.total_records_source > 0 && (
+ <div className="mb-4">
+ <div className="flex items-center justify-between text-xs t-secondary mb-1">
+ <span>Match Rate</span>
+ <span className="font-medium">{((execResult.summary.matched / execResult.summary.total_records_source) * 100).toFixed(1)}%</span>
+ </div>
+ <Progress value={(execResult.summary.matched / execResult.summary.total_records_source) * 100} color={execResult.summary.matched / execResult.summary.total_records_source >= 0.9 ? 'emerald' : execResult.summary.matched / execResult.summary.total_records_source >= 0.7 ? 'blue' : 'amber'} size="sm" />
+ </div>
+ )}
+
+ {/* Discrepancy Details */}
+ {execResult.discrepancies && execResult.discrepancies.length > 0 && (
+ <div>
+ <h4 className="text-sm font-semibold t-primary mb-2 flex items-center gap-1.5">
+ <AlertCircle size={14} className="text-red-400" /> Discrepancy Details ({execResult.discrepancies.length})
+ </h4>
+ <div className="max-h-60 overflow-y-auto space-y-1">
+ {execResult.discrepancies.map((d, i) => (
+ <div key={i} className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs">
+ <div className="flex items-center justify-between">
+ <span className="font-medium t-primary">{d.field}</span>
+ {d.difference && <span className="text-red-400 text-[10px]">{d.difference}</span>}
+ </div>
+ <div className="flex gap-4 mt-1 text-[10px]">
+ <span className="t-secondary">Source: <span className="t-primary">{String(d.source_value ?? 'null')}</span></span>
+ <span className="t-secondary">Target: <span className="t-primary">{String(d.target_value ?? 'null')}</span></span>
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+
+ <div className="flex justify-end pt-4">
+ <Button variant="secondary" size="sm" onClick={() => setShowExecResult(false)}>Close</Button>
  </div>
  </div>
  </div></Portal>

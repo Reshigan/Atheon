@@ -263,7 +263,17 @@ export const api = {
       request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-sources${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify({ data_sources: dataSources }) }),
     removeDataSourceByIndex: (clusterId: string, subName: string, index: number, tenantId?: string) =>
       request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/data-sources/${index}${qs({ tenant_id: tenantId })}`, { method: 'DELETE' }),
-    setSchedule: (clusterId: string, subName: string, schedule: { frequency: string; day_of_week?: number; day_of_month?: number; time_of_day?: string }, tenantId?: string) =>
+    setFieldMappings: (clusterId: string, subName: string, mappings: FieldMapping[], tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/field-mappings${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify({ field_mappings: mappings }) }),
+    suggestFieldMappings: (clusterId: string, subName: string, tenantId?: string) =>
+      request<{ suggestions: FieldMapping[] }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/field-mappings/suggest${qs({ tenant_id: tenantId })}`),
+    setExecutionConfig: (clusterId: string, subName: string, config: ExecutionConfig, tenantId?: string) =>
+      request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/execution-config${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify(config) }),
+    executeSubCatalyst: (clusterId: string, subName: string, tenantId?: string) =>
+      request<ExecutionResult>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/execute${qs({ tenant_id: tenantId })}`, { method: 'POST' }),
+    getExecutionHistory: (clusterId: string, subName: string, tenantId?: string) =>
+      request<{ executions: ExecutionResult[]; total: number }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/executions${qs({ tenant_id: tenantId })}`),
+    setSchedule:(clusterId: string, subName: string, schedule: { frequency: string; day_of_week?: number; day_of_month?: number; time_of_day?: string }, tenantId?: string) =>
       request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/schedule${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify(schedule) }),
     removeSchedule: (clusterId: string, subName: string, tenantId?: string) =>
       request<{ success: boolean; subCatalyst: SubCatalyst }>(`/api/catalysts/clusters/${clusterId}/sub-catalysts/${encodeURIComponent(subName)}/schedule${qs({ tenant_id: tenantId })}`, { method: 'DELETE' }),
@@ -697,12 +707,59 @@ export interface SubCatalystSchedule {
   next_run?: string;      // ISO datetime of next scheduled run
 }
 
+export interface FieldMapping {
+  id: string;
+  source_index: number;       // index into data_sources array
+  target_index: number;       // index into data_sources array
+  source_field: string;       // field name in source system
+  target_field: string;       // field name in target system
+  match_type: 'exact' | 'fuzzy' | 'contains' | 'numeric_tolerance' | 'date_range';
+  tolerance?: number;         // for numeric_tolerance (e.g. 0.01 = 1 cent)
+  confidence: number;         // 0-1 confidence that this mapping is correct
+  auto_suggested: boolean;    // was this suggested by the smart matcher?
+}
+
+export interface ExecutionConfig {
+  mode: 'reconciliation' | 'validation' | 'sync' | 'extract' | 'compare';
+  parameters?: Record<string, unknown>;
+}
+
+export interface ExecutionResult {
+  id: string;
+  sub_catalyst: string;
+  cluster_id: string;
+  executed_at: string;
+  duration_ms: number;
+  status: 'completed' | 'failed' | 'partial';
+  mode: string;
+  summary: {
+    total_records_source: number;
+    total_records_target: number;
+    matched: number;
+    unmatched_source: number;
+    unmatched_target: number;
+    discrepancies: number;
+  };
+  discrepancies?: Array<{
+    source_record: Record<string, unknown>;
+    target_record: Record<string, unknown> | null;
+    field: string;
+    source_value: unknown;
+    target_value: unknown;
+    difference?: string;
+  }>;
+  error?: string;
+}
+
 export interface SubCatalyst {
   name: string;
   enabled: boolean;
   description?: string;
   data_source?: DataSourceConfig;
   data_sources?: DataSourceConfig[];
+  field_mappings?: FieldMapping[];
+  execution_config?: ExecutionConfig;
+  last_execution?: ExecutionResult;
   schedule?: SubCatalystSchedule;
 }
 

@@ -706,12 +706,59 @@ catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/toggle', async (c) =>
 
 const VALID_DS_TYPES = ['erp', 'email', 'cloud_storage', 'upload', 'custom_system'];
 
+type FieldMappingRecord = {
+  id: string;
+  source_index: number;
+  target_index: number;
+  source_field: string;
+  target_field: string;
+  match_type: 'exact' | 'fuzzy' | 'contains' | 'numeric_tolerance' | 'date_range';
+  tolerance?: number;
+  confidence: number;
+  auto_suggested: boolean;
+};
+
+type ExecutionConfigRecord = {
+  mode: 'reconciliation' | 'validation' | 'sync' | 'extract' | 'compare';
+  parameters?: Record<string, unknown>;
+};
+
+type ExecutionResultRecord = {
+  id: string;
+  sub_catalyst: string;
+  cluster_id: string;
+  executed_at: string;
+  duration_ms: number;
+  status: 'completed' | 'failed' | 'partial';
+  mode: string;
+  summary: {
+    total_records_source: number;
+    total_records_target: number;
+    matched: number;
+    unmatched_source: number;
+    unmatched_target: number;
+    discrepancies: number;
+  };
+  discrepancies?: Array<{
+    source_record: Record<string, unknown>;
+    target_record: Record<string, unknown> | null;
+    field: string;
+    source_value: unknown;
+    target_value: unknown;
+    difference?: string;
+  }>;
+  error?: string;
+};
+
 type SubCatalystRecord = {
   name: string;
   enabled: boolean;
   description?: string;
   data_source?: { type: string; config: Record<string, unknown> };
   data_sources?: Array<{ type: string; config: Record<string, unknown> }>;
+  field_mappings?: FieldMappingRecord[];
+  execution_config?: ExecutionConfigRecord;
+  last_execution?: ExecutionResultRecord;
   schedule?: Record<string, unknown>;
 };
 
@@ -897,6 +944,679 @@ catalysts.delete('/clusters/:clusterId/sub-catalysts/:subName/data-sources/:inde
 
   return c.json({ success: true, subCatalyst: subs[idx] });
 });
+
+// ── Field Mapping Endpoints ──
+
+// Known data elements per data source type for smart matching
+const KNOWN_FIELDS: Record<string, string[]> = {
+  erp: [
+    'invoice_number', 'invoice_date', 'amount', 'currency', 'vendor_name', 'vendor_id',
+    'customer_name', 'customer_id', 'po_number', 'gl_account', 'cost_center',
+    'payment_date', 'payment_reference', 'tax_amount', 'net_amount', 'gross_amount',
+    'description', 'quantity', 'unit_price', 'document_number', 'posting_date',
+    'due_date', 'payment_terms', 'bank_account', 'transaction_id',
+  ],
+  email: [
+    'subject', 'sender', 'date', 'body', 'attachment_name', 'reference_number',
+    'amount_mentioned', 'invoice_reference', 'payment_confirmation',
+  ],
+  cloud_storage: [
+    'file_name', 'file_date', 'sheet_name', 'column_a', 'column_b', 'column_c',
+    'reference', 'amount', 'date', 'description', 'account_number',
+  ],
+  upload: [
+    'column_1', 'column_2', 'column_3', 'reference', 'amount', 'date',
+    'description', 'account', 'name', 'id',
+  ],
+  custom_system: [
+    'transaction_id', 'reference', 'amount', 'date', 'status', 'account_number',
+    'bank_reference', 'statement_date', 'debit', 'credit', 'balance',
+    'counterparty', 'narrative', 'value_date', 'entry_date',
+  ],
+};
+
+// Split a normalized field name into semantic tokens (e.g. 'vendorid' -> ['vendor','id'], 'invoice_number' -> ['invoice','number'])
+function tokenizeFieldName(raw: string): string[] {
+  // First split on delimiters
+  const parts = raw.toLowerCase().split(/[_\-\s]+/).filter(Boolean);
+  // Then split camelCase-style concatenated words using known vocabulary
+  const vocab = [
+    'invoice', 'vendor', 'customer', 'payment', 'transaction', 'account',
+    'amount', 'number', 'name', 'date', 'reference', 'description',
+    'balance', 'credit', 'debit', 'status', 'bank', 'posting',
+    'document', 'cost', 'center', 'price', 'unit', 'quantity',
+    'gross', 'net', 'tax', 'due', 'terms', 'currency', 'value',
+    'total', 'sum', 'id', 'code', 'ref', 'type', 'file', 'sheet',
+    'column', 'body', 'subject', 'sender', 'attachment', 'entry',
+    'narrative', 'counterparty', 'confirmation', 'mentioned', 'statement',
+  ];
+  const tokens: string[] = [];
+  for (const part of parts) {
+    // Try to split concatenated words greedily (longest match first)
+    let remaining = part;
+    while (remaining.length > 0) {
+      let matched = false;
+      // Try longest vocab words first
+      for (const word of vocab.sort((x, y) => y.length - x.length)) {
+        if (remaining.startsWith(word)) {
+          tokens.push(word);
+          remaining = remaining.slice(word.length);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        // No vocab match — take the entire remaining as one token
+        tokens.push(remaining);
+        break;
+      }
+    }
+  }
+  return tokens;
+}
+
+// Similarity scoring for field name matching
+function fieldNameSimilarity(a: string, b: string): number {
+  const na = a.toLowerCase().replace(/[_\-\s]/g, '');
+  const nb = b.toLowerCase().replace(/[_\-\s]/g, '');
+  if (na === nb) return 1.0;
+  if (na.includes(nb) || nb.includes(na)) return 0.8;
+
+  // Tokenize and check synonym groups using whole-token matching
+  const tokensA = tokenizeFieldName(a);
+  const tokensB = tokenizeFieldName(b);
+
+  const synonyms: Record<string, string[]> = {
+    'amount': ['value', 'total', 'sum', 'price', 'cost', 'gross', 'net'],
+    'date': ['datetime', 'timestamp', 'posted', 'created', 'due'],
+    'reference': ['ref', 'number', 'identifier', 'code'],
+    'name': ['description', 'label', 'title', 'narrative'],
+    'account': ['ledger', 'costcenter', 'bank'],
+    'invoice': ['bill', 'document', 'voucher'],
+    'vendor': ['supplier', 'creditor'],
+    'customer': ['debtor', 'client', 'buyer'],
+    'payment': ['remittance', 'settlement', 'transfer'],
+    'transaction': ['entry', 'posting', 'record'],
+    'id': ['identifier'],
+  };
+  for (const [key, syns] of Object.entries(synonyms)) {
+    const allTerms = [key, ...syns];
+    const aHit = tokensA.some(t => allTerms.includes(t));
+    const bHit = tokensB.some(t => allTerms.includes(t));
+    if (aHit && bHit) return 0.65;
+  }
+  return 0;
+}
+
+function inferMatchType(fieldA: string, fieldB: string): 'exact' | 'fuzzy' | 'numeric_tolerance' | 'date_range' {
+  const lower = (fieldA + fieldB).toLowerCase();
+  if (lower.includes('amount') || lower.includes('price') || lower.includes('total') ||
+      lower.includes('cost') || lower.includes('value') || lower.includes('debit') ||
+      lower.includes('credit') || lower.includes('balance')) {
+    return 'numeric_tolerance';
+  }
+  if (lower.includes('date') || lower.includes('time') || lower.includes('posted') || lower.includes('due')) {
+    return 'date_range';
+  }
+  if (lower.includes('name') || lower.includes('description') || lower.includes('narrative')) {
+    return 'fuzzy';
+  }
+  return 'exact';
+}
+
+// GET /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/field-mappings/suggest - Smart match suggestions
+catalysts.get('/clusters/:clusterId/sub-catalysts/:subName/field-mappings/suggest', async (c) => {
+  const clusterId = c.req.param('clusterId');
+  const subName = decodeURIComponent(c.req.param('subName'));
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  const subs = JSON.parse(cluster.sub_catalysts || '[]') as SubCatalystRecord[];
+  const idx = subs.findIndex((s) => s.name === subName);
+  if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
+
+  const sources = subs[idx].data_sources || [];
+  if (sources.length < 2) {
+    return c.json({ suggestions: [], message: 'At least 2 data sources are needed for field mapping suggestions' });
+  }
+
+  // Generate suggestions by comparing field names between each pair of sources
+  const suggestions: FieldMappingRecord[] = [];
+  for (let si = 0; si < sources.length; si++) {
+    for (let ti = si + 1; ti < sources.length; ti++) {
+      const sourceFields = KNOWN_FIELDS[sources[si].type] || KNOWN_FIELDS['upload'];
+      const targetFields = KNOWN_FIELDS[sources[ti].type] || KNOWN_FIELDS['upload'];
+
+      for (const sf of sourceFields) {
+        let bestMatch = '';
+        let bestScore = 0;
+        for (const tf of targetFields) {
+          const score = fieldNameSimilarity(sf, tf);
+          if (score > bestScore) {
+            bestScore = score;
+            bestMatch = tf;
+          }
+        }
+        if (bestScore >= 0.5 && bestMatch) {
+          // Avoid duplicate mappings
+          const exists = suggestions.some(s =>
+            s.source_index === si && s.target_index === ti &&
+            s.source_field === sf && s.target_field === bestMatch
+          );
+          if (!exists) {
+            suggestions.push({
+              id: crypto.randomUUID(),
+              source_index: si,
+              target_index: ti,
+              source_field: sf,
+              target_field: bestMatch,
+              match_type: inferMatchType(sf, bestMatch),
+              tolerance: inferMatchType(sf, bestMatch) === 'numeric_tolerance' ? 0.01 : undefined,
+              confidence: Math.round(bestScore * 100) / 100,
+              auto_suggested: true,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Sort by confidence descending
+  suggestions.sort((a, b) => b.confidence - a.confidence);
+
+  return c.json({ suggestions });
+});
+
+// PUT /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/field-mappings - Save field mappings
+catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/field-mappings', async (c) => {
+  const clusterId = c.req.param('clusterId');
+  const subName = decodeURIComponent(c.req.param('subName'));
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || (!isAdminRole(auth.role) && auth.role !== 'executive')) {
+    return c.json({ error: 'Forbidden', message: 'Only admins can configure field mappings' }, 403);
+  }
+
+  const body = await c.req.json<{ field_mappings: FieldMappingRecord[] }>();
+  if (!body.field_mappings || !Array.isArray(body.field_mappings)) {
+    return c.json({ error: 'field_mappings must be an array' }, 400);
+  }
+
+  // Validate each mapping
+  const validMatchTypes = ['exact', 'fuzzy', 'contains', 'numeric_tolerance', 'date_range'];
+  for (const fm of body.field_mappings) {
+    if (!fm.source_field || !fm.target_field) return c.json({ error: 'Each mapping needs source_field and target_field' }, 400);
+    if (fm.source_index === undefined || fm.target_index === undefined) return c.json({ error: 'Each mapping needs source_index and target_index' }, 400);
+    if (!validMatchTypes.includes(fm.match_type)) return c.json({ error: `Invalid match_type. Must be: ${validMatchTypes.join(', ')}` }, 400);
+  }
+
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  const subs = JSON.parse(cluster.sub_catalysts || '[]') as SubCatalystRecord[];
+  const idx = subs.findIndex((s) => s.name === subName);
+  if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
+
+  // Ensure each mapping has an id
+  const mappings = body.field_mappings.map(fm => ({
+    ...fm,
+    id: fm.id || crypto.randomUUID(),
+  }));
+
+  subs[idx].field_mappings = mappings;
+
+  await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
+
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.field_mappings_configured', 'catalysts', clusterId,
+    JSON.stringify({ sub_catalyst: subName, mapping_count: mappings.length }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({ success: true, subCatalyst: subs[idx] });
+});
+
+// PUT /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/execution-config - Set execution config
+catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/execution-config', async (c) => {
+  const clusterId = c.req.param('clusterId');
+  const subName = decodeURIComponent(c.req.param('subName'));
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || (!isAdminRole(auth.role) && auth.role !== 'executive')) {
+    return c.json({ error: 'Forbidden', message: 'Only admins can configure execution' }, 403);
+  }
+
+  const body = await c.req.json<ExecutionConfigRecord>();
+  const validModes = ['reconciliation', 'validation', 'sync', 'extract', 'compare'];
+  if (!body.mode || !validModes.includes(body.mode)) {
+    return c.json({ error: `Invalid mode. Must be: ${validModes.join(', ')}` }, 400);
+  }
+
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  const subs = JSON.parse(cluster.sub_catalysts || '[]') as SubCatalystRecord[];
+  const idx = subs.findIndex((s) => s.name === subName);
+  if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
+
+  subs[idx].execution_config = { mode: body.mode, parameters: body.parameters || {} };
+
+  await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
+    .bind(JSON.stringify(subs), clusterId, targetTenant).run();
+
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.execution_config_set', 'catalysts', clusterId,
+    JSON.stringify({ sub_catalyst: subName, mode: body.mode }),
+    'success'
+  ).run().catch(() => {});
+
+  return c.json({ success: true, subCatalyst: subs[idx] });
+});
+
+// POST /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/execute - Execute sub-catalyst against its data sources
+catalysts.post('/clusters/:clusterId/sub-catalysts/:subName/execute', async (c) => {
+  const clusterId = c.req.param('clusterId');
+  const subName = decodeURIComponent(c.req.param('subName'));
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || (!isAdminRole(auth.role) && auth.role !== 'executive')) {
+    return c.json({ error: 'Forbidden', message: 'Only admins can execute sub-catalysts' }, 403);
+  }
+
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT * FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<Record<string, unknown>>();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  const subs = JSON.parse((cluster.sub_catalysts as string) || '[]') as SubCatalystRecord[];
+  const idx = subs.findIndex((s) => s.name === subName);
+  if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
+
+  const sub = subs[idx];
+  if (!sub.enabled) return c.json({ error: 'Sub-catalyst is disabled' }, 400);
+
+  const sources = sub.data_sources || [];
+  if (sources.length < 1) return c.json({ error: 'No data sources configured' }, 400);
+
+  const mappings = sub.field_mappings || [];
+  const execConfig = sub.execution_config || { mode: 'reconciliation' };
+  const startTime = Date.now();
+
+  // Perform execution based on mode
+  let result: ExecutionResultRecord;
+
+  try {
+    if (execConfig.mode === 'reconciliation' && sources.length >= 2 && mappings.length > 0) {
+      result = await performReconciliation(sub, sources, mappings, clusterId, targetTenant, c.env.DB);
+    } else if (execConfig.mode === 'validation') {
+      result = await performValidation(sub, sources, clusterId, targetTenant, c.env.DB);
+    } else if (execConfig.mode === 'compare' && sources.length >= 2) {
+      result = await performComparison(sub, sources, mappings, clusterId, targetTenant, c.env.DB);
+    } else {
+      // Default: extract/analyze mode — pull data from sources and report
+      result = await performExtraction(sub, sources, clusterId, targetTenant, c.env.DB);
+    }
+
+    result.duration_ms = Date.now() - startTime;
+  } catch (err) {
+    result = {
+      id: crypto.randomUUID(),
+      sub_catalyst: subName,
+      cluster_id: clusterId,
+      executed_at: new Date().toISOString(),
+      duration_ms: Date.now() - startTime,
+      status: 'failed',
+      mode: execConfig.mode,
+      summary: { total_records_source: 0, total_records_target: 0, matched: 0, unmatched_source: 0, unmatched_target: 0, discrepancies: 0 },
+      error: (err as Error).message,
+    };
+  }
+
+  // Re-read cluster to avoid overwriting concurrent changes (execution may take a while)
+  const freshCluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?')
+    .bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
+  const freshSubs = JSON.parse(freshCluster?.sub_catalysts || '[]') as SubCatalystRecord[];
+  const freshIdx = freshSubs.findIndex(s => s.name === subName);
+  if (freshIdx !== -1) {
+    freshSubs[freshIdx].last_execution = result;
+    await c.env.DB.prepare('UPDATE catalyst_clusters SET sub_catalysts = ? WHERE id = ? AND tenant_id = ?')
+      .bind(JSON.stringify(freshSubs), clusterId, targetTenant).run();
+  }
+
+  // Store execution in execution_logs for history
+  await writeLog(c.env.DB, targetTenant, result.id, 1, `${subName} — ${execConfig.mode}`, result.status, JSON.stringify(result.summary), result.duration_ms);
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(
+    crypto.randomUUID(), targetTenant, 'catalyst.sub_catalyst.executed', 'catalysts', clusterId,
+    JSON.stringify({ sub_catalyst: subName, mode: execConfig.mode, status: result.status, summary: result.summary }),
+    result.status === 'failed' ? 'failure' : 'success'
+  ).run().catch(() => {});
+
+  // Always return 200 so the client can read the detailed result (status field indicates success/failure)
+  return c.json(result, 200);
+});
+
+// GET /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/executions - Execution history
+catalysts.get('/clusters/:clusterId/sub-catalysts/:subName/executions', async (c) => {
+  const clusterId = c.req.param('clusterId');
+  const subName = decodeURIComponent(c.req.param('subName'));
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth) return c.json({ error: 'Unauthorized' }, 401);
+
+  const targetTenant = canCrossTenant(auth.role) ? (c.req.query('tenant_id') || auth.tenantId) : auth.tenantId;
+
+  const cluster = await c.env.DB.prepare('SELECT sub_catalysts FROM catalyst_clusters WHERE id = ? AND tenant_id = ?').bind(clusterId, targetTenant).first<{ sub_catalysts: string }>();
+  if (!cluster) return c.json({ error: 'Cluster not found' }, 404);
+
+  const subs = JSON.parse(cluster.sub_catalysts || '[]') as SubCatalystRecord[];
+  const idx = subs.findIndex((s) => s.name === subName);
+  if (idx === -1) return c.json({ error: 'Sub-catalyst not found' }, 404);
+
+  // Return last_execution as the history (single entry for now; could expand to a separate table later)
+  const executions: ExecutionResultRecord[] = [];
+  if (subs[idx].last_execution) {
+    executions.push(subs[idx].last_execution as ExecutionResultRecord);
+  }
+
+  return c.json({ executions, total: executions.length });
+});
+
+// ── Execution Engine Helpers ──
+
+async function performReconciliation(
+  sub: SubCatalystRecord,
+  sources: Array<{ type: string; config: Record<string, unknown> }>,
+  mappings: FieldMappingRecord[],
+  clusterId: string,
+  tenantId: string,
+  db: D1Database
+): Promise<ExecutionResultRecord> {
+  // Pull data from the first two data sources using ERP canonical tables
+  const sourceData = await fetchDataForSource(sources[0], tenantId, db);
+  const targetData = await fetchDataForSource(sources[1], tenantId, db);
+
+  let matched = 0;
+  let discrepancyCount = 0;
+  let skippedSource = 0;
+  const discrepancies: ExecutionResultRecord['discrepancies'] = [];
+
+  // Use the first mapping that connects source 0 to source 1 as the key field
+  const keyMappings = mappings.filter(m => m.source_index === 0 && m.target_index === 1);
+
+  if (keyMappings.length === 0) {
+    // No mappings between source 0 and 1, do a count-based comparison
+    return {
+      id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
+      executed_at: new Date().toISOString(), duration_ms: 0, status: 'completed',
+      mode: 'reconciliation',
+      summary: {
+        total_records_source: sourceData.length, total_records_target: targetData.length,
+        matched: 0, unmatched_source: sourceData.length, unmatched_target: targetData.length,
+        discrepancies: Math.abs(sourceData.length - targetData.length),
+      },
+    };
+  }
+
+  // Match records using key field mapping
+  const primaryKey = keyMappings[0];
+  const matchedTargetIndices = new Set<number>();
+
+  // Pre-count target records with empty key fields
+  const skippedTargetCount = targetData.filter(r => !String(r[primaryKey.target_field] ?? '').trim()).length;
+
+  for (const srcRow of sourceData) {
+    const srcVal = String(srcRow[primaryKey.source_field] ?? '').toLowerCase().trim();
+    if (!srcVal) { skippedSource++; continue; } // skip records with empty key field
+    let foundMatch = false;
+
+    for (let ti = 0; ti < targetData.length; ti++) {
+      if (matchedTargetIndices.has(ti)) continue; // skip already-matched targets
+      const tgtRow = targetData[ti];
+      const tgtVal = String(tgtRow[primaryKey.target_field] ?? '').toLowerCase().trim();
+      if (!tgtVal) continue; // skip records with empty key field
+
+      const isMatch = primaryKey.match_type === 'exact' ? srcVal === tgtVal :
+        primaryKey.match_type === 'fuzzy' ? (srcVal.includes(tgtVal) || tgtVal.includes(srcVal)) :
+        primaryKey.match_type === 'contains' ? srcVal.includes(tgtVal) :
+        srcVal === tgtVal;
+
+      if (isMatch) {
+        foundMatch = true;
+        matchedTargetIndices.add(ti);
+        matched++;
+
+        // Check other mappings for discrepancies between matched records
+        for (const fm of keyMappings.slice(1)) {
+          const sv = srcRow[fm.source_field];
+          const tv = tgtRow[fm.target_field];
+          if (fm.match_type === 'numeric_tolerance') {
+            const nSv = parseFloat(String(sv));
+            const nTv = parseFloat(String(tv));
+            const tol = fm.tolerance ?? 0.01;
+            if (!isNaN(nSv) && !isNaN(nTv) && Math.abs(nSv - nTv) > tol) {
+              discrepancyCount++;
+              if (discrepancies && discrepancies.length < 50) {
+                discrepancies.push({
+                  source_record: srcRow, target_record: tgtRow,
+                  field: `${fm.source_field} vs ${fm.target_field}`,
+                  source_value: sv, target_value: tv,
+                  difference: `Difference: ${(nSv - nTv).toFixed(2)}`,
+                });
+              }
+            }
+          } else {
+            const sSv = String(sv ?? '').toLowerCase().trim();
+            const sTv = String(tv ?? '').toLowerCase().trim();
+            if (sSv !== sTv) {
+              discrepancyCount++;
+              if (discrepancies && discrepancies.length < 50) {
+                discrepancies.push({
+                  source_record: srcRow, target_record: tgtRow,
+                  field: `${fm.source_field} vs ${fm.target_field}`,
+                  source_value: sv, target_value: tv,
+                });
+              }
+            }
+          }
+        }
+        break;
+      }
+    }
+
+    if (!foundMatch && discrepancies && discrepancies.length < 50) {
+      discrepancies.push({
+        source_record: srcRow, target_record: null,
+        field: primaryKey.source_field,
+        source_value: srcRow[primaryKey.source_field],
+        target_value: null,
+        difference: 'No matching record in target',
+      });
+    }
+  }
+
+  return {
+    id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
+    executed_at: new Date().toISOString(), duration_ms: 0,
+    status: (discrepancyCount > 0 || matched < (sourceData.length - skippedSource) || matchedTargetIndices.size < (targetData.length - skippedTargetCount)) ? 'partial' : 'completed',
+    mode: 'reconciliation',
+    summary: {
+      total_records_source: sourceData.length - skippedSource,
+      total_records_target: targetData.length - skippedTargetCount,
+      matched,
+      unmatched_source: sourceData.length - skippedSource - matched,
+      unmatched_target: targetData.length - skippedTargetCount - matchedTargetIndices.size,
+      discrepancies: discrepancyCount,
+    },
+    discrepancies: discrepancies?.length ? discrepancies : undefined,
+  };
+}
+
+async function performValidation(
+  sub: SubCatalystRecord,
+  sources: Array<{ type: string; config: Record<string, unknown> }>,
+  clusterId: string,
+  tenantId: string,
+  db: D1Database
+): Promise<ExecutionResultRecord> {
+  const data = await fetchDataForSource(sources[0], tenantId, db);
+  let issues = 0;
+  const discrepancies: ExecutionResultRecord['discrepancies'] = [];
+
+  for (const row of data) {
+    // Basic validation checks
+    const hasAmount = row['amount'] !== undefined && row['amount'] !== null && row['amount'] !== '';
+    const hasDate = row['invoice_date'] || row['date'] || row['posting_date'];
+    const hasRef = row['invoice_number'] || row['reference'] || row['transaction_id'] || row['document_number'];
+
+    if (!hasAmount || !hasDate || !hasRef) {
+      issues++;
+      if (discrepancies && discrepancies.length < 50) {
+        discrepancies.push({
+          source_record: row, target_record: null,
+          field: !hasAmount ? 'amount' : !hasDate ? 'date' : 'reference',
+          source_value: null, target_value: null,
+          difference: `Missing required field: ${!hasAmount ? 'amount' : !hasDate ? 'date' : 'reference'}`,
+        });
+      }
+    }
+  }
+
+  return {
+    id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
+    executed_at: new Date().toISOString(), duration_ms: 0,
+    status: issues > 0 ? 'partial' : 'completed',
+    mode: 'validation',
+    summary: {
+      total_records_source: data.length, total_records_target: 0,
+      matched: data.length - issues, unmatched_source: issues, unmatched_target: 0,
+      discrepancies: issues,
+    },
+    discrepancies: discrepancies?.length ? discrepancies : undefined,
+  };
+}
+
+async function performComparison(
+  sub: SubCatalystRecord,
+  sources: Array<{ type: string; config: Record<string, unknown> }>,
+  mappings: FieldMappingRecord[],
+  clusterId: string,
+  tenantId: string,
+  db: D1Database
+): Promise<ExecutionResultRecord> {
+  const sourceData = await fetchDataForSource(sources[0], tenantId, db);
+  const targetData = await fetchDataForSource(sources[1], tenantId, db);
+
+  return {
+    id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
+    executed_at: new Date().toISOString(), duration_ms: 0,
+    status: 'completed', mode: 'compare',
+    summary: {
+      total_records_source: sourceData.length, total_records_target: targetData.length,
+      matched: Math.min(sourceData.length, targetData.length),
+      unmatched_source: Math.max(0, sourceData.length - targetData.length),
+      unmatched_target: Math.max(0, targetData.length - sourceData.length),
+      discrepancies: Math.abs(sourceData.length - targetData.length),
+    },
+  };
+}
+
+async function performExtraction(
+  sub: SubCatalystRecord,
+  sources: Array<{ type: string; config: Record<string, unknown> }>,
+  clusterId: string,
+  tenantId: string,
+  db: D1Database
+): Promise<ExecutionResultRecord> {
+  let totalRecords = 0;
+  for (const src of sources) {
+    const data = await fetchDataForSource(src, tenantId, db);
+    totalRecords += data.length;
+  }
+
+  return {
+    id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
+    executed_at: new Date().toISOString(), duration_ms: 0,
+    status: 'completed', mode: sub.execution_config?.mode || 'extract',
+    summary: {
+      total_records_source: totalRecords, total_records_target: 0,
+      matched: totalRecords, unmatched_source: 0, unmatched_target: 0, discrepancies: 0,
+    },
+  };
+}
+
+async function fetchDataForSource(
+  source: { type: string; config: Record<string, unknown> },
+  tenantId: string,
+  db: D1Database
+): Promise<Record<string, unknown>[]> {
+  try {
+    if (source.type === 'erp') {
+      // erp_type available in source.config.erp_type for adapter selection
+      const module = String(source.config.module || '').toLowerCase();
+
+      if (module.includes('invoice') || module.includes('accounts_payable') || module.includes('ap')) {
+        const rows = await db.prepare(
+          'SELECT invoice_number, invoice_date, due_date, amount, tax_amount, status, vendor_name, description FROM erp_invoices WHERE tenant_id = ? LIMIT 500'
+        ).bind(tenantId).all();
+        return rows.results as Record<string, unknown>[];
+      }
+      if (module.includes('customer') || module.includes('accounts_receivable') || module.includes('ar')) {
+        const rows = await db.prepare(
+          'SELECT id, name, email, phone, account_number, credit_limit, outstanding_balance FROM erp_customers WHERE tenant_id = ? LIMIT 500'
+        ).bind(tenantId).all();
+        return rows.results as Record<string, unknown>[];
+      }
+      if (module.includes('product') || module.includes('inventory') || module.includes('stock')) {
+        const rows = await db.prepare(
+          'SELECT sku, name, stock_on_hand, reorder_level, cost_price, selling_price, category FROM erp_products WHERE tenant_id = ? LIMIT 500'
+        ).bind(tenantId).all();
+        return rows.results as Record<string, unknown>[];
+      }
+      if (module.includes('supplier') || module.includes('vendor')) {
+        const rows = await db.prepare(
+          'SELECT id, name, email, payment_terms, tax_number FROM erp_suppliers WHERE tenant_id = ? LIMIT 500'
+        ).bind(tenantId).all();
+        return rows.results as Record<string, unknown>[];
+      }
+      // Default: try invoices as a common ERP data set
+      const rows = await db.prepare(
+        'SELECT invoice_number, invoice_date, amount, status, vendor_name FROM erp_invoices WHERE tenant_id = ? LIMIT 500'
+      ).bind(tenantId).all();
+      return rows.results as Record<string, unknown>[];
+    }
+
+    if (source.type === 'custom_system') {
+      // For custom/bank systems, pull from process_metrics as a proxy data source
+      const rows = await db.prepare(
+        'SELECT metric_name as reference, metric_value as amount, status, updated_at as date, dimension as category FROM process_metrics WHERE tenant_id = ? LIMIT 500'
+      ).bind(tenantId).all();
+      return rows.results as Record<string, unknown>[];
+    }
+
+    // For email, cloud_storage, upload: return process_metrics as placeholder data
+    const rows = await db.prepare(
+      'SELECT metric_name as reference, metric_value as amount, status, updated_at as date FROM process_metrics WHERE tenant_id = ? LIMIT 200'
+    ).bind(tenantId).all();
+    return rows.results as Record<string, unknown>[];
+  } catch (err) {
+    console.error(`fetchDataForSource error for type=${source.type}:`, err);
+    return [];
+  }
+}
 
 // PUT /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/schedule - Set schedule for a sub-catalyst
 catalysts.put('/clusters/:clusterId/sub-catalysts/:subName/schedule', async (c) => {
