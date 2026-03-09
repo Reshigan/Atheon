@@ -1398,7 +1398,7 @@ async function performReconciliation(
   return {
     id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
     executed_at: new Date().toISOString(), duration_ms: 0,
-    status: (discrepancyCount > 0 || matched < (sourceData.length - skippedSource) || matchedTargetIndices.size < skippedTargetCount) ? 'partial' : 'completed',
+    status: (discrepancyCount > 0 || matched < (sourceData.length - skippedSource) || matchedTargetIndices.size < (targetData.length - skippedTargetCount)) ? 'partial' : 'completed',
     mode: 'reconciliation',
     summary: {
       total_records_source: sourceData.length - skippedSource,
