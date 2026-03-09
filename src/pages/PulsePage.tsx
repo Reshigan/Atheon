@@ -40,12 +40,12 @@ const confidenceColor = (c: number) =>
 
 /* ── Operational Health Score (computed from metrics) ───── */
 function computeOperationalHealth(metrics: Metric[], summary: PulseSummary | null, anomalies: AnomalyItem[], processes: ProcessItem[]) {
-  const total = summary?.totalMetrics || metrics.length;
+  const total = summary?.totalMetrics ?? metrics.length;
   if (total === 0) return { score: 0, trend: 'stable', dimensions: {} as Record<string, { score: number; trend: string; delta: number }> };
 
-  const green = summary?.statusBreakdown?.green || metrics.filter(m => m.status === 'green').length;
-  const amber = summary?.statusBreakdown?.amber || metrics.filter(m => m.status === 'amber').length;
-  const red = summary?.statusBreakdown?.red || metrics.filter(m => m.status === 'red').length;
+  const green = summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length;
+  const amber = summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length;
+  const red = summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length;
 
   // Weighted score: green=100, amber=60, red=20
   const score = total > 0 ? Math.round((green * 100 + amber * 60 + red * 20) / total) : 0;
@@ -155,10 +155,10 @@ function generateRecommendations(metrics: Metric[], anomalies: AnomalyItem[], pr
 
 /* ── Narrative generator ─────────────────────────────────── */
 function generateNarrative(metrics: Metric[], anomalies: AnomalyItem[], processes: ProcessItem[], summary: PulseSummary | null): string {
-  const total = summary?.totalMetrics || metrics.length;
-  const green = summary?.statusBreakdown?.green || metrics.filter(m => m.status === 'green').length;
-  const amber = summary?.statusBreakdown?.amber || metrics.filter(m => m.status === 'amber').length;
-  const red = summary?.statusBreakdown?.red || metrics.filter(m => m.status === 'red').length;
+  const total = summary?.totalMetrics ?? metrics.length;
+  const green = summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length;
+  const amber = summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length;
+  const red = summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length;
   const openAnomalies = anomalies.filter(a => a.status === 'open' || !a.status).length;
   const critAnomalies = anomalies.filter(a => a.severity === 'critical').length;
   const bottleneckCount = processes.reduce((s, p) => s + p.bottlenecks.length, 0);
@@ -362,7 +362,7 @@ export function PulsePage() {
                 <span className="text-xs t-muted uppercase tracking-wider">Total Metrics</span>
                 <Activity size={14} className="text-accent" />
               </div>
-              <p className="text-2xl font-bold t-primary">{summary?.totalMetrics || metrics.length}</p>
+              <p className="text-2xl font-bold t-primary">{summary?.totalMetrics ?? metrics.length}</p>
               <p className="text-[10px] t-muted mt-1">Being monitored</p>
             </Card>
             <Card hover onClick={() => { setMetricFilter('green'); setActiveTab('monitoring'); }}>
@@ -370,7 +370,7 @@ export function PulsePage() {
                 <span className="text-xs t-muted uppercase tracking-wider">Healthy</span>
                 <CheckCircle2 size={14} className="text-emerald-400" />
               </div>
-              <p className="text-2xl font-bold text-emerald-400">{summary?.statusBreakdown?.green || metrics.filter(m => m.status === 'green').length}</p>
+              <p className="text-2xl font-bold text-emerald-400">{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length}</p>
               <p className="text-[10px] t-muted mt-1">Within thresholds</p>
             </Card>
             <Card hover onClick={() => { setMetricFilter('amber'); setActiveTab('monitoring'); }}>
@@ -378,7 +378,7 @@ export function PulsePage() {
                 <span className="text-xs t-muted uppercase tracking-wider">Warning</span>
                 <AlertTriangle size={14} className="text-amber-400" />
               </div>
-              <p className="text-2xl font-bold text-amber-400">{summary?.statusBreakdown?.amber || metrics.filter(m => m.status === 'amber').length}</p>
+              <p className="text-2xl font-bold text-amber-400">{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length}</p>
               <p className="text-[10px] t-muted mt-1">Approaching limits</p>
             </Card>
             <Card hover onClick={() => { setMetricFilter('red'); setActiveTab('monitoring'); }}>
@@ -386,7 +386,7 @@ export function PulsePage() {
                 <span className="text-xs t-muted uppercase tracking-wider">Critical</span>
                 <XCircle size={14} className="text-red-400" />
               </div>
-              <p className="text-2xl font-bold text-red-400">{summary?.statusBreakdown?.red || metrics.filter(m => m.status === 'red').length}</p>
+              <p className="text-2xl font-bold text-red-400">{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length}</p>
               <p className="text-[10px] t-muted mt-1">Breaching thresholds</p>
             </Card>
           </div>
