@@ -1323,11 +1323,13 @@ async function performReconciliation(
 
   for (const srcRow of sourceData) {
     const srcVal = String(srcRow[primaryKey.source_field] ?? '').toLowerCase().trim();
+    if (!srcVal) continue; // skip records with empty key field
     let foundMatch = false;
 
     for (let ti = 0; ti < targetData.length; ti++) {
       const tgtRow = targetData[ti];
       const tgtVal = String(tgtRow[primaryKey.target_field] ?? '').toLowerCase().trim();
+      if (!tgtVal) continue; // skip records with empty key field
 
       const isMatch = primaryKey.match_type === 'exact' ? srcVal === tgtVal :
         primaryKey.match_type === 'fuzzy' ? (srcVal.includes(tgtVal) || tgtVal.includes(srcVal)) :
@@ -1391,7 +1393,7 @@ async function performReconciliation(
   return {
     id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
     executed_at: new Date().toISOString(), duration_ms: 0,
-    status: discrepancyCount > 0 ? 'partial' : 'completed',
+    status: (discrepancyCount > 0 || matched < sourceData.length || matchedTargetIndices.size < targetData.length) ? 'partial' : 'completed',
     mode: 'reconciliation',
     summary: {
       total_records_source: sourceData.length,
