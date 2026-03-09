@@ -1254,7 +1254,8 @@ catalysts.post('/clusters/:clusterId/sub-catalysts/:subName/execute', async (c) 
     result.status === 'failed' ? 'failure' : 'success'
   ).run().catch(() => {});
 
-  return c.json(result, result.status === 'failed' ? 500 : 200);
+  // Always return 200 so the client can read the detailed result (status field indicates success/failure)
+  return c.json(result, 200);
 });
 
 // GET /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/executions - Execution history
@@ -1298,6 +1299,7 @@ async function performReconciliation(
 
   let matched = 0;
   let discrepancyCount = 0;
+  let skippedSource = 0;
   const discrepancies: ExecutionResultRecord['discrepancies'] = [];
 
   // Use the first mapping that connects source 0 to source 1 as the key field
@@ -1321,9 +1323,12 @@ async function performReconciliation(
   const primaryKey = keyMappings[0];
   const matchedTargetIndices = new Set<number>();
 
+  // Pre-count target records with empty key fields
+  const skippedTargetCount = targetData.filter(r => !String(r[primaryKey.target_field] ?? '').trim()).length;
+
   for (const srcRow of sourceData) {
     const srcVal = String(srcRow[primaryKey.source_field] ?? '').toLowerCase().trim();
-    if (!srcVal) continue; // skip records with empty key field
+    if (!srcVal) { skippedSource++; continue; } // skip records with empty key field
     let foundMatch = false;
 
     for (let ti = 0; ti < targetData.length; ti++) {
@@ -1393,14 +1398,14 @@ async function performReconciliation(
   return {
     id: crypto.randomUUID(), sub_catalyst: sub.name, cluster_id: clusterId,
     executed_at: new Date().toISOString(), duration_ms: 0,
-    status: (discrepancyCount > 0 || matched < sourceData.length || matchedTargetIndices.size < targetData.length) ? 'partial' : 'completed',
+    status: (discrepancyCount > 0 || matched < (sourceData.length - skippedSource) || matchedTargetIndices.size < skippedTargetCount) ? 'partial' : 'completed',
     mode: 'reconciliation',
     summary: {
-      total_records_source: sourceData.length,
-      total_records_target: targetData.length,
+      total_records_source: sourceData.length - skippedSource,
+      total_records_target: targetData.length - skippedTargetCount,
       matched,
-      unmatched_source: sourceData.length - matched,
-      unmatched_target: targetData.length - matchedTargetIndices.size,
+      unmatched_source: sourceData.length - skippedSource - matched,
+      unmatched_target: targetData.length - skippedTargetCount - matchedTargetIndices.size,
       discrepancies: discrepancyCount,
     },
     discrepancies: discrepancies?.length ? discrepancies : undefined,
