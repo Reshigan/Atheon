@@ -1179,10 +1179,44 @@ export function CatalystsPage() {
 
  {outputData && (
  <div className="mt-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+ <div className="flex items-center gap-2 mb-2 flex-wrap">
  {outputData.exception_type && (
- <Badge variant="danger" size="sm" className="mb-2">{outputData.exception_type.replace(/_/g, ' ')}</Badge>
+ <Badge variant="danger" size="sm">{outputData.exception_type.replace(/_/g, ' ')}</Badge>
  )}
+ {outputData.severity && (
+ <Badge variant={outputData.severity === 'high' ? 'danger' : outputData.severity === 'medium' ? 'warning' : 'outline'} size="sm">{outputData.severity} severity</Badge>
+ )}
+ </div>
  <p className="text-xs text-red-500/80">{outputData.exception_detail || outputData.detail || 'Exception occurred during catalyst execution'}</p>
+ {outputData.execution_summary && (
+ <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2 text-[10px]">
+ {[
+   ['Source', (outputData.execution_summary as Record<string, number>).total_records_source],
+   ['Target', (outputData.execution_summary as Record<string, number>).total_records_target],
+   ['Matched', (outputData.execution_summary as Record<string, number>).matched],
+   ['Unmatched Src', (outputData.execution_summary as Record<string, number>).unmatched_source],
+   ['Unmatched Tgt', (outputData.execution_summary as Record<string, number>).unmatched_target],
+   ['Discrepancies', (outputData.execution_summary as Record<string, number>).discrepancies],
+ ].map(([label, val]) => (
+   <div key={label as string} className="p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
+     <div className="t-muted">{label as string}</div>
+     <div className="font-semibold t-primary">{val ?? '—'}</div>
+   </div>
+ ))}
+ </div>
+ )}
+ {outputData.discrepancy_sample && Array.isArray(outputData.discrepancy_sample) && (outputData.discrepancy_sample as Array<Record<string, unknown>>).length > 0 && (
+ <details className="mt-2">
+ <summary className="text-xs t-secondary cursor-pointer hover:text-accent">View sample discrepancies ({(outputData.discrepancy_sample as Array<Record<string, unknown>>).length})</summary>
+ <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
+ {(outputData.discrepancy_sample as Array<Record<string, string>>).map((d, i) => (
+   <div key={i} className="text-[10px] p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+     <span className="font-medium t-primary">{d.field || 'field'}</span>: source=<span className="text-emerald-600">{d.source_value || '—'}</span> vs target=<span className="text-red-500">{d.target_value || '—'}</span>
+   </div>
+ ))}
+ </div>
+ </details>
+ )}
  {outputData.suggested_action && (
  <div className="mt-2 p-2 rounded bg-amber-500/[0.08] border border-accent/20">
  <p className="text-xs text-amber-700"><strong>Suggested:</strong> {outputData.suggested_action}</p>

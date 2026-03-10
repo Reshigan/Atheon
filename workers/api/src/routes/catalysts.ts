@@ -1306,6 +1306,13 @@ catalysts.post('/clusters/:clusterId/sub-catalysts/:subName/execute', async (c) 
     result.status === 'failed' ? 'failure' : 'success'
   ).run().catch(() => {});
 
+  // ── Exception pipeline: auto-raise exceptions for problematic results ──
+  const exceptionIds = await raiseExecutionExceptions(c.env.DB, targetTenant, clusterId, subName, result, execConfig);
+  if (exceptionIds.length > 0) {
+    (result as Record<string, unknown>).exceptions_raised = exceptionIds.length;
+    (result as Record<string, unknown>).exception_ids = exceptionIds;
+  }
+
   // Always return 200 so the client can read the detailed result (status field indicates success/failure)
   return c.json(result, 200);
 });
@@ -1616,6 +1623,157 @@ async function fetchDataForSource(
     console.error(`fetchDataForSource error for type=${source.type}:`, err);
     return [];
   }
+}
+
+// ── Exception Pipeline: Auto-raise exceptions from execution results ──
+
+interface ExceptionThresholds {
+  discrepancy_rate_pct: number;   // raise exception if discrepancy rate exceeds this (default: 10%)
+  match_rate_pct: number;         // raise exception if match rate drops below this (default: 50%)
+  unmatched_threshold: number;    // raise exception if unmatched records exceed this (default: 20)
+  auto_escalate_on_failure: boolean; // auto-escalate to L1 on execution failure (default: true)
+}
+
+const DEFAULT_THRESHOLDS: ExceptionThresholds = {
+  discrepancy_rate_pct: 10,
+  match_rate_pct: 50,
+  unmatched_threshold: 20,
+  auto_escalate_on_failure: true,
+};
+
+function getThresholds(execConfig: { parameters?: Record<string, unknown> }): ExceptionThresholds {
+  const p = execConfig.parameters || {};
+  return {
+    discrepancy_rate_pct: typeof p.exception_discrepancy_threshold === 'number' ? p.exception_discrepancy_threshold : DEFAULT_THRESHOLDS.discrepancy_rate_pct,
+    match_rate_pct: typeof p.exception_match_rate_threshold === 'number' ? p.exception_match_rate_threshold : DEFAULT_THRESHOLDS.match_rate_pct,
+    unmatched_threshold: typeof p.exception_unmatched_threshold === 'number' ? p.exception_unmatched_threshold : DEFAULT_THRESHOLDS.unmatched_threshold,
+    auto_escalate_on_failure: typeof p.auto_escalate_on_failure === 'boolean' ? p.auto_escalate_on_failure : DEFAULT_THRESHOLDS.auto_escalate_on_failure,
+  };
+}
+
+async function raiseExecutionExceptions(
+  db: D1Database,
+  tenantId: string,
+  clusterId: string,
+  subName: string,
+  result: ExecutionResultRecord,
+  execConfig: { mode: string; parameters?: Record<string, unknown> },
+): Promise<string[]> {
+  const thresholds = getThresholds(execConfig);
+  const exceptions: Array<{
+    type: string;
+    detail: string;
+    severity: string;
+    escalationLevel: string | null;
+    confidence: number;
+  }> = [];
+
+  const summary = result.summary;
+
+  // 1. Execution failed entirely
+  if (result.status === 'failed') {
+    exceptions.push({
+      type: 'execution_failed',
+      detail: `Execution failed: ${result.error || 'Unknown error'}. Sub-catalyst "${subName}" could not complete ${execConfig.mode} mode. Manual investigation required.`,
+      severity: 'high',
+      escalationLevel: thresholds.auto_escalate_on_failure ? 'L1' : null,
+      confidence: 1.0,
+    });
+  }
+
+  // Only check data-quality exceptions if execution succeeded or partially succeeded
+  if (result.status === 'completed' || result.status === 'partial') {
+    const totalSource = summary.total_records_source || 0;
+    const totalTarget = summary.total_records_target || 0;
+    const matched = summary.matched || 0;
+    const discrepancies = summary.discrepancies || 0;
+    const unmatchedSource = summary.unmatched_source || 0;
+    const unmatchedTarget = summary.unmatched_target || 0;
+
+    // 2. High discrepancy rate
+    if (matched > 0) {
+      const discrepancyRate = (discrepancies / matched) * 100;
+      if (discrepancyRate > thresholds.discrepancy_rate_pct) {
+        exceptions.push({
+          type: 'high_discrepancy_rate',
+          detail: `${discrepancies} discrepancies found across ${matched} matched records (${discrepancyRate.toFixed(1)}% discrepancy rate, threshold: ${thresholds.discrepancy_rate_pct}%). Review mismatched fields between source and target data.`,
+          severity: discrepancyRate > 50 ? 'high' : 'medium',
+          escalationLevel: discrepancyRate > 50 ? 'L1' : null,
+          confidence: Math.min(discrepancyRate / 100, 1.0),
+        });
+      }
+    }
+
+    // 3. Low match rate
+    if (totalSource > 0) {
+      const matchRate = (matched / totalSource) * 100;
+      if (matchRate < thresholds.match_rate_pct) {
+        const severity = matchRate < 10 ? 'high' : matchRate < 30 ? 'medium' : 'low';
+        exceptions.push({
+          type: 'low_match_rate',
+          detail: `Only ${matched} of ${totalSource} source records matched (${matchRate.toFixed(1)}% match rate, threshold: ${thresholds.match_rate_pct}%). This may indicate misaligned field mappings, data quality issues, or missing records in the target system.`,
+          severity,
+          escalationLevel: matchRate < 10 ? 'L1' : null,
+          confidence: Math.max(1.0 - matchRate / 100, 0.5),
+        });
+      }
+    }
+
+    // 4. Significant unmatched records
+    if (unmatchedSource > thresholds.unmatched_threshold || unmatchedTarget > thresholds.unmatched_threshold) {
+      const side = unmatchedSource > unmatchedTarget ? 'source' : 'target';
+      const count = Math.max(unmatchedSource, unmatchedTarget);
+      exceptions.push({
+        type: 'unmatched_records',
+        detail: `${unmatchedSource} unmatched source record${unmatchedSource !== 1 ? 's' : ''} and ${unmatchedTarget} unmatched target record${unmatchedTarget !== 1 ? 's' : ''} (threshold: ${thresholds.unmatched_threshold}). The ${side} side has the most gaps — check for missing or delayed entries.`,
+        severity: count > thresholds.unmatched_threshold * 3 ? 'high' : 'medium',
+        escalationLevel: null,
+        confidence: Math.min(count / (totalSource || 1), 1.0),
+      });
+    }
+  }
+
+  // Insert exceptions as catalyst_actions
+  const actionIds: string[] = [];
+  for (const exc of exceptions) {
+    const actionId = crypto.randomUUID();
+    actionIds.push(actionId);
+
+    await db.prepare(
+      'INSERT INTO catalyst_actions (id, cluster_id, tenant_id, catalyst_name, action, status, confidence, input_data, output_data, reasoning, escalation_level, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
+    ).bind(
+      actionId,
+      clusterId,
+      tenantId,
+      subName,
+      `${execConfig.mode}_exception`,
+      exc.escalationLevel ? 'escalated' : 'exception',
+      exc.confidence,
+      JSON.stringify({
+        execution_id: result.id,
+        mode: execConfig.mode,
+        sub_catalyst: subName,
+        summary: result.summary,
+        thresholds,
+      }),
+      JSON.stringify({
+        exception_type: exc.type,
+        exception_detail: exc.detail,
+        severity: exc.severity,
+        execution_summary: result.summary,
+        discrepancy_sample: result.discrepancies?.slice(0, 5) || [],
+      }),
+      exc.detail,
+      exc.escalationLevel,
+    ).run().catch((err) => {
+      console.error('Failed to insert execution exception:', err);
+    });
+
+    // Write execution log step for each exception
+    await writeLog(db, tenantId, result.id, actionIds.length + 1, `Exception: ${exc.type}`, exc.severity, exc.detail, 0);
+  }
+
+  return actionIds;
 }
 
 // PUT /api/catalysts/clusters/:clusterId/sub-catalysts/:subName/schedule - Set schedule for a sub-catalyst
