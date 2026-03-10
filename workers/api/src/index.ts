@@ -10,7 +10,7 @@ import { DashboardRoom } from './services/realtime';
 import { handleScheduled, handleQueueMessage } from './services/scheduled';
 import { captureException, captureMessage } from './services/sentry';
 import type { CatalystQueueMessage } from './services/scheduled';
-import auth from './routes/auth';
+import auth, { validatePasswordStrength } from './routes/auth';
 import tenants from './routes/tenants';
 import iam from './routes/iam';
 import apex from './routes/apex';
@@ -297,6 +297,12 @@ app.post('/api/v1/admin/setup', async (c) => {
 
   if (errors.length > 0 || !data) {
     return c.json({ error: 'Validation failed', details: errors }, 400);
+  }
+
+  // Security: enforce password strength for superadmin accounts (same rules as registration)
+  const pwCheck = validatePasswordStrength(data.password);
+  if (!pwCheck.valid) {
+    return c.json({ error: 'Weak password', details: pwCheck.errors }, 400);
   }
 
   // Constant-time comparison to prevent timing attacks (no early return on length mismatch)

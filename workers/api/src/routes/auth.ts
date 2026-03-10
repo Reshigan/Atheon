@@ -6,7 +6,7 @@ import { getValidatedJsonBody } from '../middleware/validation';
 const auth = new Hono<AppBindings>();
 
 // Security S3: Password strength validation
-function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
+export function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   if (password.length < 10) errors.push('Password must be at least 10 characters');
   if (!/[A-Z]/.test(password)) errors.push('Password must contain at least one uppercase letter');
