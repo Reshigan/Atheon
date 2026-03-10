@@ -6,7 +6,7 @@ import { getValidatedJsonBody } from '../middleware/validation';
 const auth = new Hono<AppBindings>();
 
 // Security S3: Password strength validation
-function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
+export function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   if (password.length < 10) errors.push('Password must be at least 10 characters');
   if (!/[A-Z]/.test(password)) errors.push('Password must contain at least one uppercase letter');
@@ -270,7 +270,7 @@ auth.post('/demo-login', async (c) => {
   }
   // Double-gate: require a secret header even in non-production to prevent accidental exposure
   const demoSecret = c.req.header('X-Demo-Secret');
-  if (!demoSecret || demoSecret !== (c.env as Record<string, string>).DEMO_LOGIN_SECRET) {
+  if (!demoSecret || demoSecret !== c.env.DEMO_LOGIN_SECRET) {
     return c.json({ error: 'Not found' }, 404);
   }
 
@@ -596,7 +596,7 @@ auth.post('/sso', async (c) => {
 
   // Return the authorize URL for the frontend to redirect to
   // BUG-11: SSO redirect URI from env var
-  const redirectUri = (c.env as Record<string, string>).SSO_REDIRECT_URI || 'https://atheon.vantax.co.za/login';
+  const redirectUri = c.env.SSO_REDIRECT_URI || 'https://atheon.vantax.co.za/login';
   // BUG-16: Sign SSO state with HMAC to prevent tampering
   const statePayload = JSON.stringify({ tenant_slug: slug, provider: body.provider, ts: Date.now() });
   const stateHmacKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(c.env.JWT_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -672,7 +672,7 @@ auth.post('/sso/callback', async (c) => {
   const issuerUrl = sso.issuer_url as string;
   const directoryTenantId = issuerUrl.split('/')[3] || 'common';
   // BUG-11: SSO redirect URI from env var
-  const redirectUri = (c.env as Record<string, string>).SSO_REDIRECT_URI || 'https://atheon.vantax.co.za/login';
+  const redirectUri = c.env.SSO_REDIRECT_URI || 'https://atheon.vantax.co.za/login';
 
   // Exchange authorization code for tokens with Azure AD
   const tokenUrl = `https://login.microsoftonline.com/${directoryTenantId}/oauth2/v2.0/token`;

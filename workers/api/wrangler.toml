@@ -48,3 +48,52 @@ queue = "catalyst-tasks"
 max_batch_size = 10
 max_retries = 3
 dead_letter_queue = "catalyst-dlq"
+
+# ── Staging Environment ──
+# Deploy with: wrangler deploy --env staging
+# Secrets: wrangler secret put JWT_SECRET --env staging
+#          wrangler secret put ENCRYPTION_KEY --env staging
+#          wrangler secret put SETUP_SECRET --env staging
+[env.staging]
+name = "atheon-api-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "atheon-db-staging"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[env.staging.ai]
+binding = "AI"
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "00000000000000000000000000000000"
+
+[[env.staging.r2_buckets]]
+binding = "STORAGE"
+bucket_name = "atheon-storage-staging"
+
+[[env.staging.vectorize]]
+binding = "VECTORIZE"
+index_name = "atheon-vectors-staging"
+
+[env.staging.durable_objects]
+bindings = [
+  { name = "DASHBOARD_ROOM", class_name = "DashboardRoom" }
+]
+
+[env.staging.triggers]
+crons = ["*/15 * * * *"]
+
+[[env.staging.queues.producers]]
+queue = "catalyst-tasks-staging"
+binding = "CATALYST_QUEUE"
+
+[[env.staging.queues.consumers]]
+queue = "catalyst-tasks-staging"
+max_batch_size = 10
+max_retries = 3
+dead_letter_queue = "catalyst-dlq-staging"

@@ -20,6 +20,9 @@ export interface Env {
   DEMO_LOGIN_SECRET?: string;
   OLLAMA_API_KEY: string;
   ENVIRONMENT: string;
+  /** One-time setup secret for initial admin provisioning. Must match wrangler secret. */
+  SETUP_SECRET?: string;
+  SENTRY_DSN?: string;
 }
 
 export interface AuthContext {
