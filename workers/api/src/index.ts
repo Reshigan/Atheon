@@ -290,17 +290,23 @@ app.post('/api/v1/admin/setup', async (c) => {
     return c.json({ error: 'Validation failed', details: ['setup_secret must be a string with at least 8 characters'] }, 400);
   }
 
+  // Validate email via getValidatedJsonBody (sanitization is fine for email)
   const { data, errors } = await getValidatedJsonBody<AdminSetupBody>(c, [
     { field: 'email', type: 'email', required: true },
-    { field: 'password', type: 'string', required: true, minLength: 8, maxLength: 128 },
   ]);
 
   if (errors.length > 0 || !data) {
     return c.json({ error: 'Validation failed', details: errors }, 400);
   }
 
+  // Validate password from raw body (unsanitized) to avoid sanitizer stripping <>, on\w+= etc.
+  const rawPassword = rawBody.password;
+  if (!rawPassword || typeof rawPassword !== 'string' || rawPassword.length < 8 || rawPassword.length > 128) {
+    return c.json({ error: 'Validation failed', details: ['password must be 8-128 characters'] }, 400);
+  }
+
   // Security: enforce password strength for superadmin accounts (same rules as registration)
-  const pwCheck = validatePasswordStrength(data.password);
+  const pwCheck = validatePasswordStrength(rawPassword);
   if (!pwCheck.valid) {
     return c.json({ error: 'Weak password', details: pwCheck.errors }, 400);
   }
@@ -330,8 +336,8 @@ app.post('/api/v1/admin/setup', async (c) => {
     return c.json({ error: 'Only superadmin accounts can be provisioned via this endpoint' }, 403);
   }
 
-  // Hash and set the new password
-  const newHash = await hashPassword(data.password);
+  // Hash and set the new password (use raw unsanitized password)
+  const newHash = await hashPassword(rawPassword);
   await env.DB.prepare(
     'UPDATE users SET password_hash = ? WHERE id = ?'
   ).bind(newHash, user.id).run();
@@ -362,36 +368,34 @@ app.post('/api/admin/setup', async (c) => {
 });
 
 // ── Admin Migrate Endpoint ──
-// Runs all database migrations on demand. Accepts SETUP_SECRET header or JWT superadmin.
+// Runs all database migrations on demand. Requires X-Setup-Secret header.
 // CI/CD pipeline should call this after each deployment.
 
 /**
  * POST /api/v1/admin/migrate — Apply database migrations.
- * Auth: X-Setup-Secret header (matches env.SETUP_SECRET) OR JWT with superadmin role.
+ * Auth: X-Setup-Secret header (matches env.SETUP_SECRET). JWT auth is not available
+ * because tenantIsolation middleware does not run on /admin/* routes.
  * Returns MigrationResult with stats on tables created, indexes, columns healed, seeds run.
  */
 app.post('/api/v1/admin/migrate', async (c) => {
   const env = c.env as Env;
 
-  // Auth: either SETUP_SECRET header or JWT superadmin
+  // Auth: X-Setup-Secret header required (JWT auth is not available here since
+  // tenantIsolation middleware does not run on /admin/* routes)
   const setupSecret = c.req.header('X-Setup-Secret');
-  if (setupSecret && env.SETUP_SECRET) {
-    const a = new TextEncoder().encode(setupSecret);
-    const b = new TextEncoder().encode(env.SETUP_SECRET);
-    let mismatch = a.length !== b.length ? 1 : 0;
-    const len = Math.min(a.length, b.length);
-    for (let i = 0; i < len; i++) {
-      mismatch |= a[i] ^ b[i];
-    }
-    if (mismatch !== 0) {
-      return c.json({ error: 'Forbidden' }, 403);
-    }
-  } else {
-    // Require JWT superadmin
-    const auth = c.get('auth');
-    if (!auth || auth.role !== 'superadmin') {
-      return c.json({ error: 'Forbidden — superadmin or X-Setup-Secret required' }, 403);
-    }
+  if (!setupSecret || !env.SETUP_SECRET) {
+    return c.json({ error: 'Forbidden — X-Setup-Secret header required' }, 403);
+  }
+
+  const a = new TextEncoder().encode(setupSecret);
+  const b = new TextEncoder().encode(env.SETUP_SECRET);
+  let mismatch = a.length !== b.length ? 1 : 0;
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    mismatch |= a[i] ^ b[i];
+  }
+  if (mismatch !== 0) {
+    return c.json({ error: 'Forbidden' }, 403);
   }
 
   try {
