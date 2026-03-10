@@ -6,7 +6,7 @@ import { seedSampleCompany } from './services/seed-sample-company';
 import { seedTestCompanies } from './services/seed-test-companies';
 import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter, contactRateLimiter } from './middleware/ratelimit';
 import { hashPassword } from './middleware/auth';
-import { auditEnrichment, requestSizeLimiter } from './middleware/validation';
+import { auditEnrichment, requestSizeLimiter, getValidatedJsonBody } from './middleware/validation';
 import { tenantIsolation, requireRole } from './middleware/tenant';
 import { DashboardRoom } from './services/realtime';
 import { handleScheduled, handleQueueMessage } from './services/scheduled';
@@ -299,22 +299,7 @@ app.use('*', async (c, next) => {
         await c.env.DB.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, password_hash, permissions, status) VALUES ('protea-user-7','protea','intern@protea-mfg.co.za','Naledi Mahlangu','viewer','','[\"dashboard.read\"]','active')").run();
       } catch { /* ignore — users may already exist from fresh seed */ }
 
-      // v20: Force-set default passwords for superadmin accounts (overwrite any stale hashes)
-      const superadminPasswordAccounts = [
-        'admin@vantax.co.za',
-        'essen.naidoo@agentum.com.au',
-      ];
-      for (const saEmail of superadminPasswordAccounts) {
-        try {
-          const sa = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(saEmail).first();
-          if (sa) {
-            const hash = await hashPassword('Admin123');
-            await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(hash, sa.id).run();
-          }
-        } catch (err) { console.error(`v20: failed to set password for ${saEmail}:`, err); }
-      }
-
-      // Seed with demo data — each step wrapped independently to avoid timeout
+      // Seed with demo data— each step wrapped independently to avoid timeout
       try { await seedDatabase(c.env.DB); } catch (e) { console.error('seedDatabase error:', e); }
 
       try { await seedSampleCompany(c.env.DB); } catch (e) { console.error('seedSampleCompany error:', e); }
@@ -456,6 +441,100 @@ for (const [name, handler] of routeModules) {
 // Agent routes mounted separately — no tenantIsolation middleware
 app.route('/api/agent', agentRoutes);
 app.route('/api/v1/agent', agentRoutes);
+
+// ── Admin Setup Endpoint ──
+// Secure one-time admin provisioning gated by SETUP_SECRET (replaces hardcoded password seeding)
+// Usage: POST /api/v1/admin/setup with { "setup_secret": "...", "email": "...", "password": "..." }
+
+/** Body shape for admin setup request */
+interface AdminSetupBody extends Record<string, unknown> {
+  setup_secret: string;
+  email: string;
+  password: string;
+}
+
+/**
+ * POST /api/v1/admin/setup — Reset a superadmin account password securely.
+ * Gated by the SETUP_SECRET environment variable (set via `wrangler secret put SETUP_SECRET`).
+ * Returns 404 when SETUP_SECRET is not configured (endpoint disabled in production by default).
+ * @param setup_secret - Must match env.SETUP_SECRET
+ * @param email - Email of the superadmin account to reset
+ * @param password - New password (min 8 chars)
+ */
+app.post('/api/v1/admin/setup', async (c) => {
+  const env = c.env as Env;
+
+  // Endpoint disabled when SETUP_SECRET is not configured
+  if (!env.SETUP_SECRET) {
+    return c.json({ error: 'Not found', path: c.req.path }, 404);
+  }
+
+  const { data, errors } = await getValidatedJsonBody<AdminSetupBody>(c, [
+    { field: 'setup_secret', type: 'string', required: true, minLength: 8 },
+    { field: 'email', type: 'email', required: true },
+    { field: 'password', type: 'string', required: true, minLength: 8, maxLength: 128 },
+  ]);
+
+  if (errors.length > 0 || !data) {
+    return c.json({ error: 'Validation failed', details: errors }, 400);
+  }
+
+  // Constant-time comparison to prevent timing attacks
+  const secretBytes = new TextEncoder().encode(data.setup_secret);
+  const expectedBytes = new TextEncoder().encode(env.SETUP_SECRET);
+  if (secretBytes.length !== expectedBytes.length) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+  let mismatch = 0;
+  for (let i = 0; i < secretBytes.length; i++) {
+    mismatch |= secretBytes[i] ^ expectedBytes[i];
+  }
+  if (mismatch !== 0) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+
+  // Find the user — must be a superadmin
+  const user = await env.DB.prepare(
+    'SELECT id, role FROM users WHERE email = ?'
+  ).bind(data.email).first<{ id: string; role: string }>();
+
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+  if (user.role !== 'superadmin') {
+    return c.json({ error: 'Only superadmin accounts can be provisioned via this endpoint' }, 403);
+  }
+
+  // Hash and set the new password
+  const newHash = await hashPassword(data.password);
+  await env.DB.prepare(
+    'UPDATE users SET password_hash = ? WHERE id = ?'
+  ).bind(newHash, user.id).run();
+
+  // Audit log
+  try {
+    await env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), 'system', 'admin.setup.password_reset', 'security', 'users',
+      JSON.stringify({ email: data.email, userId: user.id }),
+      'success'
+    ).run();
+  } catch (err) {
+    console.error('Admin setup audit log failed:', err);
+  }
+
+  return c.json({ success: true, message: `Password updated for ${data.email}` });
+});
+
+// Also mount at /api/admin/setup for backward compat
+app.post('/api/admin/setup', async (c) => {
+  // Forward to v1 handler
+  const url = new URL(c.req.url);
+  url.pathname = '/api/v1/admin/setup';
+  const newReq = new Request(url.toString(), c.req.raw);
+  return app.fetch(newReq, c.env, c.executionCtx);
+});
 
 // HTML escape helper to prevent injection in email bodies
 function escapeHtml(str: string): string {
