@@ -313,12 +313,13 @@ app.post('/api/v1/admin/setup', async (c) => {
 
   // Constant-time comparison to prevent timing attacks (no early return on length mismatch)
   // Use raw (unsanitized) setup_secret to avoid sanitizer stripping special chars
+  // Iterate over max length so loop duration doesn't reveal secret length
   const secretBytes = new TextEncoder().encode(rawBody.setup_secret);
   const expectedBytes = new TextEncoder().encode(env.SETUP_SECRET);
   let mismatch = secretBytes.length !== expectedBytes.length ? 1 : 0;
-  const len = Math.min(secretBytes.length, expectedBytes.length);
+  const len = Math.max(secretBytes.length, expectedBytes.length);
   for (let i = 0; i < len; i++) {
-    mismatch |= secretBytes[i] ^ expectedBytes[i];
+    mismatch |= (secretBytes[i] ?? 0) ^ (expectedBytes[i] ?? 0);
   }
   if (mismatch !== 0) {
     return c.json({ error: 'Forbidden' }, 403);
@@ -387,12 +388,13 @@ app.post('/api/v1/admin/migrate', async (c) => {
     return c.json({ error: 'Forbidden — X-Setup-Secret header required' }, 403);
   }
 
+  // Iterate over max length so loop duration doesn't reveal secret length
   const a = new TextEncoder().encode(setupSecret);
   const b = new TextEncoder().encode(env.SETUP_SECRET);
   let mismatch = a.length !== b.length ? 1 : 0;
-  const len = Math.min(a.length, b.length);
+  const len = Math.max(a.length, b.length);
   for (let i = 0; i < len; i++) {
-    mismatch |= a[i] ^ b[i];
+    mismatch |= (a[i] ?? 0) ^ (b[i] ?? 0);
   }
   if (mismatch !== 0) {
     return c.json({ error: 'Forbidden' }, 403);
