@@ -1160,70 +1160,76 @@ export function CatalystsPage() {
  )}
 
  {actions.filter(a => a.status === 'exception' || a.status === 'escalated').map((action) => {
- const outputData = action.outputData as Record<string, string> | undefined;
- return (
- <Card key={action.id} className="ring-1 ring-red-500/30 bg-red-500/[0.02]">
- <div className="flex items-start justify-between">
- <div className="flex items-start gap-3">
- <AlertTriangle size={16} className="text-red-400 mt-0.5" />
- <div>
- <h3 className="text-sm font-semibold t-primary">{action.action}</h3>
- <p className="text-xs t-secondary mt-0.5">{action.catalystName}</p>
- </div>
- </div>
- <div className="flex items-center gap-2">
- <Badge variant={action.status === 'escalated' ? 'warning' : 'danger'}>{action.status}</Badge>
- <span className="text-xs t-secondary">{new Date(action.createdAt).toLocaleDateString()}</span>
- </div>
- </div>
+  const outputData = action.outputData as Record<string, unknown> | undefined;
+  const exType = typeof outputData?.exception_type === 'string' ? outputData.exception_type : '';
+  const exSeverity = typeof outputData?.severity === 'string' ? outputData.severity : '';
+  const exDetail = (typeof outputData?.exception_detail === 'string' ? outputData.exception_detail : '') || (typeof outputData?.detail === 'string' ? outputData.detail : '') || 'Exception occurred during catalyst execution';
+  const exSummary = (outputData?.execution_summary && typeof outputData.execution_summary === 'object') ? outputData.execution_summary as Record<string, number> : null;
+  const exSamples = Array.isArray(outputData?.discrepancy_sample) ? outputData.discrepancy_sample as Array<Record<string, string>> : [];
+  const exSuggested = typeof outputData?.suggested_action === 'string' ? outputData.suggested_action : '';
+  return (
+  <Card key={action.id} className="ring-1 ring-red-500/30 bg-red-500/[0.02]">
+  <div className="flex items-start justify-between">
+  <div className="flex items-start gap-3">
+  <AlertTriangle size={16} className="text-red-400 mt-0.5" />
+  <div>
+  <h3 className="text-sm font-semibold t-primary">{action.action}</h3>
+  <p className="text-xs t-secondary mt-0.5">{action.catalystName}</p>
+  </div>
+  </div>
+  <div className="flex items-center gap-2">
+  <Badge variant={action.status === 'escalated' ? 'warning' : 'danger'}>{action.status}</Badge>
+  <span className="text-xs t-secondary">{new Date(action.createdAt).toLocaleDateString()}</span>
+  </div>
+  </div>
 
- {outputData && (
- <div className="mt-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
- <div className="flex items-center gap-2 mb-2 flex-wrap">
- {outputData.exception_type && (
- <Badge variant="danger" size="sm">{outputData.exception_type.replace(/_/g, ' ')}</Badge>
- )}
- {outputData.severity && (
- <Badge variant={outputData.severity === 'high' ? 'danger' : outputData.severity === 'medium' ? 'warning' : 'outline'} size="sm">{outputData.severity} severity</Badge>
- )}
- </div>
- <p className="text-xs text-red-500/80">{outputData.exception_detail || outputData.detail || 'Exception occurred during catalyst execution'}</p>
- {outputData.execution_summary && (
- <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2 text-[10px]">
- {[
-   ['Source', (outputData.execution_summary as Record<string, number>).total_records_source],
-   ['Target', (outputData.execution_summary as Record<string, number>).total_records_target],
-   ['Matched', (outputData.execution_summary as Record<string, number>).matched],
-   ['Unmatched Src', (outputData.execution_summary as Record<string, number>).unmatched_source],
-   ['Unmatched Tgt', (outputData.execution_summary as Record<string, number>).unmatched_target],
-   ['Discrepancies', (outputData.execution_summary as Record<string, number>).discrepancies],
- ].map(([label, val]) => (
-   <div key={label as string} className="p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
-     <div className="t-muted">{label as string}</div>
-     <div className="font-semibold t-primary">{val ?? '—'}</div>
-   </div>
- ))}
- </div>
- )}
- {outputData.discrepancy_sample && Array.isArray(outputData.discrepancy_sample) && (outputData.discrepancy_sample as Array<Record<string, unknown>>).length > 0 && (
- <details className="mt-2">
- <summary className="text-xs t-secondary cursor-pointer hover:text-accent">View sample discrepancies ({(outputData.discrepancy_sample as Array<Record<string, unknown>>).length})</summary>
- <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
- {(outputData.discrepancy_sample as Array<Record<string, string>>).map((d, i) => (
-   <div key={i} className="text-[10px] p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-     <span className="font-medium t-primary">{d.field || 'field'}</span>: source=<span className="text-emerald-600">{d.source_value || '—'}</span> vs target=<span className="text-red-500">{d.target_value || '—'}</span>
-   </div>
- ))}
- </div>
- </details>
- )}
- {outputData.suggested_action && (
- <div className="mt-2 p-2 rounded bg-amber-500/[0.08] border border-accent/20">
- <p className="text-xs text-amber-700"><strong>Suggested:</strong> {outputData.suggested_action}</p>
- </div>
- )}
- </div>
- )}
+  {outputData && (
+  <div className="mt-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+  <div className="flex items-center gap-2 mb-2 flex-wrap">
+  {exType && (
+  <Badge variant="danger" size="sm">{exType.replace(/_/g, ' ')}</Badge>
+  )}
+  {exSeverity && (
+  <Badge variant={exSeverity === 'high' ? 'danger' : exSeverity === 'medium' ? 'warning' : 'outline'} size="sm">{exSeverity} severity</Badge>
+  )}
+  </div>
+  <p className="text-xs text-red-500/80">{exDetail}</p>
+  {exSummary && (
+  <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2 text-[10px]">
+  {([
+    ['Source', exSummary.total_records_source],
+    ['Target', exSummary.total_records_target],
+    ['Matched', exSummary.matched],
+    ['Unmatched Src', exSummary.unmatched_source],
+    ['Unmatched Tgt', exSummary.unmatched_target],
+    ['Discrepancies', exSummary.discrepancies],
+  ] as Array<[string, number | undefined]>).map(([label, val]) => (
+    <div key={label} className="p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
+      <div className="t-muted">{label}</div>
+      <div className="font-semibold t-primary">{val ?? '—'}</div>
+    </div>
+  ))}
+  </div>
+  )}
+  {exSamples.length > 0 && (
+  <details className="mt-2">
+  <summary className="text-xs t-secondary cursor-pointer hover:text-accent">View sample discrepancies ({exSamples.length})</summary>
+  <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
+  {exSamples.map((d, i) => (
+    <div key={i} className="text-[10px] p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+      <span className="font-medium t-primary">{d.field || 'field'}</span>: source=<span className="text-emerald-600">{d.source_value || '—'}</span> vs target=<span className="text-red-500">{d.target_value || '—'}</span>
+    </div>
+  ))}
+  </div>
+  </details>
+  )}
+  {exSuggested && (
+  <div className="mt-2 p-2 rounded bg-amber-500/[0.08] border border-accent/20">
+  <p className="text-xs text-amber-700"><strong>Suggested:</strong> {exSuggested}</p>
+  </div>
+  )}
+  </div>
+  )}
 
  {/* Resolution Actions */}
  {isAdmin && (action.status === 'exception' || action.status === 'escalated') && (
