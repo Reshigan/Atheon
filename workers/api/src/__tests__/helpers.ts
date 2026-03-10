@@ -105,12 +105,9 @@ export async function createTestUser(user: {
 
   const id = crypto.randomUUID();
 
-  // Hash password using the same SubtleCrypto approach as auth middleware
-  const encoder = new TextEncoder();
-  const data = encoder.encode(user.password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // Hash password using the same PBKDF2 approach as auth middleware
+  const { hashPassword } = await import('../middleware/auth');
+  const passwordHash = await hashPassword(user.password);
 
   await env.DB.prepare(
     `INSERT OR REPLACE INTO users (id, tenant_id, email, name, role, password_hash, permissions, status)

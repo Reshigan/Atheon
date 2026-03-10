@@ -195,5 +195,208 @@ export async function deleteByIds(
   }
 }
 
+// ── RAG Pipeline: Query with Citations ──
+
+export interface RAGCitation {
+  documentId: string;
+  documentName: string;
+  documentType: string;
+  relevanceScore: number;
+  snippet: string;
+}
+
+export interface RAGResponse {
+  answer: string;
+  citations: RAGCitation[];
+  model: string;
+  tokensUsed: number;
+}
+
+/**
+ * Perform a RAG (Retrieval-Augmented Generation) query.
+ * 1. Embeds the user query via Workers AI
+ * 2. Searches Vectorize for semantically similar documents
+ * 3. Constructs a prompt with retrieved context
+ * 4. Generates an answer using Workers AI LLM with inline citations
+ * @param vectorize - Vectorize index binding
+ * @param ai - Workers AI binding
+ * @param db - D1 database for fetching full document content
+ * @param tenantId - Tenant scope for the query
+ * @param query - Natural language query from the user
+ * @param options - Optional top-k and type filter
+ * @returns RAGResponse with answer text and citation metadata
+ */
+export async function ragQuery(
+  vectorize: VectorizeIndex,
+  ai: Ai,
+  db: D1Database,
+  tenantId: string,
+  query: string,
+  options?: { topK?: number; type?: string },
+): Promise<RAGResponse> {
+  const topK = options?.topK || 5;
+
+  // Step 1: Semantic search for relevant documents
+  const searchResults = await semanticSearch(vectorize, ai, query, tenantId, { topK, type: options?.type });
+
+  // Step 2: Build context from search results
+  const citations: RAGCitation[] = [];
+  const contextParts: string[] = [];
+
+  for (const result of searchResults) {
+    const meta = result.metadata;
+    const docName = (meta.name as string) || 'Unknown';
+    const docType = (meta.type as string) || 'document';
+    const snippet = (meta.properties as string) || (meta.source as string) || docName;
+
+    citations.push({
+      documentId: result.id,
+      documentName: docName,
+      documentType: docType,
+      relevanceScore: result.score,
+      snippet: snippet.substring(0, 200),
+    });
+
+    contextParts.push(`[Source ${citations.length}: ${docType} "${docName}"] ${snippet}`);
+  }
+
+  // Step 3: If no results found, return empty answer
+  if (contextParts.length === 0) {
+    return {
+      answer: 'No relevant documents were found for your query. Please try rephrasing or ensure data has been indexed.',
+      citations: [],
+      model: EMBEDDING_MODEL,
+      tokensUsed: 0,
+    };
+  }
+
+  // Step 4: Generate answer with LLM using retrieved context
+  const systemPrompt = `You are Atheon, an enterprise intelligence assistant. Answer the user's question based ONLY on the provided context documents. When referencing information, cite the source using [Source N] notation. If the context doesn't contain enough information to fully answer, say so clearly. Be concise and professional.`;
+
+  const contextBlock = contextParts.join('\n\n');
+  const userPrompt = `Context:\n${contextBlock}\n\nQuestion: ${query}\n\nAnswer with citations:`;
+
+  try {
+    const llmResult = await ai.run('@cf/meta/llama-3.1-8b-instruct' as Parameters<Ai['run']>[0], {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 1024,
+      temperature: 0.3,
+    });
+
+    const llmResponse = llmResult as { response?: string };
+    const answer = llmResponse.response || 'Unable to generate an answer.';
+
+    return {
+      answer,
+      citations,
+      model: '@cf/meta/llama-3.1-8b-instruct',
+      tokensUsed: answer.length, // Approximate
+    };
+  } catch (err) {
+    console.error('RAG LLM error:', err);
+    return {
+      answer: `Based on ${citations.length} retrieved documents, I found relevant information but could not generate a synthesized answer. Please review the cited sources directly.`,
+      citations,
+      model: '@cf/meta/llama-3.1-8b-instruct',
+      tokensUsed: 0,
+    };
+  }
+}
+
+/**
+ * Index insight data from catalyst execution into Vectorize for RAG queries.
+ * This enables the AI to cite specific health scores, risk alerts, and executive briefings.
+ * @param vectorize - Vectorize index binding
+ * @param ai - Workers AI binding
+ * @param db - D1 database
+ * @param tenantId - Tenant scope
+ * @returns Count of indexed and failed documents
+ */
+export async function indexInsightsForRAG(
+  vectorize: VectorizeIndex,
+  ai: Ai,
+  db: D1Database,
+  tenantId: string,
+): Promise<{ indexed: number; failed: number }> {
+  let indexed = 0;
+  let failed = 0;
+
+  // Index health scores
+  const healthScores = await db.prepare(
+    'SELECT * FROM health_scores WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 100'
+  ).bind(tenantId).all();
+
+  for (const hs of healthScores.results) {
+    const content = `Health Score for dimension "${hs.dimension}": ${hs.score}/100. Category: ${hs.category}. Trend: ${hs.trend}. Summary: ${hs.summary || 'N/A'}`;
+    const result = await indexDocument(vectorize, ai, {
+      id: `hs-${hs.id}`,
+      tenantId,
+      type: 'health_score',
+      name: `${hs.dimension} Health Score`,
+      content,
+      metadata: {
+        source: 'health_scores',
+        dimension: hs.dimension,
+        score: hs.score,
+        category: hs.category,
+        trend: hs.trend,
+      },
+    });
+    if (result.indexed) indexed++;
+    else failed++;
+  }
+
+  // Index risk alerts
+  const riskAlerts = await db.prepare(
+    'SELECT * FROM risk_alerts WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 100'
+  ).bind(tenantId).all();
+
+  for (const ra of riskAlerts.results) {
+    const content = `Risk Alert: ${ra.title}. Severity: ${ra.severity}. Category: ${ra.category}. Description: ${ra.description}. Recommendation: ${ra.recommendation || 'N/A'}`;
+    const result = await indexDocument(vectorize, ai, {
+      id: `ra-${ra.id}`,
+      tenantId,
+      type: 'risk_alert',
+      name: ra.title as string,
+      content,
+      metadata: {
+        source: 'risk_alerts',
+        severity: ra.severity,
+        category: ra.category,
+      },
+    });
+    if (result.indexed) indexed++;
+    else failed++;
+  }
+
+  // Index executive briefings
+  const briefings = await db.prepare(
+    'SELECT * FROM executive_briefings WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 50'
+  ).bind(tenantId).all();
+
+  for (const eb of briefings.results) {
+    const content = `Executive Briefing: ${eb.title}. Priority: ${eb.priority}. Summary: ${eb.summary}. Recommendation: ${eb.recommendation || 'N/A'}`;
+    const result = await indexDocument(vectorize, ai, {
+      id: `eb-${eb.id}`,
+      tenantId,
+      type: 'executive_briefing',
+      name: eb.title as string,
+      content,
+      metadata: {
+        source: 'executive_briefings',
+        priority: eb.priority,
+        domain: eb.domain,
+      },
+    });
+    if (result.indexed) indexed++;
+    else failed++;
+  }
+
+  return { indexed, failed };
+}
+
 // ── Export constants for wrangler config ──
 export { VECTOR_DIMENSIONS, EMBEDDING_MODEL };

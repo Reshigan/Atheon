@@ -8,6 +8,7 @@ import { runMigrations, MIGRATION_VERSION } from './services/migrate';
 import { tenantIsolation, requireRole } from './middleware/tenant';
 import { DashboardRoom } from './services/realtime';
 import { handleScheduled, handleQueueMessage } from './services/scheduled';
+import { captureException, captureMessage } from './services/sentry';
 import type { CatalystQueueMessage } from './services/scheduled';
 import auth from './routes/auth';
 import tenants from './routes/tenants';
@@ -92,8 +93,10 @@ app.use('/api/*', apiRateLimiter);
 // now live in runMigrations(). POST /api/v1/admin/migrate is the canonical
 // entry point; the legacy auto-migration middleware below provides backward compat.
 
-// ── Migration Guard ──
-// Returns 503 for non-admin routes when DB is not yet migrated.
+// ── Auto-Migration + Guard Middleware ──
+// On first request: runs migrations automatically (backward compat).
+// Once KV flag is set, subsequent requests skip migration.
+// Returns 503 only if migration was attempted and failed.
 app.use('*', async (c, next) => {
   const path = c.req.path;
   if (path === '/healthz' || path === '/' || path.includes('/admin/migrate') || path.includes('/admin/setup')) {
@@ -103,31 +106,36 @@ app.use('*', async (c, next) => {
 
   const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
   const alreadyMigrated = await c.env.CACHE.get(migrationKey);
-  if (!alreadyMigrated || alreadyMigrated === 'error') {
+
+  if (alreadyMigrated === 'true') {
+    // Already migrated — proceed
+    await next();
+    return;
+  }
+
+  if (alreadyMigrated === 'error') {
+    // Previous migration attempt failed — return 503
     return c.json({
       error: 'Service unavailable',
-      message: 'Database migrations have not been applied. Call POST /api/v1/admin/migrate to initialize.',
+      message: 'Database migration failed. Call POST /api/v1/admin/migrate to retry.',
       version: MIGRATION_VERSION,
     }, 503);
   }
 
-  await next();
-});
-
-// Legacy auto-migration middleware (backward compat — runs once then caches).
-// Once all environments call POST /admin/migrate in CI, this block can be removed.
-app.use('*', async (c, next) => {
-  const migrationKey = `db:migrated:${MIGRATION_VERSION}`;
-  const alreadyMigrated = await c.env.CACHE.get(migrationKey);
-  if (!alreadyMigrated) {
-    try {
-      await runMigrations(c.env.DB);
-      await c.env.CACHE.put(migrationKey, 'true', { expirationTtl: 86400 });
-    } catch (e) {
-      console.error('Legacy auto-migration error:', e);
-      await c.env.CACHE.put(migrationKey, 'error', { expirationTtl: 300 });
-    }
+  // No flag yet — attempt auto-migration (legacy backward compat)
+  try {
+    await runMigrations(c.env.DB);
+    await c.env.CACHE.put(migrationKey, 'true', { expirationTtl: 86400 });
+  } catch (e) {
+    console.error('Auto-migration error:', e);
+    await c.env.CACHE.put(migrationKey, 'error', { expirationTtl: 300 });
+    return c.json({
+      error: 'Service unavailable',
+      message: 'Database migration failed on first request. Call POST /api/v1/admin/migrate to retry.',
+      version: MIGRATION_VERSION,
+    }, 503);
   }
+
   await next();
 });
 
@@ -280,14 +288,12 @@ app.post('/api/v1/admin/setup', async (c) => {
     return c.json({ error: 'Validation failed', details: errors }, 400);
   }
 
-  // Constant-time comparison to prevent timing attacks
+  // Constant-time comparison to prevent timing attacks (no early return on length mismatch)
   const secretBytes = new TextEncoder().encode(data.setup_secret);
   const expectedBytes = new TextEncoder().encode(env.SETUP_SECRET);
-  if (secretBytes.length !== expectedBytes.length) {
-    return c.json({ error: 'Forbidden' }, 403);
-  }
-  let mismatch = 0;
-  for (let i = 0; i < secretBytes.length; i++) {
+  let mismatch = secretBytes.length !== expectedBytes.length ? 1 : 0;
+  const len = Math.min(secretBytes.length, expectedBytes.length);
+  for (let i = 0; i < len; i++) {
     mismatch |= secretBytes[i] ^ expectedBytes[i];
   }
   if (mismatch !== 0) {
@@ -478,9 +484,25 @@ app.notFound((c) => {
   return c.json({ error: 'Not found', path: c.req.path }, 404);
 });
 
-// Error handler — consistent format, no stack traces in production
+// Error handler — consistent format, no stack traces in production, reports to Sentry
 app.onError((err, c) => {
   console.error('Unhandled error:', err);
+
+  // Report to Sentry if configured
+  const sentryDsn = c.env?.SENTRY_DSN;
+  if (sentryDsn) {
+    const auth = c.get('auth') as { userId?: string; email?: string } | undefined;
+    captureException(err, {
+      dsn: sentryDsn,
+      environment: c.env?.ENVIRONMENT || 'production',
+      tags: { url: c.req.url, method: c.req.method },
+      extra: { userAgent: c.req.header('user-agent') || 'unknown' },
+      request: { url: c.req.url, method: c.req.method },
+      user: auth ? { id: auth.userId || 'unknown', email: auth.email } : undefined,
+      ctx: c.executionCtx,
+    });
+  }
+
   const isDev = c.env?.ENVIRONMENT !== 'production';
   return c.json({
     error: 'Internal server error',

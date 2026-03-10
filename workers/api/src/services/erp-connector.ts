@@ -666,6 +666,303 @@ const pastelAdapter: ERPAdapter = {
   },
 };
 
+// ── Microsoft Dynamics 365 Business Central Adapter ──
+const dynamics365Adapter: ERPAdapter = {
+  name: 'Microsoft Dynamics 365',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    const tenant = credentials.apiKey || 'common';
+    const authUrl = credentials.authUrl || `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`;
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      scope: credentials.scope || 'https://api.businesscentral.dynamics.com/.default offline_access',
+      state,
+    });
+    return `${authUrl}?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    const tenant = credentials.apiKey || 'common';
+    const tokenUrl = credentials.tokenUrl || `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+    const resp = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: credentials.clientId,
+        client_secret: credentials.clientSecret,
+        code,
+        redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+        scope: credentials.scope || 'https://api.businesscentral.dynamics.com/.default offline_access',
+      }),
+    });
+    if (!resp.ok) throw new Error(`Dynamics 365 token exchange failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const resp = await fetch(`${credentials.baseUrl}/api/v2.0/companies`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { value?: Array<{ displayName?: string }> };
+        const companyCount = data.value?.length || 0;
+        return {
+          connected: true,
+          version: 'v2.0',
+          message: `Connected to Dynamics 365 Business Central. ${companyCount} company(ies) found.`,
+        };
+      }
+      return { connected: false, message: `Connection failed: ${resp.status}` };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+
+    for (const entity of entities) {
+      try {
+        const apiMap: Record<string, string> = {
+          'customers': '/api/v2.0/companies({companyId})/customers?$top=1000',
+          'vendors': '/api/v2.0/companies({companyId})/vendors?$top=1000',
+          'items': '/api/v2.0/companies({companyId})/items?$top=1000',
+          'sales_orders': '/api/v2.0/companies({companyId})/salesOrders?$top=1000',
+          'purchase_orders': '/api/v2.0/companies({companyId})/purchaseOrders?$top=1000',
+          'invoices': '/api/v2.0/companies({companyId})/salesInvoices?$top=1000',
+          'gl_accounts': '/api/v2.0/companies({companyId})/accounts?$top=1000',
+          'employees': '/api/v2.0/companies({companyId})/employees?$top=1000',
+        };
+        const path = apiMap[entity] || `/api/v2.0/companies({companyId})/${entity}?$top=1000`;
+        const resp = await fetch(`${credentials.baseUrl}${path}`, { headers });
+        if (resp.ok) {
+          const data = await resp.json() as { value?: unknown[] };
+          const count = data.value?.length || 0;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
+// ── Oracle NetSuite (SuiteTalk REST) Adapter ──
+const netsuiteAdapter: ERPAdapter = {
+  name: 'Oracle NetSuite',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    const accountId = credentials.apiKey || '';
+    const authUrl = credentials.authUrl || `https://${accountId}.app.netsuite.com/app/login/oauth2/authorize.nl`;
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      scope: credentials.scope || 'rest_webservices',
+      state,
+    });
+    return `${authUrl}?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    const accountId = credentials.apiKey || '';
+    const tokenUrl = credentials.tokenUrl || `https://${accountId}.suitetalk.api.netsuite.com/services/rest/auth/oauth2/v1/token`;
+    const resp = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${credentials.clientId}:${credentials.clientSecret}`)}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      }),
+    });
+    if (!resp.ok) throw new Error(`NetSuite token exchange failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const accountId = credentials.apiKey || '';
+      const resp = await fetch(
+        `https://${accountId}.suitetalk.api.netsuite.com/services/rest/record/v1/metadata-catalog/`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } },
+      );
+      return {
+        connected: resp.ok,
+        version: 'v1',
+        message: resp.ok ? 'Connected to NetSuite SuiteTalk REST API' : `Connection failed: ${resp.status}`,
+      };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const accountId = credentials.apiKey || '';
+    const baseApi = `https://${accountId}.suitetalk.api.netsuite.com/services/rest/record/v1`;
+    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+
+    for (const entity of entities) {
+      try {
+        const apiMap: Record<string, string> = {
+          'customers': '/customer?limit=1000',
+          'vendors': '/vendor?limit=1000',
+          'invoices': '/invoice?limit=1000',
+          'sales_orders': '/salesOrder?limit=1000',
+          'purchase_orders': '/purchaseOrder?limit=1000',
+          'items': '/inventoryItem?limit=1000',
+          'employees': '/employee?limit=1000',
+          'gl_accounts': '/account?limit=1000',
+          'contacts': '/contact?limit=1000',
+        };
+        const path = apiMap[entity] || `/${entity}?limit=1000`;
+        const resp = await fetch(`${baseApi}${path}`, { headers });
+        if (resp.ok) {
+          const data = await resp.json() as { totalResults?: number; items?: unknown[] };
+          const count = data.totalResults || data.items?.length || 0;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
+// ── Intuit QuickBooks Online Adapter ──
+const quickbooksAdapter: ERPAdapter = {
+  name: 'QuickBooks Online',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    const authUrl = credentials.authUrl || 'https://appcenter.intuit.com/connect/oauth2';
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      scope: credentials.scope || 'com.intuit.quickbooks.accounting',
+      state,
+    });
+    return `${authUrl}?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    const tokenUrl = credentials.tokenUrl || 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
+    const resp = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${credentials.clientId}:${credentials.clientSecret}`)}`,
+        'Accept': 'application/json',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      }),
+    });
+    if (!resp.ok) throw new Error(`QuickBooks token exchange failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const realmId = credentials.apiKey || '';
+      const resp = await fetch(
+        `https://quickbooks.api.intuit.com/v3/company/${realmId}/companyinfo/${realmId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          },
+        },
+      );
+      if (resp.ok) {
+        const data = await resp.json() as { CompanyInfo?: { CompanyName?: string } };
+        return {
+          connected: true,
+          version: 'v3',
+          message: `Connected to QuickBooks: ${data.CompanyInfo?.CompanyName || 'OK'}`,
+        };
+      }
+      return { connected: false, message: `Connection failed: ${resp.status}` };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const realmId = credentials.apiKey || '';
+    const baseApi = `https://quickbooks.api.intuit.com/v3/company/${realmId}`;
+    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+
+    for (const entity of entities) {
+      try {
+        const queryMap: Record<string, string> = {
+          'customers': 'SELECT * FROM Customer MAXRESULTS 1000',
+          'vendors': 'SELECT * FROM Vendor MAXRESULTS 1000',
+          'invoices': 'SELECT * FROM Invoice MAXRESULTS 1000',
+          'items': 'SELECT * FROM Item MAXRESULTS 1000',
+          'accounts': 'SELECT * FROM Account MAXRESULTS 1000',
+          'employees': 'SELECT * FROM Employee MAXRESULTS 1000',
+          'purchase_orders': 'SELECT * FROM PurchaseOrder MAXRESULTS 1000',
+          'bills': 'SELECT * FROM Bill MAXRESULTS 1000',
+          'payments': 'SELECT * FROM Payment MAXRESULTS 1000',
+          'estimates': 'SELECT * FROM Estimate MAXRESULTS 1000',
+        };
+        const query = queryMap[entity] || `SELECT * FROM ${entity} MAXRESULTS 1000`;
+        const resp = await fetch(
+          `${baseApi}/query?query=${encodeURIComponent(query)}`,
+          { headers },
+        );
+        if (resp.ok) {
+          const data = await resp.json() as { QueryResponse?: { totalCount?: number } };
+          const count = data.QueryResponse?.totalCount || 0;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
 // ── Adapter Registry ──
 const adapters: Record<string, ERPAdapter> = {
   sap: sapAdapter,
@@ -675,12 +972,17 @@ const adapters: Record<string, ERPAdapter> = {
   xero: xeroAdapter,
   sage: sageAdapter,
   pastel: pastelAdapter,
+  dynamics365: dynamics365Adapter,
+  netsuite: netsuiteAdapter,
+  quickbooks: quickbooksAdapter,
 };
 
+/** Look up an ERP adapter by system key (case-insensitive) */
 export function getERPAdapter(system: string): ERPAdapter | null {
   return adapters[system.toLowerCase()] || null;
 }
 
+/** List all registered ERP adapters with their system key and display name */
 export function listERPAdapters(): { system: string; name: string }[] {
   return Object.entries(adapters).map(([system, adapter]) => ({
     system,
