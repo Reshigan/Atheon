@@ -78,9 +78,38 @@ auth.post('/register', async (c) => {
   const passwordHash = await hashPassword(body.password);
   const userId = crypto.randomUUID();
 
+  // Phase 1.3: Set email_verified=0 for new registrations
   await c.env.DB.prepare(
-    'INSERT INTO users (id, tenant_id, email, name, role, password_hash, permissions) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO users (id, tenant_id, email, name, role, password_hash, permissions, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
   ).bind(userId, tenant.id, body.email, body.name, 'analyst', passwordHash, '["read"]').run();
+
+  // Phase 1.3: Generate email verification token (24h TTL)
+  const verificationToken = crypto.randomUUID();
+  await c.env.CACHE.put(`email_verify:${verificationToken}`, JSON.stringify({
+    userId, email: body.email, tenantId: tenant.id,
+  }), { expirationTtl: 86400 });
+
+  // Queue verification email
+  const verifyUrl = `https://atheon.vantax.co.za/verify-email?token=${verificationToken}`;
+  await c.env.DB.prepare(
+    'INSERT INTO email_queue (id, tenant_id, recipients, subject, html_body, text_body, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
+  ).bind(
+    crypto.randomUUID(), tenant.id, JSON.stringify([body.email]),
+    'Atheon\u2122 \u2014 Verify Your Email',
+    `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+      <h2 style="color:#0ea5e9;">Welcome to Atheon\u2122</h2>
+      <p>Hi ${body.name},</p>
+      <p>Please verify your email address to activate your account:</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="${verifyUrl}" style="background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify Email</a>
+      </p>
+      <p style="color:#666;font-size:13px;">This link expires in 24 hours.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+      <p style="color:#9ca3af;font-size:12px;">Atheon\u2122 Enterprise Intelligence Platform</p>
+    </div>`,
+    `Verify your email: ${verifyUrl}\nThis link expires in 24 hours.`,
+    'pending',
+  ).run().catch((err) => { console.error('Phase 1.3: failed to queue verification email:', err); });
 
   const token = await generateToken({
     sub: userId,
@@ -98,6 +127,7 @@ auth.post('/register', async (c) => {
 
   return c.json({
     token,
+    emailVerificationRequired: true,
     user: {
       id: userId,
       email: body.email,
@@ -174,6 +204,33 @@ auth.post('/login', async (c) => {
       'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(crypto.randomUUID(), user.tenant_id, user.id, 'login_failed', 'auth', 'session', JSON.stringify({ email: body.email, reason: 'invalid_password' }), 'failure').run();
     return c.json({ error: 'Invalid credentials' }, 401);
+  }
+
+  // Phase 1.3: Check email verification (skip for existing users who were auto-verified)
+  const emailVerified = user.email_verified as number | undefined;
+  if (emailVerified === 0) {
+    return c.json({ 
+      error: 'Email not verified', 
+      message: 'Please verify your email address before logging in. Check your inbox for a verification link.',
+      emailVerificationRequired: true,
+    }, 403);
+  }
+
+  // Phase 1.4: Check MFA/TOTP if enabled
+  const mfaEnabled = user.mfa_enabled as number | undefined;
+  if (mfaEnabled === 1) {
+    // Generate a short-lived MFA challenge token
+    const mfaChallengeToken = crypto.randomUUID();
+    await c.env.CACHE.put(`mfa_challenge:${mfaChallengeToken}`, JSON.stringify({
+      userId: user.id, tenantId: user.tenant_id, email: user.email,
+      name: user.name, role: user.role, permissions: JSON.parse(user.permissions as string || '[]'),
+    }), { expirationTtl: 300 }); // 5 minutes
+
+    return c.json({
+      mfaRequired: true,
+      mfaChallengeToken,
+      message: 'Please provide your TOTP code to complete login.',
+    });
   }
 
   // Security S5: Clear lockout counter on successful login
@@ -837,6 +894,358 @@ auth.post('/admin-reset', async (c) => {
   ).bind(crypto.randomUUID(), user.tenant_id, user.id, 'admin_password_reset', 'auth', 'user', JSON.stringify({ email: body.email }), 'success').run();
 
   return c.json({ success: true, email: user.email, name: user.name, role: user.role });
+});
+
+// ══════════════════════════════════════════════════════════
+// Phase 1.3: Email Verification Endpoints
+// ══════════════════════════════════════════════════════════
+
+// GET /api/auth/verify-email?token=... - Verify email address
+auth.get('/verify-email', async (c) => {
+  const token = c.req.query('token');
+  if (!token) {
+    return c.json({ error: 'Verification token is required' }, 400);
+  }
+
+  const storedData = await c.env.CACHE.get(`email_verify:${token}`);
+  if (!storedData) {
+    return c.json({ error: 'Invalid or expired verification token' }, 400);
+  }
+
+  const { userId, tenantId } = JSON.parse(storedData) as { userId: string; email: string; tenantId: string };
+
+  // Mark user as verified
+  await c.env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(userId).run();
+
+  // Delete the token
+  await c.env.CACHE.delete(`email_verify:${token}`);
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), tenantId, userId, 'email_verified', 'auth', 'user', '{}', 'success').run();
+
+  return c.json({ success: true, message: 'Email verified successfully. You can now log in.' });
+});
+
+// POST /api/auth/resend-verification - Resend email verification
+auth.post('/resend-verification', async (c) => {
+  const { data: body, errors } = await getValidatedJsonBody<{ email: string }>(c, [
+    { field: 'email', type: 'email', required: true },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  const user = await c.env.DB.prepare(
+    'SELECT id, email, name, tenant_id, email_verified FROM users WHERE email = ? AND status = ?'
+  ).bind(body.email, 'active').first();
+
+  if (user && (user.email_verified as number) === 0) {
+    const verificationToken = crypto.randomUUID();
+    await c.env.CACHE.put(`email_verify:${verificationToken}`, JSON.stringify({
+      userId: user.id, email: user.email, tenantId: user.tenant_id,
+    }), { expirationTtl: 86400 });
+
+    const verifyUrl = `https://atheon.vantax.co.za/verify-email?token=${verificationToken}`;
+    await c.env.DB.prepare(
+      'INSERT INTO email_queue (id, tenant_id, recipients, subject, html_body, text_body, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
+    ).bind(
+      crypto.randomUUID(), user.tenant_id, JSON.stringify([user.email]),
+      'Atheon\u2122 \u2014 Verify Your Email',
+      `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+        <h2 style="color:#0ea5e9;">Email Verification</h2>
+        <p>Hi ${user.name},</p>
+        <p>Click below to verify your email:</p>
+        <p style="text-align:center;margin:24px 0;"><a href="${verifyUrl}" style="background:#0ea5e9;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify Email</a></p>
+        <p style="color:#666;font-size:13px;">This link expires in 24 hours.</p>
+      </div>`,
+      `Verify your email: ${verifyUrl}`,
+      'pending',
+    ).run().catch((err) => { console.error('Phase 1.3: failed to queue resend verification email:', err); });
+  }
+
+  // Always return success (don't reveal if user exists)
+  return c.json({ success: true, message: 'If an unverified account exists, a new verification email has been sent.' });
+});
+
+// ══════════════════════════════════════════════════════════
+// Phase 1.4: MFA/TOTP Endpoints
+// ══════════════════════════════════════════════════════════
+
+/**
+ * Generate a TOTP secret for MFA setup.
+ * Uses HMAC-SHA256 to generate a cryptographically random base32-encoded secret.
+ */
+function generateTOTPSecret(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let result = '';
+  let buffer = 0;
+  let bitsLeft = 0;
+  for (const byte of bytes) {
+    buffer = (buffer << 8) | byte;
+    bitsLeft += 8;
+    while (bitsLeft >= 5) {
+      result += base32Chars[(buffer >> (bitsLeft - 5)) & 31];
+      bitsLeft -= 5;
+    }
+  }
+  if (bitsLeft > 0) {
+    result += base32Chars[(buffer << (5 - bitsLeft)) & 31];
+  }
+  return result;
+}
+
+/**
+ * Verify a TOTP code against a secret.
+ * Implements RFC 6238 TOTP with 30-second time step and 1-step window.
+ */
+async function verifyTOTP(secret: string, code: string): Promise<boolean> {
+  const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  // Decode base32 secret
+  let bits = 0;
+  let value = 0;
+  const bytes: number[] = [];
+  for (const char of secret.toUpperCase()) {
+    const idx = base32Chars.indexOf(char);
+    if (idx === -1) continue;
+    value = (value << 5) | idx;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  const keyData = new Uint8Array(bytes);
+
+  const now = Math.floor(Date.now() / 1000);
+  const timeStep = 30;
+
+  // Check current and adjacent time windows (allows for clock skew)
+  for (const offset of [-1, 0, 1]) {
+    const counter = Math.floor((now + offset * timeStep) / timeStep);
+    const counterBytes = new ArrayBuffer(8);
+    const view = new DataView(counterBytes);
+    view.setUint32(4, counter, false);
+
+    const key = await crypto.subtle.importKey(
+      'raw', keyData, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign'],
+    );
+    const hmac = await crypto.subtle.sign('HMAC', key, counterBytes);
+    const hmacBytes = new Uint8Array(hmac);
+
+    const off = hmacBytes[hmacBytes.length - 1] & 0x0f;
+    const binary =
+      ((hmacBytes[off] & 0x7f) << 24) |
+      ((hmacBytes[off + 1] & 0xff) << 16) |
+      ((hmacBytes[off + 2] & 0xff) << 8) |
+      (hmacBytes[off + 3] & 0xff);
+    const otp = (binary % 1000000).toString().padStart(6, '0');
+
+    if (otp === code) return true;
+  }
+  return false;
+}
+
+// POST /api/auth/mfa/setup - Generate TOTP secret and QR code URI
+auth.post('/mfa/setup', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const payload = await verifyToken(authHeader.replace('Bearer ', ''), c.env.JWT_SECRET);
+  if (!payload) {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await c.env.DB.prepare('SELECT id, email, mfa_enabled, mfa_secret FROM users WHERE id = ?').bind(payload.sub).first();
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+
+  if ((user.mfa_enabled as number) === 1) {
+    return c.json({ error: 'MFA is already enabled for this account' }, 400);
+  }
+
+  // Generate TOTP secret
+  const secret = generateTOTPSecret();
+  const issuer = 'Atheon';
+  const otpauthUri = `otpauth://totp/${issuer}:${encodeURIComponent(user.email as string)}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
+
+  // Store secret temporarily in KV (pending verification)
+  await c.env.CACHE.put(`mfa_setup:${user.id}`, secret, { expirationTtl: 600 });
+
+  return c.json({
+    secret,
+    otpauthUri,
+    message: 'Scan the QR code with your authenticator app, then verify with a code.',
+  });
+});
+
+// POST /api/auth/mfa/verify - Verify TOTP code and enable MFA
+auth.post('/mfa/verify', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const payload = await verifyToken(authHeader.replace('Bearer ', ''), c.env.JWT_SECRET);
+  if (!payload) {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+
+  const { data: body, errors } = await getValidatedJsonBody<{ code: string }>(c, [
+    { field: 'code', type: 'string', required: true, minLength: 6, maxLength: 6 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  // Get pending secret from KV
+  const pendingSecret = await c.env.CACHE.get(`mfa_setup:${payload.sub}`);
+  if (!pendingSecret) {
+    return c.json({ error: 'No MFA setup in progress. Call /mfa/setup first.' }, 400);
+  }
+
+  // Verify the TOTP code
+  const valid = await verifyTOTP(pendingSecret, body.code);
+  if (!valid) {
+    return c.json({ error: 'Invalid TOTP code. Please try again.' }, 400);
+  }
+
+  // Enable MFA and store encrypted secret
+  await c.env.DB.prepare(
+    'UPDATE users SET mfa_enabled = 1, mfa_secret = ? WHERE id = ?'
+  ).bind(pendingSecret, payload.sub).run();
+
+  // Clean up
+  await c.env.CACHE.delete(`mfa_setup:${payload.sub}`);
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), payload.tenant_id, payload.sub, 'mfa_enabled', 'auth', 'user', '{}', 'success').run();
+
+  return c.json({ success: true, message: 'MFA has been enabled successfully.' });
+});
+
+// POST /api/auth/mfa/validate - Complete login with TOTP code
+auth.post('/mfa/validate', async (c) => {
+  const { data: body, errors } = await getValidatedJsonBody<{ challenge_token: string; code: string }>(c, [
+    { field: 'challenge_token', type: 'string', required: true, minLength: 1 },
+    { field: 'code', type: 'string', required: true, minLength: 6, maxLength: 6 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  // Look up MFA challenge
+  const challengeData = await c.env.CACHE.get(`mfa_challenge:${body.challenge_token}`);
+  if (!challengeData) {
+    return c.json({ error: 'Invalid or expired MFA challenge' }, 400);
+  }
+
+  const userData = JSON.parse(challengeData) as {
+    userId: string; tenantId: string; email: string;
+    name: string; role: string; permissions: string[];
+  };
+
+  // Get user's MFA secret
+  const user = await c.env.DB.prepare('SELECT mfa_secret FROM users WHERE id = ?').bind(userData.userId).first();
+  if (!user || !user.mfa_secret) {
+    return c.json({ error: 'MFA not configured' }, 400);
+  }
+
+  // Verify TOTP code
+  const valid = await verifyTOTP(user.mfa_secret as string, body.code);
+  if (!valid) {
+    return c.json({ error: 'Invalid TOTP code' }, 401);
+  }
+
+  // Clean up challenge
+  await c.env.CACHE.delete(`mfa_challenge:${body.challenge_token}`);
+
+  // Clear lockout and issue tokens
+  await clearLoginAttempts(c.env.CACHE, userData.email);
+
+  const token = await generateToken({
+    sub: userData.userId,
+    email: userData.email,
+    name: userData.name,
+    role: userData.role,
+    tenant_id: userData.tenantId,
+    permissions: userData.permissions,
+  }, c.env.JWT_SECRET);
+
+  // Refresh token
+  const refreshToken = crypto.randomUUID();
+  await c.env.CACHE.put(`refresh_token:${refreshToken}`, challengeData, { expirationTtl: 7 * 24 * 3600 });
+
+  // Update last login
+  await c.env.DB.prepare('UPDATE users SET last_login = datetime(\'now\') WHERE id = ?').bind(userData.userId).run();
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), userData.tenantId, userData.userId, 'login_mfa', 'auth', 'session', JSON.stringify({ email: userData.email }), 'success').run();
+
+  // Fetch tenant info
+  const loginTenant = await c.env.DB.prepare('SELECT name, slug, industry FROM tenants WHERE id = ?').bind(userData.tenantId).first();
+
+  return c.json({
+    token,
+    refreshToken,
+    expiresIn: 86400,
+    user: {
+      id: userData.userId,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      tenantId: userData.tenantId,
+      tenantName: loginTenant?.name || '',
+      tenantSlug: loginTenant?.slug || '',
+      tenantIndustry: loginTenant?.industry || 'general',
+      permissions: userData.permissions,
+    },
+  });
+});
+
+// POST /api/auth/mfa/disable - Disable MFA (requires current TOTP code)
+auth.post('/mfa/disable', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const payload = await verifyToken(authHeader.replace('Bearer ', ''), c.env.JWT_SECRET);
+  if (!payload) {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+
+  const { data: body, errors } = await getValidatedJsonBody<{ code: string }>(c, [
+    { field: 'code', type: 'string', required: true, minLength: 6, maxLength: 6 },
+  ]);
+  if (!body || errors.length > 0) {
+    return c.json({ error: 'Invalid input', details: errors }, 400);
+  }
+
+  const user = await c.env.DB.prepare('SELECT mfa_secret, mfa_enabled FROM users WHERE id = ?').bind(payload.sub).first();
+  if (!user || (user.mfa_enabled as number) !== 1 || !user.mfa_secret) {
+    return c.json({ error: 'MFA is not enabled' }, 400);
+  }
+
+  const valid = await verifyTOTP(user.mfa_secret as string, body.code);
+  if (!valid) {
+    return c.json({ error: 'Invalid TOTP code' }, 401);
+  }
+
+  await c.env.DB.prepare('UPDATE users SET mfa_enabled = 0, mfa_secret = NULL WHERE id = ?').bind(payload.sub).run();
+
+  // Audit log
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(crypto.randomUUID(), payload.tenant_id, payload.sub, 'mfa_disabled', 'auth', 'user', '{}', 'success').run();
+
+  return c.json({ success: true, message: 'MFA has been disabled.' });
 });
 
 export default auth;

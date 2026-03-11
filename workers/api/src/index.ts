@@ -35,20 +35,25 @@ export { DashboardRoom };
 const app = new Hono<AppBindings>();
 
 // CORS - restricted to production and preview domains
-// Bug #10 fix: Add localhost origins for local development
-const ALLOWED_ORIGINS = [
+// Phase 1.6: Lock down localhost origins in production
+const PRODUCTION_ORIGINS = [
   'https://atheon.vantax.co.za',
   'https://atheon-33b.pages.dev',
+];
+const DEV_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:3000',
 ];
 
 app.use('*', cors({
-  origin: (origin) => {
+  origin: (origin, c) => {
     if (!origin) return 'https://atheon.vantax.co.za';
-    if (ALLOWED_ORIGINS.includes(origin)) return origin;
+    if (PRODUCTION_ORIGINS.includes(origin)) return origin;
     // Allow Cloudflare Pages preview deployments
     if (origin.endsWith('.atheon-33b.pages.dev')) return origin;
+    // Phase 1.6: Only allow localhost in non-production environments
+    const env = (c as unknown as { env: { ENVIRONMENT?: string } }).env;
+    if (env?.ENVIRONMENT !== 'production' && DEV_ORIGINS.includes(origin)) return origin;
     return null as unknown as string;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

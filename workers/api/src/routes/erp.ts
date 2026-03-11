@@ -262,19 +262,37 @@ erp.get('/connections', async (c) => {
     'SELECT ec.*, ea.name as adapter_name, ea.system as adapter_system, ea.protocol as adapter_protocol FROM erp_connections ec JOIN erp_adapters ea ON ec.adapter_id = ea.id WHERE ec.tenant_id = ? ORDER BY ec.name ASC'
   ).bind(tenantId).all();
 
-  const formatted = results.results.map((conn: Record<string, unknown>) => ({
-    id: conn.id,
-    adapterId: conn.adapter_id,
-    adapterName: conn.adapter_name,
-    adapterSystem: conn.adapter_system,
-    adapterProtocol: conn.adapter_protocol,
-    name: conn.name,
-    status: conn.status,
-    config: JSON.parse(conn.config as string || '{}'),
-    lastSync: conn.last_sync,
-    syncFrequency: conn.sync_frequency,
-    recordsSynced: conn.records_synced,
-    connectedAt: conn.connected_at,
+  // Phase 1.1: Decrypt config on read
+  const formatted = await Promise.all(results.results.map(async (conn: Record<string, unknown>) => {
+    let config: Record<string, unknown> = {};
+    // Try encrypted_config first, fallback to config
+    const encCfg = conn.encrypted_config as string | null;
+    if (encCfg && isEncrypted(encCfg)) {
+      const decrypted = await decrypt(encCfg, c.env.ENCRYPTION_KEY);
+      config = decrypted ? JSON.parse(decrypted) : {};
+    } else {
+      config = JSON.parse(conn.config as string || '{}');
+    }
+    // Redact secrets from response
+    const safeConfig = { ...config };
+    if (safeConfig.client_secret) safeConfig.client_secret = '***';
+    if (safeConfig.access_token) safeConfig.access_token = '***';
+    if (safeConfig.refresh_token) safeConfig.refresh_token = '***';
+
+    return {
+      id: conn.id,
+      adapterId: conn.adapter_id,
+      adapterName: conn.adapter_name,
+      adapterSystem: conn.adapter_system,
+      adapterProtocol: conn.adapter_protocol,
+      name: conn.name,
+      status: conn.status,
+      config: safeConfig,
+      lastSync: conn.last_sync,
+      syncFrequency: conn.sync_frequency,
+      recordsSynced: conn.records_synced,
+      connectedAt: conn.connected_at,
+    };
   }));
 
   return c.json({ connections: formatted, total: formatted.length });
@@ -293,9 +311,14 @@ erp.post('/connections', async (c) => {
   if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
 
   const id = crypto.randomUUID();
+  // Phase 1.1: Encrypt sensitive config fields before storing
+  const rawConfig = body.config || {};
+  const configStr = JSON.stringify(rawConfig);
+  const encryptedConfigStr = await encrypt(configStr, c.env.ENCRYPTION_KEY);
+
   await c.env.DB.prepare(
-    'INSERT INTO erp_connections (id, tenant_id, adapter_id, name, config, sync_frequency, connected_at) VALUES (?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-  ).bind(id, tenantId, body.adapter_id, body.name, JSON.stringify(body.config || {}), body.sync_frequency || 'realtime').run();
+    'INSERT INTO erp_connections (id, tenant_id, adapter_id, name, config, encrypted_config, sync_frequency, connected_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
+  ).bind(id, tenantId, body.adapter_id, body.name, '{}', encryptedConfigStr, body.sync_frequency || 'realtime').run();
 
   return c.json({ id, status: 'connected' }, 201);
 });
@@ -739,10 +762,36 @@ erp.get('/data/journal-entries', async (c) => {
   return c.json({ journalEntries: results.results, total: total?.total || 0, limit, offset });
 });
 
+/**
+ * Phase 1.2: PII masking helper — mask sensitive strings (show last 4 chars)
+ */
+function maskPII(value: unknown): string {
+  if (typeof value !== 'string' || value.length === 0) return '****';
+  if (value.length <= 4) return '****';
+  return '****' + value.slice(-4);
+}
+
+/**
+ * Phase 1.2: Salary range masking — show salary as a range bracket
+ */
+function maskSalary(salary: unknown): string {
+  const val = typeof salary === 'number' ? salary : 0;
+  if (val <= 0) return 'Not disclosed';
+  if (val < 10000) return 'R0 - R10,000';
+  if (val < 25000) return 'R10,000 - R25,000';
+  if (val < 50000) return 'R25,000 - R50,000';
+  if (val < 100000) return 'R50,000 - R100,000';
+  if (val < 250000) return 'R100,000 - R250,000';
+  return 'R250,000+';
+}
+
 // GET /api/erp/data/employees
 erp.get('/data/employees', async (c) => {
   const tenantId = getTenantId(c);
   const department = c.req.query('department');
+  // Phase 1.2: Only superadmin can view unmasked sensitive data
+  const auth = c.get('auth') as AuthContext | undefined;
+  const includeSensitive = c.req.query('include_sensitive') === 'true' && auth?.role === 'superadmin';
 
   let query = 'SELECT * FROM erp_employees WHERE tenant_id = ?';
   const binds: unknown[] = [tenantId];
@@ -753,6 +802,18 @@ erp.get('/data/employees', async (c) => {
     ? await c.env.DB.prepare(query).bind(...binds).all()
     : await c.env.DB.prepare(query).bind(tenantId).all();
 
+  // Phase 1.2: Mask PII fields unless superadmin requests full data
+  const maskedEmployees = results.results.map((emp: Record<string, unknown>) => {
+    if (includeSensitive) return emp;
+    return {
+      ...emp,
+      id_number: maskPII(emp.id_number),
+      tax_number: maskPII(emp.tax_number),
+      bank_account: maskPII(emp.bank_account),
+      gross_salary: maskSalary(emp.gross_salary),
+    };
+  });
+
   // Department summary
   const deptSummary = await c.env.DB.prepare(`
     SELECT department, COUNT(*) as headcount, SUM(gross_salary) as total_salary, AVG(gross_salary) as avg_salary
@@ -760,7 +821,7 @@ erp.get('/data/employees', async (c) => {
     GROUP BY department ORDER BY department
   `).bind(tenantId).all();
 
-  return c.json({ employees: results.results, total: results.results.length, departmentSummary: deptSummary.results });
+  return c.json({ employees: maskedEmployees, total: maskedEmployees.length, departmentSummary: deptSummary.results });
 });
 
 // GET /api/erp/data/bank-transactions

@@ -9,7 +9,7 @@ import { seedSampleCompany } from './seed-sample-company';
 import { seedTestCompanies } from './seed-test-companies';
 
 /** Current schema version — bump when adding new tables/columns/indexes */
-export const MIGRATION_VERSION = 'v25';
+export const MIGRATION_VERSION = 'v26';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -72,6 +72,10 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS execution_logs (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), action_id TEXT NOT NULL, step_number INTEGER NOT NULL, step_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'running', detail TEXT, duration_ms INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS managed_deployments (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, deployment_type TEXT NOT NULL DEFAULT 'hybrid', status TEXT NOT NULL DEFAULT 'pending', licence_key TEXT NOT NULL UNIQUE, licence_expires_at TEXT, agent_version TEXT, api_version TEXT, customer_api_url TEXT, region TEXT DEFAULT 'af-south-1', last_heartbeat TEXT, health_score REAL NOT NULL DEFAULT 0, config TEXT NOT NULL DEFAULT '{}', resource_usage TEXT NOT NULL DEFAULT '{}', error_log TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS assessments (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), prospect_name TEXT NOT NULL, prospect_industry TEXT NOT NULL, erp_connection_id TEXT REFERENCES erp_connections(id), status TEXT NOT NULL DEFAULT 'pending', config TEXT NOT NULL DEFAULT '{}', data_snapshot TEXT NOT NULL DEFAULT '{}', results TEXT NOT NULL DEFAULT '{}', business_report_key TEXT, technical_report_key TEXT, excel_model_key TEXT, created_by TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT);
+    CREATE TABLE IF NOT EXISTS chat_conversations (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT NOT NULL REFERENCES users(id), title TEXT NOT NULL DEFAULT 'New Conversation', model_tier TEXT NOT NULL DEFAULT 'tier-1', messages TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), token_hash TEXT NOT NULL, expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS api_keys (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, key_hash TEXT NOT NULL, permissions TEXT NOT NULL DEFAULT '["read"]', last_used TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), expires_at TEXT);
+    CREATE TABLE IF NOT EXISTS user_sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), tenant_id TEXT NOT NULL REFERENCES tenants(id), token_hash TEXT NOT NULL, ip_address TEXT, user_agent TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), expires_at TEXT NOT NULL);
   `;
 
   const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
@@ -113,6 +117,13 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_managed_deployments_tenant ON managed_deployments(tenant_id)',
     'CREATE INDEX IF NOT EXISTS idx_managed_deployments_licence ON managed_deployments(licence_key)',
     'CREATE INDEX IF NOT EXISTS idx_assessments_tenant ON assessments(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_chat_conversations_tenant ON chat_conversations(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_chat_conversations_user ON chat_conversations(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_api_keys_tenant ON api_keys(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)',
+    'CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(token_hash)',
   ];
 
   for (const idx of indexes) {
@@ -208,6 +219,37 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'erp_connections', column: 'connected_at', definition: 'TEXT' },
     { table: 'documents', column: 'stored_in_r2', definition: 'INTEGER NOT NULL DEFAULT 0' },
     { table: 'execution_logs', column: 'duration_ms', definition: 'INTEGER' },
+    // Phase 1.1: ERP credential encryption
+    { table: 'erp_connections', column: 'encrypted_config', definition: 'TEXT' },
+    // Phase 1.3: Email verification
+    { table: 'users', column: 'email_verified', definition: 'INTEGER NOT NULL DEFAULT 1' },
+    // Phase 1.4: MFA/TOTP support
+    { table: 'users', column: 'mfa_enabled', definition: 'INTEGER NOT NULL DEFAULT 0' },
+    { table: 'users', column: 'mfa_secret', definition: 'TEXT' },
+    // Phase 6.1: Data retention
+    { table: 'email_queue', column: 'retry_count', definition: 'INTEGER NOT NULL DEFAULT 0' },
+    { table: 'email_queue', column: 'max_retries', definition: 'INTEGER NOT NULL DEFAULT 3' },
+    // Phase 6.3: API key auth
+    { table: 'webhooks', column: 'last_response_code', definition: 'INTEGER' },
+    { table: 'webhooks', column: 'last_response_body', definition: 'TEXT' },
+    // Phase 4 extras
+    { table: 'notifications', column: 'user_id', definition: 'TEXT' },
+    { table: 'documents', column: 'folder_path', definition: 'TEXT' },
+    { table: 'documents', column: 'tags', definition: 'TEXT' },
+    { table: 'documents', column: 'version', definition: 'INTEGER NOT NULL DEFAULT 1' },
+    { table: 'risk_alerts', column: 'assigned_to', definition: 'TEXT' },
+    { table: 'risk_alerts', column: 'due_date', definition: 'TEXT' },
+    { table: 'risk_alerts', column: 'resolution_notes', definition: 'TEXT' },
+    { table: 'scenarios', column: 'created_by', definition: 'TEXT' },
+    { table: 'anomalies', column: 'assigned_to', definition: 'TEXT' },
+    { table: 'anomalies', column: 'resolution_notes', definition: 'TEXT' },
+    { table: 'mind_queries', column: 'feedback_rating', definition: 'INTEGER' },
+    { table: 'users', column: 'avatar_url', definition: 'TEXT' },
+    { table: 'tenants', column: 'logo_url', definition: 'TEXT' },
+    { table: 'tenants', column: 'billing_email', definition: 'TEXT' },
+    { table: 'tenants', column: 'max_storage_gb', definition: 'INTEGER NOT NULL DEFAULT 10' },
+    { table: 'tenant_entitlements', column: 'api_calls_used', definition: 'INTEGER NOT NULL DEFAULT 0' },
+    { table: 'tenant_entitlements', column: 'storage_used_gb', definition: 'REAL NOT NULL DEFAULT 0' },
   ];
 
   for (const col of selfHealColumns) {
