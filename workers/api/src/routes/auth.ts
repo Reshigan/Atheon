@@ -1306,12 +1306,12 @@ auth.get('/api-keys', async (c) => {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401);
 
   const results = await c.env.DB.prepare(
-    'SELECT id, name, key_prefix, created_at, last_used_at FROM api_keys WHERE user_id = ? AND tenant_id = ? ORDER BY created_at DESC'
+    'SELECT id, name, key_prefix, created_at, last_used FROM api_keys WHERE user_id = ? AND tenant_id = ? ORDER BY created_at DESC'
   ).bind(payload.sub, payload.tenant_id).all();
 
   return c.json({
     keys: results.results.map((k: Record<string, unknown>) => ({
-      id: k.id, name: k.name, prefix: k.key_prefix, createdAt: k.created_at, lastUsed: k.last_used_at,
+      id: k.id, name: k.name, prefix: k.key_prefix, createdAt: k.created_at, lastUsed: k.last_used,
     })),
   });
 });

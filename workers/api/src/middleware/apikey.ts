@@ -39,7 +39,7 @@ export function apiKeyAuth() {
         `SELECT ak.id, ak.tenant_id, ak.name, ak.permissions, ak.expires_at,
                 u.id as user_id, u.email, u.name as user_name, u.role
          FROM api_keys ak
-         LEFT JOIN users u ON u.tenant_id = ak.tenant_id AND u.role = 'admin'
+         LEFT JOIN users u ON u.id = ak.user_id
          WHERE ak.key_hash = ? LIMIT 1`
       ).bind(keyHash).first<{
         id: string; tenant_id: string; name: string; permissions: string;

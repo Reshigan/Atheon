@@ -564,8 +564,8 @@ erp.post('/oauth/authorize', async (c) => {
     token_url: body.token_url,
   };
   await c.env.DB.prepare(
-    'UPDATE erp_connections SET config = ?, status = ? WHERE id = ? AND tenant_id = ?'
-  ).bind(JSON.stringify(encryptedConfig), 'authorizing', body.connection_id, tenantId).run();
+    'UPDATE erp_connections SET encrypted_config = ?, config = ?, status = ? WHERE id = ? AND tenant_id = ?'
+  ).bind(JSON.stringify(encryptedConfig), '{}', 'authorizing', body.connection_id, tenantId).run();
 
   return c.json({ authUrl, state });
 });
@@ -592,9 +592,16 @@ erp.post('/oauth/callback', async (c) => {
   try {
     const tokenResponse = await adapter.exchangeToken(credentials, body.code);
 
-    // Update connection with tokens
-    const conn = await c.env.DB.prepare('SELECT config FROM erp_connections WHERE id = ? AND tenant_id = ?').bind(connectionId, tenantId).first();
-    const existingConfig = JSON.parse(conn?.config as string || '{}');
+    // Update connection with tokens — read from encrypted_config first
+    const conn = await c.env.DB.prepare('SELECT encrypted_config, config FROM erp_connections WHERE id = ? AND tenant_id = ?').bind(connectionId, tenantId).first();
+    const encCfgCallback = conn?.encrypted_config as string | null;
+    let existingConfig: Record<string, unknown> = {};
+    if (encCfgCallback && isEncrypted(encCfgCallback)) {
+      const decrypted = await decrypt(encCfgCallback, c.env.ENCRYPTION_KEY);
+      existingConfig = decrypted ? JSON.parse(decrypted) : {};
+    } else {
+      existingConfig = JSON.parse(conn?.config as string || '{}');
+    }
 
     // Encrypt tokens before storing
     const encryptedTokenConfig = {
@@ -606,8 +613,8 @@ erp.post('/oauth/callback', async (c) => {
     };
 
     await c.env.DB.prepare(
-      'UPDATE erp_connections SET config = ?, status = ?, connected_at = datetime(\'now\') WHERE id = ? AND tenant_id = ?'
-    ).bind(JSON.stringify(encryptedTokenConfig), 'connected', connectionId, tenantId).run();
+      'UPDATE erp_connections SET encrypted_config = ?, config = ?, status = ?, connected_at = datetime(\'now\') WHERE id = ? AND tenant_id = ?'
+    ).bind(JSON.stringify(encryptedTokenConfig), '{}', 'connected', connectionId, tenantId).run();
 
     // Clean up state
     await c.env.CACHE.delete(`oauth_state:${body.state}`);

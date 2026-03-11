@@ -53,7 +53,14 @@ export function AuditPage() {
  variant="secondary"
  size="sm"
  onClick={() => {
- const filtered = entries.filter(e => (!filterLayer || e.layer === filterLayer) && (!filterOutcome || e.outcome === filterOutcome));
+ const filtered = entries.filter(e => {
+ const matchLayer = !filterLayer || e.layer === filterLayer;
+ const matchOutcome = !filterOutcome || e.outcome === filterOutcome;
+ const entryDate = new Date(e.createdAt);
+ const matchFrom = !dateFrom || entryDate >= new Date(dateFrom);
+ const matchTo = !dateTo || entryDate <= new Date(dateTo + 'T23:59:59');
+ return matchLayer && matchOutcome && matchFrom && matchTo;
+ });
  const csv = ['Timestamp,Action,Layer,Outcome,Details']
  .concat(filtered.map(e => `"${new Date(e.createdAt).toISOString()}","${e.action}","${e.layer}","${e.outcome}","${e.details ? Object.entries(e.details).map(([k,v]) => `${k}: ${v}`).join('; ') : ''}"`));
  const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
