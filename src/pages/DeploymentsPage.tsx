@@ -128,7 +128,7 @@ export function DeploymentsPage() {
       {/* Views */}
       {view === 'overview' && <OverviewView deployments={deployments} loading={loading} statusColor={statusColor} openDetail={openDetail} openLogs={openLogs} />}
       {view === 'provision' && <ProvisionView onCreated={(resp) => setInstallModal(resp)} onError={setError} />}
-      {view === 'detail' && selectedId && <DetailView deployment={selectedDeployment} id={selectedId} onRefresh={() => loadDetail(selectedId)} onError={setError} />}
+      {view === 'detail' && selectedId && <DetailView deployment={selectedDeployment} id={selectedId} onRefresh={() => loadDetail(selectedId)} onError={setError} onBack={() => { setView('overview'); setSelectedId(null); setSelectedDeployment(null); loadDeployments(); }} />}
       {view === 'logs' && selectedId && <LogsView id={selectedId} />}
     </div>
   );
@@ -366,20 +366,31 @@ function ProvisionView({ onCreated, onError }: {
 }
 
 // ── Detail View ───────────────────────────────────────────────────────────
-function DetailView({ deployment, id, onRefresh, onError }: {
+function DetailView({ deployment, id, onRefresh, onError, onBack }: {
   deployment: ManagedDeployment | null;
   id: string;
   onRefresh: () => void;
   onError: (err: string) => void;
+  onBack: () => void;
 }) {
   const [configText, setConfigText] = useState('');
   const [updateVersion, setUpdateVersion] = useState('');
   const [revokeConfirm, setRevokeConfirm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', region: '', deployment_type: '' as string, licence_expires_at: '' });
 
   useEffect(() => {
     if (deployment?.config) {
       setConfigText(JSON.stringify(deployment.config, null, 2));
+    }
+    if (deployment) {
+      setEditForm({
+        name: deployment.name,
+        region: deployment.region,
+        deployment_type: deployment.deploymentType,
+        licence_expires_at: deployment.licenceExpiresAt || '',
+      });
     }
   }, [deployment]);
 
@@ -411,6 +422,24 @@ function DetailView({ deployment, id, onRefresh, onError }: {
     }
   };
 
+  const saveEdit = async () => {
+    try {
+      setSaving(true);
+      await api.deployments.update(id, {
+        name: editForm.name,
+        region: editForm.region,
+        deployment_type: editForm.deployment_type,
+        licence_expires_at: editForm.licence_expires_at || null,
+      });
+      setEditing(false);
+      onRefresh();
+    } catch (err) {
+      onError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const revoke = async () => {
     if (revokeConfirm !== deployment.name) {
       onError('Type the deployment name to confirm revocation');
@@ -418,7 +447,7 @@ function DetailView({ deployment, id, onRefresh, onError }: {
     }
     try {
       await api.deployments.revoke(id);
-      onRefresh();
+      onBack();
     } catch (err) {
       onError((err as Error).message);
     }
@@ -438,10 +467,81 @@ function DetailView({ deployment, id, onRefresh, onError }: {
               {deployment.tenantName} &middot; {deployment.deploymentType} &middot; {deployment.region}
             </p>
           </div>
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${deployment.status === 'active' ? 'bg-emerald-100 text-emerald-700' : deployment.status === 'degraded' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-            {deployment.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditing(!editing)}
+              className="px-3 py-1 text-xs font-medium rounded-lg transition-colors"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
+            >
+              {editing ? 'Cancel Edit' : 'Edit'}
+            </button>
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${deployment.status === 'active' ? 'bg-emerald-100 text-emerald-700' : deployment.status === 'degraded' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+              {deployment.status}
+            </span>
+          </div>
         </div>
+
+        {/* Edit Form */}
+        {editing && (
+          <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid var(--border-card)' }}>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Deployment Name</label>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                className="w-full rounded-lg px-3 py-2 text-sm"
+                style={inputStyle}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Type</label>
+                <select
+                  value={editForm.deployment_type}
+                  onChange={e => setEditForm({ ...editForm, deployment_type: e.target.value })}
+                  className="w-full rounded-lg px-3 py-2 text-sm"
+                  style={inputStyle}
+                >
+                  <option value="hybrid">Hybrid</option>
+                  <option value="on-premise">On-Premise</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Region</label>
+                <select
+                  value={editForm.region}
+                  onChange={e => setEditForm({ ...editForm, region: e.target.value })}
+                  className="w-full rounded-lg px-3 py-2 text-sm"
+                  style={inputStyle}
+                >
+                  <option value="af-south-1">Africa South (JHB)</option>
+                  <option value="eu-west-1">Europe West (London)</option>
+                  <option value="ap-southeast-1">Asia Pacific (Sydney)</option>
+                  <option value="us-east-1">US East (Virginia)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Licence Expiry</label>
+              <input
+                type="date"
+                value={editForm.licence_expires_at}
+                onChange={e => setEditForm({ ...editForm, licence_expires_at: e.target.value })}
+                className="w-full rounded-lg px-3 py-2 text-sm"
+                style={inputStyle}
+              />
+            </div>
+            <button
+              onClick={saveEdit}
+              disabled={saving || !editForm.name.trim()}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-white disabled:opacity-50"
+              style={{ background: 'var(--accent)' }}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           {[
@@ -504,11 +604,11 @@ function DetailView({ deployment, id, onRefresh, onError }: {
         </div>
       </div>
 
-      {/* Revoke Licence */}
+      {/* Delete / Revoke */}
       <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-danger, #dc2626)' }}>
-        <h3 className="font-medium mb-3 text-red-600">Revoke Licence</h3>
+        <h3 className="font-medium mb-3 text-red-600">Delete Deployment</h3>
         <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          This will suspend the deployment. The agent will be refused on next heartbeat.
+          This will revoke the licence and suspend the deployment. The agent will be refused on next heartbeat.
           Type &quot;<strong>{deployment.name}</strong>&quot; to confirm.
         </p>
         <div className="flex gap-2">
