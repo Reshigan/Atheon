@@ -27,7 +27,7 @@ export interface SyncResult {
   recordsSynced: number;
   recordsFailed: number;
   duration: number;
-  entities: { type: string; count: number }[];
+  entities: { type: string; count: number; records: Record<string, unknown>[] }[];
   errors: string[];
 }
 
@@ -105,10 +105,11 @@ const sapAdapter: ERPAdapter = {
         const path = apiMap[entity] || `/sap/opu/odata/sap/${entity}?$top=1000`;
         const resp = await fetch(`${credentials.baseUrl}${path}`, { headers });
         if (resp.ok) {
-          const data = await resp.json() as { d?: { results?: unknown[] } };
-          const count = data.d?.results?.length || 0;
+          const data = await resp.json() as { d?: { results?: Record<string, unknown>[] }; value?: Record<string, unknown>[] };
+          const rawRecords = data.d?.results || data.value || [];
+          const count = rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -192,10 +193,11 @@ const salesforceAdapter: ERPAdapter = {
           { headers },
         );
         if (resp.ok) {
-          const data = await resp.json() as { totalSize?: number };
-          const count = data.totalSize || 0;
+          const data = await resp.json() as { totalSize?: number; records?: Record<string, unknown>[] };
+          const rawRecords = data.records || [];
+          const count = data.totalSize || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -274,10 +276,11 @@ const workdayAdapter: ERPAdapter = {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (resp.ok) {
-          const data = await resp.json() as { total?: number; data?: unknown[] };
-          const count = data.total || data.data?.length || 0;
+          const data = await resp.json() as { total?: number; data?: Record<string, unknown>[] };
+          const rawRecords = data.data || [];
+          const count = data.total || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -356,10 +359,11 @@ const oracleAdapter: ERPAdapter = {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (resp.ok) {
-          const data = await resp.json() as { count?: number; items?: unknown[] };
-          const count = data.count || data.items?.length || 0;
+          const data = await resp.json() as { count?: number; items?: Record<string, unknown>[] };
+          const rawRecords = data.items || [];
+          const count = data.count || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -453,9 +457,10 @@ const xeroAdapter: ERPAdapter = {
         if (resp.ok) {
           const data = await resp.json() as Record<string, unknown[]>;
           const key = Object.keys(data).find(k => Array.isArray(data[k]));
-          const count = key ? (data[key] as unknown[]).length : 0;
+          const rawRecords = key ? (data[key] as Record<string, unknown>[]) : [];
+          const count = rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -545,10 +550,11 @@ const sageAdapter: ERPAdapter = {
         const path = apiMap[entity] || `/${entity}?items_per_page=200`;
         const resp = await fetch(`${baseApi}${path}`, { headers });
         if (resp.ok) {
-          const data = await resp.json() as { $total?: number; $items?: unknown[] };
-          const count = data.$total || data.$items?.length || 0;
+          const data = await resp.json() as { $total?: number; $items?: Record<string, unknown>[] };
+          const rawRecords = data.$items || [];
+          const count = data.$total || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -647,10 +653,11 @@ const pastelAdapter: ERPAdapter = {
         const path = apiMap[entity] || `/api/v1/${entity}?limit=500`;
         const resp = await fetch(`${credentials.baseUrl}${path}`, { headers });
         if (resp.ok) {
-          const data = await resp.json() as { TotalResults?: number; Results?: unknown[] };
-          const count = data.TotalResults || data.Results?.length || 0;
+          const data = await resp.json() as { TotalResults?: number; Results?: Record<string, unknown>[] };
+          const rawRecords = data.Results || [];
+          const count = data.TotalResults || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -760,10 +767,11 @@ const dynamics365Adapter: ERPAdapter = {
         const path = apiMap[entity] || `/api/v2.0/companies(${companyId})/${entity}?$top=1000`;
         const resp = await fetch(`${credentials.baseUrl}${path}`, { headers });
         if (resp.ok) {
-          const data = await resp.json() as { value?: unknown[] };
-          const count = data.value?.length || 0;
+          const data = await resp.json() as { value?: Record<string, unknown>[] };
+          const rawRecords = data.value || [];
+          const count = rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -855,10 +863,11 @@ const netsuiteAdapter: ERPAdapter = {
         const path = apiMap[entity] || `/${entity}?limit=1000`;
         const resp = await fetch(`${baseApi}${path}`, { headers });
         if (resp.ok) {
-          const data = await resp.json() as { totalResults?: number; items?: unknown[] };
-          const count = data.totalResults || data.items?.length || 0;
+          const data = await resp.json() as { totalResults?: number; items?: Record<string, unknown>[] };
+          const rawRecords = data.items || [];
+          const count = data.totalResults || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);
@@ -962,10 +971,12 @@ const quickbooksAdapter: ERPAdapter = {
           { headers },
         );
         if (resp.ok) {
-          const data = await resp.json() as { QueryResponse?: { totalCount?: number } };
-          const count = data.QueryResponse?.totalCount || 0;
+          const data = await resp.json() as { QueryResponse?: { totalCount?: number; Customer?: Record<string, unknown>[]; Vendor?: Record<string, unknown>[]; Invoice?: Record<string, unknown>[]; Item?: Record<string, unknown>[]; Account?: Record<string, unknown>[]; Employee?: Record<string, unknown>[]; PurchaseOrder?: Record<string, unknown>[]; Bill?: Record<string, unknown>[]; Payment?: Record<string, unknown>[]; Estimate?: Record<string, unknown>[] } };
+          const qr = data.QueryResponse || {};
+          const rawRecords = (qr.Customer || qr.Vendor || qr.Invoice || qr.Item || qr.Account || qr.Employee || qr.PurchaseOrder || qr.Bill || qr.Payment || qr.Estimate || []) as Record<string, unknown>[];
+          const count = data.QueryResponse?.totalCount || rawRecords.length;
           result.recordsSynced += count;
-          result.entities.push({ type: entity, count });
+          result.entities.push({ type: entity, count, records: rawRecords });
         } else {
           result.recordsFailed++;
           result.errors.push(`${entity}: HTTP ${resp.status}`);

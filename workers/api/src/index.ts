@@ -28,6 +28,7 @@ import realtime from './routes/realtime';
 import deployments from './routes/deployments';
 import assessments from './routes/assessments';
 import agentRoutes from './routes/agent-routes';
+import aiCosts from './routes/ai-costs';
 
 // Export Durable Object class for Cloudflare runtime
 export { DashboardRoom };
@@ -247,6 +248,7 @@ const routeModules: [string, typeof auth][] = [
   ['connectivity', connectivity], ['notifications', notifications],
   ['storage', storage], ['realtime', realtime],
   ['deployments', deployments], ['assessments', assessments],
+  ['ai-costs', aiCosts],
 ];
 for (const [name, handler] of routeModules) {
   app.route(`/api/${name}`, handler);

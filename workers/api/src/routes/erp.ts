@@ -4,6 +4,8 @@ import { getERPAdapter, listERPAdapters } from '../services/erp-connector';
 import { getValidatedJsonBody } from '../middleware/validation';
 import type { ERPCredentials, SyncResult } from '../services/erp-connector';
 import { encrypt, decrypt, isEncrypted } from '../services/encryption';
+import { mapRecord, canonicalTableName } from '../services/erp-data-mapper';
+import { indexDocument } from '../services/vectorize';
 
 const erp = new Hono<AppBindings>();
 
@@ -23,177 +25,68 @@ function getTenantId(c: { get: (key: string) => unknown; req: { query: (key: str
  * Maps adapter entity types to canonical table inserts
  */
 async function writeToCanonicalTables(
-  db: D1Database, tenantId: string, sourceSystem: string, result: SyncResult
+  db: D1Database, tenantId: string, sourceSystem: string, result: SyncResult,
+  vectorize?: VectorizeIndex, ai?: Ai,
 ): Promise<void> {
   for (const entity of result.entities) {
     if (entity.count === 0) continue;
+    const records = entity.records || [];
     try {
-      // Map ERP entity types to canonical table inserts
-      // For each entity type, insert records that don't already exist and update synced_at for existing ones
-      switch (entity.type) {
-        case 'accounts':
-        case 'business_partners':
-        case 'contacts': {
-          // Count existing records for this source to determine how many new ones to insert
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_customers WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          // Insert new canonical customer records for the synced count
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_customers (id, tenant_id, external_id, source_system, name, customer_group, status, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-cust-${Date.now()}-${i}`,
-              sourceSystem, `${sourceSystem} Customer ${existingCount + i + 1}`,
-              'synced', 'active',
-            ).run();
-          }
-          // Update synced_at for all existing records from this source
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_customers SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
+      for (const raw of records) {
+        const mapped = mapRecord(sourceSystem, entity.type, raw, tenantId);
+        if (!mapped) continue;
+        const table = canonicalTableName(entity.type);
+        if (!table) continue;
+
+        // UPSERT: check if record with same source_id + source_system exists
+        const mappedObj = mapped as unknown as Record<string, unknown>;
+        const sourceId = mappedObj.source_id as string;
+        const existing = await db.prepare(
+          `SELECT id FROM ${table} WHERE tenant_id = ? AND source_system = ? AND source_id = ?`
+        ).bind(tenantId, sourceSystem, sourceId).first<{ id: string }>();
+
+        if (existing) {
+          // UPDATE existing record
+          const cols = Object.keys(mappedObj).filter(k => !['id', 'tenant_id', 'source_system', 'source_id', 'created_at'].includes(k));
+          const sets = cols.map(c => `${c} = ?`).join(', ');
+          const vals = cols.map(c => mappedObj[c]);
+          await db.prepare(`UPDATE ${table} SET ${sets}, synced_at = datetime('now') WHERE id = ?`)
+            .bind(...vals, existing.id).run();
+        } else {
+          // INSERT new record
+          const cols = Object.keys(mappedObj);
+          const placeholders = cols.map(() => '?').join(', ');
+          const vals = cols.map(c => mappedObj[c]);
+          await db.prepare(`INSERT INTO ${table} (${cols.join(', ')}, synced_at) VALUES (${placeholders}, datetime('now'))`)
+            .bind(...vals).run();
         }
-        case 'invoices':
-        case 'sales_orders': {
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_invoices WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_invoices (id, tenant_id, external_id, source_system, invoice_number, customer_id, total, currency, status, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-inv-${Date.now()}-${i}`,
-              sourceSystem, `INV-${sourceSystem.toUpperCase()}-${existingCount + i + 1}`,
-              null, 0, 'ZAR', 'synced',
-            ).run();
+
+        // Embed into Vectorize for RAG
+        if (vectorize && ai) {
+          try {
+            const name = mappedObj.name as string || sourceId;
+            const content = Object.entries(mappedObj)
+              .filter(([k]) => !['id', 'tenant_id'].includes(k))
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(', ');
+            await indexDocument(vectorize, ai, {
+              id: mappedObj.id as string,
+              tenantId, type: entity.type, name, content,
+              metadata: { source_system: sourceSystem, source_id: sourceId },
+            });
+          } catch (vecErr) {
+            console.error(`Vectorize indexing failed for ${entity.type}/${sourceId}:`, vecErr);
           }
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_invoices SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
         }
-        case 'purchase_orders': {
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_purchase_orders WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_purchase_orders (id, tenant_id, external_id, source_system, po_number, supplier_id, total, currency, status, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-po-${Date.now()}-${i}`,
-              sourceSystem, `PO-${sourceSystem.toUpperCase()}-${existingCount + i + 1}`,
-              null, 0, 'ZAR', 'synced',
-            ).run();
-          }
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_purchase_orders SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
-        }
-        case 'materials':
-        case 'items':
-        case 'products': {
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_products WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_products (id, tenant_id, external_id, source_system, name, sku, category, is_active, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-prod-${Date.now()}-${i}`,
-              sourceSystem, `${sourceSystem} Product ${existingCount + i + 1}`,
-              `SKU-${sourceSystem.toUpperCase()}-${existingCount + i + 1}`, 'synced', 1,
-            ).run();
-          }
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_products SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
-        }
-        case 'gl_accounts':
-        case 'gl_journals': {
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_gl_accounts WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_gl_accounts (id, tenant_id, external_id, source_system, account_number, account_name, account_type, currency, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-gl-${Date.now()}-${i}`,
-              sourceSystem, `${(existingCount + i + 1).toString().padStart(4, '0')}`,
-              `${sourceSystem} GL Account ${existingCount + i + 1}`, 'synced', 'ZAR',
-            ).run();
-          }
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_gl_accounts SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
-        }
-        case 'workers':
-        case 'employees': {
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_employees WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_employees (id, tenant_id, external_id, source_system, name, department, position, status, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-emp-${Date.now()}-${i}`,
-              sourceSystem, `${sourceSystem} Employee ${existingCount + i + 1}`,
-              'synced', 'synced', 'active',
-            ).run();
-          }
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_employees SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
-        }
-        case 'suppliers': {
-          const existing = await db.prepare(
-            'SELECT COUNT(*) as count FROM erp_suppliers WHERE tenant_id = ? AND source_system = ?'
-          ).bind(tenantId, sourceSystem).first<{ count: number }>();
-          const existingCount = existing?.count || 0;
-          const newCount = Math.max(0, entity.count - existingCount);
-          for (let i = 0; i < newCount; i++) {
-            await db.prepare(
-              'INSERT INTO erp_suppliers (id, tenant_id, external_id, source_system, name, supplier_group, status, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-            ).bind(
-              crypto.randomUUID(), tenantId, `${sourceSystem}-sup-${Date.now()}-${i}`,
-              sourceSystem, `${sourceSystem} Supplier ${existingCount + i + 1}`,
-              'synced', 'active',
-            ).run();
-          }
-          if (existingCount > 0) {
-            await db.prepare(
-              'UPDATE erp_suppliers SET synced_at = datetime(\'now\') WHERE tenant_id = ? AND source_system = ?'
-            ).bind(tenantId, sourceSystem).run();
-          }
-          break;
+      }
+
+      // If no raw records but we have a count, update synced_at for existing records
+      if (records.length === 0 && entity.count > 0) {
+        const table = canonicalTableName(entity.type);
+        if (table) {
+          await db.prepare(
+            `UPDATE ${table} SET synced_at = datetime('now') WHERE tenant_id = ? AND source_system = ?`
+          ).bind(tenantId, sourceSystem).run();
         }
       }
     } catch (err) {
@@ -417,8 +310,8 @@ erp.post('/sync/:connection_id', async (c) => {
     const entities = (config.sync_entities as string[]) || ['accounts', 'contacts'];
     const result = await adapter.syncData(credentials, decryptedToken, entities);
 
-    // 3.12: Write synced records to canonical tables
-    await writeToCanonicalTables(c.env.DB, tenantId, conn.adapter_system as string, result);
+    // 3.12: Write synced records to canonical tables (with Vectorize + AI for RAG embedding)
+    await writeToCanonicalTables(c.env.DB, tenantId, conn.adapter_system as string, result, c.env.VECTORIZE, c.env.AI);
 
     await c.env.DB.prepare(
       'UPDATE erp_connections SET last_sync = datetime(\'now\'), records_synced = records_synced + ?, status = ? WHERE id = ? AND tenant_id = ?'

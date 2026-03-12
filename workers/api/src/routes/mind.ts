@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import type { AppBindings, AuthContext } from '../types';
 import { getValidatedJsonBody } from '../middleware/validation';
-import { chatWithFallback } from '../services/ollama';
+import { optimizedChat } from '../services/ai-cost-optimizer';
+import { ragQuery } from '../services/vectorize';
 
 const mind = new Hono<AppBindings>();
 
@@ -142,52 +143,53 @@ mind.post('/query', async (c) => {
   const systemPrompt = buildSystemPrompt(tenantContext);
 
   let response = '';
-  let citations: string[] = [];
+  let citations: Array<{ documentId: string; documentName: string; documentType: string; relevanceScore: number; snippet: string }> = [];
   let tokensIn = 0;
   let tokensOut = 0;
+  let costMeta: { cached: boolean; complexity: string; estimatedCostUSD: number; monthlyTotalUSD: number } | undefined;
 
   try {
-    // Call Ollama Cloud (Reshigan/atheon) with Workers AI fallback
+    // Step 1: RAG retrieval for real citations from Vectorize
+    let ragContext = '';
+    try {
+      const ragResult = await ragQuery(c.env.VECTORIZE, c.env.AI, c.env.DB, tenantId, body.query, { topK: 5 });
+      if (ragResult.citations.length > 0) {
+        citations = ragResult.citations;
+        ragContext = ragResult.citations.map((cit, i) =>
+          `[Source ${i + 1}: ${cit.documentType} "${cit.documentName}"] ${cit.snippet}`
+        ).join('\n');
+      }
+    } catch (ragErr) {
+      console.error('RAG retrieval error (non-fatal):', ragErr);
+    }
+
+    // Step 2: Optimized AI chat (cache + tiered routing + cost tracking)
     const messages = [
       { role: 'system' as const, content: systemPrompt },
+      ...(ragContext ? [{ role: 'user' as const, content: `Retrieved context:\n${ragContext}` }] : []),
       ...(body.context ? [{ role: 'user' as const, content: `Additional context: ${body.context}` }] : []),
       { role: 'user' as const, content: body.query },
     ];
 
-    const aiResult = await chatWithFallback(
-      c.env.OLLAMA_API_KEY,
-      c.env.AI,
-      {
-        model: tierConfig.ollamaModel,
-        messages,
-        maxTokens: tierConfig.maxTokens,
-        temperature: tierKey === 'tier-3' ? 0.3 : 0.7,
-        workersAiModel: tierConfig.fallbackModel,
-      },
+    const aiResult = await optimizedChat(
+      c.env.OLLAMA_API_KEY, c.env.AI, c.env.CACHE,
+      tenantId, messages, body.query,
+      { tier: tierKey },
     );
 
     response = aiResult.response || 'No response generated.';
     tokensIn = aiResult.tokensIn;
     tokensOut = aiResult.tokensOut;
-
-    // Auto-detect citations from context
-    const queryLower = body.query.toLowerCase();
-    if (queryLower.includes('revenue') || queryLower.includes('financial')) {
-      citations = ['SAP S/4HANA FI Module', 'Pulse Metric: Cash Conversion Cycle', 'Apex Health Score'];
-    } else if (queryLower.includes('supply') || queryLower.includes('logistics') || queryLower.includes('otif')) {
-      citations = ['Logistics TMS', 'Pulse Anomaly Detection', 'Risk Alert: Supply Chain'];
-    } else if (queryLower.includes('risk')) {
-      citations = ['Apex Risk Register', 'Health Score Dimensions', 'Audit Log'];
-    } else if (queryLower.includes('catalyst') || queryLower.includes('agent')) {
-      citations = ['Catalyst Control Plane', 'Agent Deployment Registry', 'Governance Log'];
-    } else {
-      citations = ['Atheon Knowledge Graph', 'Apex Health Score', 'Pulse Process Metrics'];
-    }
+    costMeta = {
+      cached: aiResult.cached,
+      complexity: aiResult.complexity,
+      estimatedCostUSD: aiResult.estimatedCostUSD,
+      monthlyTotalUSD: aiResult.monthlyTotalUSD,
+    };
   } catch (aiError) {
     // Fallback to rule-based response if AI fails
     console.error('Workers AI error:', aiError);
     response = generateFallbackResponse(body.query);
-    citations = ['Atheon Knowledge Graph (fallback mode)'];
     tokensIn = body.query.split(' ').length * 2;
     tokensOut = response.split(' ').length * 2;
   }
@@ -210,6 +212,7 @@ mind.post('/query', async (c) => {
     latencyMs: latency,
     citations,
     generatedAt: new Date().toISOString(),
+    ...(costMeta ? { cost: costMeta } : {}),
   });
 });
 
