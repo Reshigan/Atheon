@@ -175,6 +175,11 @@ tenants.put('/:id/entitlements', async (c) => {
         await c.env.DB.prepare(
           `UPDATE catalyst_clusters SET autonomy_tier = 'read-only', status = 'inactive' WHERE tenant_id = ? AND autonomy_tier NOT IN (${placeholders})`
         ).bind(id, ...allowedTiers).run();
+      } else {
+        // No tiers allowed — deactivate all clusters
+        await c.env.DB.prepare(
+          `UPDATE catalyst_clusters SET autonomy_tier = 'read-only', status = 'inactive' WHERE tenant_id = ?`
+        ).bind(id).run();
       }
     }
 
@@ -186,18 +191,23 @@ tenants.put('/:id/entitlements', async (c) => {
         await c.env.DB.prepare(
           `UPDATE catalyst_clusters SET status = 'inactive' WHERE tenant_id = ? AND domain NOT IN (${placeholders}) AND status = 'active'`
         ).bind(id, ...allowedLayers).run();
+      } else {
+        // No layers allowed — deactivate all active clusters
+        await c.env.DB.prepare(
+          `UPDATE catalyst_clusters SET status = 'inactive' WHERE tenant_id = ? AND status = 'active'`
+        ).bind(id).run();
       }
     }
 
-    // If max_agents changed, enforce cap by deactivating excess deployments
+    // If max_agents changed, enforce cap by suspending excess agent deployments
     if (body.maxAgents !== undefined && typeof body.maxAgents === 'number') {
       const activeCount = await c.env.DB.prepare(
-        'SELECT COUNT(*) as count FROM catalyst_clusters WHERE tenant_id = ? AND status = \'active\''
+        `SELECT COUNT(*) as count FROM agent_deployments WHERE tenant_id = ? AND status != 'decommissioned'`
       ).bind(id).first<{ count: number }>();
       if (activeCount && activeCount.count > body.maxAgents) {
         const excess = activeCount.count - body.maxAgents;
         await c.env.DB.prepare(
-          `UPDATE catalyst_clusters SET status = 'inactive' WHERE id IN (SELECT id FROM catalyst_clusters WHERE tenant_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT ?)`
+          `UPDATE agent_deployments SET status = 'suspended' WHERE id IN (SELECT id FROM agent_deployments WHERE tenant_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT ?)`
         ).bind(id, excess).run();
       }
     }
@@ -231,9 +241,9 @@ tenants.post('/:id/reset', async (c) => {
     'mind_queries',
     'notifications',
     'execution_logs',
-    'catalyst_clusters',
-    'graph_entities',
     'graph_relationships',
+    'graph_entities',
+    'catalyst_clusters',
     'chat_conversations',
     'documents',
     'webhooks',
