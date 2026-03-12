@@ -44,7 +44,7 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 }
 
 const SUPERADMIN_ROLES: UserRole[] = ['superadmin'];
-// SUPPORT_ROLES removed — IAM/Control Plane/ERP/Connectivity now use PLATFORM_ADMIN_ROLES
+// SUPPORT_ROLES removed — IAM/ERP use PLATFORM_ADMIN_ROLES; Control Plane/Connectivity/Deployments/Assessments use SUPERADMIN_ROLES
 const PLATFORM_ADMIN_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin'];
 const EXECUTIVE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive'];
 const MANAGER_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager'];
@@ -67,7 +67,7 @@ export default function App() {
           <Route path="/mind" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><MindPage /></ProtectedRoute>} />
           <Route path="/memory" element={<ProtectedRoute allowedRoles={MANAGER_ROLES}><MemoryPage /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><ChatPage /></ProtectedRoute>} />
-          <Route path="/connectivity" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ConnectivityPage /></ProtectedRoute>} />
+          <Route path="/connectivity" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><ConnectivityPage /></ProtectedRoute>} />
           <Route path="/audit" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><AuditPage /></ProtectedRoute>} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/tenants" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><TenantsPage /></ProtectedRoute>} />
