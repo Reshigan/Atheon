@@ -149,7 +149,7 @@ function ForceGraph({ entities, relationships }: { entities: GraphEntity[]; rela
 export function MemoryPage() {
  const industry = useAppStore((s) => s.industry);
  const user = useAppStore((s) => s.user);
- const isAdmin = user?.role === 'superadmin' || user?.role === 'support_admin' || user?.role === 'admin';
+ const isAdmin = user?.role === 'superadmin' || user?.role === 'support_admin';
  const [stats, setStats] = useState<GraphStats | null>(null);
  const [entities, setEntities] = useState<GraphEntity[]>([]);
  const [relationships, setRelationships] = useState<GraphRelationship[]>([]);
@@ -269,7 +269,7 @@ export function MemoryPage() {
  </Card>
  </div>
 
- {/* Industry Templates — admin only (M2) */}
+ {/* UX-08: Industry Templates — admin only */}
  {isAdmin && (
  <Card>
  <h3 className="text-lg font-semibold t-primary mb-4 flex items-center gap-2">
@@ -289,7 +289,7 @@ export function MemoryPage() {
  </Card>
  )}
 
- {/* Architecture — admin only (M2) */}
+ {/* UX-08: Architecture — admin only */}
  {isAdmin && (
  <Card className="border-accent/20">
  <div className="flex items-start gap-3">
