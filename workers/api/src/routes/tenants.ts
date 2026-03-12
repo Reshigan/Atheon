@@ -183,16 +183,10 @@ tenants.put('/:id/entitlements', async (c) => {
       }
     }
 
-    // If layers changed, deactivate clusters whose domain maps to removed layers
+    // If layers changed and 'catalysts' layer was removed, deactivate all clusters
     if (body.layers && Array.isArray(body.layers)) {
       const allowedLayers = body.layers as string[];
-      if (allowedLayers.length > 0) {
-        const placeholders = allowedLayers.map(() => '?').join(', ');
-        await c.env.DB.prepare(
-          `UPDATE catalyst_clusters SET status = 'inactive' WHERE tenant_id = ? AND domain NOT IN (${placeholders}) AND status = 'active'`
-        ).bind(id, ...allowedLayers).run();
-      } else {
-        // No layers allowed — deactivate all active clusters
+      if (!allowedLayers.includes('catalysts')) {
         await c.env.DB.prepare(
           `UPDATE catalyst_clusters SET status = 'inactive' WHERE tenant_id = ? AND status = 'active'`
         ).bind(id).run();
@@ -202,7 +196,7 @@ tenants.put('/:id/entitlements', async (c) => {
     // If max_agents changed, enforce cap by suspending excess agent deployments
     if (body.maxAgents !== undefined && typeof body.maxAgents === 'number') {
       const activeCount = await c.env.DB.prepare(
-        `SELECT COUNT(*) as count FROM agent_deployments WHERE tenant_id = ? AND status != 'decommissioned'`
+        `SELECT COUNT(*) as count FROM agent_deployments WHERE tenant_id = ? AND status = 'active'`
       ).bind(id).first<{ count: number }>();
       if (activeCount && activeCount.count > body.maxAgents) {
         const excess = activeCount.count - body.maxAgents;
