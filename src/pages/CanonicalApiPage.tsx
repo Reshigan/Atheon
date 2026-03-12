@@ -23,7 +23,7 @@ const domainColor: Record<string, string> = {
  inventory: 'text-accent',
  crm: 'text-orange-400'};
 
-export function CanonicalApiPage() {
+export function CanonicalApiPage({ embedded }: { embedded?: boolean } = {}) {
  const { activeTab, setActiveTab } = useTabState('endpoints');
  const [endpoints, setEndpoints] = useState<CanonicalEndpoint[]>([]);
  const [loading, setLoading] = useState(true);
@@ -61,6 +61,7 @@ export function CanonicalApiPage() {
 
  return (
  <div className="space-y-6 animate-fadeIn">
+ {!embedded && (
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center">
  <Globe className="w-5 h-5 text-orange-400" />
@@ -70,6 +71,7 @@ export function CanonicalApiPage() {
  <p className="text-sm t-muted">Unified API layer abstracting all ERP systems into one schema</p>
  </div>
  </div>
+ )}
 
  {/* Stats */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

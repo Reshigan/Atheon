@@ -9,7 +9,7 @@ import { useAppStore } from "@/stores/appStore";
 
 export function MindPage() {
  const user = useAppStore((s) => s.user);
- const isAdmin = user?.role === 'admin' || user?.role === 'executive';
+ const isAdmin = user?.role === 'superadmin' || user?.role === 'support_admin' || user?.role === 'admin';
  const [models, setModels] = useState<MindModels | null>(null);
  const [stats, setStats] = useState<MindStats | null>(null);
  const [loading, setLoading] = useState(true);
