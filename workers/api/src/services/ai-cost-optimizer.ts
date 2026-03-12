@@ -38,11 +38,16 @@ function classifyQueryCategory(query: string): QueryCategory {
   return 'standard';
 }
 
-async function generateCacheKey(tenantId: string, query: string, tier: string): Promise<string> {
-  const normalized = `${tenantId}:${tier}:${query.toLowerCase().trim().replace(/\s+/g, ' ')}`;
+async function generateCacheKey(tenantId: string, query: string, tier: string, cacheVersion?: string): Promise<string> {
+  const ver = cacheVersion || '0';
+  const normalized = `${tenantId}:${tier}:${ver}:${query.toLowerCase().trim().replace(/\s+/g, ' ')}`;
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized));
   const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
   return `${CACHE_PREFIX}${hex}`;
+}
+
+async function getCacheVersion(cache: KVNamespace, tenantId: string): Promise<string> {
+  return (await cache.get(`ai_cache_version:${tenantId}`)) || '0';
 }
 
 interface CachedAIResponse {
@@ -58,7 +63,8 @@ interface CachedAIResponse {
 export async function getCachedResponse(
   cache: KVNamespace, tenantId: string, query: string, tier: string,
 ): Promise<CachedAIResponse | null> {
-  const key = await generateCacheKey(tenantId, query, tier);
+  const version = await getCacheVersion(cache, tenantId);
+  const key = await generateCacheKey(tenantId, query, tier, version);
   const cached = await cache.get(key);
   if (!cached) return null;
   try { return JSON.parse(cached) as CachedAIResponse; } catch { return null; }
@@ -69,7 +75,8 @@ export async function cacheResponse(
   response: string, citations: string[], model: string,
   tokensIn: number, tokensOut: number,
 ): Promise<void> {
-  const key = await generateCacheKey(tenantId, query, tier);
+  const version = await getCacheVersion(cache, tenantId);
+  const key = await generateCacheKey(tenantId, query, tier, version);
   const category = classifyQueryCategory(query);
   const ttl = category === 'volatile' ? CACHE_TTL_SHORT
     : category === 'static' ? CACHE_TTL_LONG : CACHE_TTL_STANDARD;

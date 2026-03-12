@@ -330,7 +330,18 @@ export function CatalystsPage() {
  // Remove all data sources
  await api.catalysts.removeDataSource(dsClusterId, dsSubName);
  } else {
- await api.catalysts.setDataSources(dsClusterId, dsSubName, dsSources);
+ // Try plural endpoint first; fall back to singular for backward compat
+ try {
+   await api.catalysts.setDataSources(dsClusterId, dsSubName, dsSources);
+ } catch (pluralErr) {
+   const msg = pluralErr instanceof Error ? pluralErr.message : '';
+   if (msg === 'Not found' || msg === 'Not Found') {
+     // Plural endpoint not available — save first source via singular endpoint
+     await api.catalysts.setDataSource(dsClusterId, dsSubName, dsSources[0]);
+   } else {
+     throw pluralErr;
+   }
+ }
  }
  const ind = industry !== 'general' ? industry : undefined;
  const c = await api.catalysts.clusters(undefined, ind);

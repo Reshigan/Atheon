@@ -482,9 +482,9 @@ export function mapRecord(
 
   // ── SAP ──
   if (sys.includes('sap')) {
-    if (['customers', 'contacts'].includes(et)) return mapSAPCustomer(raw, tenantId);
+    if (['customers', 'contacts', 'business_partners', 'accounts'].includes(et)) return mapSAPCustomer(raw, tenantId);
     if (['suppliers', 'vendors'].includes(et)) return mapSAPSupplier(raw, tenantId);
-    if (['invoices', 'sales_invoices'].includes(et)) return mapSAPInvoice(raw, tenantId);
+    if (['invoices', 'sales_invoices', 'sales_orders'].includes(et)) return mapSAPInvoice(raw, tenantId);
     if (['products', 'items', 'materials'].includes(et)) return mapSAPProduct(raw, tenantId);
     if (['purchase_orders'].includes(et)) return mapSAPPurchaseOrder(raw, tenantId);
   }
@@ -546,12 +546,12 @@ export function mapRecord(
  */
 export function canonicalTableName(entityType: string): string | null {
   const et = entityType.toLowerCase();
-  if (['customers', 'contacts', 'accounts'].includes(et)) return 'erp_customers';
+  if (['customers', 'contacts', 'accounts', 'business_partners'].includes(et)) return 'erp_customers';
   if (['suppliers', 'vendors'].includes(et)) return 'erp_suppliers';
-  if (['invoices', 'sales_invoices', 'purchase_invoices'].includes(et)) return 'erp_invoices';
+  if (['invoices', 'sales_invoices', 'purchase_invoices', 'sales_orders'].includes(et)) return 'erp_invoices';
   if (['products', 'items', 'stock_items', 'inventory', 'materials'].includes(et)) return 'erp_products';
   if (['purchase_orders'].includes(et)) return 'erp_purchase_orders';
-  if (['gl_accounts', 'ledger_accounts'].includes(et)) return 'erp_gl_accounts';
-  if (['employees'].includes(et)) return 'erp_employees';
+  if (['gl_accounts', 'ledger_accounts', 'gl_journals'].includes(et)) return 'erp_gl_accounts';
+  if (['employees', 'workers'].includes(et)) return 'erp_employees';
   return null;
 }
