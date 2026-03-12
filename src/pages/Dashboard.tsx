@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth } from "@/lib/api";
 import {
-  TrendingUp, TrendingDown, Minus, Info, SlidersHorizontal,
+  TrendingUp, TrendingDown, Minus,
   ChevronRight, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -69,11 +69,9 @@ export function Dashboard() {
   const [cpHealth, setCpHealth] = useState<ControlPlaneHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "health" | "risks">("overview");
-  const [timeFilter, setTimeFilter] = useState<"7d" | "30d" | "90d" | "12m">("30d");
-  const [showFilters, setShowFilters] = useState(false);
-  // U1: Auto-refresh indicator
-  const [autoRefresh, setAutoRefresh] = useState<0 | 30 | 60>(0);
+  // UX-05: Silent auto-refresh every 60s (no user-facing toggle)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [refreshFlash, setRefreshFlash] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pieId = useId();
 
@@ -106,14 +104,17 @@ export function Dashboard() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // U1: Auto-refresh timer
+  // UX-05: Silent auto-refresh every 60s
   useEffect(() => {
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-    if (autoRefresh > 0) {
-      refreshTimerRef.current = setInterval(() => { loadData(); }, autoRefresh * 1000);
-    }
+    refreshTimerRef.current = setInterval(() => {
+      loadData().then(() => {
+        setRefreshFlash(true);
+        setTimeout(() => setRefreshFlash(false), 2000);
+      });
+    }, 60000);
     return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
-  }, [autoRefresh, loadData]);
+  }, [loadData]);
 
   const overallScore = health?.overall ?? 0;
   const dimEntries = health?.dimensions ? Object.values(health.dimensions) : [];
@@ -214,54 +215,23 @@ export function Dashboard() {
               </button>
             ))}
           </div>
-          {/* U1: Auto-refresh controls */}
-          <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
-            {([0, 30, 60] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setAutoRefresh(s)}
-                className="px-2 py-1.5 text-[10px] font-medium rounded-md transition-all"
-                style={autoRefresh === s ? { background: "var(--bg-card-solid)", color: "var(--text-primary)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" } : { color: "var(--text-muted)" }}
-                aria-label={s === 0 ? 'Disable auto-refresh' : `Auto-refresh every ${s} seconds`}
-              >
-                {s === 0 ? 'Off' : `${s}s`}
-              </button>
-            ))}
-          </div>
+          {/* UX-05: Last updated indicator + manual refresh */}
+          <span className={`text-[10px] t-muted transition-colors duration-500 ${refreshFlash ? 'text-emerald-500' : ''}`}>
+            Updated: {lastRefreshed.toLocaleTimeString()}
+          </span>
           <button
             className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all"
             style={{ background: "var(--bg-secondary)" }}
             title={`Last refreshed: ${lastRefreshed.toLocaleTimeString()}`}
-            onClick={() => loadData()}
+            onClick={() => loadData().then(() => { setRefreshFlash(true); setTimeout(() => setRefreshFlash(false), 2000); })}
             aria-label="Refresh dashboard data"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information" onClick={() => setActiveTab('overview')} aria-label="Dashboard info">
-            <Info size={14} />
-          </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: showFilters ? 'var(--accent)' : 'var(--bg-secondary)', color: showFilters ? '#fff' : undefined }} title="Toggle filters" onClick={() => setShowFilters(!showFilters)} aria-label="Toggle dashboard filters">
-            <SlidersHorizontal size={14} />
-          </button>
         </div>
       </div>
 
-      {/* FILTERS ROW */}
-      {showFilters && (
-        <DashCard className="!p-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-medium t-muted">Time Range:</span>
-            {(["7d", "30d", "90d", "12m"] as const).map((f) => (
-              <button key={f} onClick={() => setTimeFilter(f)} className="px-3 py-1 text-xs rounded-md font-medium transition-all" style={timeFilter === f ? { background: 'var(--accent)', color: '#fff' } : { background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
-                {f === '7d' ? '7 Days' : f === '30d' ? '30 Days' : f === '90d' ? '90 Days' : '12 Months'}
-              </button>
-            ))}
-            <span className="mx-2 h-4 border-l border-[var(--border-card)]" />
-            <span className="text-xs font-medium t-muted">Industry:</span>
-            <span className="text-xs font-semibold t-primary capitalize">{industry === 'general' ? 'All Industries' : industry}</span>
-          </div>
-        </DashCard>
-      )}
+      {/* UX-05: Time filter removed — industry shown inline */}
 
       {/* MAIN GRID */}
       {activeTab === 'overview' && !hasData && (
@@ -282,7 +252,7 @@ export function Dashboard() {
             <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Business Health</p>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold t-primary">{overallScore}<span className="text-base t-muted font-normal">/100</span></p>
+                <Link to="/apex" className="text-3xl font-bold t-primary hover:text-accent transition-colors cursor-pointer" title="View Apex Executive Intelligence">{overallScore}<span className="text-base t-muted font-normal">/100</span></Link>
                 <div className="flex items-center gap-1.5 mt-1">
                   {trendIcon(healthTrend)}
                   <span className={`text-xs ${avgDelta >= 0 ? "text-emerald-500" : "text-red-500"}`}>
@@ -316,7 +286,7 @@ export function Dashboard() {
 
             <DashCard>
               <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-2">Active Catalysts</p>
-              <p className="text-3xl font-bold t-primary">{activeCatalysts}</p>
+              <Link to="/catalysts" className="text-3xl font-bold t-primary hover:text-accent transition-colors cursor-pointer block" title="View Catalysts">{activeCatalysts}</Link>
               <p className="text-[10px] t-muted mt-1">{totalTasks} tasks in progress</p>
               <div className="w-full h-10 mt-2">
                 <Sparkline data={[3, 5, 4, 7, 6, 8, activeCatalysts]} width={120} height={40} color={ACCENT} />

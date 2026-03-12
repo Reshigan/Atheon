@@ -76,40 +76,41 @@ export function ChatPage() {
    setActiveThreadId(id);
  }, []);
 
- // Bug #8 fix: Load chat conversation history and group into the active thread
+ // UX-09: Always start with a blank thread; load history threads in sidebar only
  useEffect(() => {
- api.mind.history()
- .then((data) => {
- const restored: ChatMessage[] = [];
- for (const item of data.queries) {
- restored.push({ id: `u-${item.id}`, role: 'user', content: item.query });
- restored.push({
- id: item.id,
- role: 'assistant',
- content: item.response,
- citations: item.citations.map((c: string, i: number) => ({ id: `c-${i}`, source: c, confidence: 0.9 }))});
- }
- if (restored.length > 0) {
-   const historyThread: ChatThread = {
-     id: 'history',
-     title: restored[0]?.content?.slice(0, 40) || 'Previous conversation',
-     messages: restored,
-     createdAt: new Date().toISOString(),
-   };
-   setThreads([historyThread]);
-   setActiveThreadId('history');
- } else {
-   const id = `thread-${Date.now()}`;
-   setThreads([{ id, title: 'New conversation', messages: [], createdAt: new Date().toISOString() }]);
-   setActiveThreadId(id);
- }
- })
- .catch(() => {
-   const id = `thread-${Date.now()}`;
-   setThreads([{ id, title: 'New conversation', messages: [], createdAt: new Date().toISOString() }]);
-   setActiveThreadId(id);
- })
- .finally(() => setLoadingHistory(false));
+   const blankId = `thread-${Date.now()}`;
+   const blankThread: ChatThread = { id: blankId, title: 'New conversation', messages: [], createdAt: new Date().toISOString() };
+
+   api.mind.history()
+     .then((data) => {
+       const restored: ChatMessage[] = [];
+       for (const item of data.queries) {
+         restored.push({ id: `u-${item.id}`, role: 'user', content: item.query });
+         restored.push({
+           id: item.id,
+           role: 'assistant',
+           content: item.response,
+           citations: item.citations.map((c: string, i: number) => ({ id: `c-${i}`, source: c, confidence: 0.9 }))});
+       }
+       if (restored.length > 0) {
+         const historyThread: ChatThread = {
+           id: 'history',
+           title: restored[0]?.content?.slice(0, 40) || 'Previous conversation',
+           messages: restored,
+           createdAt: new Date().toISOString(),
+         };
+         // Blank thread is active; history available in sidebar
+         setThreads([blankThread, historyThread]);
+       } else {
+         setThreads([blankThread]);
+       }
+     })
+     .catch(() => {
+       setThreads([blankThread]);
+     })
+     .finally(() => setLoadingHistory(false));
+
+   setActiveThreadId(blankId);
  }, []);
 
  const suggestedQueries = [

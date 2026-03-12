@@ -13,8 +13,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { TenantsPage } from "@/pages/TenantsPage";
 import { IAMPage } from "@/pages/IAMPage";
 import { ControlPlanePage } from "@/pages/ControlPlanePage";
-import { CanonicalApiPage } from "@/pages/CanonicalApiPage";
-import { ERPAdaptersPage } from "@/pages/ERPAdaptersPage";
+import { IntegrationsPage } from "@/pages/IntegrationsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { MarketingPage } from "@/pages/MarketingPage";
 import { DeploymentsPage } from "@/pages/DeploymentsPage";
@@ -65,7 +64,7 @@ export default function App() {
           <Route path="/apex" element={<ProtectedRoute allowedRoles={EXECUTIVE_ROLES}><ApexPage /></ProtectedRoute>} />
           <Route path="/pulse" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><PulsePage /></ProtectedRoute>} />
           <Route path="/catalysts" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><CatalystsPage /></ProtectedRoute>} />
-          <Route path="/mind" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><MindPage /></ProtectedRoute>} />
+          <Route path="/mind" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><MindPage /></ProtectedRoute>} />
           <Route path="/memory" element={<ProtectedRoute allowedRoles={MANAGER_ROLES}><MemoryPage /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><ChatPage /></ProtectedRoute>} />
           <Route path="/connectivity" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ConnectivityPage /></ProtectedRoute>} />
@@ -73,9 +72,10 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/tenants" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><TenantsPage /></ProtectedRoute>} />
           <Route path="/iam" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IAMPage /></ProtectedRoute>} />
-          <Route path="/control-plane" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
-          <Route path="/canonical-api" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><CanonicalApiPage /></ProtectedRoute>} />
-          <Route path="/erp-adapters" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ERPAdaptersPage /></ProtectedRoute>} />
+          <Route path="/control-plane" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
+          <Route path="/integrations" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IntegrationsPage /></ProtectedRoute>} />
+          <Route path="/canonical-api" element={<Navigate to="/integrations" replace />} />
+          <Route path="/erp-adapters" element={<Navigate to="/integrations" replace />} />
           <Route path="/deployments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><DeploymentsPage /></ProtectedRoute>} />
           <Route path="/assessments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><AssessmentsPage /></ProtectedRoute>} />
         </Route>

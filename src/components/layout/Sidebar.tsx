@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import {
   IconDashboard, IconApex, IconPulse, IconCatalysts, IconMind, IconMemory,
-  IconChat, IconClients, IconIAM, IconControlPlane, IconCanonicalApi,
+  IconChat, IconClients, IconIAM, IconControlPlane,
   IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
   IconNetwork, IconBarChart,
 } from "@/components/icons/AtheonIcons";
@@ -39,26 +39,25 @@ const OPERATOR_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'exe
 const STANDARD_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager', 'analyst', 'operator'];
 
 const navItems: NavItem[] = [
-  // Intelligence — visible based on role
+  // UX-14: Intelligence — core user-facing pages
   { path: '/dashboard', label: 'Dashboard', icon: IconDashboard, section: 'intelligence' },
   { path: '/apex', label: 'Apex', icon: IconApex, section: 'intelligence', sublabel: 'Executive Intelligence', roles: EXECUTIVE_ROLES },
   { path: '/pulse', label: 'Pulse', icon: IconPulse, section: 'intelligence', sublabel: 'Process Intelligence', roles: STANDARD_ROLES },
   { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, section: 'intelligence', sublabel: 'Autonomous Execution', roles: OPERATOR_ROLES },
-  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM', roles: STANDARD_ROLES },
-  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'GraphRAG', roles: MANAGER_ROLES },
   { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI', roles: STANDARD_ROLES },
-  // Platform — admin + support roles
-  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
-  { path: '/iam', label: 'IAM', icon: IconIAM, section: 'platform', sublabel: 'Identity & Access', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, section: 'platform', sublabel: 'Unified API', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, section: 'platform', sublabel: 'System Connectors', roles: PLATFORM_ADMIN_ROLES },
-  // System — admin + support roles
-  { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'system', sublabel: 'MCP + A2A', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
-  // Superadmin — hybrid deployment & assessment tools
-  { path: '/deployments', label: 'Deployments', icon: IconNetwork, section: 'superadmin', sublabel: 'Hybrid & On-Premise', roles: SUPERADMIN_ROLES },
-  { path: '/assessments', label: 'Assessments', icon: IconBarChart, section: 'superadmin', sublabel: 'Pre-Sale Analysis', roles: SUPERADMIN_ROLES },
+  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM', roles: PLATFORM_ADMIN_ROLES },
+  // UX-14: Data — knowledge graph
+  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'data', sublabel: 'Knowledge Graph', roles: MANAGER_ROLES },
+  // UX-14: Administration — IAM, Settings, Integrations, Audit, Clients
+  { path: '/iam', label: 'IAM', icon: IconIAM, section: 'administration', sublabel: 'Users & Roles', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/tenants', label: 'Clients', icon: IconClients, section: 'administration', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
+  { path: '/integrations', label: 'Integrations', icon: IconERPAdapters, section: 'administration', sublabel: 'Systems & Data Schema', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/audit', label: 'Audit', icon: IconAudit, section: 'administration', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
+  // UX-14: Platform Ops — superadmin-only operational tools
+  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform-ops', sublabel: 'Agent Management', roles: SUPERADMIN_ROLES },
+  { path: '/deployments', label: 'Deployments', icon: IconNetwork, section: 'platform-ops', sublabel: 'Hybrid & On-Premise', roles: SUPERADMIN_ROLES },
+  { path: '/assessments', label: 'Assessments', icon: IconBarChart, section: 'platform-ops', sublabel: 'Pre-Sale Analysis', roles: SUPERADMIN_ROLES },
+  { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'platform-ops', sublabel: 'MCP + A2A', roles: SUPERADMIN_ROLES },
 ];
 
 /** Atheon logo mark — geometric triangle with sage/sky/bronze palette */
@@ -200,7 +199,7 @@ export function Sidebar() {
               const Icon = item.icon;
               const showSectionHeader = prevSection !== item.section;
               prevSection = item.section;
-              const sectionLabels: Record<string, string> = { intelligence: 'Intelligence', platform: 'Platform', system: 'System', superadmin: 'Superadmin' };
+              const sectionLabels: Record<string, string> = { intelligence: 'Intelligence', data: 'Data', administration: 'Administration', 'platform-ops': 'Platform Ops' };
 
               return (
                 <div key={item.path}>

@@ -156,17 +156,6 @@ export function TenantsPage() {
  setLoadingTemplates(false);
  }, [templates.length]);
 
- // Open deploy catalyst modal
- const openDeployCatalyst = useCallback(async (tenantId: string) => {
- setShowDeployCatalyst(tenantId);
- setDeployStep('choose');
- setSelectedIndustry(null);
- setTemplateClusters([]);
- setDeployResult(null);
- setTenantClusters([]);
- await loadTemplates();
- }, [loadTemplates]);
-
  // Select an industry template
  const selectIndustryTemplate = useCallback((industry: string) => {
  setSelectedIndustry(industry);
@@ -533,8 +522,7 @@ export function TenantsPage() {
 
  <div className="flex gap-2">
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageUsers(tenant.id); }} title="View and manage users for this tenant"><Users size={12} /> Manage Users</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openDeployCatalyst(tenant.id); }} title="Deploy catalyst clusters for this tenant"><Bot size={12} /> Deploy Catalysts</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Configure clusters, sub-catalysts, and data sources"><Settings size={12} /> Manage Catalysts</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Manage catalyst clusters, deploy new ones, and configure data sources"><Bot size={12} /> Manage Catalysts</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }} title="Edit plan entitlements and feature access"><Layers size={12} /> Edit Entitlements</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowResetConfirm(tenant.id); setResetResult(null); setResetConfirmText(''); }} title="Reset company — delete all insights and start fresh" className="!text-red-500 !border-red-500/30 hover:!bg-red-500/10"><Trash2 size={12} /> Reset Company</Button>
  </div>
@@ -647,10 +635,34 @@ export function TenantsPage() {
  <div>
  <p className="text-sm font-medium t-primary">{u.name}</p>
  <p className="text-xs t-muted">{u.email}</p>
+ {u.lastLogin && <p className="text-[10px] text-gray-400 mt-0.5">Last login: {new Date(u.lastLogin).toLocaleDateString()}</p>}
  </div>
  <div className="flex items-center gap-2">
  <Badge variant={u.status === 'active' ? 'success' : 'default'} size="sm">{u.status}</Badge>
- <Badge variant="outline" size="sm">{u.role}</Badge>
+ <select
+ className="px-2 py-1 text-xs rounded border border-[var(--border-card)] bg-[var(--bg-secondary)] t-primary"
+ value={u.role}
+ onChange={async (e) => {
+ try {
+ await api.iam.updateUser(u.id, { role: e.target.value }, showManageUsers || undefined);
+ const res = await api.iam.users(showManageUsers!);
+ setTenantUsers(res.users);
+ } catch { /* silent */ }
+ }}
+ title="Change user role"
+ >
+ <option value="admin">Admin</option>
+ <option value="executive">Executive</option>
+ <option value="manager">Manager</option>
+ <option value="analyst">Analyst</option>
+ <option value="operator">Operator</option>
+ </select>
+ <Button variant="secondary" size="sm" onClick={async () => {
+ try {
+ await api.iam.resendWelcome(u.id, showManageUsers || undefined);
+ setActionError(null);
+ } catch { setActionError('Failed to send password reset'); }
+ }} title="Send password reset email to this user" className="!px-2 !py-1 text-[10px]">Reset Pwd</Button>
  </div>
  </div>
  ))}

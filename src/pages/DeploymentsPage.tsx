@@ -152,10 +152,13 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
 
   if (deployments.length === 0) {
     return (
-      <div className="text-center py-20">
-        <div className="text-4xl mb-3">🖥️</div>
-        <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No deployments yet</h3>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Provision a new hybrid or on-premise deployment to get started.</p>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-14 h-14 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center mb-4">
+          <svg className="w-7 h-7 t-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
+        </div>
+        <h3 className="text-base font-semibold t-primary mb-1">No On-Premise Deployments</h3>
+        <p className="text-sm t-muted max-w-sm">Your organisation uses Atheon as a fully managed SaaS service. On-premise and hybrid deployments are available for enterprise customers with specific data residency or compliance requirements.</p>
+        <p className="text-xs t-muted mt-3">Contact your account manager to discuss hybrid deployment options.</p>
       </div>
     );
   }

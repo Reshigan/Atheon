@@ -235,10 +235,12 @@ export const api = {
     deletePolicy: (id: string) =>
       request<{ success: boolean }>(`/api/iam/policies/${id}`, { method: 'DELETE' }),
     // Phase 4.5: User management
-    updateUser: (id: string, data: Record<string, unknown>) =>
-      request<{ success: boolean }>(`/api/iam/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    updateUser: (id: string, data: Record<string, unknown>, tenantId?: string) =>
+      request<{ success: boolean }>(`/api/iam/users/${id}${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteUser: (id: string) =>
       request<{ success: boolean }>(`/api/iam/users/${id}`, { method: 'DELETE' }),
+    resendWelcome: (id: string, tenantId?: string) =>
+      request<{ success: boolean }>(`/api/iam/users/${id}/resend-welcome${qs({ tenant_id: tenantId })}`, { method: 'POST' }),
   },
 
   apex: {
