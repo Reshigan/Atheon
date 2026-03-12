@@ -73,6 +73,8 @@ export default function App() {
           <Route path="/iam" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IAMPage /></ProtectedRoute>} />
           <Route path="/control-plane" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
           <Route path="/integrations" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IntegrationsPage /></ProtectedRoute>} />
+          <Route path="/canonical-api" element={<Navigate to="/integrations" replace />} />
+          <Route path="/erp-adapters" element={<Navigate to="/integrations" replace />} />
           <Route path="/deployments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><DeploymentsPage /></ProtectedRoute>} />
           <Route path="/assessments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><AssessmentsPage /></ProtectedRoute>} />
         </Route>

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
 import { getValidatedJsonBody } from '../middleware/validation';
+import { cleanupTenantData } from '../services/tenant-cleanup';
 
 const tenants = new Hono<AppBindings>();
 
@@ -212,7 +213,7 @@ tenants.put('/:id/entitlements', async (c) => {
   return c.json({ success: true });
 });
 
-// POST /api/tenants/:id/reset - Reset company (delete all insights, start fresh)
+// POST /api/tenants/:id/reset- Reset company (delete all insights, start fresh)
 tenants.post('/:id/reset', async (c) => {
   const id = c.req.param('id');
 
@@ -220,38 +221,8 @@ tenants.post('/:id/reset', async (c) => {
   const tenant = await c.env.DB.prepare('SELECT id, name FROM tenants WHERE id = ?').bind(id).first();
   if (!tenant) return c.json({ error: 'Tenant not found' }, 404);
 
-  // Delete all Apex/Pulse insight data + catalyst data for this tenant
-  const insightTables = [
-    'health_scores',
-    'risk_alerts',
-    'executive_briefings',
-    'process_metrics',
-    'anomalies',
-    'process_flows',
-    'correlation_events',
-    'scenarios',
-    'catalyst_actions',
-    'agent_deployments',
-    'mind_queries',
-    'notifications',
-    'execution_logs',
-    'graph_relationships',
-    'graph_entities',
-    'catalyst_clusters',
-    'chat_conversations',
-    'documents',
-    'webhooks',
-  ];
-
-  let deletedTotal = 0;
-  for (const table of insightTables) {
-    try {
-      const result = await c.env.DB.prepare(`DELETE FROM ${table} WHERE tenant_id = ?`).bind(id).run();
-      deletedTotal += result.meta?.changes || 0;
-    } catch (err) {
-      console.error(`Reset: failed to clear table ${table}:`, err);
-    }
-  }
+  // Use comprehensive tenant-cleanup service (handles 30+ tables in dependency order)
+  const result = await cleanupTenantData(c.env.DB, id, true); // preserveUsers=true
 
   // Log the reset action in audit
   try {
@@ -259,12 +230,12 @@ tenants.post('/:id/reset', async (c) => {
       'INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       crypto.randomUUID(), id, 'company.reset', 'admin', 'tenant',
-      JSON.stringify({ tenantName: tenant.name, tablesCleared: insightTables.length, rowsDeleted: deletedTotal }),
+      JSON.stringify({ tenantName: tenant.name, tablesCleared: result.tablesCleared.length, rowsDeleted: result.totalRowsDeleted, durationMs: result.durationMs }),
       'success'
     ).run();
   } catch (err) { console.error('Reset: audit log write failed:', err); }
 
-  return c.json({ success: true, deletedRows: deletedTotal, tablesCleared: insightTables.length });
+  return c.json({ success: true, deletedRows: result.totalRowsDeleted, tablesCleared: result.tablesCleared.length });
 });
 
 // DELETE /api/tenants/:id

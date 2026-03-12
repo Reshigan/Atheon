@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useCallback } from "react";
+import { useState, useEffect, useId, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/ui/sparkline";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth } from "@/lib/api";
 import {
-  TrendingUp, TrendingDown, Minus, Info,
+  TrendingUp, TrendingDown, Minus,
   ChevronRight, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -69,8 +69,10 @@ export function Dashboard() {
   const [cpHealth, setCpHealth] = useState<ControlPlaneHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "health" | "risks">("overview");
+  // UX-05: Silent auto-refresh every 60s (no user-facing toggle)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [refreshFlash, setRefreshFlash] = useState(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pieId = useId();
 
   const loadData = useCallback(async () => {
@@ -102,17 +104,16 @@ export function Dashboard() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Silent auto-refresh every 60s (D1: no UI toggle)
+  // UX-05: Silent auto-refresh every 60s
   useEffect(() => {
-    const interval = setInterval(() => { loadData(); }, 60000);
-    return () => clearInterval(interval);
-  }, [loadData]);
-
-  // D2: Refresh feedback flash
-  const handleManualRefresh = useCallback(async () => {
-    await loadData();
-    setRefreshFlash(true);
-    setTimeout(() => setRefreshFlash(false), 2000);
+    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    refreshTimerRef.current = setInterval(() => {
+      loadData().then(() => {
+        setRefreshFlash(true);
+        setTimeout(() => setRefreshFlash(false), 2000);
+      });
+    }, 60000);
+    return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
   }, [loadData]);
 
   const overallScore = health?.overall ?? 0;
@@ -214,26 +215,23 @@ export function Dashboard() {
               </button>
             ))}
           </div>
+          {/* UX-05: Last updated indicator + manual refresh */}
+          <span className={`text-[10px] t-muted transition-colors duration-500 ${refreshFlash ? 'text-emerald-500' : ''}`}>
+            Updated: {lastRefreshed.toLocaleTimeString()}
+          </span>
           <button
             className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all"
-            style={{ background: refreshFlash ? 'var(--accent)' : 'var(--bg-secondary)', color: refreshFlash ? '#fff' : undefined }}
+            style={{ background: "var(--bg-secondary)" }}
             title={`Last refreshed: ${lastRefreshed.toLocaleTimeString()}`}
-            onClick={handleManualRefresh}
+            onClick={() => loadData().then(() => { setRefreshFlash(true); setTimeout(() => setRefreshFlash(false), 2000); })}
             aria-label="Refresh dashboard data"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-          {refreshFlash && (
-            <span className="text-[10px] font-medium text-emerald-500 animate-fadeIn">
-              Updated {lastRefreshed.toLocaleTimeString()}
-            </span>
-          )}
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all" style={{ background: "var(--bg-secondary)" }} title="Dashboard information" onClick={() => setActiveTab('overview')} aria-label="Dashboard info">
-            <Info size={14} />
-          </button>
         </div>
       </div>
 
+      {/* UX-05: Time filter removed — industry shown inline */}
 
       {/* MAIN GRID */}
       {activeTab === 'overview' && !hasData && (
@@ -250,12 +248,11 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* LEFT COLUMN */}
         <div className="lg:col-span-5 space-y-5">
-          <Link to="/apex" className="block hover:opacity-90 transition-opacity">
           <TintedCard>
             <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Business Health</p>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold t-primary">{overallScore}<span className="text-base t-muted font-normal">/100</span></p>
+                <Link to="/apex" className="text-3xl font-bold t-primary hover:text-accent transition-colors cursor-pointer" title="View Apex Executive Intelligence">{overallScore}<span className="text-base t-muted font-normal">/100</span></Link>
                 <div className="flex items-center gap-1.5 mt-1">
                   {trendIcon(healthTrend)}
                   <span className={`text-xs ${avgDelta >= 0 ? "text-emerald-500" : "text-red-500"}`}>
@@ -268,10 +265,8 @@ export function Dashboard() {
               </div>
             </div>
           </TintedCard>
-          </Link>
 
           <div className="grid grid-cols-2 gap-4">
-            <Link to="/apex" className="block hover:opacity-90 transition-opacity">
             <TintedCard>
               <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-3">Top Dimensions</p>
               <div className="space-y-2.5">
@@ -288,18 +283,15 @@ export function Dashboard() {
                 ))}
               </div>
             </TintedCard>
-            </Link>
 
-            <Link to="/catalysts" className="block hover:opacity-90 transition-opacity">
             <DashCard>
               <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-2">Active Catalysts</p>
-              <p className="text-3xl font-bold t-primary">{activeCatalysts}</p>
+              <Link to="/catalysts" className="text-3xl font-bold t-primary hover:text-accent transition-colors cursor-pointer block" title="View Catalysts">{activeCatalysts}</Link>
               <p className="text-[10px] t-muted mt-1">{totalTasks} tasks in progress</p>
               <div className="w-full h-10 mt-2">
                 <Sparkline data={[3, 5, 4, 7, 6, 8, activeCatalysts]} width={120} height={40} color={ACCENT} />
               </div>
             </DashCard>
-            </Link>
           </div>
 
           <TintedCard>

@@ -740,7 +740,7 @@ export function CatalystsPage() {
  </div>
  {isAdmin && (
  <div className="flex gap-2">
- <Button variant="primary" size="sm" onClick={() => setShowDeployCatalyst(true)} title="Create and deploy a new catalyst cluster">
+ <Button variant="primary" size="sm" onClick={() => setShowDeployCatalyst(true)} title="Create a new catalyst cluster">
  <Plus size={14} /> New Cluster
  </Button>
  </div>

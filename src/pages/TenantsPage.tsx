@@ -49,10 +49,6 @@ export function TenantsPage() {
  const [showAddUser, setShowAddUser] = useState(false);
  const [addUserForm, setAddUserForm] = useState({ email: '', name: '', role: 'analyst' });
  const [addingUser, setAddingUser] = useState(false);
- const [editingUserId, setEditingUserId] = useState<string | null>(null);
- const [editUserRole, setEditUserRole] = useState('');
- const [savingUserEdit, setSavingUserEdit] = useState(false);
- const [resettingPassword, setResettingPassword] = useState<string | null>(null);
 
  // Deploy Catalyst modal state
  const [showDeployCatalyst, setShowDeployCatalyst] = useState<string | null>(null);
@@ -129,29 +125,6 @@ export function TenantsPage() {
  setShowAddUser(false);
  } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to add user'); }
  setAddingUser(false);
- };
-
- // C3: Edit user role
- const handleEditUserRole = async (userId: string) => {
- if (savingUserEdit || !showManageUsers || !editUserRole) return;
- setSavingUserEdit(true);
- try {
- await api.iam.updateUser(userId, { role: editUserRole });
- const res = await api.iam.users(showManageUsers);
- setTenantUsers(res.users);
- setEditingUserId(null);
- } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to update user role'); }
- setSavingUserEdit(false);
- };
-
- // C3: Reset user password
- const handleResetPassword = async (userId: string) => {
- if (!showManageUsers) return;
- setResettingPassword(userId);
- try {
- await api.iam.resendWelcome(userId);
- } catch (err) { setActionError(err instanceof Error ? err.message : 'Failed to send password reset'); }
- setResettingPassword(null);
  };
 
  // Deploy Catalyst handler (single cluster - kept for backward compat)
@@ -549,7 +522,7 @@ export function TenantsPage() {
 
  <div className="flex gap-2">
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageUsers(tenant.id); }} title="View and manage users for this tenant"><Users size={12} /> Manage Users</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Manage and deploy catalyst clusters"><Bot size={12} /> Manage Catalysts</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Manage catalyst clusters, deploy new ones, and configure data sources"><Bot size={12} /> Manage Catalysts</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }} title="Edit plan entitlements and feature access"><Layers size={12} /> Edit Entitlements</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowResetConfirm(tenant.id); setResetResult(null); setResetConfirmText(''); }} title="Reset company — delete all insights and start fresh" className="!text-red-500 !border-red-500/30 hover:!bg-red-500/10"><Trash2 size={12} /> Reset Company</Button>
  </div>
@@ -658,36 +631,39 @@ export function TenantsPage() {
  <div className="space-y-2">
  {tenantUsers.length === 0 && <p className="text-sm t-secondary py-4 text-center">No users found for this tenant.</p>}
  {tenantUsers.map((u) => (
- <div key={u.id} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] space-y-2">
- <div className="flex items-center justify-between">
+ <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div>
  <p className="text-sm font-medium t-primary">{u.name}</p>
  <p className="text-xs t-muted">{u.email}</p>
- {u.lastLogin && <p className="text-[10px] text-gray-500">Last login: {new Date(u.lastLogin).toLocaleDateString()}</p>}
+ {u.lastLogin && <p className="text-[10px] text-gray-400 mt-0.5">Last login: {new Date(u.lastLogin).toLocaleDateString()}</p>}
  </div>
  <div className="flex items-center gap-2">
  <Badge variant={u.status === 'active' ? 'success' : 'default'} size="sm">{u.status}</Badge>
- <Badge variant="outline" size="sm">{u.role}</Badge>
- </div>
- </div>
- {editingUserId === u.id ? (
- <div className="flex items-center gap-2 pt-1 border-t border-[var(--border-card)]">
- <select className="flex-1 px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs" value={editUserRole} onChange={e => setEditUserRole(e.target.value)}>
- <option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option>
+ <select
+ className="px-2 py-1 text-xs rounded border border-[var(--border-card)] bg-[var(--bg-secondary)] t-primary"
+ value={u.role}
+ onChange={async (e) => {
+ try {
+ await api.iam.updateUser(u.id, { role: e.target.value }, showManageUsers || undefined);
+ const res = await api.iam.users(showManageUsers!);
+ setTenantUsers(res.users);
+ } catch { /* silent */ }
+ }}
+ title="Change user role"
+ >
+ <option value="admin">Admin</option>
+ <option value="executive">Executive</option>
+ <option value="manager">Manager</option>
+ <option value="analyst">Analyst</option>
+ <option value="operator">Operator</option>
  </select>
- <Button variant="primary" size="sm" onClick={() => handleEditUserRole(u.id)} disabled={savingUserEdit}>
- {savingUserEdit ? <Loader2 size={12} className="animate-spin" /> : null} Save
- </Button>
- <Button variant="secondary" size="sm" onClick={() => setEditingUserId(null)}>Cancel</Button>
+ <Button variant="secondary" size="sm" onClick={async () => {
+ try {
+ await api.iam.resendWelcome(u.id, showManageUsers || undefined);
+ setActionError(null);
+ } catch { setActionError('Failed to send password reset'); }
+ }} title="Send password reset email to this user" className="!px-2 !py-1 text-[10px]">Reset Pwd</Button>
  </div>
- ) : (
- <div className="flex items-center gap-2 pt-1 border-t border-[var(--border-card)]">
- <button className="text-xs text-accent hover:underline" onClick={() => { setEditingUserId(u.id); setEditUserRole(u.role); }}>Edit Role</button>
- <button className="text-xs text-accent hover:underline" onClick={() => handleResetPassword(u.id)} disabled={resettingPassword === u.id}>
- {resettingPassword === u.id ? 'Sending...' : 'Reset Password'}
- </button>
- </div>
- )}
  </div>
  ))}
  </div>
