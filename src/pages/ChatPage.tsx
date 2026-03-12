@@ -76,8 +76,10 @@ export function ChatPage() {
    setActiveThreadId(id);
  }, []);
 
- // Bug #8 fix: Load chat conversation history and group into the active thread
+ // M3: Load history into sidebar but start with a blank new thread
  useEffect(() => {
+ const newId = `thread-${Date.now()}`;
+ const blankThread: ChatThread = { id: newId, title: 'New conversation', messages: [], createdAt: new Date().toISOString() };
  api.mind.history()
  .then((data) => {
  const restored: ChatMessage[] = [];
@@ -96,18 +98,16 @@ export function ChatPage() {
      messages: restored,
      createdAt: new Date().toISOString(),
    };
-   setThreads([historyThread]);
-   setActiveThreadId('history');
+   // Put blank thread first, history second — select blank thread
+   setThreads([blankThread, historyThread]);
  } else {
-   const id = `thread-${Date.now()}`;
-   setThreads([{ id, title: 'New conversation', messages: [], createdAt: new Date().toISOString() }]);
-   setActiveThreadId(id);
+   setThreads([blankThread]);
  }
+ setActiveThreadId(newId);
  })
  .catch(() => {
-   const id = `thread-${Date.now()}`;
-   setThreads([{ id, title: 'New conversation', messages: [], createdAt: new Date().toISOString() }]);
-   setActiveThreadId(id);
+   setThreads([blankThread]);
+   setActiveThreadId(newId);
  })
  .finally(() => setLoadingHistory(false));
  }, []);

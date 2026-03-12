@@ -126,7 +126,7 @@ export function DeploymentsPage() {
       )}
 
       {/* Views */}
-      {view === 'overview' && <OverviewView deployments={deployments} loading={loading} statusColor={statusColor} openDetail={openDetail} openLogs={openLogs} />}
+      {view === 'overview' && <OverviewView deployments={deployments} loading={loading} statusColor={statusColor} openDetail={openDetail} openLogs={openLogs} onProvision={() => setView('provision')} />}
       {view === 'provision' && <ProvisionView onCreated={(resp) => setInstallModal(resp)} onError={setError} />}
       {view === 'detail' && selectedId && <DetailView deployment={selectedDeployment} id={selectedId} onRefresh={() => loadDetail(selectedId)} onError={setError} />}
       {view === 'logs' && selectedId && <LogsView id={selectedId} />}
@@ -135,12 +135,13 @@ export function DeploymentsPage() {
 }
 
 // ── Overview View ─────────────────────────────────────────────────────────
-function OverviewView({ deployments, loading, statusColor, openDetail, openLogs }: {
+function OverviewView({ deployments, loading, statusColor, openDetail, openLogs, onProvision }: {
   deployments: ManagedDeployment[];
   loading: boolean;
   statusColor: (s: string) => string;
   openDetail: (id: string) => void;
   openLogs: (id: string) => void;
+  onProvision: () => void;
 }) {
   if (loading) {
     return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -152,10 +153,22 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
 
   if (deployments.length === 0) {
     return (
-      <div className="text-center py-20">
-        <div className="text-4xl mb-3">🖥️</div>
-        <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No deployments yet</h3>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Provision a new hybrid or on-premise deployment to get started.</p>
+      <div className="text-center py-20 space-y-4">
+        <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center" style={{ background: 'var(--bg-secondary)' }}>
+          <span className="text-3xl">🖥️</span>
+        </div>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No hybrid or on-premise deployments</h3>
+        <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--text-muted)' }}>
+          This page is used to manage customer deployments outside of Cloudflare SaaS.
+          Provision a new hybrid or on-premise deployment when a customer requires dedicated infrastructure.
+        </p>
+        <button
+          onClick={onProvision}
+          className="px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors mx-auto inline-flex items-center gap-2"
+          style={{ background: 'var(--accent)' }}
+        >
+          + Provision New Deployment
+        </button>
       </div>
     );
   }

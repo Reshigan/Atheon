@@ -165,6 +165,46 @@ tenants.put('/:id/entitlements', async (c) => {
     await c.env.DB.prepare(`UPDATE tenant_entitlements SET ${updates.join(', ')} WHERE tenant_id = ?`).bind(...values).run();
   }
 
+  // Cascade entitlement changes to catalyst_clusters
+  try {
+    // If autonomy_tiers changed, downgrade clusters with tiers no longer allowed
+    if (body.autonomyTiers && Array.isArray(body.autonomyTiers)) {
+      const allowedTiers = body.autonomyTiers as string[];
+      if (allowedTiers.length > 0) {
+        const placeholders = allowedTiers.map(() => '?').join(', ');
+        await c.env.DB.prepare(
+          `UPDATE catalyst_clusters SET autonomy_tier = 'read-only', status = 'inactive' WHERE tenant_id = ? AND autonomy_tier NOT IN (${placeholders})`
+        ).bind(id, ...allowedTiers).run();
+      }
+    }
+
+    // If layers changed, deactivate clusters whose domain maps to removed layers
+    if (body.layers && Array.isArray(body.layers)) {
+      const allowedLayers = body.layers as string[];
+      if (allowedLayers.length > 0) {
+        const placeholders = allowedLayers.map(() => '?').join(', ');
+        await c.env.DB.prepare(
+          `UPDATE catalyst_clusters SET status = 'inactive' WHERE tenant_id = ? AND domain NOT IN (${placeholders}) AND status = 'active'`
+        ).bind(id, ...allowedLayers).run();
+      }
+    }
+
+    // If max_agents changed, enforce cap by deactivating excess deployments
+    if (body.maxAgents !== undefined && typeof body.maxAgents === 'number') {
+      const activeCount = await c.env.DB.prepare(
+        'SELECT COUNT(*) as count FROM catalyst_clusters WHERE tenant_id = ? AND status = \'active\''
+      ).bind(id).first<{ count: number }>();
+      if (activeCount && activeCount.count > body.maxAgents) {
+        const excess = activeCount.count - body.maxAgents;
+        await c.env.DB.prepare(
+          `UPDATE catalyst_clusters SET status = 'inactive' WHERE id IN (SELECT id FROM catalyst_clusters WHERE tenant_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT ?)`
+        ).bind(id, excess).run();
+      }
+    }
+  } catch (err) {
+    console.error('Entitlement cascade to catalyst_clusters failed:', err);
+  }
+
   return c.json({ success: true });
 });
 
@@ -191,6 +231,12 @@ tenants.post('/:id/reset', async (c) => {
     'mind_queries',
     'notifications',
     'execution_logs',
+    'catalyst_clusters',
+    'graph_entities',
+    'graph_relationships',
+    'chat_conversations',
+    'documents',
+    'webhooks',
   ];
 
   let deletedTotal = 0;

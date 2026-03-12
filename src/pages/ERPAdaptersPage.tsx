@@ -16,7 +16,7 @@ import { useAppStore } from "@/stores/appStore";
 const systemIconMap: Record<string, React.FC<{ size?: number }>> = {
  SAP: IconERP_SAP, SF: IconERP_Cloud, WD: IconERP_Generic, ORC: IconERP_Generic, D365: IconERP_Generic, NS: IconERP_Generic, SG: IconERP_Generic, API: IconERP_Generic};
 
-export function ERPAdaptersPage() {
+export function ERPAdaptersPage({ embedded }: { embedded?: boolean } = {}) {
  const { activeTab, setActiveTab } = useTabState('adapters');
  const user = useAppStore((s) => s.user);
  const [adapters, setAdapters] = useState<ERPAdapter[]>([]);
@@ -102,6 +102,7 @@ export function ERPAdaptersPage() {
 
  return (
  <div className="space-y-6 animate-fadeIn">
+ {!embedded && (
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center">
@@ -114,6 +115,12 @@ export function ERPAdaptersPage() {
  </div>
  <Button variant="primary" size="sm" onClick={() => setShowConnect(true)} title="Connect a new ERP system"><Plus size={14} /> Connect ERP</Button>
  </div>
+ )}
+ {embedded && (
+ <div className="flex justify-end">
+ <Button variant="primary" size="sm" onClick={() => setShowConnect(true)} title="Connect a new ERP system"><Plus size={14} /> Connect ERP</Button>
+ </div>
+ )}
 
  {actionError && (
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">

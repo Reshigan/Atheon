@@ -4,8 +4,8 @@ import { Link, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import {
   IconDashboard, IconApex, IconPulse, IconCatalysts, IconMind, IconMemory,
-  IconChat, IconClients, IconIAM, IconControlPlane, IconCanonicalApi,
-  IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
+  IconChat, IconClients, IconIAM, IconControlPlane,
+  IconERPAdapters, IconAudit, IconSettings,
   IconNetwork, IconBarChart,
 } from "@/components/icons/AtheonIcons";
 import type { UserRole } from "@/types";
@@ -44,17 +44,15 @@ const navItems: NavItem[] = [
   { path: '/apex', label: 'Apex', icon: IconApex, section: 'intelligence', sublabel: 'Executive Intelligence', roles: EXECUTIVE_ROLES },
   { path: '/pulse', label: 'Pulse', icon: IconPulse, section: 'intelligence', sublabel: 'Process Intelligence', roles: STANDARD_ROLES },
   { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, section: 'intelligence', sublabel: 'Autonomous Execution', roles: OPERATOR_ROLES },
-  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM', roles: STANDARD_ROLES },
+  { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'Domain LLM', roles: PLATFORM_ADMIN_ROLES },
   { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'GraphRAG', roles: MANAGER_ROLES },
   { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI', roles: STANDARD_ROLES },
   // Platform — admin + support roles
   { path: '/tenants', label: 'Clients', icon: IconClients, section: 'platform', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
   { path: '/iam', label: 'IAM', icon: IconIAM, section: 'platform', sublabel: 'Identity & Access', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/canonical-api', label: 'Canonical API', icon: IconCanonicalApi, section: 'platform', sublabel: 'Unified API', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/erp-adapters', label: 'ERP Adapters', icon: IconERPAdapters, section: 'platform', sublabel: 'System Connectors', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform', sublabel: 'Agent Management', roles: SUPERADMIN_ROLES },
+  { path: '/integrations', label: 'Integrations', icon: IconERPAdapters, section: 'platform', sublabel: 'ERP & Canonical API', roles: PLATFORM_ADMIN_ROLES },
   // System — admin + support roles
-  { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'system', sublabel: 'MCP + A2A', roles: PLATFORM_ADMIN_ROLES },
   { path: '/audit', label: 'Audit', icon: IconAudit, section: 'system', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
   // Superadmin — hybrid deployment & assessment tools
   { path: '/deployments', label: 'Deployments', icon: IconNetwork, section: 'superadmin', sublabel: 'Hybrid & On-Premise', roles: SUPERADMIN_ROLES },

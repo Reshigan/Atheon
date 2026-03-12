@@ -239,6 +239,8 @@ export const api = {
       request<{ success: boolean }>(`/api/iam/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteUser: (id: string) =>
       request<{ success: boolean }>(`/api/iam/users/${id}`, { method: 'DELETE' }),
+    resendWelcome: (id: string) =>
+      request<{ success: boolean }>(`/api/iam/users/${id}/resend-welcome`, { method: 'POST' }),
   },
 
   apex: {
