@@ -230,6 +230,10 @@ export function CatalystsPage() {
  const industry = useAppStore((s) => s.industry);
  const [togglingSubCatalyst, setTogglingSubCatalyst] = useState<string | null>(null);
 
+  // Currently selected sub-catalyst for configuration
+ const [configSub, setConfigSub] = useState<SubCatalyst | null>(null);
+ const [configClusterId, setConfigClusterId] = useState('');
+
  // Data source configuration state
  const [showDataSourceConfig, setShowDataSourceConfig] = useState(false);
  const [dsClusterId, setDsClusterId] = useState('');
@@ -249,7 +253,9 @@ export function CatalystsPage() {
    return [];
  };
 
- const openDataSourceConfig = async (clusterId: string, sub: SubCatalyst) => {
+  const openDataSourceConfig = async (clusterId: string, sub: SubCatalyst) => {
+ setConfigSub(sub);
+ setConfigClusterId(clusterId);
  setDsClusterId(clusterId);
  setDsSubName(sub.name);
  const existing = getSubDataSources(sub);
@@ -954,7 +960,7 @@ export function CatalystsPage() {
  {sub.description && <span className="text-[10px] t-secondary block truncate">{sub.description}</span>}
  </div>
  </div>
- <div className="flex items-center gap-1.5 flex-shrink-0">
+  <div className="flex items-center gap-1.5 flex-shrink-0">
  {sub.schedule && sub.schedule.frequency !== 'manual' && (
  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" title={sub.schedule.next_run ? `Next run: ${new Date(sub.schedule.next_run).toLocaleString()}` : ''}>
  <Calendar size={8} />
@@ -988,36 +994,9 @@ export function CatalystsPage() {
  )}
  {isAdmin && (
  <>
- {getSubDataSources(sub).length >= 2 && (
- <button
- onClick={(e) => { e.stopPropagation(); openFieldMappingConfig(cluster.id, sub); }}
- className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-500/10 transition-colors"
- title="Configure field mappings"
- >
- <Link2 size={12} className={sub.field_mappings && sub.field_mappings.length > 0 ? 'text-teal-400' : 'text-gray-400'} />
- </button>
- )}
- <button
- onClick={(e) => { e.stopPropagation(); openExecutionConfig(cluster.id, sub); }}
- className="h-6 w-6 flex items-center justify-center rounded hover:bg-orange-500/10 transition-colors"
- title="Configure execution mode"
- >
- <Activity size={12} className={sub.execution_config ? 'text-orange-400' : 'text-gray-400'} />
- </button>
- <button
- onClick={(e) => { e.stopPropagation(); openScheduleConfig(cluster.id, sub); }}
- className="h-6 w-6 flex items-center justify-center rounded hover:bg-indigo-500/10 transition-colors"
- title="Configure schedule"
- >
- <Calendar size={12} className="text-indigo-400" />
- </button>
- <button
- onClick={(e) => { e.stopPropagation(); openDataSourceConfig(cluster.id, sub); }}
- className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent/10 transition-colors"
- title="Configure data source"
- >
- <Settings size={12} className="text-accent" />
- </button>
+ <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={(e) => { e.stopPropagation(); openDataSourceConfig(cluster.id, sub); }} title="Configure data sources, schedule, execution mode and field mappings">
+ <Settings size={10} className="mr-1 text-accent" /> Configure
+ </Button>
  <button
  onClick={(e) => { e.stopPropagation(); handleToggleSubCatalyst(cluster.id, sub.name); }}
  disabled={togglingSubCatalyst === `${cluster.id}:${sub.name}`}
@@ -1416,9 +1395,42 @@ export function CatalystsPage() {
  <button onClick={() => setShowDataSourceConfig(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
  </div>
 
- <p className="text-xs t-secondary">
- Configure where <span className="font-semibold text-accent">{dsSubName}</span> gets its input data from. A sub-catalyst can have multiple data sources.
+  <p className="text-xs t-secondary">
+ Configure <span className="font-semibold text-accent">{dsSubName}</span> sub-catalyst settings.
  </p>
+
+ {/* Quick-access config navigation */}
+ {configSub && (
+ <div className="flex flex-wrap gap-2">
+  <button
+ type="button"
+ disabled
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/30 disabled:opacity-80"
+ >
+ <Database size={12} /> Data Sources
+ </button>
+ <button
+ onClick={() => { setShowDataSourceConfig(false); openScheduleConfig(configClusterId, configSub); }}
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-indigo-500/30 hover:text-indigo-400 transition-colors"
+ >
+ <Calendar size={12} /> Schedule
+ </button>
+ <button
+ onClick={() => { setShowDataSourceConfig(false); openExecutionConfig(configClusterId, configSub); }}
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-orange-500/30 hover:text-orange-400 transition-colors"
+ >
+ <Activity size={12} /> Execution Mode
+ </button>
+ {getSubDataSources(configSub).length >= 2 && (
+ <button
+ onClick={() => { setShowDataSourceConfig(false); openFieldMappingConfig(configClusterId, configSub); }}
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-teal-500/30 hover:text-teal-400 transition-colors"
+ >
+ <Link2 size={12} /> Field Mappings
+ </button>
+ )}
+ </div>
+ )}
 
  {/* Existing Data Sources List */}
  {dsSources.length > 0 && dsEditIndex === null && (
