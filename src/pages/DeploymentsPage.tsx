@@ -469,7 +469,7 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setEditing(!editing)}
+              onClick={() => { if (editing && deployment) { setEditForm({ name: deployment.name, region: deployment.region, deployment_type: deployment.deploymentType, licence_expires_at: deployment.licenceExpiresAt || '' }); } setEditing(!editing); }}
               className="px-3 py-1 text-xs font-medium rounded-lg transition-colors"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
             >
