@@ -992,6 +992,102 @@ const quickbooksAdapter: ERPAdapter = {
   },
 };
 
+// ── Odoo Adapter ──
+const odooAdapter: ERPAdapter = {
+  name: 'Odoo',
+
+  getAuthUrl(credentials: ERPCredentials, state: string): string {
+    const authUrl = credentials.authUrl || `${credentials.baseUrl}/api/v1/oauth2/authorize`;
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: credentials.clientId,
+      redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      scope: credentials.scope || 'openid profile email',
+      state,
+    });
+    return `${authUrl}?${params}`;
+  },
+
+  async exchangeToken(credentials: ERPCredentials, code: string): Promise<ERPTokenResponse> {
+    const tokenUrl = credentials.tokenUrl || `${credentials.baseUrl}/api/v1/oauth2/token`;
+    const resp = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${credentials.clientId}:${credentials.clientSecret}`)}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: `${credentials.baseUrl}/oauth/callback`,
+      }),
+    });
+    if (!resp.ok) throw new Error(`Odoo token exchange failed: ${resp.status}`);
+    return resp.json();
+  },
+
+  async testConnection(credentials: ERPCredentials, token: string) {
+    try {
+      const resp = await fetch(`${credentials.baseUrl}/api/v1/version`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { server_version?: string };
+        return {
+          connected: true,
+          version: data.server_version || '17.0',
+          message: 'Connected to Odoo JSON-RPC / REST API',
+        };
+      }
+      return { connected: false, message: `Connection failed: ${resp.status}` };
+    } catch (err) {
+      return { connected: false, message: `Connection error: ${(err as Error).message}` };
+    }
+  },
+
+  async syncData(credentials: ERPCredentials, token: string, entities: string[]): Promise<SyncResult> {
+    const start = Date.now();
+    const result: SyncResult = { recordsSynced: 0, recordsFailed: 0, duration: 0, entities: [], errors: [] };
+    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' };
+
+    for (const entity of entities) {
+      try {
+        const modelMap: Record<string, string> = {
+          'customers': 'res.partner',
+          'contacts': 'res.partner',
+          'suppliers': 'res.partner',
+          'vendors': 'res.partner',
+          'invoices': 'account.move',
+          'sales_orders': 'sale.order',
+          'purchase_orders': 'purchase.order',
+          'products': 'product.product',
+          'items': 'product.template',
+          'employees': 'hr.employee',
+          'gl_accounts': 'account.account',
+        };
+        const model = modelMap[entity] || entity;
+        const resp = await fetch(`${credentials.baseUrl}/api/v1/${model.replace(/\./g, '/')}?limit=1000`, { headers });
+        if (resp.ok) {
+          const data = await resp.json() as { length?: number; records?: Record<string, unknown>[]; results?: Record<string, unknown>[] };
+          const rawRecords = data.records || data.results || [];
+          const count = data.length || rawRecords.length;
+          result.recordsSynced += count;
+          result.entities.push({ type: entity, count, records: rawRecords as Record<string, unknown>[] });
+        } else {
+          result.recordsFailed++;
+          result.errors.push(`${entity}: HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        result.recordsFailed++;
+        result.errors.push(`${entity}: ${(err as Error).message}`);
+      }
+    }
+
+    result.duration = Date.now() - start;
+    return result;
+  },
+};
+
 // ── Adapter Registry ──
 const adapters: Record<string, ERPAdapter> = {
   sap: sapAdapter,
@@ -1004,6 +1100,7 @@ const adapters: Record<string, ERPAdapter> = {
   dynamics365: dynamics365Adapter,
   netsuite: netsuiteAdapter,
   quickbooks: quickbooksAdapter,
+  odoo: odooAdapter,
 };
 
 /** Look up an ERP adapter by system key (case-insensitive) */

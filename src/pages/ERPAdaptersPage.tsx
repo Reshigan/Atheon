@@ -10,11 +10,11 @@ import {
  Plug, CheckCircle, XCircle, RefreshCw, Plus, Database,
  Activity, Loader2, X, AlertCircle
 } from "lucide-react";
-import { IconERP_SAP, IconERP_Cloud, IconERP_Generic } from "@/components/icons/AtheonIcons";
+import { IconERP_SAP, IconERP_Cloud, IconERP_Generic, IconERP_Odoo } from "@/components/icons/AtheonIcons";
 import { useAppStore } from "@/stores/appStore";
 
 const systemIconMap: Record<string, React.FC<{ size?: number }>> = {
- SAP: IconERP_SAP, SF: IconERP_Cloud, WD: IconERP_Generic, ORC: IconERP_Generic, D365: IconERP_Generic, NS: IconERP_Generic, SG: IconERP_Generic, API: IconERP_Generic};
+ SAP: IconERP_SAP, SF: IconERP_Cloud, WD: IconERP_Generic, ORC: IconERP_Generic, D365: IconERP_Generic, NS: IconERP_Generic, SG: IconERP_Generic, API: IconERP_Generic, Odoo: IconERP_Odoo};
 
 export function ERPAdaptersPage({ embedded }: { embedded?: boolean } = {}) {
  const { activeTab, setActiveTab } = useTabState('adapters');

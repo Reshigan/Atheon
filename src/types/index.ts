@@ -509,7 +509,7 @@ export interface CanonicalField {
 }
 
 // --- ERP Adapter Layer ---
-export type ERPSystem = 'sap_s4hana' | 'sap_ecc' | 'oracle_fusion' | 'dynamics_365' | 'salesforce' | 'workday' | 'netsuite' | 'sage' | 'custom';
+export type ERPSystem = 'sap_s4hana' | 'sap_ecc' | 'oracle_fusion' | 'dynamics_365' | 'salesforce' | 'workday' | 'netsuite' | 'sage' | 'odoo' | 'custom';
 
 export interface ERPAdapter {
   id: string;

@@ -82,6 +82,7 @@ export async function seedDatabase(db: D1Database) {
     { id: 'erp-wd', name: 'Workday', system: 'Workday', version: '2024R1', protocol: 'REST/SOAP', status: 'available', operations: '["REST API","SOAP API","RaaS","EIB"]', auth_methods: '["OAuth 2.0","X.509","API Key"]' },
     { id: 'erp-ns', name: 'NetSuite', system: 'Oracle', version: '2024.1', protocol: 'REST/SuiteTalk', status: 'available', operations: '["REST API","SuiteTalk SOAP","SuiteQL","RESTlets"]', auth_methods: '["OAuth 2.0","Token-Based Auth"]' },
     { id: 'erp-sage', name: 'Sage Intacct', system: 'Sage', version: 'R4 2024', protocol: 'REST/XML', status: 'available', operations: '["REST API","XML Gateway","Web Services"]', auth_methods: '["API Key","Session Auth"]' },
+    { id: 'erp-odoo', name: 'Odoo ERP', system: 'Odoo', version: '17.0', protocol: 'JSON-RPC/REST', status: 'available', operations: '["JSON-RPC","REST API","XML-RPC","ORM API"]', auth_methods: '["OAuth 2.0","API Key","Session Auth"]' },
   ];
 
   for (const a of adapters) {

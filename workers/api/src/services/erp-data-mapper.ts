@@ -458,6 +458,107 @@ function mapPastelCustomer(raw: Record<string, unknown>, tenantId: string): Cano
   };
 }
 
+// ═══ Odoo Mappers ═══
+
+function mapOdooCustomer(raw: Record<string, unknown>, tenantId: string): CanonicalCustomer {
+  return {
+    id: crypto.randomUUID(), tenant_id: tenantId, source_system: 'odoo',
+    source_id: s(raw.id),
+    name: s(raw.name || raw.display_name),
+    email: s(raw.email),
+    phone: s(raw.phone || raw.mobile),
+    address: `${s(raw.street)} ${s(raw.street2)}`.trim(),
+    city: s(raw.city), country: s(raw.country_id ? (raw.country_id as unknown[])[1] : ''),
+    tax_number: s(raw.vat),
+    customer_group: s(raw.category_id ? 'categorised' : 'default'),
+    credit_limit: n(raw.credit_limit), outstanding_balance: n(raw.total_due),
+    payment_terms: s(raw.property_payment_term_id ? (raw.property_payment_term_id as unknown[])[1] : ''),
+    currency: s(raw.currency_id ? (raw.currency_id as unknown[])[1] : 'ZAR'),
+    status: raw.active === false ? 'inactive' : 'active',
+    created_at: s(raw.create_date) || now(), updated_at: s(raw.write_date) || now(),
+  };
+}
+
+function mapOdooSupplier(raw: Record<string, unknown>, tenantId: string): CanonicalSupplier {
+  return {
+    id: crypto.randomUUID(), tenant_id: tenantId, source_system: 'odoo',
+    source_id: s(raw.id),
+    name: s(raw.name || raw.display_name),
+    email: s(raw.email),
+    phone: s(raw.phone || raw.mobile),
+    address: `${s(raw.street)} ${s(raw.street2)}`.trim(),
+    city: s(raw.city), country: s(raw.country_id ? (raw.country_id as unknown[])[1] : ''),
+    tax_number: s(raw.vat),
+    supplier_group: s(raw.category_id ? 'categorised' : 'default'),
+    payment_terms: s(raw.property_supplier_payment_term_id ? (raw.property_supplier_payment_term_id as unknown[])[1] : ''),
+    currency: s(raw.currency_id ? (raw.currency_id as unknown[])[1] : 'ZAR'),
+    status: raw.active === false ? 'inactive' : 'active',
+    created_at: s(raw.create_date) || now(), updated_at: s(raw.write_date) || now(),
+  };
+}
+
+function mapOdooInvoice(raw: Record<string, unknown>, tenantId: string): CanonicalInvoice {
+  const partner = raw.partner_id as unknown[] | undefined;
+  const moveType = s(raw.move_type);
+  const state = s(raw.state);
+  let status = 'draft';
+  if (state === 'posted') status = 'sent';
+  if (state === 'cancel') status = 'cancelled';
+  if (s(raw.payment_state) === 'paid' || s(raw.payment_state) === 'in_payment') status = 'paid';
+  return {
+    id: crypto.randomUUID(), tenant_id: tenantId, source_system: 'odoo',
+    source_id: s(raw.id),
+    invoice_number: s(raw.name || raw.ref),
+    customer_id: s(partner ? partner[0] : ''),
+    customer_name: s(partner ? partner[1] : ''),
+    invoice_date: s(raw.invoice_date || raw.date),
+    due_date: s(raw.invoice_date_due),
+    currency: s(raw.currency_id ? (raw.currency_id as unknown[])[1] : 'ZAR'),
+    subtotal: n(raw.amount_untaxed), tax: n(raw.amount_tax), total: n(raw.amount_total),
+    amount_paid: n(raw.amount_total) - n(raw.amount_residual),
+    amount_due: n(raw.amount_residual),
+    status: moveType.includes('refund') ? 'cancelled' : status,
+    line_items: JSON.stringify(raw.invoice_line_ids || []),
+    created_at: s(raw.create_date) || now(), updated_at: s(raw.write_date) || now(),
+  };
+}
+
+function mapOdooProduct(raw: Record<string, unknown>, tenantId: string): CanonicalProduct {
+  return {
+    id: crypto.randomUUID(), tenant_id: tenantId, source_system: 'odoo',
+    source_id: s(raw.id),
+    sku: s(raw.default_code || raw.barcode),
+    name: s(raw.name || raw.display_name),
+    description: s(raw.description_sale || raw.description),
+    category: s(raw.categ_id ? (raw.categ_id as unknown[])[1] : ''),
+    unit_price: n(raw.list_price), cost_price: n(raw.standard_price),
+    currency: s(raw.currency_id ? (raw.currency_id as unknown[])[1] : 'ZAR'),
+    quantity_on_hand: n(raw.qty_available),
+    reorder_level: n(raw.reordering_min_qty),
+    warehouse: s(raw.warehouse_id ? (raw.warehouse_id as unknown[])[1] : ''),
+    status: raw.active === false ? 'discontinued' : 'active',
+    created_at: s(raw.create_date) || now(), updated_at: s(raw.write_date) || now(),
+  };
+}
+
+function mapOdooPurchaseOrder(raw: Record<string, unknown>, tenantId: string): CanonicalPurchaseOrder {
+  const partner = raw.partner_id as unknown[] | undefined;
+  return {
+    id: crypto.randomUUID(), tenant_id: tenantId, source_system: 'odoo',
+    source_id: s(raw.id),
+    po_number: s(raw.name),
+    supplier_id: s(partner ? partner[0] : ''),
+    supplier_name: s(partner ? partner[1] : ''),
+    order_date: s(raw.date_order),
+    delivery_date: s(raw.date_planned),
+    currency: s(raw.currency_id ? (raw.currency_id as unknown[])[1] : 'ZAR'),
+    subtotal: n(raw.amount_untaxed), tax: n(raw.amount_tax), total: n(raw.amount_total),
+    status: s(raw.state) === 'cancel' ? 'cancelled' : s(raw.state) || 'draft',
+    line_items: JSON.stringify(raw.order_line || []),
+    created_at: s(raw.create_date) || now(), updated_at: s(raw.write_date) || now(),
+  };
+}
+
 // ═══ Unified mapRecord Function ═══
 
 type CanonicalRecord = CanonicalCustomer | CanonicalSupplier | CanonicalInvoice
@@ -536,6 +637,15 @@ export function mapRecord(
   // ── Pastel ──
   if (sys.includes('pastel')) {
     if (['customers', 'contacts'].includes(et)) return mapPastelCustomer(raw, tenantId);
+  }
+
+  // ── Odoo ──
+  if (sys.includes('odoo')) {
+    if (['customers', 'contacts'].includes(et)) return mapOdooCustomer(raw, tenantId);
+    if (['suppliers', 'vendors'].includes(et)) return mapOdooSupplier(raw, tenantId);
+    if (['invoices', 'sales_invoices'].includes(et)) return mapOdooInvoice(raw, tenantId);
+    if (['products', 'items'].includes(et)) return mapOdooProduct(raw, tenantId);
+    if (['purchase_orders'].includes(et)) return mapOdooPurchaseOrder(raw, tenantId);
   }
 
   return null;

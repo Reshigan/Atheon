@@ -254,6 +254,23 @@ export function IconERP_Cloud({ size = 18, ...props }: IconProps) {
   );
 }
 
+/** ERP Odoo — interlocking gears icon representing Odoo's modular ERP */
+export function IconERP_Odoo({ size = 18, ...props }: IconProps) {
+  const gid = useId();
+  return (
+    <svg {...defaultProps(size)} {...props}>
+      <GlassGradient id={gid} />
+      <circle cx="9" cy="9" r="5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="9" cy="9" r="5" fill={`url(#${gid})`} opacity="0.12" />
+      <circle cx="9" cy="9" r="1.8" fill="currentColor" opacity="0.4" />
+      <circle cx="16.5" cy="15" r="4" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="16.5" cy="15" r="4" fill={`url(#${gid})`} opacity="0.12" />
+      <circle cx="16.5" cy="15" r="1.4" fill="currentColor" opacity="0.4" />
+      <path d="M12.8 11.5l1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
 /** ERP Generic — database connector */
 export function IconERP_Generic({ size = 18, ...props }: IconProps) {
   const gid = useId();
