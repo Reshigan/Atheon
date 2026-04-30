@@ -20,6 +20,10 @@ import './catalyst-service-handlers';
 // Cross-cutting handlers register before general handlers so specific
 // patterns (e.g. "payroll audit") win over the broader `hr` keyword match.
 import './catalyst-cross-cutting-handlers';
+// Stub-batch-1 — bespoke handlers for previously-stubbed sub-catalysts.
+// Registers before general handlers so e.g. "vendor scoring" wins over
+// the broader supplier keyword on general:supplier.
+import './catalyst-stub-batch-1-handlers';
 import './catalyst-general-handlers';
 import { catalogAwareDefaultHandler } from './catalyst-catalog-defaults';
 
