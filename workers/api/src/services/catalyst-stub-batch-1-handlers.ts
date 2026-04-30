@@ -372,9 +372,14 @@ const vendorScoringHandler: CatalystHandler = {
 
 const tenderManagementHandler: CatalystHandler = {
   name: 'batch1:tender-management',
+  // Note: 'rfp' was removed from this matcher when RFP Management
+  // (batch 2) shipped as its own handler with a different lifecycle
+  // focus. Tender Management is the threshold-trigger / evidence-on-file
+  // check; RFP Management tracks the open-bid lifecycle.
   match: t => {
     const s = taskText(t);
-    return allWords(s, 'tender', 'management') || anyOf(s, 'rfp', 'rfq', 'competitive bid');
+    return allWords(s, 'tender', 'management')
+      || anyOf(s, 'rfq', 'competitive bid', 'tender-policy');
   },
   execute: runTenderManagement,
 };
