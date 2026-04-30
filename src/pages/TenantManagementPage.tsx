@@ -58,8 +58,12 @@ export function TenantManagementPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'deleted'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Load once on mount. loadTenants is a stable function reference — it
+  // only reads/writes setState — so disabling the exhaustive-deps check
+  // is safe here and avoids re-fetching on every render.
   useEffect(() => {
     loadTenants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadTenants = async () => {

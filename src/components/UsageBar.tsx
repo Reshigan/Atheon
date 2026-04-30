@@ -24,6 +24,7 @@ function formatTokens(n: number): string {
   return n.toLocaleString();
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usageColor(pct: number): 'emerald' | 'amber' | 'red' {
   if (pct >= 90) return 'red';
   if (pct >= 70) return 'amber';
