@@ -14,16 +14,19 @@ import { triggerDownstream } from './catalyst-dag';
 import type { CatalystQueueMessage } from './scheduled';
 // Domain handlers self-register on import. Importing them here ensures they
 // are wired into the dispatcher for any call path that uses executeTask.
+//
+// Stub-batch-{1,2} handlers register FIRST so their narrow matchers
+// (e.g. "rfp management lifecycle") win over the broader keyword
+// matchers in the operational/commercial/service/general layers. The
+// catalog-aware default at the very end is the catch-all.
+import './catalyst-stub-batch-1-handlers';
+import './catalyst-stub-batch-2-handlers';
 import './catalyst-operational-handlers';
 import './catalyst-commercial-handlers';
 import './catalyst-service-handlers';
 // Cross-cutting handlers register before general handlers so specific
 // patterns (e.g. "payroll audit") win over the broader `hr` keyword match.
 import './catalyst-cross-cutting-handlers';
-// Stub-batch-1 — bespoke handlers for previously-stubbed sub-catalysts.
-// Registers before general handlers so e.g. "vendor scoring" wins over
-// the broader supplier keyword on general:supplier.
-import './catalyst-stub-batch-1-handlers';
 import './catalyst-general-handlers';
 import { catalogAwareDefaultHandler } from './catalyst-catalog-defaults';
 
