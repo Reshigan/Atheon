@@ -58,6 +58,7 @@ export function TabPanel({ children, className, id, activeTab }: TabPanelProps) 
   return <div className={cn('mt-4', className)}>{children}</div>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTabState(defaultTab: string) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   return { activeTab, setActiveTab };

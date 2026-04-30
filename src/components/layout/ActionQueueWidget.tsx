@@ -89,7 +89,6 @@ export function ActionQueueWidget(): JSX.Element | null {
       if (document.visibilityState === 'visible') refresh();
     }, REFRESH_INTERVAL_MS);
     return () => window.clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Click-outside handler.

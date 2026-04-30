@@ -26,6 +26,7 @@ const MATURITY_META: Record<Maturity, { label: string; classes: string }> = {
  * Tooltip text explaining what the maturity badge means, using the
  * implementation summary counts when available.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function maturityTooltip(maturity: Maturity, summary?: ImplementationSummary): string {
   if (maturity === 'production') {
     if (summary) {

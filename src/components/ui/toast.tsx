@@ -53,6 +53,7 @@ function resolveOpts(messageOrOpts?: string | ToastOpts): ToastOpts {
   return messageOrOpts ?? {};
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast(): ToastApi {
   const ctx = useContext(ToastContext);
   if (!ctx) {
