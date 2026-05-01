@@ -3338,6 +3338,18 @@ export interface ROITrackingResponse extends ROITrackingItem {
       share: number;
       recoveredValue: number;
     }>;
+    // v63: split identified opportunity by action state — automated by
+    // Atheon write-backs vs in the approval queue vs still open. Closes
+    // the read→action loop in the headline ROI card.
+    byActionState?: {
+      automated_count: number;
+      automated_value_zar: number;
+      pending_count: number;
+      pending_value_zar: number;
+      rejected_count: number;
+      rejected_value_zar: number;
+      open_value_zar: number;
+    };
   };
 }
 

@@ -3028,6 +3028,35 @@ export function CatalystsPage() {
          </p>
         </div>
        )}
+
+       {/* v63: read→action loop split — automated by Atheon vs in approval
+           queue vs still open. Closes the loop on what the customer is
+           seeing in the headline ROI numbers. */}
+       {roiData.breakdown?.byActionState && (
+        <div className="mt-4 pt-4 border-t border-[var(--border-card)]">
+         <p className="text-xs font-semibold t-muted mb-2">Identified opportunity → realisation pipeline</p>
+         <div className="grid grid-cols-3 gap-2">
+          <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+           <p className="text-[10px] t-muted">Automated by Atheon</p>
+           <p className="text-base font-bold text-emerald-400">R{(roiData.breakdown.byActionState.automated_value_zar / 1000).toFixed(0)}k</p>
+           <p className="text-[10px] t-muted">{roiData.breakdown.byActionState.automated_count} actions completed</p>
+          </div>
+          <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+           <p className="text-[10px] t-muted">Pending approval</p>
+           <p className="text-base font-bold text-amber-400">R{(roiData.breakdown.byActionState.pending_value_zar / 1000).toFixed(0)}k</p>
+           <p className="text-[10px] t-muted">{roiData.breakdown.byActionState.pending_count} awaiting</p>
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+           <p className="text-[10px] t-muted">Open opportunity</p>
+           <p className="text-base font-bold t-primary">R{(roiData.breakdown.byActionState.open_value_zar / 1000).toFixed(0)}k</p>
+           <p className="text-[10px] t-muted">no automation yet</p>
+          </div>
+         </div>
+         <p className="text-[10px] t-muted mt-2">
+          Of R{((roiData.totalDiscrepancyValueIdentified || 0) / 1000).toFixed(0)}k identified, the split shows where each rand sits in the realisation pipeline.
+         </p>
+        </div>
+       )}
       </Card>
      )}
 
