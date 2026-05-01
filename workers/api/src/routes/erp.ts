@@ -7,6 +7,7 @@ import { encrypt, decrypt, isEncrypted } from '../services/encryption';
 import { mapRecord, canonicalTableName, extractCompanyKey } from '../services/erp-data-mapper';
 import { indexDocument } from '../services/vectorize';
 import { logError, logInfo } from '../services/logger';
+import { profileEntityRecords, getDiscoveredSchemas } from '../services/erp-schema-profiler';
 
 const erp = new Hono<AppBindings>();
 
@@ -78,7 +79,7 @@ async function auditEncryptionSkipped(
  */
 async function writeToCanonicalTables(
   db: D1Database, tenantId: string, sourceSystem: string, result: SyncResult,
-  vectorize?: VectorizeIndex, ai?: Ai,
+  vectorize?: VectorizeIndex, ai?: Ai, connectionId?: string,
 ): Promise<void> {
   // Multi-company: cache resolved companyIds by vendor-company-key for the
   // duration of this sync run so a 10k-record sync does one lookup per
@@ -88,6 +89,14 @@ async function writeToCanonicalTables(
   for (const entity of result.entities) {
     if (entity.count === 0) continue;
     const records = entity.records || [];
+
+    // v57 schema discovery — profile the raw fields BEFORE mapping so we
+    // capture the actual ERP schema (including custom Z-fields, Odoo custom
+    // modules, NetSuite custom segments). Best-effort, never throws.
+    if (connectionId && records.length > 0) {
+      await profileEntityRecords(db, tenantId, connectionId, sourceSystem, entity.type, records);
+    }
+
     try {
       for (const raw of records) {
         // Resolve the canonical company_id for this record from the vendor's
@@ -343,6 +352,40 @@ erp.delete('/connections/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// GET /api/erp/connections/:id/schemas — discovered field schemas for a
+// connection, optionally filtered to one entity type via ?entity=invoices.
+// Phase 1 of dynamic ERP-mapping intelligence: a customer can connect any
+// supported ERP/subsystem and Atheon profiles the actual fields it sends
+// (including custom Z-fields, Odoo modules, NetSuite custom segments).
+// Phase 2 will use these profiles to drive the auto-mapper.
+erp.get('/connections/:id/schemas', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const entity = c.req.query('entity');
+
+  // Tenant ownership check — never expose another tenant's schema discovery.
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  const rows = await getDiscoveredSchemas(c.env.DB, tenantId, id, entity);
+
+  // Group by entity_type for easier UI rendering.
+  const byEntity: Record<string, typeof rows> = {};
+  for (const r of rows) {
+    if (!byEntity[r.entity_type]) byEntity[r.entity_type] = [];
+    byEntity[r.entity_type].push(r);
+  }
+
+  return c.json({
+    connectionId: id,
+    entityCount: Object.keys(byEntity).length,
+    fieldCount: rows.length,
+    schemas: byEntity,
+  });
+});
+
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
 // Used by the frontend company-switcher (PR #219/#220/#232). Read-only.
 erp.get('/companies', async (c) => {
@@ -475,7 +518,10 @@ erp.post('/sync/:connection_id', async (c) => {
     });
 
     // 3.12: Write synced records to canonical tables (with Vectorize + AI for RAG embedding)
-    await writeToCanonicalTables(c.env.DB, tenantId, conn.adapter_system as string, result, c.env.VECTORIZE, c.env.AI);
+    // v57: pass connectionId so the schema profiler can attribute discovered
+    // fields back to this specific ERP/subsystem instance (a customer can
+    // have N connections active at once).
+    await writeToCanonicalTables(c.env.DB, tenantId, conn.adapter_system as string, result, c.env.VECTORIZE, c.env.AI, connectionId);
 
     await c.env.DB.prepare(
       'UPDATE erp_connections SET last_sync = datetime(\'now\'), records_synced = records_synced + ?, status = ? WHERE id = ? AND tenant_id = ?'
