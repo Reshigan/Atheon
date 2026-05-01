@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import type { AppBindings, AuthContext } from '../types';
 import { calculateROI } from '../services/pattern-engine-v2';
 import { toCSV, csvResponse } from '../services/csv-export';
+import { computeRoiAttribution } from '../services/erp-attribution';
 
 const roi = new Hono<AppBindings>();
 
@@ -24,7 +25,7 @@ roi.get('/', async (c) => {
   const tenantId = getTenantId(c);
   if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
   const row = await c.env.DB.prepare('SELECT * FROM roi_tracking WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1').bind(tenantId).first();
-  if (!row) return c.json({ id: '', totalDiscrepancyValueIdentified: 0, totalDiscrepancyValueRecovered: 0, totalPreventedLosses: 0, totalPersonHoursSaved: 0, roiMultiple: 0, platformCost: 0, calculatedAt: '', breakdown: { byCluster: [] } });
+  if (!row) return c.json({ id: '', totalDiscrepancyValueIdentified: 0, totalDiscrepancyValueRecovered: 0, totalPreventedLosses: 0, totalPersonHoursSaved: 0, roiMultiple: 0, platformCost: 0, calculatedAt: '', breakdown: { byCluster: [], byConnection: [] } });
 
   // §9.4 CSV export
   if (c.req.query('format') === 'csv') {
@@ -42,6 +43,15 @@ roi.get('/', async (c) => {
     ]), 'roi-tracking.csv');
   }
 
+  // v60 attribution — split the recovered total per ERP/subsystem connection
+  // so the customer can audit which connection drove which dollars under the
+  // shared-savings model. Best-effort: never fails the response.
+  const recovered = (row.total_discrepancy_value_recovered as number) || 0;
+  let byConnection: Awaited<ReturnType<typeof computeRoiAttribution>> = [];
+  try {
+    byConnection = await computeRoiAttribution(c.env.DB, tenantId, recovered);
+  } catch { /* leave empty */ }
+
   return c.json({
     id: row.id, period: row.period,
     totalDiscrepancyValueIdentified: row.total_discrepancy_value_identified,
@@ -51,7 +61,7 @@ roi.get('/', async (c) => {
     totalCatalystRuns: row.total_catalyst_runs,
     platformCost: row.licence_cost_annual,
     roiMultiple: row.roi_multiple, calculatedAt: row.calculated_at,
-    breakdown: { byCluster: [] },
+    breakdown: { byCluster: [], byConnection },
   });
 });
 

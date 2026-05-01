@@ -168,8 +168,12 @@ async function writeToCanonicalTables(
         const table = canonicalTableName(entity.type);
         if (!table) continue;
 
-        // UPSERT: check if record with same source_id + source_system exists
+        // v60: tag the canonical row with its source connection so the
+        // shared-savings attribution layer can roll up per-connection (not
+        // just per-source-system). Old rows pre-v60 stay NULL and the
+        // attribution code falls back to source_system grouping for them.
         const mappedObj = mapped as unknown as Record<string, unknown>;
+        if (connectionId) mappedObj.connection_id = connectionId;
         const sourceId = mappedObj.source_id as string;
         const existing = await db.prepare(
           `SELECT id FROM ${table} WHERE tenant_id = ? AND source_system = ? AND source_id = ?`
