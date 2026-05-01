@@ -30,6 +30,7 @@ import {
   registerWriteAdapter,
 } from './erp-write-actions';
 import { executeXeroLive, type XeroCredentials } from './erp-xero-live';
+import { executeSapLive, type SapCredentials } from './erp-sap-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -108,7 +109,7 @@ const SAP_ACTION_ENDPOINTS: Record<ActionType, { method: string; path: string; d
 const sapAdapter: CatalystWriteAdapter = {
   vendor: 'SAP',
   supports: (t) => SAP_ACTION_ENDPOINTS[t] !== null,
-  execute: async (action: CatalystWriteAction, _ctx: AdapterContext): Promise<ActionExecutionResult> => { // eslint-disable-line @typescript-eslint/no-unused-vars
+  execute: async (action: CatalystWriteAction, ctx: AdapterContext): Promise<ActionExecutionResult> => {
     const ep = SAP_ACTION_ENDPOINTS[action.type];
     if (!ep) return fail(`SAP adapter does not support ${action.type}`, 'unsupported_action');
 
@@ -136,13 +137,25 @@ const sapAdapter: CatalystWriteAdapter = {
     }
     if (validation) return fail(validation, 'validation');
 
-    // Stub: would POST/PATCH the SAP OData endpoint. Records intent only.
-    return stubOutcome(action, 
+    // Phase 9-1 — when the connection has opted into `live_mode` AND
+    // SAP OData credentials are present, route to the real OData call.
+    const creds = (ctx.credentials || {}) as SapCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.base_url) {
+      return executeSapLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId,
+        encryptionKey: ctx.encryptionKey,
+      });
+    }
+
+    return stubOutcome(action,
       `Would ${ep.method} ${ep.path}`,
       {
         vendor: 'SAP', method: ep.method, path: ep.path, description: ep.description,
         body: action.payload, idempotency_key: action.idempotency_key,
-        note: 'Stubbed adapter — integrate via SAP Cloud Connector + OData when ready.',
+        mode: 'stub',
+        note: creds.live_mode === true && (!creds.access_token || !creds.base_url)
+          ? 'live_mode set but SAP credentials missing — re-authenticate the SAP connection (need base_url + access_token + client_id/secret for refresh)'
+          : 'Connection is in stub mode. Set live_mode=true on the connection config to enable real SAP writes.',
       },
     );
   },
