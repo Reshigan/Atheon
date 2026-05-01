@@ -3227,6 +3227,18 @@ export interface ROITrackingItem {
 export interface ROITrackingResponse extends ROITrackingItem {
   breakdown: {
     byCluster: Array<{ clusterId: string; clusterName: string; recovered: number; prevented: number; hoursSaved: number }>;
+    // v60: per-ERP-connection (or per-source-system fallback) attribution.
+    // Under shared-savings, the customer needs a defensible split of which
+    // ERP/subsystem contributed which portion of the recovered value.
+    byConnection?: Array<{
+      key: string;
+      label: string;
+      kind: 'connection' | 'source_system';
+      inputRecords: number;
+      inputValue: number;
+      share: number;
+      recoveredValue: number;
+    }>;
   };
 }
 

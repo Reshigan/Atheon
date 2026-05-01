@@ -29,7 +29,11 @@
 // the cron sweep can fire notifications. Phase 3 also adds the LLM
 // fallback for fields the rule-based mapper can't place — those land
 // as 'suggested' in erp_field_mappings until a human confirms.
-export const MIGRATION_VERSION = 'v59-erp-drift-llm';
+// v60-erp-attribution: connection_id self-heal column on canonical ERP
+// tables so attribution can roll up per-connection (not just per-source-
+// system). Existing rows have NULL and fall back to source_system-level
+// attribution; new ingestions tag connection_id explicitly.
+export const MIGRATION_VERSION = 'v60-erp-attribution';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -973,6 +977,19 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'erp_gl_accounts',      column: 'company_id', definition: 'TEXT' },
     { table: 'erp_journal_entries',  column: 'company_id', definition: 'TEXT' },
     { table: 'erp_bank_transactions',column: 'company_id', definition: 'TEXT' },
+    // v60: per-connection attribution. Old rows stay NULL and fall back to
+    // source_system-level attribution; new ingestions tag connection_id so
+    // a multi-ERP customer gets a per-connection savings split in the
+    // shared-savings billing trail.
+    { table: 'erp_customers',        column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_suppliers',        column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_invoices',         column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_purchase_orders',  column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_products',         column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_employees',        column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_gl_accounts',      column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_journal_entries',  column: 'connection_id', definition: 'TEXT' },
+    { table: 'erp_bank_transactions',column: 'connection_id', definition: 'TEXT' },
   ];
 
   for (const col of selfHealColumns) {

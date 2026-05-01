@@ -3001,6 +3001,33 @@ export function CatalystsPage() {
          <p className="text-[10px] t-muted">Platform Cost</p>
         </div>
        </div>
+
+       {/* v60: per-ERP attribution — under shared-savings the customer
+           must be able to see which ERP/subsystem drove which dollars.
+           Hidden when there's only one bucket (no split to show). */}
+       {roiData.breakdown?.byConnection && roiData.breakdown.byConnection.length > 1 && (
+        <div className="mt-4">
+         <p className="text-xs font-semibold t-muted mb-2">Recovered value attributed to each connected ERP / subsystem</p>
+         <div className="space-y-1.5">
+          {roiData.breakdown.byConnection.map((row) => (
+           <div key={row.key} className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+             <div className="flex items-center justify-between mb-0.5">
+              <span className="text-xs font-medium t-primary truncate">{row.label}</span>
+              <span className="text-xs t-muted">R{(row.recoveredValue / 1000).toFixed(0)}k · {Math.round(row.share * 100)}%</span>
+             </div>
+             <div className="h-1.5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+              <div className="h-full bg-emerald-500" style={{ width: `${Math.max(2, row.share * 100)}%` }} />
+             </div>
+            </div>
+           </div>
+          ))}
+         </div>
+         <p className="text-[10px] t-muted mt-2">
+          Attribution split by input value share across canonical ERP records ({roiData.breakdown.byConnection.length} sources).
+         </p>
+        </div>
+       )}
       </Card>
      )}
 
