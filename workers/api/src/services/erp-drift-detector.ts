@@ -26,6 +26,11 @@ import { logInfo, logError } from './logger';
 
 const SNAPSHOT_KEY_PREFIX = 'erp_drift_snapshot';
 
+/** Phase 8-3: minimum hours between drift events for the same
+ *  (connection, entity). Prevents notification spam when a volatile ERP
+ *  schema churns frequently. */
+const DEBOUNCE_HOURS = 6;
+
 interface SnapshotPayload {
   fields: string[];
   takenAt: string;
@@ -155,6 +160,23 @@ export async function detectErpSchemaDrift(
         const removed = snap.fields.filter((f) => !cur.has(f));
 
         if (added.length === 0 && removed.length === 0) continue;
+
+        // Phase 8-3 debounce: if we already fired a drift event for this
+        // (connection, entity) within the last DEBOUNCE_HOURS, refresh
+        // the snapshot but suppress the notification + event row. This
+        // protects customers from notification spam on volatile schemas.
+        try {
+          const recent = await db.prepare(
+            `SELECT detected_at FROM erp_schema_drift_events
+              WHERE tenant_id = ? AND connection_id = ? AND entity_type = ?
+                AND detected_at > datetime('now', ?)
+              ORDER BY detected_at DESC LIMIT 1`
+          ).bind(tenantId, p.connection_id, p.entity_type, `-${DEBOUNCE_HOURS} hours`).first<{ detected_at: string }>();
+          if (recent) {
+            await writeSnapshot(db, tenantId, p.connection_id, p.entity_type, current);
+            continue;
+          }
+        } catch { /* if the lookup fails, fall through to fire the event */ }
 
         await persistDriftEvent(db, {
           tenantId, connectionId: p.connection_id, entityType: p.entity_type,
