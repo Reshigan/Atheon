@@ -209,6 +209,43 @@ export function IntegrationsPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
+  // v57: per-connection schema discovery panel state. Loaded lazily when
+  // the user opens the panel — a single tenant may have hundreds of fields
+  // across multiple ERPs, so we don't fetch eagerly for the whole list.
+  type DiscoveredField = {
+    entity_type: string;
+    source_field: string;
+    inferred_type: string;
+    sample_values: string[];
+    null_rate: number;
+    occurrences: number;
+    sample_size: number;
+    source_system: string;
+    first_seen_at: string;
+    last_seen_at: string;
+  };
+  const [showSchemas, setShowSchemas] = useState<string | null>(null);
+  const [schemasByConn, setSchemasByConn] = useState<Record<string, Record<string, DiscoveredField[]>>>({});
+  const [schemasLoading, setSchemasLoading] = useState<string | null>(null);
+
+  const toggleSchemas = useCallback(async (connId: string) => {
+    if (showSchemas === connId) {
+      setShowSchemas(null);
+      return;
+    }
+    setShowSchemas(connId);
+    if (schemasByConn[connId]) return; // cached
+    setSchemasLoading(connId);
+    try {
+      const res = await api.erp.discoveredSchemas(connId);
+      setSchemasByConn((prev) => ({ ...prev, [connId]: res.schemas }));
+    } catch {
+      setSchemasByConn((prev) => ({ ...prev, [connId]: {} }));
+    } finally {
+      setSchemasLoading(null);
+    }
+  }, [showSchemas, schemasByConn]);
+
   const refreshCircuitStates = useCallback(async (conns: ERPConnection[]) => {
     if (conns.length === 0) return;
     const entries = await Promise.all(
@@ -776,6 +813,9 @@ export function IntegrationsPage() {
                     <Button variant="ghost" size="sm" onClick={() => setShowLogs(showLogs === conn.id ? null : conn.id)} title="View sync activity logs">
                       <Activity size={12} /> {showLogs === conn.id ? 'Hide Logs' : 'View Logs'}
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleSchemas(conn.id)} title="View fields Atheon has discovered from your ERP records">
+                      <Database size={12} /> {showSchemas === conn.id ? 'Hide Schema' : 'View Schema'}
+                    </Button>
                     <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => setConfirmDelete(conn.id)} title="Delete this connection">
                       <Trash2 size={12} /> Delete
                     </Button>
@@ -788,6 +828,66 @@ export function IntegrationsPage() {
                       <p>[{new Date().toISOString()}] Status: {conn.status}</p>
                       <p>[{new Date().toISOString()}] Records synced: {(conn.recordsSynced || 0).toLocaleString()}</p>
                       <p className="text-gray-500">[{new Date().toISOString()}] --- End of log ---</p>
+                    </div>
+                  )}
+
+                  {showSchemas === conn.id && (
+                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
+                            <Database size={14} /> Discovered Schema
+                          </h4>
+                          <p className="text-xs t-muted mt-0.5">
+                            Fields Atheon has profiled from records this connection sent.
+                            Custom fields (Z-fields, custom modules) appear here verbatim.
+                          </p>
+                        </div>
+                      </div>
+                      {schemasLoading === conn.id ? (
+                        <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">
+                          <Loader2 size={14} className="animate-spin" /> Loading discovered fields…
+                        </div>
+                      ) : !schemasByConn[conn.id] || Object.keys(schemasByConn[conn.id] || {}).length === 0 ? (
+                        <div className="text-xs t-muted py-4 text-center">
+                          No fields discovered yet — sync the connection to populate the schema.
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {Object.entries(schemasByConn[conn.id]).map(([entity, fields]) => (
+                            <div key={entity}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold t-primary">{entity}</span>
+                                <Badge variant="outline" size="sm">{fields.length} fields</Badge>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="border-b border-[var(--border-card)] text-left t-muted">
+                                      <th className="py-1 pr-3 font-medium">Field</th>
+                                      <th className="py-1 pr-3 font-medium">Type</th>
+                                      <th className="py-1 pr-3 font-medium">Null %</th>
+                                      <th className="py-1 pr-3 font-medium">Sample values</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {fields.map((f) => (
+                                      <tr key={f.source_field} className="border-b border-[var(--border-card)]/50">
+                                        <td className="py-1 pr-3 font-mono t-primary">{f.source_field}</td>
+                                        <td className="py-1 pr-3 t-muted">{f.inferred_type}</td>
+                                        <td className="py-1 pr-3 t-muted">{Math.round((f.null_rate || 0) * 100)}%</td>
+                                        <td className="py-1 pr-3 t-muted">
+                                          {(f.sample_values || []).slice(0, 3).join(', ') || <span className="opacity-50">—</span>}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>

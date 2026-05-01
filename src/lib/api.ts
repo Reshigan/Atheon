@@ -713,6 +713,28 @@ export const api = {
     // Aggregation view: per-connection sync health (last sync, error counts, freshness).
     connectionsHealth: () =>
       request<IntegrationHealthResponse>('/api/v1/erp/connections/health'),
+    // v57: discovered field schemas for a connection. Returned as a map keyed
+    // by entity_type so the UI can render a section per entity. Each row gives
+    // the source field name (with custom Z-fields, Odoo modules, etc. visible
+    // verbatim), inferred type, sample values, null rate, and occurrence count.
+    discoveredSchemas: (connectionId: string, entity?: string) =>
+      request<{
+        connectionId: string;
+        entityCount: number;
+        fieldCount: number;
+        schemas: Record<string, Array<{
+          entity_type: string;
+          source_field: string;
+          inferred_type: string;
+          sample_values: string[];
+          null_rate: number;
+          occurrences: number;
+          sample_size: number;
+          source_system: string;
+          first_seen_at: string;
+          last_seen_at: string;
+        }>>;
+      }>(`/api/erp/connections/${connectionId}/schemas${qs({ entity })}`),
   },
 
   controlplane: {

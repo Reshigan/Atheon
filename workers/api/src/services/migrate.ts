@@ -14,7 +14,11 @@
 // contributes anonymised observations to industry/finding aggregates;
 // reads are noised with Laplace mechanism (epsilon = 1.0) before
 // returning to any tenant. No raw cross-tenant data exposure.
-export const MIGRATION_VERSION = 'v56-stripe-checkout';
+// v57-erp-schema-discovery: erp_connection_schemas table profiles the
+// actual fields each ERP/subsystem sends per (tenant, connection, entity).
+// Phase 1 of dynamic ERP-mapping intelligence; Phase 2 builds the auto-
+// mapper on top of these profiles.
+export const MIGRATION_VERSION = 'v57-erp-schema-discovery';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -66,6 +70,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS correlation_events (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), source_system TEXT NOT NULL, source_event TEXT NOT NULL, target_system TEXT NOT NULL, target_impact TEXT NOT NULL, confidence REAL NOT NULL, lag_days REAL NOT NULL DEFAULT 0, detected_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS erp_adapters (id TEXT PRIMARY KEY, name TEXT NOT NULL, system TEXT NOT NULL, version TEXT, protocol TEXT NOT NULL DEFAULT 'REST', status TEXT NOT NULL DEFAULT 'available', operations TEXT NOT NULL DEFAULT '[]', auth_methods TEXT NOT NULL DEFAULT '[]');
     CREATE TABLE IF NOT EXISTS erp_connections (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), adapter_id TEXT NOT NULL REFERENCES erp_adapters(id), name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'disconnected', config TEXT NOT NULL DEFAULT '{}', last_sync TEXT, sync_frequency TEXT DEFAULT 'realtime', records_synced INTEGER NOT NULL DEFAULT 0, connected_at TEXT);
+    CREATE TABLE IF NOT EXISTS erp_connection_schemas (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, source_system TEXT NOT NULL, entity_type TEXT NOT NULL, source_field TEXT NOT NULL, inferred_type TEXT NOT NULL DEFAULT 'string', sample_values TEXT NOT NULL DEFAULT '[]', null_rate REAL NOT NULL DEFAULT 0, occurrences INTEGER NOT NULL DEFAULT 0, sample_size INTEGER NOT NULL DEFAULT 0, first_seen_at TEXT NOT NULL DEFAULT (datetime('now')), last_seen_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id, entity_type, source_field));
     CREATE TABLE IF NOT EXISTS canonical_endpoints (id TEXT PRIMARY KEY, domain TEXT NOT NULL, path TEXT NOT NULL, method TEXT NOT NULL DEFAULT 'GET', description TEXT, request_schema TEXT, response_schema TEXT, rate_limit INTEGER NOT NULL DEFAULT 100, version TEXT NOT NULL DEFAULT 'v1');
     CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT, action TEXT NOT NULL, layer TEXT NOT NULL, resource TEXT, details TEXT, outcome TEXT NOT NULL DEFAULT 'success', ip_address TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS mind_queries (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT, query TEXT NOT NULL, response TEXT, tier TEXT NOT NULL DEFAULT 'tier-1', tokens_in INTEGER NOT NULL DEFAULT 0, tokens_out INTEGER NOT NULL DEFAULT 0, latency_ms INTEGER NOT NULL DEFAULT 0, citations TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -706,6 +711,10 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_erp_invoices_company ON erp_invoices(tenant_id, company_id)',
     'CREATE INDEX IF NOT EXISTS idx_erp_po_company ON erp_purchase_orders(tenant_id, company_id)',
     'CREATE INDEX IF NOT EXISTS idx_erp_employees_company ON erp_employees(tenant_id, company_id)',
+    // v57: schema discovery — lookup by (tenant, connection) for the schema
+    // panel; lookup by (tenant, connection, entity) is already covered by the
+    // UNIQUE constraint declared inline on erp_connection_schemas.
+    'CREATE INDEX IF NOT EXISTS idx_erp_conn_schemas_conn ON erp_connection_schemas(tenant_id, connection_id)',
   ];
 
   for (const idx of erpIndexes) {
