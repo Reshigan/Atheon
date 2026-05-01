@@ -123,6 +123,9 @@ export interface AdapterContext {
   credentials?: Record<string, unknown>;
   /** Adapter-system version label, for compatibility branching. */
   systemVersion?: string;
+  /** Atheon ENCRYPTION_KEY — adapters need this to re-encrypt refreshed
+   *  OAuth tokens. */
+  encryptionKey?: string;
 }
 
 // ── Adapter registry ────────────────────────────────────────────────────
