@@ -165,6 +165,16 @@ export function ActionQueuePanel({ variant, title, limit, allowApprove = false }
                       : a.status === 'rejected' || a.status === 'failed' ? 'danger'
                       : 'default'
                     } size="sm">{a.status}</Badge>
+                    {(() => {
+                      // v64 — surface execution mode (live vs stub) so the
+                      // customer never confuses "completed (stub)" with a
+                      // real ERP write. mode lives on a.output.mode for
+                      // dispatcher-routed adapters.
+                      const out = a.output as { mode?: 'live' | 'stub' | 'preview' } | null;
+                      if (!out?.mode) return null;
+                      const variant = out.mode === 'live' ? 'success' : out.mode === 'stub' ? 'warning' : 'info';
+                      return <Badge variant={variant} size="sm" className="ml-1">{out.mode}</Badge>;
+                    })()}
                   </td>
                   <td className="py-1 pr-3 t-muted">{a.created_at ? new Date(a.created_at).toLocaleString() : ''}</td>
                   {allowApprove && (

@@ -312,6 +312,7 @@ export async function executeXeroLive(
     summary: `Xero ${callOpts.method} ${callOpts.path} succeeded`,
     erp_reference: extractXeroId(action.type, result.body),
     details: { request: callOpts, response: result.body, refreshed: result.refreshAttempted },
+    mode: 'live',
   };
 }
 

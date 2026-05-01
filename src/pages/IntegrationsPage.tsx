@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { IconERP_SAP, IconERP_Cloud, IconERP_Generic, IconERP_Odoo } from "@/components/icons/AtheonIcons";
 import { useAppStore } from "@/stores/appStore";
+import { OnboardingPanel } from "@/components/dashboard/OnboardingPanel";
 
 const systemIconMap: Record<string, React.FC<{ size?: number }>> = {
   SAP: IconERP_SAP, SF: IconERP_Cloud, WD: IconERP_Generic, ORC: IconERP_Generic,
@@ -967,6 +968,11 @@ export function IntegrationsPage() {
                       {testResult.connected ? 'Connection successful' : `Connection failed${testResult.message ? ': ' + testResult.message : ''}`}
                     </div>
                   )}
+
+                  {/* v64 — onboarding checklist per connection. Surfaces the
+                      customer-side steps (review mappings, set profile, choose
+                      autonomy, dispatch action) that gate full value. */}
+                  <OnboardingPanel connectionId={conn.id} />
 
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Button variant="secondary" size="sm" onClick={() => openConfigure(conn)} title="Configure connection credentials and settings">

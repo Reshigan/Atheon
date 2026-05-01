@@ -319,6 +319,20 @@ describe('Phase 7-1 — write-back actions', () => {
       expect(connIds.size).toBeGreaterThanOrEqual(2);
     });
 
+    it('GET /api/v1/erp/connections/:id/onboarding-status returns checklist with progress', async () => {
+      const token = await login();
+      const res = await authedGet('/api/v1/erp/connections/conn-1/onboarding-status', token);
+      expect(res.status).toBe(200);
+      const body = await res.json() as {
+        steps: Array<{ key: string; complete: boolean }>;
+        complete_count: number;
+        total_count: number;
+      };
+      expect(body.total_count).toBe(5);
+      const keys = body.steps.map((s) => s.key);
+      expect(keys).toEqual(['sync', 'mappings', 'profile', 'autonomy', 'actions']);
+    });
+
     it('GET /api/v1/erp/actions/summary returns aggregated counts and values', async () => {
       const token = await login();
       // pending_approval × 2, completed × 1

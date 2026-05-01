@@ -732,6 +732,73 @@ erp.put('/connections/:id/process-profile', async (c) => {
   return c.json({ connectionId: id, ...updated });
 });
 
+// GET /api/erp/connections/:id/onboarding-status — checklist of the
+// customer-side steps needed to get full value from this connection.
+// Phase 8-2: drives the onboarding-prompts UI so customers don't silently
+// skip the review-mappings / set-profile / choose-autonomy steps.
+//
+// Returns: { steps: [{ key, title, description, complete, action_path }], complete_count, total_count }
+erp.get('/connections/:id/onboarding-status', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const conn = await c.env.DB.prepare(
+    `SELECT ec.id, ec.last_sync, ea.system as vendor FROM erp_connections ec
+     JOIN erp_adapters ea ON ec.adapter_id = ea.id
+     WHERE ec.id = ? AND ec.tenant_id = ?`
+  ).bind(id, tenantId).first<{ id: string; last_sync: string | null; vendor: string }>();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  // Step 1: any data synced at all?
+  const synced = !!conn.last_sync;
+
+  // Step 2: any human-confirmed mappings?
+  const mappingsRow = await c.env.DB.prepare(
+    `SELECT COUNT(*) as n FROM erp_field_mappings
+      WHERE tenant_id = ? AND connection_id = ? AND learned_from = 'human'`
+  ).bind(tenantId, id).first<{ n: number }>();
+  const mappingsReviewed = (mappingsRow?.n || 0) > 0;
+
+  // Step 3: process profile has any human override?
+  const profileRow = await c.env.DB.prepare(
+    `SELECT evidence_json FROM erp_process_profiles WHERE tenant_id = ? AND connection_id = ?`
+  ).bind(tenantId, id).first<{ evidence_json: string }>();
+  let profileSet = false;
+  if (profileRow?.evidence_json) {
+    try {
+      const ev = JSON.parse(profileRow.evidence_json) as Record<string, { source?: string }>;
+      profileSet = Object.values(ev).some((v) => v?.source === 'human');
+    } catch { /* ignore */ }
+  }
+
+  // Step 4: any cluster set to non-read-only autonomy?
+  const autonomyRow = await c.env.DB.prepare(
+    `SELECT COUNT(*) as n FROM catalyst_clusters
+      WHERE tenant_id = ? AND autonomy_tier IS NOT NULL AND autonomy_tier != 'read-only'`
+  ).bind(tenantId).first<{ n: number }>();
+  const autonomyChosen = (autonomyRow?.n || 0) > 0;
+
+  // Step 5: any write-back action dispatched for this connection?
+  const actionRow = await c.env.DB.prepare(
+    `SELECT COUNT(*) as n FROM catalyst_actions
+      WHERE tenant_id = ? AND connection_id = ?`
+  ).bind(tenantId, id).first<{ n: number }>();
+  const actionsDispatched = (actionRow?.n || 0) > 0;
+
+  const steps = [
+    { key: 'sync', title: 'Sync your ERP data', description: 'Atheon needs at least one successful sync before catalysts can run.', complete: synced, action_path: `/integrations` },
+    { key: 'mappings', title: 'Review field mappings', description: 'Confirm the auto-suggested field mappings so billing artefacts trace to the right columns.', complete: mappingsReviewed, action_path: `/integrations` },
+    { key: 'profile', title: 'Set process profile rules', description: 'Override inferred rules (tolerance, payment terms, matching mode) where Atheon flagged them as low-confidence or wrong.', complete: profileSet, action_path: `/integrations` },
+    { key: 'autonomy', title: 'Choose catalyst autonomy', description: 'Move at least one catalyst from read-only to assisted/transactional/autonomous so write-back actions can run.', complete: autonomyChosen, action_path: `/catalysts` },
+    { key: 'actions', title: 'Dispatch your first action', description: 'Approve a queued action (or run a previewOnly to see what would be sent).', complete: actionsDispatched, action_path: `/integrations` },
+  ];
+  const complete_count = steps.filter((s) => s.complete).length;
+
+  return c.json({
+    connectionId: id, vendor: conn.vendor,
+    steps, complete_count, total_count: steps.length,
+  });
+});
+
 // GET /api/erp/connections/:id/baseline-comparison — diff the customer's
 // process profile + discovered schema against the vanilla vendor baseline
 // (SAP / Odoo / Xero supported in v1). Surfaces:
