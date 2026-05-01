@@ -31,6 +31,7 @@ import {
 } from './erp-write-actions';
 import { executeXeroLive, type XeroCredentials } from './erp-xero-live';
 import { executeSapLive, type SapCredentials } from './erp-sap-live';
+import { executeOdooLive, type OdooCredentials } from './erp-odoo-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -202,7 +203,7 @@ const ODOO_ACTION_MODEL_METHODS: Record<ActionType, { model: string; method: str
 const odooAdapter: CatalystWriteAdapter = {
   vendor: 'Odoo',
   supports: (t) => ODOO_ACTION_MODEL_METHODS[t] !== null,
-  execute: async (action: CatalystWriteAction, _ctx: AdapterContext): Promise<ActionExecutionResult> => { // eslint-disable-line @typescript-eslint/no-unused-vars
+  execute: async (action: CatalystWriteAction, ctx: AdapterContext): Promise<ActionExecutionResult> => {
     const mm = ODOO_ACTION_MODEL_METHODS[action.type];
     if (!mm) return fail(`Odoo adapter does not support ${action.type}`, 'unsupported_action');
 
@@ -227,12 +228,25 @@ const odooAdapter: CatalystWriteAdapter = {
     }
     if (validation) return fail(validation, 'validation');
 
-    return stubOutcome(action, 
+    // Phase 9-2 — when the connection has opted into `live_mode` AND
+    // Odoo credentials are present, route to the real /jsonrpc call.
+    const creds = (ctx.credentials || {}) as OdooCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.base_url && creds.db && creds.username && creds.api_key) {
+      return executeOdooLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId,
+        encryptionKey: ctx.encryptionKey,
+      });
+    }
+
+    return stubOutcome(action,
       `Would call Odoo ${mm.model}.${mm.method}`,
       {
         vendor: 'Odoo', model: mm.model, method: mm.method, description: mm.description,
         args: action.payload, idempotency_key: action.idempotency_key,
-        note: 'Stubbed adapter — wire to /xmlrpc/2/object when integrating.',
+        mode: 'stub',
+        note: creds.live_mode === true
+          ? 'live_mode set but Odoo credentials missing — need base_url + db + username + api_key'
+          : 'Connection is in stub mode. Set live_mode=true on the connection config to enable real Odoo writes.',
       },
     );
   },
