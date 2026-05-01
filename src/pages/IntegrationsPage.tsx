@@ -388,6 +388,32 @@ export function IntegrationsPage() {
     }
   }, [loadProfile]);
 
+  // v62: vendor-baseline comparison panel — moves the connection card
+  // from "here's your data" to "here's how you compare to the vendor's
+  // recommended configuration, and what to do about it".
+  type BaselineResp = Awaited<ReturnType<typeof api.erp.baselineComparison>>;
+  const [showBaseline, setShowBaseline] = useState<string | null>(null);
+  const [baselineByConn, setBaselineByConn] = useState<Record<string, BaselineResp>>({});
+  const [baselineLoading, setBaselineLoading] = useState<string | null>(null);
+
+  const toggleBaseline = useCallback(async (connId: string) => {
+    if (showBaseline === connId) {
+      setShowBaseline(null);
+      return;
+    }
+    setShowBaseline(connId);
+    if (baselineByConn[connId]) return;
+    setBaselineLoading(connId);
+    try {
+      const res = await api.erp.baselineComparison(connId);
+      setBaselineByConn((prev) => ({ ...prev, [connId]: res }));
+    } catch {
+      setBaselineByConn((prev) => ({ ...prev, [connId]: { connectionId: connId, vendor: null, reason: 'Failed to load baseline comparison' } }));
+    } finally {
+      setBaselineLoading(null);
+    }
+  }, [showBaseline, baselineByConn]);
+
   const refreshCircuitStates = useCallback(async (conns: ERPConnection[]) => {
     if (conns.length === 0) return;
     const entries = await Promise.all(
@@ -964,6 +990,9 @@ export function IntegrationsPage() {
                     <Button variant="ghost" size="sm" onClick={() => toggleProfile(conn.id)} title="Process profile — business rules catalysts apply for this connection (tolerances, payment terms, matching mode)">
                       <Settings size={12} /> {showProfile === conn.id ? 'Hide Profile' : 'Process Profile'}
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleBaseline(conn.id)} title="Compare your configuration to the vendor's recommended defaults (SAP / Odoo / Xero)">
+                      <Layers size={12} /> {showBaseline === conn.id ? 'Hide Baseline' : 'Vendor Baseline'}
+                    </Button>
                     <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => setConfirmDelete(conn.id)} title="Delete this connection">
                       <Trash2 size={12} /> Delete
                     </Button>
@@ -1242,6 +1271,114 @@ export function IntegrationsPage() {
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {showBaseline === conn.id && (
+                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
+                            <Layers size={14} /> Vendor Baseline
+                          </h4>
+                          <p className="text-xs t-muted mt-0.5">
+                            How your configuration compares to the vanilla vendor recommendation. Deviations are flagged with rationale + source — they are not necessarily wrong, but worth a conscious decision.
+                          </p>
+                        </div>
+                      </div>
+                      {baselineLoading === conn.id ? (
+                        <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">
+                          <Loader2 size={14} className="animate-spin" /> Loading vendor baseline…
+                        </div>
+                      ) : !baselineByConn[conn.id] ? (
+                        <div className="text-xs t-muted py-4 text-center">Not loaded.</div>
+                      ) : !baselineByConn[conn.id].vendor ? (
+                        <div className="p-3 rounded bg-[var(--bg-primary)] text-xs t-muted">
+                          {baselineByConn[conn.id].reason}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="info" size="sm">{baselineByConn[conn.id].vendor}</Badge>
+                            <span className="text-xs t-muted">{baselineByConn[conn.id].product}</span>
+                            <span className="ml-auto text-xs">
+                              <Badge variant={(baselineByConn[conn.id].alignment_score || 0) >= 0.8 ? 'success' : (baselineByConn[conn.id].alignment_score || 0) >= 0.5 ? 'warning' : 'danger'} size="sm">
+                                Alignment: {Math.round((baselineByConn[conn.id].alignment_score || 0) * 100)}%
+                              </Badge>
+                            </span>
+                          </div>
+
+                          {(baselineByConn[conn.id].profile_deviations || []).length > 0 && (
+                            <div>
+                              <div className="text-xs font-semibold t-primary mb-1">Configuration deviations</div>
+                              <div className="space-y-1.5">
+                                {baselineByConn[conn.id].profile_deviations!.map((d) => (
+                                  <div key={d.field} className={`p-2 rounded border text-xs ${
+                                    d.severity === 'critical' ? 'border-red-500/30 bg-red-500/5'
+                                      : d.severity === 'warning' ? 'border-amber-500/30 bg-amber-500/5'
+                                      : 'border-[var(--border-card)] bg-[var(--bg-primary)]'
+                                  }`}>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="font-medium t-primary">{d.field}</span>
+                                      <Badge variant={d.severity === 'critical' ? 'danger' : 'warning'} size="sm">{d.severity}</Badge>
+                                    </div>
+                                    <div className="t-muted mt-0.5">
+                                      You: <span className="font-mono t-primary">{String(d.customer_value)}</span> · Vendor: <span className="font-mono t-primary">{String(d.recommended_value)}</span>
+                                    </div>
+                                    <div className="t-muted mt-1">{d.rationale}</div>
+                                    <div className="t-muted mt-1 italic">{d.action}</div>
+                                    <div className="text-[10px] t-muted mt-1 opacity-70">Source: {d.source}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {(baselineByConn[conn.id].schema_deviations || []).length > 0 && (
+                            <div>
+                              <div className="text-xs font-semibold t-primary mb-1">Schema deviations</div>
+                              <div className="space-y-1.5">
+                                {baselineByConn[conn.id].schema_deviations!.map((d) => (
+                                  <div key={d.entity_type} className="p-2 rounded border border-[var(--border-card)] bg-[var(--bg-primary)] text-xs">
+                                    <div className="font-medium t-primary mb-0.5">{d.entity_type}</div>
+                                    {d.missing_fields.length > 0 && (
+                                      <div className="t-muted">
+                                        Missing standard fields ({d.missing_fields.length}): <span className="font-mono">{d.missing_fields.slice(0, 6).join(', ')}{d.missing_fields.length > 6 ? '…' : ''}</span>
+                                      </div>
+                                    )}
+                                    {d.custom_fields.length > 0 && (
+                                      <div className="t-muted">
+                                        Custom fields ({d.custom_fields.length}): <span className="font-mono">{d.custom_fields.slice(0, 6).join(', ')}{d.custom_fields.length > 6 ? '…' : ''}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {(baselineByConn[conn.id].flows || []).length > 0 && (
+                            <div>
+                              <div className="text-xs font-semibold t-primary mb-1">Vendor process flows</div>
+                              <div className="space-y-1.5">
+                                {baselineByConn[conn.id].flows!.map((f) => (
+                                  <details key={f.name} className="p-2 rounded border border-[var(--border-card)] bg-[var(--bg-primary)] text-xs">
+                                    <summary className="cursor-pointer font-medium t-primary">{f.name}</summary>
+                                    <p className="t-muted mt-1">{f.description}</p>
+                                    <ol className="mt-2 space-y-1 list-decimal list-inside">
+                                      {f.steps.map((s, idx) => (
+                                        <li key={idx} className="t-muted">
+                                          <span className="font-medium t-primary">{s.step}</span>{!s.required && <span className="opacity-60"> (optional)</span>} — {s.description}
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  </details>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

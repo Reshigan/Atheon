@@ -11,7 +11,14 @@ import { profileEntityRecords, getDiscoveredSchemas } from '../services/erp-sche
 import { runAutoMapper, listAllMappings, persistSuggestions, getActiveMappings } from '../services/erp-auto-mapper';
 import { invalidateMappingCache } from '../services/erp-field-resolver';
 import { suggestUnmappedWithLlm } from '../services/erp-mapping-llm';
-import { inferProcessProfile, getProcessProfile, setProcessProfileOverrides, type ProcessProfile } from '../services/erp-process-profile';
+import { inferProcessProfile, getProcessProfile, setProcessProfileOverrides, loadProcessProfile, type ProcessProfile } from '../services/erp-process-profile';
+import {
+  getVendorBaseline,
+  listSupportedVendors,
+  compareProfileToBaseline,
+  compareSchemaToBaseline,
+  calculateAlignmentScore,
+} from '../services/erp-vendor-baselines';
 
 const erp = new Hono<AppBindings>();
 
@@ -692,6 +699,64 @@ erp.put('/connections/:id/process-profile', async (c) => {
   } catch { /* non-fatal */ }
 
   return c.json({ connectionId: id, ...updated });
+});
+
+// GET /api/erp/connections/:id/baseline-comparison — diff the customer's
+// process profile + discovered schema against the vanilla vendor baseline
+// (SAP / Odoo / Xero supported in v1). Surfaces:
+//   * profile deviations: where customer's tolerance/payment-terms/matching
+//     mode differs from vendor recommendation, with rationale + source.
+//   * schema deviations: vendor-standard fields the customer is NOT sending
+//     (likely missing data) + custom fields that aren't in the vendor schema.
+//   * alignment_score: 0-1 headline for the executive summary.
+//
+// This moves catalysts from "here's your data" to "here's how it compares to
+// the vendor recommendation, and what to do about it".
+erp.get('/connections/:id/baseline-comparison', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+
+  const conn = await c.env.DB.prepare(
+    `SELECT ec.id, ea.system as source_system FROM erp_connections ec
+     JOIN erp_adapters ea ON ec.adapter_id = ea.id
+     WHERE ec.id = ? AND ec.tenant_id = ?`
+  ).bind(id, tenantId).first<{ id: string; source_system: string }>();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  const baseline = getVendorBaseline(conn.source_system);
+  if (!baseline) {
+    return c.json({
+      connectionId: id,
+      vendor: null,
+      reason: `No vendor baseline available for "${conn.source_system}" — supported vendors: ${listSupportedVendors().join(', ')}`,
+    });
+  }
+
+  // Pull current process profile (or default if absent)
+  const profile = await loadProcessProfile(c.env.DB, tenantId, id);
+
+  // Pull discovered schema grouped by entity → fields list
+  const schemaRows = await getDiscoveredSchemas(c.env.DB, tenantId, id);
+  const discoveredByEntity: Record<string, string[]> = {};
+  for (const r of schemaRows) {
+    if (!discoveredByEntity[r.entity_type]) discoveredByEntity[r.entity_type] = [];
+    discoveredByEntity[r.entity_type].push(r.source_field);
+  }
+
+  const profileDeviations = compareProfileToBaseline(profile, baseline);
+  const schemaDeviations = compareSchemaToBaseline(discoveredByEntity, baseline);
+  const recCount = Object.keys(baseline.profile_recommendations).length;
+  const alignmentScore = calculateAlignmentScore(profileDeviations, recCount);
+
+  return c.json({
+    connectionId: id,
+    vendor: baseline.vendor,
+    product: baseline.product,
+    profile_deviations: profileDeviations,
+    schema_deviations: schemaDeviations,
+    flows: baseline.flows,
+    alignment_score: Number(alignmentScore.toFixed(2)),
+  });
 });
 
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
