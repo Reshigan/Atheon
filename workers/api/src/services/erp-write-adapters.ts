@@ -34,6 +34,8 @@ import { executeSapLive, type SapCredentials } from './erp-sap-live';
 import { executeOdooLive, type OdooCredentials } from './erp-odoo-live';
 import { executeQboLive, type QboCredentials } from './erp-quickbooks-live';
 import { executeNetSuiteLive, type NetSuiteCredentials } from './erp-netsuite-live';
+import { executeDynamicsLive, type DynamicsCredentials } from './erp-dynamics-live';
+import { executeSageLive, type SageCredentials } from './erp-sage-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -424,6 +426,84 @@ const netsuiteAdapter: CatalystWriteAdapter = {
   },
 };
 
+// ── Microsoft Dynamics 365 Business Central adapter (Phase 9-4) ────────
+
+const DYNAMICS_SUPPORTED: ActionType[] = [
+  'ar_dunning_send', 'ap_payment_release', 'po_create',
+  'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const dynamicsAdapter: CatalystWriteAdapter = {
+  vendor: 'Dynamics',
+  supports: (t) => DYNAMICS_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!DYNAMICS_SUPPORTED.includes(action.type)) return fail(`Dynamics adapter does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'po_create': validation = requireFields(action.payload, ['vendor_number']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'ap_payment_release': validation = requireFields(action.payload, ['vendor_number', 'amount']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['journal_id']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_id', 'credit_limit']); break;
+      case 'ar_dunning_send': validation = requireFields(action.payload, ['customer_number']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as DynamicsCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.bc_tenant_id && creds.bc_environment) {
+      return executeDynamicsLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Dynamics 365 BC ${action.type}`, {
+      vendor: 'Microsoft Dynamics 365 Business Central', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but Dynamics credentials missing — need bc_tenant_id + bc_environment + access_token + refresh_token + client_id/secret + aad_tenant_id'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Dynamics writes.',
+    });
+  },
+};
+
+// ── Sage Business Cloud Accounting adapter (Phase 9-4) ─────────────────
+
+const SAGE_SUPPORTED: ActionType[] = [
+  'ap_payment_release', 'po_create', 'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const sageAdapter: CatalystWriteAdapter = {
+  vendor: 'Sage',
+  supports: (t) => SAGE_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!SAGE_SUPPORTED.includes(action.type)) return fail(`Sage Business Cloud does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'ap_payment_release': validation = requireFields(action.payload, ['vendor_id', 'amount', 'bank_account_id']); break;
+      case 'po_create': validation = requireFields(action.payload, ['vendor_id', 'line_items']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['lines']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['contact_id', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as SageCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token) {
+      return executeSageLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Sage ${action.type}`, {
+      vendor: 'Sage Business Cloud', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but Sage credentials missing — need access_token + refresh_token + client_id/secret'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Sage writes.',
+    });
+  },
+};
+
 // ── Generic adapter ────────────────────────────────────────────────────
 // Catch-all for vendors without a dedicated write integration. Always
 // records the intended payload as a preview; never claims success.
@@ -453,6 +533,8 @@ export function registerDefaultWriteAdapters(): void {
   registerWriteAdapter(xeroAdapter);
   registerWriteAdapter(qboAdapter);
   registerWriteAdapter(netsuiteAdapter);
+  registerWriteAdapter(dynamicsAdapter);
+  registerWriteAdapter(sageAdapter);
   registerWriteAdapter(genericAdapter);
   registered = true;
 }
