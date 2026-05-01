@@ -9,6 +9,7 @@ import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { api, ApiError } from "@/lib/api";
 import { cleanLlmText } from "@/lib/utils";
 import type { Metric, AnomalyItem, ProcessItem, CorrelationItem, PulseSummary, CatalystRunItem, CatalystRunSummary, MetricTraceResponse, HealthDimensionTraceResponse, PulseInsightsResponse, DiagnosticSummaryResponse, DiagnosticAnalysisItem, DiagnosticAnalysisDetail, CostOfInactionResponse } from "@/lib/api";
+import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import { CostOfInactionTicker } from "@/components/ui/cost-of-inaction-ticker";
 import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
 import { useToast } from "@/components/ui/toast";
@@ -695,6 +696,11 @@ export function PulsePage() {
           <button onClick={() => setActionError(null)} className="text-amber-400 hover:text-amber-300" title="Dismiss"><X size={14} /></button>
         </div>
       )}
+
+      {/* v63 — operational view of the write-back action queue.
+          Shows recent activity + lets the operator approve/reject inline. */}
+      <ActionQueuePanel variant="operational" allowApprove limit={20} />
+
 
       {/* Department Filter */}
       {availableDomains.length > 0 && (

@@ -932,6 +932,87 @@ erp.post('/connections/:id/actions/:actionId/reject', async (c) => {
   return c.json(outcome);
 });
 
+// GET /api/erp/actions — tenant-wide list of write-back actions across
+// all connections. Powers the Dashboard pending-action count, the Apex
+// briefing's "actions awaiting your approval" card, and the Pulse
+// throughput metric. Filterable by ?status= and ?limit=.
+erp.get('/actions', async (c) => {
+  const tenantId = getTenantId(c);
+  const status = c.req.query('status');
+  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10) || 50, 500);
+
+  const where = status ? `WHERE tenant_id = ? AND status = ?` : `WHERE tenant_id = ?`;
+  const stmt = status
+    ? c.env.DB.prepare(`SELECT id, catalyst_name, action, status, action_type, value_zar, source_finding_id, idempotency_key, connection_id, output_data, reasoning, approved_by, created_at, completed_at FROM catalyst_actions ${where} ORDER BY created_at DESC LIMIT ?`).bind(tenantId, status, limit)
+    : c.env.DB.prepare(`SELECT id, catalyst_name, action, status, action_type, value_zar, source_finding_id, idempotency_key, connection_id, output_data, reasoning, approved_by, created_at, completed_at FROM catalyst_actions ${where} ORDER BY created_at DESC LIMIT ?`).bind(tenantId, limit);
+  const res = await stmt.all<{
+    id: string; catalyst_name: string; action: string; status: string;
+    action_type: string | null; value_zar: number | null; source_finding_id: string | null;
+    idempotency_key: string | null; connection_id: string | null;
+    output_data: string | null; reasoning: string | null;
+    approved_by: string | null; created_at: string; completed_at: string | null;
+  }>();
+  const rows = (res.results || []).map((r) => {
+    let parsedOutput: unknown = null;
+    try { if (r.output_data) parsedOutput = JSON.parse(r.output_data); } catch { /* tolerate */ }
+    return {
+      id: r.id,
+      catalyst_name: r.catalyst_name,
+      action_type: r.action_type || r.action,
+      status: r.status,
+      value_zar: r.value_zar || 0,
+      source_finding_id: r.source_finding_id,
+      idempotency_key: r.idempotency_key,
+      connection_id: r.connection_id,
+      output: parsedOutput,
+      reasoning: r.reasoning,
+      approved_by: r.approved_by,
+      created_at: r.created_at,
+      completed_at: r.completed_at,
+    };
+  });
+  return c.json({ tenantId, total: rows.length, actions: rows });
+});
+
+// GET /api/erp/actions/summary — aggregate counts + values per status.
+// Designed for Dashboard / Apex headline numbers.
+erp.get('/actions/summary', async (c) => {
+  const tenantId = getTenantId(c);
+  const result = await c.env.DB.prepare(
+    `SELECT status, COUNT(*) as count, COALESCE(SUM(value_zar), 0) as value_zar
+       FROM catalyst_actions
+      WHERE tenant_id = ?
+      GROUP BY status`
+  ).bind(tenantId).all<{ status: string; count: number; value_zar: number }>();
+  const summary = {
+    pending_approval_count: 0,
+    pending_approval_value_zar: 0,
+    completed_count: 0,
+    completed_value_zar: 0,
+    rejected_count: 0,
+    rejected_value_zar: 0,
+    failed_count: 0,
+    failed_value_zar: 0,
+    previewed_count: 0,
+    previewed_value_zar: 0,
+    total_count: 0,
+    total_value_zar: 0,
+  };
+  for (const r of result.results || []) {
+    const key = r.status as keyof typeof summary;
+    summary.total_count += r.count;
+    summary.total_value_zar += r.value_zar || 0;
+    const countKey = `${r.status}_count` as keyof typeof summary;
+    const valueKey = `${r.status}_value_zar` as keyof typeof summary;
+    if (countKey in summary) {
+      (summary[countKey] as number) = r.count;
+      (summary[valueKey] as number) = r.value_zar || 0;
+    }
+    void key; // type-only marker
+  }
+  return c.json({ tenantId, summary });
+});
+
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
 // Used by the frontend company-switcher (PR #219/#220/#232). Read-only.
 erp.get('/companies', async (c) => {

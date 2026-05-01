@@ -295,5 +295,55 @@ describe('Phase 7-1 — write-back actions', () => {
       const body = await reject.json() as { status: string };
       expect(body.status).toBe('rejected');
     });
+
+    it('GET /api/v1/erp/actions returns tenant-wide actions across connections', async () => {
+      const token = await login();
+      // Two queued + one completed via autonomous low-value
+      await postJSON('/api/v1/erp/connections/conn-1/actions', {
+        idempotency_key: 'tw-1', type: 'ar_dunning_send', catalyst_name: 'AR Collection',
+        cluster_id: 'cluster-1', payload: { invoice_id: 'INV-1' }, value_zar: 5000,
+        autonomy_tier: 'assisted',
+      }, token);
+      await postJSON('/api/v1/erp/connections/conn-sap', {}, token).catch(() => null); // ensure conn exists
+      await postJSON('/api/v1/erp/connections/conn-sap/actions', {
+        idempotency_key: 'tw-2', type: 'ap_payment_release', catalyst_name: 'AP Processing',
+        cluster_id: 'cluster-1', payload: { payment_proposal_id: 'PP-1', company_code: '0001' },
+        value_zar: 500, autonomy_tier: 'autonomous',
+      }, token);
+
+      const res = await authedGet('/api/v1/erp/actions', token);
+      expect(res.status).toBe(200);
+      const body = await res.json() as { total: number; actions: Array<{ status: string; connection_id: string }> };
+      expect(body.total).toBeGreaterThanOrEqual(2);
+      const connIds = new Set(body.actions.map((a) => a.connection_id));
+      expect(connIds.size).toBeGreaterThanOrEqual(2);
+    });
+
+    it('GET /api/v1/erp/actions/summary returns aggregated counts and values', async () => {
+      const token = await login();
+      // pending_approval × 2, completed × 1
+      await postJSON('/api/v1/erp/connections/conn-1/actions', {
+        idempotency_key: 'sum-1', type: 'ar_dunning_send', catalyst_name: 'AR Collection',
+        cluster_id: 'cluster-1', payload: { invoice_id: 'INV-A' }, value_zar: 1000,
+        autonomy_tier: 'assisted',
+      }, token);
+      await postJSON('/api/v1/erp/connections/conn-1/actions', {
+        idempotency_key: 'sum-2', type: 'ar_dunning_send', catalyst_name: 'AR Collection',
+        cluster_id: 'cluster-1', payload: { invoice_id: 'INV-B' }, value_zar: 2000,
+        autonomy_tier: 'assisted',
+      }, token);
+      await postJSON('/api/v1/erp/connections/conn-1/actions', {
+        idempotency_key: 'sum-3', type: 'ar_dunning_send', catalyst_name: 'AR Collection',
+        cluster_id: 'cluster-1', payload: { invoice_id: 'INV-C' }, value_zar: 500,
+        autonomy_tier: 'autonomous',
+      }, token);
+
+      const res = await authedGet('/api/v1/erp/actions/summary', token);
+      expect(res.status).toBe(200);
+      const body = await res.json() as { summary: { pending_approval_count: number; completed_count: number; pending_approval_value_zar: number } };
+      expect(body.summary.pending_approval_count).toBeGreaterThanOrEqual(2);
+      expect(body.summary.completed_count).toBeGreaterThanOrEqual(1);
+      expect(body.summary.pending_approval_value_zar).toBeGreaterThanOrEqual(3000);
+    });
   });
 });
