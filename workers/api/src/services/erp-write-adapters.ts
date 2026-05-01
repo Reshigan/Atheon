@@ -36,6 +36,9 @@ import { executeQboLive, type QboCredentials } from './erp-quickbooks-live';
 import { executeNetSuiteLive, type NetSuiteCredentials } from './erp-netsuite-live';
 import { executeDynamicsLive, type DynamicsCredentials } from './erp-dynamics-live';
 import { executeSageLive, type SageCredentials } from './erp-sage-live';
+import { executeSalesforceLive, type SalesforceCredentials } from './erp-salesforce-live';
+import { executeOracleLive, type OracleCredentials } from './erp-oracle-live';
+import { executeWorkdayLive, type WorkdayCredentials } from './erp-workday-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -504,6 +507,118 @@ const sageAdapter: CatalystWriteAdapter = {
   },
 };
 
+// ── Salesforce adapter (Phase 9-5) ─────────────────────────────────────
+// CRM-first; only customer_credit_update + ar_dunning_send have native equivalents.
+
+const SALESFORCE_SUPPORTED: ActionType[] = ['customer_credit_update', 'ar_dunning_send'];
+
+const salesforceAdapter: CatalystWriteAdapter = {
+  vendor: 'Salesforce',
+  supports: (t) => SALESFORCE_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!SALESFORCE_SUPPORTED.includes(action.type)) {
+      return fail(`Salesforce is CRM-first; ${action.type} has no native equivalent`, 'unsupported_action');
+    }
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'customer_credit_update': validation = requireFields(action.payload, ['account_id', 'credit_limit']); break;
+      case 'ar_dunning_send': validation = requireFields(action.payload, ['account_id']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as SalesforceCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.instance_url) {
+      return executeSalesforceLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Salesforce ${action.type}`, {
+      vendor: 'Salesforce', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but Salesforce credentials missing — need instance_url + access_token + refresh_token + client_id/secret'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Salesforce writes.',
+    });
+  },
+};
+
+// ── Oracle Fusion adapter (Phase 9-5) ──────────────────────────────────
+
+const ORACLE_SUPPORTED: ActionType[] = [
+  'ar_dunning_send', 'ap_payment_release', 'po_create',
+  'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const oracleAdapter: CatalystWriteAdapter = {
+  vendor: 'Oracle',
+  supports: (t) => ORACLE_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!ORACLE_SUPPORTED.includes(action.type)) return fail(`Oracle adapter does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'ar_dunning_send': validation = requireFields(action.payload, ['customer_number', 'business_unit']); break;
+      case 'ap_payment_release': validation = requireFields(action.payload, ['payment_request_id']); break;
+      case 'po_create': validation = requireFields(action.payload, ['supplier', 'procurement_bu', 'lines']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['ledger_name', 'period', 'lines']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_id', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as OracleCredentials;
+    const hasAuth = creds.auth_scheme === 'basic' ? !!(creds.username && creds.password) : !!creds.access_token;
+    if (!action.previewOnly && creds.live_mode && creds.pod_url && hasAuth) {
+      return executeOracleLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Oracle Fusion ${action.type}`, {
+      vendor: 'Oracle Fusion Cloud', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but Oracle credentials missing — need pod_url + (access_token+refresh_token+client_id/secret) OR (username+password)'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Oracle Fusion writes.',
+    });
+  },
+};
+
+// ── Workday adapter (Phase 9-5) ────────────────────────────────────────
+// HCM-first; only journal_post + ap_payment_release + customer_credit_update.
+
+const WORKDAY_SUPPORTED: ActionType[] = ['journal_post', 'ap_payment_release', 'customer_credit_update'];
+
+const workdayAdapter: CatalystWriteAdapter = {
+  vendor: 'Workday',
+  supports: (t) => WORKDAY_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!WORKDAY_SUPPORTED.includes(action.type)) {
+      return fail(`Workday is HCM-first; ${action.type} has no native financials equivalent`, 'unsupported_action');
+    }
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'journal_post': validation = requireFields(action.payload, ['ledger', 'lines']); break;
+      case 'ap_payment_release': validation = requireFields(action.payload, ['supplier', 'amount']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_id', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as WorkdayCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.host && creds.tenant) {
+      return executeWorkdayLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Workday ${action.type}`, {
+      vendor: 'Workday', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but Workday credentials missing — need host + tenant + access_token + refresh_token + client_id/secret'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Workday writes.',
+    });
+  },
+};
+
 // ── Generic adapter ────────────────────────────────────────────────────
 // Catch-all for vendors without a dedicated write integration. Always
 // records the intended payload as a preview; never claims success.
@@ -535,6 +650,9 @@ export function registerDefaultWriteAdapters(): void {
   registerWriteAdapter(netsuiteAdapter);
   registerWriteAdapter(dynamicsAdapter);
   registerWriteAdapter(sageAdapter);
+  registerWriteAdapter(salesforceAdapter);
+  registerWriteAdapter(oracleAdapter);
+  registerWriteAdapter(workdayAdapter);
   registerWriteAdapter(genericAdapter);
   registered = true;
 }
