@@ -147,11 +147,13 @@ export function getWriteAdapter(vendor: string | null | undefined): CatalystWrit
   // Exact match first
   const direct = adapters.get(norm);
   if (direct) return direct;
-  // Prefix match — allows e.g. "QuickBooks Online" → 'quickbooks',
-  // "Microsoft Dynamics 365" → 'dynamics', "SAP S/4HANA" → 'sap'.
+  // Substring match — allows e.g. "QuickBooks Online" → 'quickbooks',
+  // "Microsoft Dynamics 365" → 'dynamics', "SAP S/4HANA Cloud" → 'sap',
+  // "Sage Business Cloud" → 'sage'. The vendor key is a single word that
+  // we expect to appear as a substring of the customer-supplied label.
   for (const [key, ad] of adapters.entries()) {
     if (key === 'generic') continue;
-    if (norm.startsWith(key) || key.startsWith(norm)) return ad;
+    if (norm.includes(key) || key.includes(norm)) return ad;
   }
   return null;
 }
