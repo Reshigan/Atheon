@@ -14,6 +14,7 @@ import { getWeeklyDigestEmailTemplate } from './email';
 import { logInfo, logError } from './logger';
 import { processDueWebhooks } from './webhook-delivery';
 import { detectErpSchemaDrift } from './erp-drift-detector';
+import { escalateStaleActions } from './erp-hitl-sla';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -102,6 +103,11 @@ export async function handleScheduled(
       // as a notification so the customer can confirm the change before
       // the auto-mapper acts on stale assumptions. Best-effort.
       try { await detectErpSchemaDrift(db, tenantId); } catch (e) { console.error(`ERP drift detection failed for ${tenantId}:`, e); }
+
+      // v65 HITL SLA — sweep pending_approval write-back actions; warn
+      // at 24h, escalate at 48h, auto-reject at 7 days. Keeps the queue
+      // bounded + customer in the loop. Best-effort.
+      try { await escalateStaleActions(db, tenantId); } catch (e) { console.error(`HITL SLA sweep failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
