@@ -134,56 +134,20 @@ export interface SubCatalystKpisRow {
 }
 
 // ── Helpers: extract financial amounts from any ERP record shape ──
+// v58: the static AMOUNT_FIELDS / REF_FIELDS / ENTITY_FIELDS arrays moved to
+// erp-auto-mapper.ts CANONICAL_FIELDS so the resolver, the auto-mapper, and
+// these helpers all share one source of truth. The synchronous extractors
+// here continue to use the static aliases (and remain the right choice for
+// pre-mapped canonical-table reads that already have the value in a known
+// column). For raw-source-record extraction in catalyst handlers /
+// assessment / report code, prefer the connection-aware resolver via
+// extractAmountFor / extractRefFor / extractEntityFor in erp-field-resolver.
 
-/** SAP fields: WRBTR (doc currency amt), DMBTR (local currency amt), NETWR (net value), KWBTR (bank amt) */
-const AMOUNT_FIELDS = [
-  'WRBTR', 'DMBTR', 'NETWR', 'KWBTR', 'NETPR', 'ITEM_NETWR',           // SAP
-  'amount_total', 'amount_untaxed', 'amount_residual', 'price_subtotal', // Odoo
-  'total', 'amount', 'Total', 'Amount', 'TotalAmt', 'SubTotal',         // Xero/QB/generic
-  'balance', 'Balance', 'value', 'Value',                               // generic
-];
+import { extractAmountStatic, extractRefStatic, extractEntityStatic } from './erp-field-resolver';
 
-const REF_FIELDS = [
-  'BELNR', 'EBELN', 'VBELN', 'XBLNR', 'AUGBL',                         // SAP
-  'invoice_number', 'po_number', 'number', 'name', 'ref', 'reference',  // generic
-  'InvoiceNumber', 'PurchaseOrderNumber', 'Id', 'id',                 // Xero/QB/generic
-];
-
-const ENTITY_FIELDS = [
-  'LIFNR', 'KUNNR', 'KUNAG', 'NAME1',                                   // SAP
-  'customer_name', 'supplier_name', 'partner_name', 'name',             // generic
-  'ContactName', 'Name', 'DisplayName',                                 // Xero/QB
-];
-
-function extractAmount(rec: Record<string, unknown> | null | undefined): number {
-  if (!rec) return 0;
-  for (const f of AMOUNT_FIELDS) {
-    const v = rec[f];
-    if (v !== undefined && v !== null && v !== '') {
-      const num = parseFloat(String(v));
-      if (!isNaN(num)) return Math.abs(num);
-    }
-  }
-  return 0;
-}
-
-function extractRef(rec: Record<string, unknown> | null | undefined): string {
-  if (!rec) return '';
-  for (const f of REF_FIELDS) {
-    const v = rec[f];
-    if (v !== undefined && v !== null && v !== '') return String(v);
-  }
-  return '';
-}
-
-function extractEntity(rec: Record<string, unknown> | null | undefined): string {
-  if (!rec) return '';
-  for (const f of ENTITY_FIELDS) {
-    const v = rec[f];
-    if (v !== undefined && v !== null && v !== '') return String(v);
-  }
-  return '';
-}
+const extractAmount = extractAmountStatic;
+const extractRef = extractRefStatic;
+const extractEntity = extractEntityStatic;
 
 // ── recordRun ──
 

@@ -8,6 +8,8 @@ import { mapRecord, canonicalTableName, extractCompanyKey } from '../services/er
 import { indexDocument } from '../services/vectorize';
 import { logError, logInfo } from '../services/logger';
 import { profileEntityRecords, getDiscoveredSchemas } from '../services/erp-schema-profiler';
+import { runAutoMapper, listAllMappings } from '../services/erp-auto-mapper';
+import { invalidateMappingCache } from '../services/erp-field-resolver';
 
 const erp = new Hono<AppBindings>();
 
@@ -95,6 +97,21 @@ async function writeToCanonicalTables(
     // modules, NetSuite custom segments). Best-effort, never throws.
     if (connectionId && records.length > 0) {
       await profileEntityRecords(db, tenantId, connectionId, sourceSystem, entity.type, records);
+
+      // v58 auto-mapper — refresh suggestions for this entity. The
+      // resolver caches mappings for 5 minutes, so we also invalidate
+      // the cache so the very next catalyst extraction sees the updated
+      // active set. Best-effort: any mapper failure is logged and
+      // ignored — sync ingestion must not be aborted by a mapping
+      // refresh.
+      try {
+        await runAutoMapper(db, tenantId, connectionId, entity.type);
+        await invalidateMappingCache({ tenantId, connectionId, entityType: entity.type });
+      } catch (err) {
+        logError('erp.auto_mapper.run_failed', err, { tenantId }, {
+          connectionId, entityType: entity.type,
+        });
+      }
     }
 
     try {
@@ -383,6 +400,86 @@ erp.get('/connections/:id/schemas', async (c) => {
     entityCount: Object.keys(byEntity).length,
     fieldCount: rows.length,
     schemas: byEntity,
+  });
+});
+
+// GET /api/erp/connections/:id/mappings — auto-mapper resolved field
+// mappings for this connection (canonical → source). Optional ?entity=
+// filter and ?status=active|suggested|all (default: all). Powers the
+// review UI in Phase 3 and the read-back path here for Phase 2.
+erp.get('/connections/:id/mappings', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const entity = c.req.query('entity');
+  const status = (c.req.query('status') || 'all').toLowerCase();
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  let rows = await listAllMappings(c.env.DB, tenantId, id, entity);
+  if (status === 'active' || status === 'suggested') {
+    rows = rows.filter((r) => r.status === status);
+  }
+
+  // Group by canonical_field for the UI — under shared-savings, customers
+  // need to see at a glance which canonical fields are mapped vs which
+  // need attention.
+  const byCanonical: Record<string, typeof rows> = {};
+  for (const r of rows) {
+    if (!byCanonical[r.canonical_field]) byCanonical[r.canonical_field] = [];
+    byCanonical[r.canonical_field].push(r);
+  }
+
+  const activeCount = rows.filter((r) => r.status === 'active').length;
+  const suggestedCount = rows.filter((r) => r.status === 'suggested').length;
+
+  return c.json({
+    connectionId: id,
+    activeCount,
+    suggestedCount,
+    fieldCount: rows.length,
+    mappings: byCanonical,
+  });
+});
+
+// POST /api/erp/connections/:id/mappings/refresh — re-run the auto-mapper
+// for a connection. Used after a customer adds new ERP fields and wants
+// suggestions regenerated immediately rather than waiting for the next sync.
+// Optional body { entity_type?: string } to scope to one entity.
+erp.post('/connections/:id/mappings/refresh', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const body = await c.req.json<{ entity_type?: string }>().catch(() => ({} as { entity_type?: string }));
+  const entityType = body.entity_type;
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  // Discover which entity types we have profiles for, then auto-map each.
+  const entities = entityType
+    ? [{ entity_type: entityType }]
+    : (await c.env.DB.prepare(
+        `SELECT DISTINCT entity_type FROM erp_connection_schemas
+          WHERE tenant_id = ? AND connection_id = ?`
+      ).bind(tenantId, id).all<{ entity_type: string }>()).results || [];
+
+  let totalAuto = 0, totalSuggested = 0;
+  for (const e of entities) {
+    const r = await runAutoMapper(c.env.DB, tenantId, id, e.entity_type);
+    totalAuto += r.autoApplied;
+    totalSuggested += r.suggested;
+    await invalidateMappingCache({ tenantId, connectionId: id, entityType: e.entity_type });
+  }
+
+  return c.json({
+    connectionId: id,
+    entitiesProcessed: entities.length,
+    autoApplied: totalAuto,
+    suggested: totalSuggested,
   });
 });
 
