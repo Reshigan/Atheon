@@ -43,7 +43,11 @@
 // write-back action framework (action_type, value_zar,
 // source_finding_id, idempotency_key, connection_id, vendor) so the
 // approval queue + ROI attribution can join across actions.
-export const MIGRATION_VERSION = 'v62-erp-write-actions';
+// v66-erp-action-verification: catalyst_actions self-heal columns
+// for the post-action verification cron (verification_status,
+// verification_notes, verified_at). Verification failures downgrade
+// ROI attribution so we never bill on writes the ERP didn't record.
+export const MIGRATION_VERSION = 'v66-erp-action-verification';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -856,6 +860,10 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'catalyst_actions', column: 'idempotency_key', definition: 'TEXT' },
     { table: 'catalyst_actions', column: 'connection_id', definition: 'TEXT' },
     { table: 'catalyst_actions', column: 'vendor', definition: 'TEXT' },
+    // v66: post-action verification (Phase 8-4)
+    { table: 'catalyst_actions', column: 'verification_status', definition: 'TEXT' },
+    { table: 'catalyst_actions', column: 'verification_notes', definition: 'TEXT' },
+    { table: 'catalyst_actions', column: 'verified_at', definition: 'TEXT' },
     // Spec 6 P1: Source attribution on process_metrics
     { table: 'process_metrics', column: 'sub_catalyst_name', definition: 'TEXT' },
     { table: 'process_metrics', column: 'source_run_id', definition: 'TEXT' },

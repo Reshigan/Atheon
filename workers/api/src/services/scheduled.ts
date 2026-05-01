@@ -15,6 +15,7 @@ import { logInfo, logError } from './logger';
 import { processDueWebhooks } from './webhook-delivery';
 import { detectErpSchemaDrift } from './erp-drift-detector';
 import { escalateStaleActions } from './erp-hitl-sla';
+import { verifyCompletedActions } from './erp-action-verification';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -108,6 +109,12 @@ export async function handleScheduled(
       // at 24h, escalate at 48h, auto-reject at 7 days. Keeps the queue
       // bounded + customer in the loop. Best-effort.
       try { await escalateStaleActions(db, tenantId); } catch (e) { console.error(`HITL SLA sweep failed for ${tenantId}:`, e); }
+
+      // v66 post-action verification — re-read the ERP for recently-
+      // completed actions; mark verification_status. Failures notify the
+      // customer + ROI attribution downgrades to never bill on writes the
+      // ERP didn't actually record. Best-effort.
+      try { await verifyCompletedActions(db, tenantId); } catch (e) { console.error(`Action verification failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
