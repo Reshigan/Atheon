@@ -29,6 +29,7 @@ import {
   type AdapterContext,
   registerWriteAdapter,
 } from './erp-write-actions';
+import { executeXeroLive, type XeroCredentials } from './erp-xero-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -259,7 +260,7 @@ const XERO_ACTION_ENDPOINTS: Record<ActionType, { method: string; path: string; 
 const xeroAdapter: CatalystWriteAdapter = {
   vendor: 'Xero',
   supports: (t) => XERO_ACTION_ENDPOINTS[t] !== null,
-  execute: async (action: CatalystWriteAction, _ctx: AdapterContext): Promise<ActionExecutionResult> => { // eslint-disable-line @typescript-eslint/no-unused-vars
+  execute: async (action: CatalystWriteAction, ctx: AdapterContext): Promise<ActionExecutionResult> => {
     const ep = XERO_ACTION_ENDPOINTS[action.type];
     if (!ep) return fail(`Xero adapter does not support ${action.type} — no native equivalent`, 'unsupported_action');
 
@@ -284,12 +285,27 @@ const xeroAdapter: CatalystWriteAdapter = {
     }
     if (validation) return fail(validation, 'validation');
 
-    return stubOutcome(action, 
+    // Phase 8-1 — when the connection has opted into `live_mode` AND
+    // OAuth credentials are present, route to the real Xero API.
+    // Otherwise fall through to the stub. The dispatcher contract
+    // doesn't change; this is a transparent upgrade per-connection.
+    const creds = (ctx.credentials || {}) as XeroCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.xero_tenant_id) {
+      return executeXeroLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId,
+        encryptionKey: ctx.encryptionKey,
+      });
+    }
+
+    return stubOutcome(action,
       `Would ${ep.method} ${ep.path}`,
       {
         vendor: 'Xero', method: ep.method, path: ep.path, description: ep.description,
         body: action.payload, idempotency_key: action.idempotency_key,
-        note: 'Stubbed adapter — real Xero REST integration plugs in here.',
+        mode: 'stub',
+        note: creds.live_mode === true && (!creds.access_token || !creds.xero_tenant_id)
+          ? 'live_mode set but Xero credentials missing — re-authenticate the connection to enable real execution'
+          : 'Connection is in stub mode. Set live_mode=true on the connection config to enable real Xero writes.',
       },
     );
   },

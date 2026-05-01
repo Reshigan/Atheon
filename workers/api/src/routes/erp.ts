@@ -79,6 +79,28 @@ async function persistErpConfig(
   return { config: configStr, encryptedConfig: null, encrypted: false, skipReason: 'no_encryption_key' };
 }
 
+/** Phase 8-1: Load decrypted credentials for a connection so adapters
+ *  (especially the Xero live adapter) can issue authenticated calls.
+ *  Always returns an object — empty when no credentials are configured. */
+async function loadConnectionCredentials(
+  db: D1Database, tenantId: string, connectionId: string, encryptionKey: string | undefined,
+): Promise<Record<string, unknown>> {
+  try {
+    const row = await db.prepare(
+      'SELECT encrypted_config, config FROM erp_connections WHERE id = ? AND tenant_id = ?'
+    ).bind(connectionId, tenantId).first<{ encrypted_config: string | null; config: string }>();
+    if (!row) return {};
+    const encCfg = row.encrypted_config;
+    if (encCfg && isEncrypted(encCfg) && encryptionKey) {
+      const decrypted = await decrypt(encCfg, encryptionKey);
+      return decrypted ? JSON.parse(decrypted) : {};
+    }
+    return row.config ? JSON.parse(row.config) : {};
+  } catch {
+    return {};
+  }
+}
+
 async function auditEncryptionSkipped(
   db: D1Database, tenantId: string, connectionId: string, skipReason: string, where: string,
 ): Promise<void> {
@@ -823,7 +845,10 @@ erp.post('/connections/:id/actions', async (c) => {
   // pass the cluster's configured tier.
   const tier: ActionAutonomyTier = (body.autonomy_tier as ActionAutonomyTier) || 'assisted';
 
-  const outcome = await dispatchWriteAction(c.env.DB, conn.vendor, tier, action, { db: c.env.DB });
+  const credentials = await loadConnectionCredentials(c.env.DB, tenantId, id, c.env.ENCRYPTION_KEY);
+  const outcome = await dispatchWriteAction(c.env.DB, conn.vendor, tier, action, {
+    db: c.env.DB, credentials, encryptionKey: c.env.ENCRYPTION_KEY,
+  });
   return c.json(outcome);
 });
 
@@ -891,7 +916,10 @@ erp.post('/connections/:id/actions/:actionId/approve', async (c) => {
 
   const auth = c.get('auth') as AuthContext | undefined;
   const approver = auth?.email || auth?.userId || 'unknown';
-  const outcome = await approveQueuedAction(c.env.DB, actionId, tenantId, approver, conn.vendor, { db: c.env.DB });
+  const credentials = await loadConnectionCredentials(c.env.DB, tenantId, id, c.env.ENCRYPTION_KEY);
+  const outcome = await approveQueuedAction(c.env.DB, actionId, tenantId, approver, conn.vendor, {
+    db: c.env.DB, credentials, encryptionKey: c.env.ENCRYPTION_KEY,
+  });
 
   try {
     await c.env.DB.prepare(
