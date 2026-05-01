@@ -39,6 +39,8 @@ import { executeSageLive, type SageCredentials } from './erp-sage-live';
 import { executeSalesforceLive, type SalesforceCredentials } from './erp-salesforce-live';
 import { executeOracleLive, type OracleCredentials } from './erp-oracle-live';
 import { executeWorkdayLive, type WorkdayCredentials } from './erp-workday-live';
+import { executeIntacctLive, type IntacctCredentials } from './erp-sage-intacct-live';
+import { executeSageX3Live, type SageX3Credentials } from './erp-sage-x3-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -619,6 +621,116 @@ const workdayAdapter: CatalystWriteAdapter = {
   },
 };
 
+// ── Sage Intacct adapter (Phase 9-6) ───────────────────────────────────
+
+const INTACCT_SUPPORTED: ActionType[] = [
+  'ap_payment_release', 'po_create', 'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const intacctAdapter: CatalystWriteAdapter = {
+  vendor: 'Sage Intacct',
+  supports: (t) => INTACCT_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!INTACCT_SUPPORTED.includes(action.type)) return fail(`Sage Intacct does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'ap_payment_release': validation = requireFields(action.payload, ['vendor_id', 'financial_entity', 'details']); break;
+      case 'po_create': validation = requireFields(action.payload, ['vendor_id', 'line_items']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['journal_id', 'entries']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_id', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as IntacctCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.sender_id && creds.user_id && creds.user_password && creds.company_id) {
+      return executeIntacctLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Sage Intacct ${action.type}`, {
+      vendor: 'Sage Intacct', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but Intacct credentials missing — need sender_id + sender_password + company_id + user_id + user_password'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Sage Intacct writes.',
+    });
+  },
+};
+
+// ── Sage X3 adapter (Phase 9-6) ────────────────────────────────────────
+
+const SAGE_X3_SUPPORTED: ActionType[] = [
+  'po_create', 'ap_payment_release', 'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const sageX3Adapter: CatalystWriteAdapter = {
+  vendor: 'Sage X3',
+  supports: (t) => SAGE_X3_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!SAGE_X3_SUPPORTED.includes(action.type)) return fail(`Sage X3 does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'po_create': validation = requireFields(action.payload, ['vendor_code', 'lines']); break;
+      case 'ap_payment_release': validation = requireFields(action.payload, ['payment_number', 'amount']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['journal_code', 'lines']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_number']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_code', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as SageX3Credentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.base_url && creds.folder) {
+      return executeSageX3Live(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call Sage X3 ${action.type}`, {
+      vendor: 'Sage X3', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but X3 credentials missing — need base_url + folder + access_token + refresh_token + client_id/secret'
+        : 'Connection is in stub mode. Set live_mode=true to enable real Sage X3 writes.',
+    });
+  },
+};
+
+// ── Sage Pastel adapter (Phase 9-6) ────────────────────────────────────
+// Pastel does NOT have a modern public HTTP API. Customers integrate via
+// the Pastel SDK (Windows-side) or ODBC export pipelines. The adapter
+// here documents the standard integration paths and records intent in
+// stub mode; turning it live requires a bridge service that exposes
+// Pastel SDK / ODBC operations as HTTP — out of scope for this PR.
+
+const PASTEL_SUPPORTED: ActionType[] = [
+  'ap_payment_release', 'po_create', 'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const PASTEL_NOTES: Record<ActionType, string> = {
+  ar_dunning_send: 'Pastel: send overdue customer statement via Pastel Statements module (SDK call)',
+  ap_payment_release: 'Pastel: post a vendor payment via Pastel SDK CashbookEntry.Save()',
+  po_create: 'Pastel: create a Purchase Order via Pastel SDK PurchaseOrder.Save()',
+  journal_post: 'Pastel: post a journal via Pastel SDK GeneralJournalEntry.Save()',
+  invoice_post: 'Pastel: post a Sales Invoice via Pastel SDK Invoice.Save()',
+  customer_credit_update: 'Pastel: update customer credit limit via Pastel SDK Customer.Save()',
+};
+
+const pastelAdapter: CatalystWriteAdapter = {
+  vendor: 'Sage Pastel',
+  supports: (t) => PASTEL_SUPPORTED.includes(t),
+  execute: async (action): Promise<ActionExecutionResult> => {
+    if (!PASTEL_SUPPORTED.includes(action.type)) return fail(`Sage Pastel does not support ${action.type}`, 'unsupported_action');
+    return stubOutcome(action, `Would invoke Pastel SDK for ${action.type}`, {
+      vendor: 'Sage Pastel', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      sdk_path: PASTEL_NOTES[action.type],
+      note: 'Sage Pastel has no native HTTP API. Live execution requires a Windows-side bridge service that exposes Pastel SDK / ODBC operations over HTTP. Until that is deployed, the adapter records intent only.',
+    });
+  },
+};
+
 // ── Generic adapter ────────────────────────────────────────────────────
 // Catch-all for vendors without a dedicated write integration. Always
 // records the intended payload as a preview; never claims success.
@@ -653,6 +765,9 @@ export function registerDefaultWriteAdapters(): void {
   registerWriteAdapter(salesforceAdapter);
   registerWriteAdapter(oracleAdapter);
   registerWriteAdapter(workdayAdapter);
+  registerWriteAdapter(intacctAdapter);
+  registerWriteAdapter(sageX3Adapter);
+  registerWriteAdapter(pastelAdapter);
   registerWriteAdapter(genericAdapter);
   registered = true;
 }
