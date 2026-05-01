@@ -40,10 +40,15 @@ async function computeActionAttribution(
     open_value_zar: 0,
   };
   try {
+    // v66: exclude actions with verification_status = 'failed' from the
+    // automated bucket. They completed dispatch but the ERP did not
+    // record the change — billing them as "automated by Atheon" would
+    // be incorrect. Stub-mode and verified actions both count.
     const rows = await db.prepare(
       `SELECT status, COUNT(*) as count, COALESCE(SUM(value_zar), 0) as value_zar
          FROM catalyst_actions
         WHERE tenant_id = ?
+          AND (verification_status IS NULL OR verification_status != 'failed')
         GROUP BY status`
     ).bind(tenantId).all<{ status: string; count: number; value_zar: number }>();
     for (const r of rows.results || []) {
