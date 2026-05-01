@@ -13,6 +13,7 @@ import { queueEmail } from './email';
 import { getWeeklyDigestEmailTemplate } from './email';
 import { logInfo, logError } from './logger';
 import { processDueWebhooks } from './webhook-delivery';
+import { detectErpSchemaDrift } from './erp-drift-detector';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -95,6 +96,12 @@ export async function handleScheduled(
         }
         await calculateROI(db, tenantId);
       } catch (e) { console.error(`Effectiveness/ROI calc failed for ${tenantId}:`, e); }
+
+      // v59 ERP schema drift detection — flag any per-connection schema
+      // that has gained or lost fields since the last drift sweep. Surface
+      // as a notification so the customer can confirm the change before
+      // the auto-mapper acts on stale assumptions. Best-effort.
+      try { await detectErpSchemaDrift(db, tenantId); } catch (e) { console.error(`ERP drift detection failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,

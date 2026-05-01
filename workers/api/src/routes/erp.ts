@@ -8,8 +8,9 @@ import { mapRecord, canonicalTableName, extractCompanyKey } from '../services/er
 import { indexDocument } from '../services/vectorize';
 import { logError, logInfo } from '../services/logger';
 import { profileEntityRecords, getDiscoveredSchemas } from '../services/erp-schema-profiler';
-import { runAutoMapper, listAllMappings } from '../services/erp-auto-mapper';
+import { runAutoMapper, listAllMappings, persistSuggestions, getActiveMappings } from '../services/erp-auto-mapper';
 import { invalidateMappingCache } from '../services/erp-field-resolver';
+import { suggestUnmappedWithLlm } from '../services/erp-mapping-llm';
 
 const erp = new Hono<AppBindings>();
 
@@ -81,7 +82,7 @@ async function auditEncryptionSkipped(
  */
 async function writeToCanonicalTables(
   db: D1Database, tenantId: string, sourceSystem: string, result: SyncResult,
-  vectorize?: VectorizeIndex, ai?: Ai, connectionId?: string,
+  vectorize?: VectorizeIndex, ai?: Ai, connectionId?: string, kv?: KVNamespace,
 ): Promise<void> {
   // Multi-company: cache resolved companyIds by vendor-company-key for the
   // duration of this sync run so a 10k-record sync does one lookup per
@@ -106,7 +107,47 @@ async function writeToCanonicalTables(
       // refresh.
       try {
         await runAutoMapper(db, tenantId, connectionId, entity.type);
-        await invalidateMappingCache({ tenantId, connectionId, entityType: entity.type });
+
+        // v59 LLM fallback — for canonical fields the rule-based mapper
+        // could not place at all (no active or suggested mapping after
+        // runAutoMapper), call an LLM with field-name + sample values
+        // and persist as 'suggested' (always lands in review queue,
+        // never auto-applied — billing artefacts must trust only
+        // human-confirmed LLM output).
+        if (ai) {
+          try {
+            const active = await getActiveMappings(db, tenantId, connectionId, entity.type);
+            const allMapped = new Set<string>();
+            for (const fields of Object.values(active)) for (const f of fields) allMapped.add(f);
+            // Also exclude already-suggested fields so we don't pay for the same call twice
+            const suggested = await listAllMappings(db, tenantId, connectionId, entity.type);
+            for (const s of suggested) allMapped.add(s.source_field);
+
+            const profiles = await getDiscoveredSchemas(db, tenantId, connectionId, entity.type);
+            const unmapped = profiles
+              .filter((p) => !allMapped.has(p.source_field))
+              .map((p) => ({
+                source_field: p.source_field,
+                inferred_type: p.inferred_type,
+                sample_values: p.sample_values,
+                null_rate: p.null_rate,
+              }));
+            if (unmapped.length > 0) {
+              const llmSugs = await suggestUnmappedWithLlm(
+                db, ai, tenantId, connectionId, entity.type, sourceSystem, unmapped, kv,
+              );
+              if (llmSugs.length > 0) {
+                await persistSuggestions(db, tenantId, connectionId, entity.type, llmSugs);
+              }
+            }
+          } catch (llmErr) {
+            logError('erp.mapping.llm.fallback_failed', llmErr, { tenantId }, {
+              connectionId, entityType: entity.type,
+            });
+          }
+        }
+
+        await invalidateMappingCache({ tenantId, connectionId, entityType: entity.type }, kv);
       } catch (err) {
         logError('erp.auto_mapper.run_failed', err, { tenantId }, {
           connectionId, entityType: entity.type,
@@ -483,6 +524,106 @@ erp.post('/connections/:id/mappings/refresh', async (c) => {
   });
 });
 
+// POST /api/erp/connections/:id/mappings/confirm — human confirms a mapping.
+// Sets learned_from='human', status='active', confidence=1.0. Auto-mapper
+// can no longer overwrite this mapping on subsequent runs (the ON CONFLICT
+// guard in persistSuggestions protects 'human' rows).
+//
+// Body: { entity_type: string, canonical_field: string, source_field: string }
+//
+// Under shared-savings: this is the trust signal. A confirmed mapping flows
+// directly into assessment + report numbers; the customer is on record
+// agreeing this is the right field for this canonical value.
+erp.post('/connections/:id/mappings/confirm', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const { data: body, errors } = await getValidatedJsonBody<{
+    entity_type: string; canonical_field: string; source_field: string;
+  }>(c, [
+    { field: 'entity_type', type: 'string', required: true, minLength: 1 },
+    { field: 'canonical_field', type: 'string', required: true, minLength: 1 },
+    { field: 'source_field', type: 'string', required: true, minLength: 1 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  await persistSuggestions(c.env.DB, tenantId, id, body.entity_type, [{
+    canonical_field: body.canonical_field as 'amount',
+    source_field: body.source_field,
+    confidence: 1.0,
+    rationale: 'human-confirmed',
+    learned_from: 'human',
+  }]);
+  await invalidateMappingCache({ tenantId, connectionId: id, entityType: body.entity_type }, c.env.CACHE);
+
+  // Audit — under shared-savings, who confirmed which mapping is part of the
+  // trail a customer can demand on dispute.
+  const auth = c.get('auth') as AuthContext | undefined;
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId, auth?.userId || null, 'erp.mapping.confirmed', 'erp', 'erp_field_mappings',
+      JSON.stringify({ connectionId: id, ...body }), 'success',
+    ).run();
+  } catch { /* non-fatal */ }
+
+  return c.json({ ok: true });
+});
+
+// POST /api/erp/connections/:id/mappings/reject — human rejects a mapping.
+// Marks status='rejected' and learned_from='human' so the auto-mapper can't
+// re-suggest the same (canonical, source) pair on subsequent runs.
+erp.post('/connections/:id/mappings/reject', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const { data: body, errors } = await getValidatedJsonBody<{
+    entity_type: string; canonical_field: string; source_field: string;
+  }>(c, [
+    { field: 'entity_type', type: 'string', required: true, minLength: 1 },
+    { field: 'canonical_field', type: 'string', required: true, minLength: 1 },
+    { field: 'source_field', type: 'string', required: true, minLength: 1 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  // Either the row exists and we mark it rejected, or it doesn't and we
+  // insert a sentinel rejected row so the auto-mapper stops suggesting it.
+  await c.env.DB.prepare(
+    `INSERT INTO erp_field_mappings (
+       id, tenant_id, connection_id, entity_type, canonical_field,
+       source_field, confidence, learned_from, rationale, status
+     ) VALUES (?, ?, ?, ?, ?, ?, 0, 'human', 'human-rejected', 'rejected')
+     ON CONFLICT(tenant_id, connection_id, entity_type, canonical_field, source_field)
+     DO UPDATE SET
+       status = 'rejected', learned_from = 'human',
+       rationale = 'human-rejected', updated_at = datetime('now')`
+  ).bind(
+    crypto.randomUUID(), tenantId, id, body.entity_type, body.canonical_field, body.source_field,
+  ).run();
+  await invalidateMappingCache({ tenantId, connectionId: id, entityType: body.entity_type }, c.env.CACHE);
+
+  const auth = c.get('auth') as AuthContext | undefined;
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId, auth?.userId || null, 'erp.mapping.rejected', 'erp', 'erp_field_mappings',
+      JSON.stringify({ connectionId: id, ...body }), 'success',
+    ).run();
+  } catch { /* non-fatal */ }
+
+  return c.json({ ok: true });
+});
+
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
 // Used by the frontend company-switcher (PR #219/#220/#232). Read-only.
 erp.get('/companies', async (c) => {
@@ -618,7 +759,9 @@ erp.post('/sync/:connection_id', async (c) => {
     // v57: pass connectionId so the schema profiler can attribute discovered
     // fields back to this specific ERP/subsystem instance (a customer can
     // have N connections active at once).
-    await writeToCanonicalTables(c.env.DB, tenantId, conn.adapter_system as string, result, c.env.VECTORIZE, c.env.AI, connectionId);
+    // v59: pass KV so the LLM mapping fallback can cache per-field suggestions
+    // and skip re-querying the LLM when sample values haven't changed.
+    await writeToCanonicalTables(c.env.DB, tenantId, conn.adapter_system as string, result, c.env.VECTORIZE, c.env.AI, connectionId, c.env.CACHE);
 
     await c.env.DB.prepare(
       'UPDATE erp_connections SET last_sync = datetime(\'now\'), records_synced = records_synced + ?, status = ? WHERE id = ? AND tenant_id = ?'
