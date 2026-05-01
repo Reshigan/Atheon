@@ -11,6 +11,7 @@ import { profileEntityRecords, getDiscoveredSchemas } from '../services/erp-sche
 import { runAutoMapper, listAllMappings, persistSuggestions, getActiveMappings } from '../services/erp-auto-mapper';
 import { invalidateMappingCache } from '../services/erp-field-resolver';
 import { suggestUnmappedWithLlm } from '../services/erp-mapping-llm';
+import { inferProcessProfile, getProcessProfile, setProcessProfileOverrides, type ProcessProfile } from '../services/erp-process-profile';
 
 const erp = new Hono<AppBindings>();
 
@@ -626,6 +627,71 @@ erp.post('/connections/:id/mappings/reject', async (c) => {
   } catch { /* non-fatal */ }
 
   return c.json({ ok: true });
+});
+
+// GET /api/erp/connections/:id/process-profile — load (or first-time infer)
+// the resolved process profile for a connection. The profile drives
+// catalyst behaviour: 3-way-match flag, AP tolerance %, payment terms days,
+// fiscal year start, etc. — so the same catalyst running for two customers
+// uses each customer's actual rules instead of universal defaults.
+//
+// Under shared-savings: the customer can audit which rules each catalyst
+// applied to compute their savings.
+erp.get('/connections/:id/process-profile', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  let prof = await getProcessProfile(c.env.DB, tenantId, id);
+  if (!prof) {
+    const inferred = await inferProcessProfile(c.env.DB, tenantId, id);
+    prof = { profile: inferred.profile, evidence: inferred.evidence, updatedAt: new Date().toISOString() };
+  }
+  return c.json({ connectionId: id, ...prof });
+});
+
+// POST /api/erp/connections/:id/process-profile/refresh — re-run inference.
+// Customer may trigger after a config change in their ERP that wasn't yet
+// reflected in the synced data.
+erp.post('/connections/:id/process-profile/refresh', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+  const inferred = await inferProcessProfile(c.env.DB, tenantId, id);
+  return c.json({ connectionId: id, ...inferred });
+});
+
+// PUT /api/erp/connections/:id/process-profile — apply customer overrides.
+// Each provided field is marked source='human' and protected from being
+// overwritten by future inference runs. Audit-logged.
+erp.put('/connections/:id/process-profile', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  const body = await c.req.json<Partial<ProcessProfile>>().catch(() => ({} as Partial<ProcessProfile>));
+  const auth = c.get('auth') as AuthContext | undefined;
+  const updated = await setProcessProfileOverrides(c.env.DB, tenantId, id, body, auth?.email || auth?.userId);
+
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId, auth?.userId || null, 'erp.process_profile.override',
+      'erp', 'erp_process_profiles', JSON.stringify({ connectionId: id, fields: Object.keys(body) }), 'success',
+    ).run();
+  } catch { /* non-fatal */ }
+
+  return c.json({ connectionId: id, ...updated });
 });
 
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
