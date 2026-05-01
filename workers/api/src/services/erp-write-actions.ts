@@ -143,7 +143,17 @@ export function registerWriteAdapter(adapter: CatalystWriteAdapter): void {
 
 export function getWriteAdapter(vendor: string | null | undefined): CatalystWriteAdapter | null {
   if (!vendor) return null;
-  return adapters.get(vendor.toLowerCase()) || null;
+  const norm = vendor.toLowerCase();
+  // Exact match first
+  const direct = adapters.get(norm);
+  if (direct) return direct;
+  // Prefix match — allows e.g. "QuickBooks Online" → 'quickbooks',
+  // "Microsoft Dynamics 365" → 'dynamics', "SAP S/4HANA" → 'sap'.
+  for (const [key, ad] of adapters.entries()) {
+    if (key === 'generic') continue;
+    if (norm.startsWith(key) || key.startsWith(norm)) return ad;
+  }
+  return null;
 }
 
 export function listRegisteredAdapters(): string[] {

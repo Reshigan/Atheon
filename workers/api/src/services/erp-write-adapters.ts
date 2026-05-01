@@ -32,6 +32,8 @@ import {
 import { executeXeroLive, type XeroCredentials } from './erp-xero-live';
 import { executeSapLive, type SapCredentials } from './erp-sap-live';
 import { executeOdooLive, type OdooCredentials } from './erp-odoo-live';
+import { executeQboLive, type QboCredentials } from './erp-quickbooks-live';
+import { executeNetSuiteLive, type NetSuiteCredentials } from './erp-netsuite-live';
 
 // ── Shared helpers ─────────────────────────────────────────────────────
 
@@ -342,6 +344,86 @@ const xeroAdapter: CatalystWriteAdapter = {
   },
 };
 
+// ── QuickBooks adapter (Phase 9-3) ─────────────────────────────────────
+
+const QBO_SUPPORTED: ActionType[] = [
+  'ar_dunning_send', 'ap_payment_release', 'po_create',
+  'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const qboAdapter: CatalystWriteAdapter = {
+  vendor: 'QuickBooks',
+  supports: (t) => QBO_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!QBO_SUPPORTED.includes(action.type)) return fail(`QuickBooks adapter does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'ar_dunning_send': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'ap_payment_release': validation = requireFields(action.payload, ['vendor_id', 'amount', 'bill_id']); break;
+      case 'po_create': validation = requireFields(action.payload, ['vendor_id', 'line_items']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['lines']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_id', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as QboCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.realm_id) {
+      return executeQboLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call QuickBooks ${action.type}`, {
+      vendor: 'QuickBooks Online', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but QuickBooks credentials missing — need access_token + refresh_token + realm_id + client_id/secret'
+        : 'Connection is in stub mode. Set live_mode=true to enable real QuickBooks writes.',
+    });
+  },
+};
+
+// ── NetSuite adapter (Phase 9-3) ───────────────────────────────────────
+
+const NETSUITE_SUPPORTED: ActionType[] = [
+  'ar_dunning_send', 'ap_payment_release', 'po_create',
+  'journal_post', 'invoice_post', 'customer_credit_update',
+];
+
+const netsuiteAdapter: CatalystWriteAdapter = {
+  vendor: 'NetSuite',
+  supports: (t) => NETSUITE_SUPPORTED.includes(t),
+  execute: async (action, ctx): Promise<ActionExecutionResult> => {
+    if (!NETSUITE_SUPPORTED.includes(action.type)) return fail(`NetSuite adapter does not support ${action.type}`, 'unsupported_action');
+
+    let validation: string | null = null;
+    switch (action.type) {
+      case 'ar_dunning_send': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'ap_payment_release': validation = requireFields(action.payload, ['vendor_id', 'bill_links', 'account_id']); break;
+      case 'po_create': validation = requireFields(action.payload, ['vendor_id', 'items']); break;
+      case 'journal_post': validation = requireFields(action.payload, ['lines']); break;
+      case 'invoice_post': validation = requireFields(action.payload, ['invoice_id']); break;
+      case 'customer_credit_update': validation = requireFields(action.payload, ['customer_id', 'credit_limit']); break;
+    }
+    if (validation) return fail(validation, 'validation');
+
+    const creds = (ctx.credentials || {}) as NetSuiteCredentials;
+    if (!action.previewOnly && creds.live_mode && creds.access_token && creds.account_id) {
+      return executeNetSuiteLive(action, ctx, creds, {
+        tenantId: action.tenantId, connectionId: action.connectionId, encryptionKey: ctx.encryptionKey,
+      });
+    }
+    return stubOutcome(action, `Would call NetSuite ${action.type}`, {
+      vendor: 'NetSuite', action: action.type, payload: action.payload,
+      idempotency_key: action.idempotency_key, mode: 'stub',
+      note: creds.live_mode === true
+        ? 'live_mode set but NetSuite credentials missing — need account_id + access_token + refresh_token + client_id/secret'
+        : 'Connection is in stub mode. Set live_mode=true to enable real NetSuite writes.',
+    });
+  },
+};
+
 // ── Generic adapter ────────────────────────────────────────────────────
 // Catch-all for vendors without a dedicated write integration. Always
 // records the intended payload as a preview; never claims success.
@@ -369,6 +451,8 @@ export function registerDefaultWriteAdapters(): void {
   registerWriteAdapter(sapAdapter);
   registerWriteAdapter(odooAdapter);
   registerWriteAdapter(xeroAdapter);
+  registerWriteAdapter(qboAdapter);
+  registerWriteAdapter(netsuiteAdapter);
   registerWriteAdapter(genericAdapter);
   registered = true;
 }
