@@ -798,6 +798,35 @@ export const api = {
         `/api/erp/connections/${connectionId}/process-profile`,
         { method: 'PUT', body: JSON.stringify(overrides) },
       ),
+    // v62: vendor baseline comparison — diffs the customer's profile +
+    // discovered schema against the vanilla vendor baseline (SAP/Odoo/Xero).
+    baselineComparison: (connectionId: string) =>
+      request<{
+        connectionId: string;
+        vendor: string | null;
+        product?: string;
+        reason?: string;
+        profile_deviations?: Array<{
+          field: string;
+          customer_value: unknown;
+          recommended_value: unknown;
+          severity: 'info' | 'warning' | 'critical';
+          rationale: string;
+          source: string;
+          action: string;
+        }>;
+        schema_deviations?: Array<{
+          entity_type: string;
+          missing_fields: string[];
+          custom_fields: string[];
+        }>;
+        flows?: Array<{
+          name: string;
+          description: string;
+          steps: Array<{ step: string; required: boolean; description: string }>;
+        }>;
+        alignment_score?: number;
+      }>(`/api/erp/connections/${connectionId}/baseline-comparison`),
   },
 
   controlplane: {
