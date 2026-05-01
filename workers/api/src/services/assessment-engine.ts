@@ -11,6 +11,7 @@ import {
   type CompanyContext,
   type CompanyProfile,
 } from './assessment-findings';
+import { loadProcessContextForTenant } from './erp-process-profile';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export interface AssessmentConfig {
@@ -403,13 +404,55 @@ const domainOrder: Record<string, number> = {
   finance: 1, procurement: 2, supply_chain: 3, workforce: 4, sales: 5, compliance: 6, maintenance: 7,
 };
 
+/**
+ * v61: Adjust the per-catalyst savings rates from the customer's process
+ * profile. Only adjusts on high-confidence (inferred/human) evidence —
+ * low-confidence or default values leave the rates untouched so we never
+ * silently apply weak rules to billing artefacts.
+ *
+ * Rationale for each adjustment:
+ *  - Longer payment terms → AR Collection has more upside (more cash trapped
+ *    in DSO; faster collection unlocks more).
+ *  - Tighter tolerance (≤2%) → Invoice Reconciliation finds more variances,
+ *    more recoveries.
+ *  - 3-way match enabled → AP automation savings rate slightly lower (the
+ *    customer is already running tighter controls; less low-hanging fruit).
+ */
+function adjustConfigForProfile(
+  config: AssessmentConfig,
+  profile: import('./erp-process-profile').ProcessProfile,
+  sources: Record<string, string>,
+): AssessmentConfig {
+  const adjusted = { ...config };
+  // Payment terms — extend AR savings if Net 45+, only if confidence is real.
+  if ((sources.payment_terms_days === 'inferred' || sources.payment_terms_days === 'human')
+      && profile.payment_terms_days >= 45) {
+    adjusted.ar_savings_pct = Math.round(config.ar_savings_pct * 1.25 * 100) / 100;
+  }
+  // Tolerance — tighter tolerance → more recon savings (more variances).
+  if ((sources.tolerance_pct === 'inferred' || sources.tolerance_pct === 'human')
+      && profile.tolerance_pct > 0 && profile.tolerance_pct <= 2) {
+    adjusted.invoice_recon_savings_pct = Math.round(config.invoice_recon_savings_pct * 1.4 * 100) / 100;
+  }
+  // 3-way match — already-controlled AP has slightly less automation upside.
+  if ((sources.matching_mode === 'inferred' || sources.matching_mode === 'human')
+      && profile.matching_mode === '3way') {
+    adjusted.ap_savings_pct = Math.round(config.ap_savings_pct * 0.85 * 100) / 100;
+  }
+  return adjusted;
+}
+
 export function scoreCatalysts(
   snapshot: VolumeSnapshot,
   config: AssessmentConfig,
-  _prospectIndustry: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  _prospectIndustry: string,
+  profileContext?: { profile: import('./erp-process-profile').ProcessProfile; sources: Record<string, string> },
 ): CatalystScore[] {
   const baseConfidence = getConfidence(snapshot.months_of_data);
   const confidence = snapshot.data_completeness_pct < 40 ? downgradeConfidence(baseConfidence) : baseConfidence;
+  if (profileContext) {
+    config = adjustConfigForProfile(config, profileContext.profile, profileContext.sources);
+  }
 
   const catalysts: CatalystScore[] = [];
 
@@ -2055,8 +2098,20 @@ export async function runAssessment(
     await db.prepare('UPDATE assessments SET data_snapshot = ? WHERE id = ?')
       .bind(JSON.stringify(snapshot), assessmentId).run();
 
-    // 3. Score catalysts
-    const catalystScores = scoreCatalysts(snapshot, config, prospectIndustry);
+    // 3. Score catalysts — adjust the saving-rate assumptions from the
+    // customer's process profile so the assessment is grounded in their
+    // actual rules (Net 60 customer gets bigger AR upside, 3-way-match
+    // customer gets smaller AP upside, tight-tolerance customer gets bigger
+    // recon upside). Only adjusts on high-confidence evidence; low-confidence
+    // or default fields leave the rates untouched.
+    let profileContext: { profile: import('./erp-process-profile').ProcessProfile; sources: Record<string, string> } | undefined;
+    if (erpConnectionId) {
+      try {
+        const ctx = await loadProcessContextForTenant(db, tenantId);
+        profileContext = { profile: ctx.profile, sources: ctx.sources };
+      } catch { /* continue without profile-driven adjustment */ }
+    }
+    const catalystScores = scoreCatalysts(snapshot, config, prospectIndustry, profileContext);
 
     // 4. Calculate technical sizing
     const technicalSizing = calculateTechnicalSizing(catalystScores, config);
