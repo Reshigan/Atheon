@@ -735,6 +735,39 @@ export const api = {
           last_seen_at: string;
         }>>;
       }>(`/api/erp/connections/${connectionId}/schemas${qs({ entity })}`),
+    // v58/v59: persisted field mappings — auto-mapper output. Customer
+    // confirms or rejects each row to lock the mapping in for billing.
+    mappings: (connectionId: string, opts?: { entity?: string; status?: 'active' | 'suggested' | 'all' }) =>
+      request<{
+        connectionId: string;
+        activeCount: number;
+        suggestedCount: number;
+        fieldCount: number;
+        mappings: Record<string, Array<{
+          entity_type: string;
+          canonical_field: string;
+          source_field: string;
+          confidence: number;
+          learned_from: string;
+          rationale: string | null;
+          status: string;
+        }>>;
+      }>(`/api/erp/connections/${connectionId}/mappings${qs({ entity: opts?.entity, status: opts?.status })}`),
+    refreshMappings: (connectionId: string, entityType?: string) =>
+      request<{ entitiesProcessed: number; autoApplied: number; suggested: number }>(
+        `/api/erp/connections/${connectionId}/mappings/refresh`,
+        { method: 'POST', body: JSON.stringify(entityType ? { entity_type: entityType } : {}) },
+      ),
+    confirmMapping: (connectionId: string, entityType: string, canonicalField: string, sourceField: string) =>
+      request<{ ok: boolean }>(
+        `/api/erp/connections/${connectionId}/mappings/confirm`,
+        { method: 'POST', body: JSON.stringify({ entity_type: entityType, canonical_field: canonicalField, source_field: sourceField }) },
+      ),
+    rejectMapping: (connectionId: string, entityType: string, canonicalField: string, sourceField: string) =>
+      request<{ ok: boolean }>(
+        `/api/erp/connections/${connectionId}/mappings/reject`,
+        { method: 'POST', body: JSON.stringify({ entity_type: entityType, canonical_field: canonicalField, source_field: sourceField }) },
+      ),
   },
 
   controlplane: {

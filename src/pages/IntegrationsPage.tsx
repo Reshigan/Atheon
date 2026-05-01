@@ -246,6 +246,90 @@ export function IntegrationsPage() {
     }
   }, [showSchemas, schemasByConn]);
 
+  // v58/v59: per-connection mapping review panel — shared-savings billing
+  // requires that every canonical-field mapping is auditable and customer-
+  // confirmed. The panel shows active vs suggested mappings with confirm /
+  // reject actions.
+  type Mapping = {
+    entity_type: string;
+    canonical_field: string;
+    source_field: string;
+    confidence: number;
+    learned_from: string;
+    rationale: string | null;
+    status: string;
+  };
+  const [showMappings, setShowMappings] = useState<string | null>(null);
+  const [mappingsByConn, setMappingsByConn] = useState<Record<string, Record<string, Mapping[]>>>({});
+  const [mappingsLoading, setMappingsLoading] = useState<string | null>(null);
+  const [mappingActionPending, setMappingActionPending] = useState<string | null>(null);
+  const [mappingError, setMappingError] = useState<string | null>(null);
+
+  const loadMappings = useCallback(async (connId: string) => {
+    setMappingsLoading(connId);
+    try {
+      const res = await api.erp.mappings(connId);
+      setMappingsByConn((prev) => ({ ...prev, [connId]: res.mappings }));
+    } catch {
+      setMappingsByConn((prev) => ({ ...prev, [connId]: {} }));
+    } finally {
+      setMappingsLoading(null);
+    }
+  }, []);
+
+  const toggleMappings = useCallback(async (connId: string) => {
+    setMappingError(null);
+    if (showMappings === connId) {
+      setShowMappings(null);
+      return;
+    }
+    setShowMappings(connId);
+    if (!mappingsByConn[connId]) await loadMappings(connId);
+  }, [showMappings, mappingsByConn, loadMappings]);
+
+  const handleConfirmMapping = useCallback(async (
+    connId: string, canonical: string, source: string, entityType: string,
+  ) => {
+    setMappingActionPending(`${connId}:${canonical}:${source}`);
+    setMappingError(null);
+    try {
+      await api.erp.confirmMapping(connId, entityType, canonical, source);
+      await loadMappings(connId);
+    } catch (err) {
+      setMappingError(err instanceof Error ? err.message : 'Failed to confirm mapping');
+    } finally {
+      setMappingActionPending(null);
+    }
+  }, [loadMappings]);
+
+  const handleRejectMapping = useCallback(async (
+    connId: string, canonical: string, source: string, entityType: string,
+  ) => {
+    setMappingActionPending(`${connId}:${canonical}:${source}`);
+    setMappingError(null);
+    try {
+      await api.erp.rejectMapping(connId, entityType, canonical, source);
+      await loadMappings(connId);
+    } catch (err) {
+      setMappingError(err instanceof Error ? err.message : 'Failed to reject mapping');
+    } finally {
+      setMappingActionPending(null);
+    }
+  }, [loadMappings]);
+
+  const handleRefreshMappings = useCallback(async (connId: string) => {
+    setMappingActionPending(`${connId}:refresh`);
+    setMappingError(null);
+    try {
+      await api.erp.refreshMappings(connId);
+      await loadMappings(connId);
+    } catch (err) {
+      setMappingError(err instanceof Error ? err.message : 'Failed to refresh mappings');
+    } finally {
+      setMappingActionPending(null);
+    }
+  }, [loadMappings]);
+
   const refreshCircuitStates = useCallback(async (conns: ERPConnection[]) => {
     if (conns.length === 0) return;
     const entries = await Promise.all(
@@ -816,6 +900,9 @@ export function IntegrationsPage() {
                     <Button variant="ghost" size="sm" onClick={() => toggleSchemas(conn.id)} title="View fields Atheon has discovered from your ERP records">
                       <Database size={12} /> {showSchemas === conn.id ? 'Hide Schema' : 'View Schema'}
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleMappings(conn.id)} title="Review canonical-field mappings (confirm or reject auto-suggested mappings)">
+                      <Shield size={12} /> {showMappings === conn.id ? 'Hide Mappings' : 'Review Mappings'}
+                    </Button>
                     <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => setConfirmDelete(conn.id)} title="Delete this connection">
                       <Trash2 size={12} /> Delete
                     </Button>
@@ -881,6 +968,117 @@ export function IntegrationsPage() {
                                         </td>
                                       </tr>
                                     ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {showMappings === conn.id && (
+                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
+                            <Shield size={14} /> Field Mappings
+                          </h4>
+                          <p className="text-xs t-muted mt-0.5">
+                            Each canonical field (amount, ref, entity, …) maps to one or more source fields. Confirm to lock for billing audits; reject to remove from the active set.
+                          </p>
+                        </div>
+                        <Button
+                          variant="secondary" size="sm"
+                          onClick={() => handleRefreshMappings(conn.id)}
+                          disabled={mappingActionPending === `${conn.id}:refresh`}
+                          title="Re-run the auto-mapper on the current schema"
+                        >
+                          {mappingActionPending === `${conn.id}:refresh` ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Refresh
+                        </Button>
+                      </div>
+
+                      {mappingError && (
+                        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                          {mappingError}
+                        </div>
+                      )}
+
+                      {mappingsLoading === conn.id ? (
+                        <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">
+                          <Loader2 size={14} className="animate-spin" /> Loading mappings…
+                        </div>
+                      ) : !mappingsByConn[conn.id] || Object.keys(mappingsByConn[conn.id] || {}).length === 0 ? (
+                        <div className="text-xs t-muted py-4 text-center">
+                          No mappings yet — sync the connection to populate the auto-mapper.
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-[28rem] overflow-y-auto">
+                          {Object.entries(mappingsByConn[conn.id]).map(([canonical, rows]) => (
+                            <div key={canonical}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold t-primary">{canonical}</span>
+                                <Badge variant="outline" size="sm">{rows.length} candidate{rows.length === 1 ? '' : 's'}</Badge>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="border-b border-[var(--border-card)] text-left t-muted">
+                                      <th className="py-1 pr-3 font-medium">Source field</th>
+                                      <th className="py-1 pr-3 font-medium">Entity</th>
+                                      <th className="py-1 pr-3 font-medium">Confidence</th>
+                                      <th className="py-1 pr-3 font-medium">Status</th>
+                                      <th className="py-1 pr-3 font-medium">From</th>
+                                      <th className="py-1 pr-3 font-medium">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rows.map((m) => {
+                                      const pendingKey = `${conn.id}:${m.canonical_field}:${m.source_field}`;
+                                      const pending = mappingActionPending === pendingKey;
+                                      return (
+                                        <tr key={`${m.entity_type}-${m.canonical_field}-${m.source_field}`} className="border-b border-[var(--border-card)]/50">
+                                          <td className="py-1 pr-3 font-mono t-primary">{m.source_field}</td>
+                                          <td className="py-1 pr-3 t-muted">{m.entity_type}</td>
+                                          <td className="py-1 pr-3 t-muted">{Math.round(m.confidence * 100)}%</td>
+                                          <td className="py-1 pr-3">
+                                            <Badge
+                                              variant={m.status === 'active' ? 'success' : m.status === 'rejected' ? 'danger' : 'warning'}
+                                              size="sm"
+                                            >
+                                              {m.status}
+                                            </Badge>
+                                          </td>
+                                          <td className="py-1 pr-3 t-muted">{m.learned_from}</td>
+                                          <td className="py-1 pr-3">
+                                            <div className="flex items-center gap-1">
+                                              {m.status !== 'active' && (
+                                                <Button
+                                                  variant="ghost" size="sm"
+                                                  onClick={() => handleConfirmMapping(conn.id, m.canonical_field, m.source_field, m.entity_type)}
+                                                  disabled={pending}
+                                                  title="Confirm — lock this mapping into the audit trail"
+                                                >
+                                                  {pending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Confirm
+                                                </Button>
+                                              )}
+                                              {m.status !== 'rejected' && (
+                                                <Button
+                                                  variant="ghost" size="sm"
+                                                  className="text-red-400 hover:text-red-300"
+                                                  onClick={() => handleRejectMapping(conn.id, m.canonical_field, m.source_field, m.entity_type)}
+                                                  disabled={pending}
+                                                  title="Reject — remove from the active set"
+                                                >
+                                                  {pending ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />} Reject
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>

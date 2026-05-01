@@ -285,6 +285,7 @@ export interface PersistResult {
 }
 
 export interface PersistedMapping {
+  entity_type: string;
   canonical_field: string;
   source_field: string;
   confidence: number;
@@ -383,14 +384,14 @@ export async function listAllMappings(
   entityType?: string,
 ): Promise<PersistedMapping[]> {
   const sql = entityType
-    ? `SELECT canonical_field, source_field, confidence, learned_from, rationale, status
+    ? `SELECT entity_type, canonical_field, source_field, confidence, learned_from, rationale, status
          FROM erp_field_mappings
         WHERE tenant_id = ? AND connection_id = ? AND entity_type = ?
      ORDER BY entity_type ASC, canonical_field ASC, confidence DESC`
-    : `SELECT canonical_field, source_field, confidence, learned_from, rationale, status
+    : `SELECT entity_type, canonical_field, source_field, confidence, learned_from, rationale, status
          FROM erp_field_mappings
         WHERE tenant_id = ? AND connection_id = ?
-     ORDER BY canonical_field ASC, confidence DESC`;
+     ORDER BY entity_type ASC, canonical_field ASC, confidence DESC`;
   const stmt = entityType
     ? db.prepare(sql).bind(tenantId, connectionId, entityType)
     : db.prepare(sql).bind(tenantId, connectionId);

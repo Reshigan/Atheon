@@ -24,7 +24,12 @@
 // now consult these mappings before falling back to the static dictionary,
 // so all 470 sub-catalysts + assessment + report endpoints become
 // customisation-aware in one swing.
-export const MIGRATION_VERSION = 'v58-erp-auto-mapper';
+// v59-erp-drift-llm: erp_schema_drift_events table records detected
+// schema drift (added/removed source fields per connection+entity) so
+// the cron sweep can fire notifications. Phase 3 also adds the LLM
+// fallback for fields the rule-based mapper can't place — those land
+// as 'suggested' in erp_field_mappings until a human confirms.
+export const MIGRATION_VERSION = 'v59-erp-drift-llm';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -78,6 +83,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS erp_connections (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), adapter_id TEXT NOT NULL REFERENCES erp_adapters(id), name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'disconnected', config TEXT NOT NULL DEFAULT '{}', last_sync TEXT, sync_frequency TEXT DEFAULT 'realtime', records_synced INTEGER NOT NULL DEFAULT 0, connected_at TEXT);
     CREATE TABLE IF NOT EXISTS erp_connection_schemas (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, source_system TEXT NOT NULL, entity_type TEXT NOT NULL, source_field TEXT NOT NULL, inferred_type TEXT NOT NULL DEFAULT 'string', sample_values TEXT NOT NULL DEFAULT '[]', null_rate REAL NOT NULL DEFAULT 0, occurrences INTEGER NOT NULL DEFAULT 0, sample_size INTEGER NOT NULL DEFAULT 0, first_seen_at TEXT NOT NULL DEFAULT (datetime('now')), last_seen_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id, entity_type, source_field));
     CREATE TABLE IF NOT EXISTS erp_field_mappings (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, entity_type TEXT NOT NULL, canonical_field TEXT NOT NULL, source_field TEXT NOT NULL, confidence REAL NOT NULL DEFAULT 0, learned_from TEXT NOT NULL DEFAULT 'auto', rationale TEXT, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id, entity_type, canonical_field, source_field));
+    CREATE TABLE IF NOT EXISTS erp_schema_drift_events (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, entity_type TEXT NOT NULL, added_fields TEXT NOT NULL DEFAULT '[]', removed_fields TEXT NOT NULL DEFAULT '[]', total_current INTEGER NOT NULL DEFAULT 0, total_previous INTEGER NOT NULL DEFAULT 0, acknowledged_at TEXT, detected_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS canonical_endpoints (id TEXT PRIMARY KEY, domain TEXT NOT NULL, path TEXT NOT NULL, method TEXT NOT NULL DEFAULT 'GET', description TEXT, request_schema TEXT, response_schema TEXT, rate_limit INTEGER NOT NULL DEFAULT 100, version TEXT NOT NULL DEFAULT 'v1');
     CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT, action TEXT NOT NULL, layer TEXT NOT NULL, resource TEXT, details TEXT, outcome TEXT NOT NULL DEFAULT 'success', ip_address TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS mind_queries (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT, query TEXT NOT NULL, response TEXT, tier TEXT NOT NULL DEFAULT 'tier-1', tokens_in INTEGER NOT NULL DEFAULT 0, tokens_out INTEGER NOT NULL DEFAULT 0, latency_ms INTEGER NOT NULL DEFAULT 0, citations TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -725,6 +731,8 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     // v58: auto-mapper — lookup by (tenant, connection, entity, canonical) is
     // the hot read path used by the resolver on every catalyst extraction.
     'CREATE INDEX IF NOT EXISTS idx_erp_field_mappings_lookup ON erp_field_mappings(tenant_id, connection_id, entity_type, canonical_field, status)',
+    // v59: drift events — list-by-tenant for the cron sweep + UI ack.
+    'CREATE INDEX IF NOT EXISTS idx_erp_drift_events_tenant ON erp_schema_drift_events(tenant_id, detected_at DESC)',
   ];
 
   for (const idx of erpIndexes) {
