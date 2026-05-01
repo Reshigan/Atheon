@@ -768,6 +768,36 @@ export const api = {
         `/api/erp/connections/${connectionId}/mappings/reject`,
         { method: 'POST', body: JSON.stringify({ entity_type: entityType, canonical_field: canonicalField, source_field: sourceField }) },
       ),
+    // v61: process profile — structured business rules per connection
+    // (3-way-match, AP tolerance %, payment terms days, fiscal year start,
+    // approval thresholds, dunning days). Catalysts read this to operate
+    // within the customer's actual rules, not assumed defaults.
+    processProfile: (connectionId: string) =>
+      request<{
+        connectionId: string;
+        profile: {
+          matching_mode: '2way' | '3way' | 'none' | 'unknown';
+          tolerance_pct: number;
+          payment_terms_days: number;
+          fiscal_year_start_month: number;
+          default_currency: string;
+          approval_thresholds: Array<{ amount: number; role: string }>;
+          dunning_days: number[];
+          refreshed_at?: string;
+        };
+        evidence: Record<string, { source: 'inferred' | 'human' | 'default' | 'low-confidence'; basis?: string; confidence?: number }>;
+        updatedAt?: string;
+      }>(`/api/erp/connections/${connectionId}/process-profile`),
+    refreshProcessProfile: (connectionId: string) =>
+      request<{ profile: unknown; evidence: unknown }>(
+        `/api/erp/connections/${connectionId}/process-profile/refresh`,
+        { method: 'POST', body: JSON.stringify({}) },
+      ),
+    updateProcessProfile: (connectionId: string, overrides: Record<string, unknown>) =>
+      request<{ profile: unknown; evidence: unknown }>(
+        `/api/erp/connections/${connectionId}/process-profile`,
+        { method: 'PUT', body: JSON.stringify(overrides) },
+      ),
   },
 
   controlplane: {

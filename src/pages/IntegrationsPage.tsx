@@ -330,6 +330,64 @@ export function IntegrationsPage() {
     }
   }, [loadMappings]);
 
+  // v61: process profile — structured business rules per connection.
+  // Each catalyst reads these so the same handler running for two customers
+  // applies each customer's actual tolerance %, payment terms, etc.
+  type ProcessProfileResp = Awaited<ReturnType<typeof api.erp.processProfile>>;
+  const [showProfile, setShowProfile] = useState<string | null>(null);
+  const [profileByConn, setProfileByConn] = useState<Record<string, ProcessProfileResp>>({});
+  const [profileLoading, setProfileLoading] = useState<string | null>(null);
+  const [profileActionPending, setProfileActionPending] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const loadProfile = useCallback(async (connId: string) => {
+    setProfileLoading(connId);
+    try {
+      const res = await api.erp.processProfile(connId);
+      setProfileByConn((prev) => ({ ...prev, [connId]: res }));
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Failed to load profile');
+    } finally {
+      setProfileLoading(null);
+    }
+  }, []);
+
+  const toggleProfile = useCallback(async (connId: string) => {
+    setProfileError(null);
+    if (showProfile === connId) {
+      setShowProfile(null);
+      return;
+    }
+    setShowProfile(connId);
+    if (!profileByConn[connId]) await loadProfile(connId);
+  }, [showProfile, profileByConn, loadProfile]);
+
+  const handleRefreshProfile = useCallback(async (connId: string) => {
+    setProfileActionPending(`${connId}:refresh`);
+    setProfileError(null);
+    try {
+      await api.erp.refreshProcessProfile(connId);
+      await loadProfile(connId);
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Failed to refresh profile');
+    } finally {
+      setProfileActionPending(null);
+    }
+  }, [loadProfile]);
+
+  const handleProfileOverride = useCallback(async (connId: string, overrides: Record<string, unknown>) => {
+    setProfileActionPending(`${connId}:override`);
+    setProfileError(null);
+    try {
+      await api.erp.updateProcessProfile(connId, overrides);
+      await loadProfile(connId);
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Failed to save override');
+    } finally {
+      setProfileActionPending(null);
+    }
+  }, [loadProfile]);
+
   const refreshCircuitStates = useCallback(async (conns: ERPConnection[]) => {
     if (conns.length === 0) return;
     const entries = await Promise.all(
@@ -903,6 +961,9 @@ export function IntegrationsPage() {
                     <Button variant="ghost" size="sm" onClick={() => toggleMappings(conn.id)} title="Review canonical-field mappings (confirm or reject auto-suggested mappings)">
                       <Shield size={12} /> {showMappings === conn.id ? 'Hide Mappings' : 'Review Mappings'}
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleProfile(conn.id)} title="Process profile — business rules catalysts apply for this connection (tolerances, payment terms, matching mode)">
+                      <Settings size={12} /> {showProfile === conn.id ? 'Hide Profile' : 'Process Profile'}
+                    </Button>
                     <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => setConfirmDelete(conn.id)} title="Delete this connection">
                       <Trash2 size={12} /> Delete
                     </Button>
@@ -1084,6 +1145,103 @@ export function IntegrationsPage() {
                               </div>
                             </div>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {showProfile === conn.id && (
+                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
+                            <Settings size={14} /> Process Profile
+                          </h4>
+                          <p className="text-xs t-muted mt-0.5">
+                            Business rules every catalyst applies for this connection. Inferred from your data; click to override when our inference is wrong or unsure.
+                          </p>
+                        </div>
+                        <Button
+                          variant="secondary" size="sm"
+                          onClick={() => handleRefreshProfile(conn.id)}
+                          disabled={profileActionPending === `${conn.id}:refresh`}
+                          title="Re-run inference on the latest synced data"
+                        >
+                          {profileActionPending === `${conn.id}:refresh` ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Re-infer
+                        </Button>
+                      </div>
+
+                      {profileError && (
+                        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                          {profileError}
+                        </div>
+                      )}
+
+                      {profileLoading === conn.id ? (
+                        <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">
+                          <Loader2 size={14} className="animate-spin" /> Loading process profile…
+                        </div>
+                      ) : !profileByConn[conn.id] ? (
+                        <div className="text-xs t-muted py-4 text-center">
+                          Profile not loaded.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {([
+                            ['Matching Mode', 'matching_mode', String(profileByConn[conn.id].profile.matching_mode), ['none', '2way', '3way']],
+                            ['Tolerance %', 'tolerance_pct', String(profileByConn[conn.id].profile.tolerance_pct), null],
+                            ['Payment Terms (days)', 'payment_terms_days', String(profileByConn[conn.id].profile.payment_terms_days), null],
+                            ['Default Currency', 'default_currency', profileByConn[conn.id].profile.default_currency, null],
+                            ['Fiscal Year Start (month)', 'fiscal_year_start_month', String(profileByConn[conn.id].profile.fiscal_year_start_month), null],
+                          ] as Array<[string, string, string, string[] | null]>).map(([label, field, value, options]) => {
+                            const ev = profileByConn[conn.id].evidence[field] || { source: 'default' };
+                            const isLowConf = ev.source === 'low-confidence';
+                            const isHuman = ev.source === 'human';
+                            return (
+                              <div key={field} className={`p-2 rounded border ${isLowConf ? 'border-amber-500/30 bg-amber-500/5' : 'border-[var(--border-card)] bg-[var(--bg-primary)]'}`}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs font-medium t-primary">{label}</span>
+                                      <Badge
+                                        variant={isHuman ? 'success' : isLowConf ? 'warning' : ev.source === 'inferred' ? 'info' : 'default'}
+                                        size="sm"
+                                      >
+                                        {ev.source}{ev.confidence !== undefined ? ` · ${Math.round(ev.confidence * 100)}%` : ''}
+                                      </Badge>
+                                    </div>
+                                    {ev.basis && <p className="text-[10px] t-muted mt-0.5">{ev.basis}</p>}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {options ? (
+                                      <select
+                                        className="text-xs bg-[var(--bg-secondary)] border border-[var(--border-card)] rounded px-2 py-1 t-primary"
+                                        value={value}
+                                        disabled={profileActionPending === `${conn.id}:override`}
+                                        onChange={(e) => handleProfileOverride(conn.id, { [field]: e.target.value })}
+                                      >
+                                        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+                                      </select>
+                                    ) : (
+                                      <input
+                                        type={field.includes('days') || field.includes('pct') || field.includes('month') ? 'number' : 'text'}
+                                        className="text-xs bg-[var(--bg-secondary)] border border-[var(--border-card)] rounded px-2 py-1 t-primary w-28"
+                                        defaultValue={value}
+                                        disabled={profileActionPending === `${conn.id}:override`}
+                                        onBlur={(e) => {
+                                          if (e.target.value === value) return;
+                                          const val = field.includes('days') || field.includes('pct') || field.includes('month')
+                                            ? parseFloat(e.target.value)
+                                            : e.target.value;
+                                          handleProfileOverride(conn.id, { [field]: val });
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

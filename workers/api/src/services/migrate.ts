@@ -33,7 +33,13 @@
 // tables so attribution can roll up per-connection (not just per-source-
 // system). Existing rows have NULL and fall back to source_system-level
 // attribution; new ingestions tag connection_id explicitly.
-export const MIGRATION_VERSION = 'v60-erp-attribution';
+// v61-erp-process-profile: erp_connection_config (raw key-value pairs
+// observed from the ERP or customer-entered) + erp_process_profiles
+// (resolved structured rules: 3-way-match flag, AP tolerance %, payment
+// terms days, fiscal year start, approval thresholds, dunning rules).
+// Catalysts can read the profile and operate within the customer's
+// actual business rules instead of running on assumed defaults.
+export const MIGRATION_VERSION = 'v61-erp-process-profile';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -88,6 +94,8 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS erp_connection_schemas (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, source_system TEXT NOT NULL, entity_type TEXT NOT NULL, source_field TEXT NOT NULL, inferred_type TEXT NOT NULL DEFAULT 'string', sample_values TEXT NOT NULL DEFAULT '[]', null_rate REAL NOT NULL DEFAULT 0, occurrences INTEGER NOT NULL DEFAULT 0, sample_size INTEGER NOT NULL DEFAULT 0, first_seen_at TEXT NOT NULL DEFAULT (datetime('now')), last_seen_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id, entity_type, source_field));
     CREATE TABLE IF NOT EXISTS erp_field_mappings (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, entity_type TEXT NOT NULL, canonical_field TEXT NOT NULL, source_field TEXT NOT NULL, confidence REAL NOT NULL DEFAULT 0, learned_from TEXT NOT NULL DEFAULT 'auto', rationale TEXT, status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id, entity_type, canonical_field, source_field));
     CREATE TABLE IF NOT EXISTS erp_schema_drift_events (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, entity_type TEXT NOT NULL, added_fields TEXT NOT NULL DEFAULT '[]', removed_fields TEXT NOT NULL DEFAULT '[]', total_current INTEGER NOT NULL DEFAULT 0, total_previous INTEGER NOT NULL DEFAULT 0, acknowledged_at TEXT, detected_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS erp_connection_config (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, namespace TEXT NOT NULL DEFAULT 'general', config_key TEXT NOT NULL, config_value TEXT, value_type TEXT NOT NULL DEFAULT 'string', source TEXT NOT NULL DEFAULT 'inferred', confidence REAL NOT NULL DEFAULT 0, observed_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id, namespace, config_key));
+    CREATE TABLE IF NOT EXISTS erp_process_profiles (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, profile_json TEXT NOT NULL DEFAULT '{}', evidence_json TEXT NOT NULL DEFAULT '{}', inferred_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, connection_id));
     CREATE TABLE IF NOT EXISTS canonical_endpoints (id TEXT PRIMARY KEY, domain TEXT NOT NULL, path TEXT NOT NULL, method TEXT NOT NULL DEFAULT 'GET', description TEXT, request_schema TEXT, response_schema TEXT, rate_limit INTEGER NOT NULL DEFAULT 100, version TEXT NOT NULL DEFAULT 'v1');
     CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT, action TEXT NOT NULL, layer TEXT NOT NULL, resource TEXT, details TEXT, outcome TEXT NOT NULL DEFAULT 'success', ip_address TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS mind_queries (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT, query TEXT NOT NULL, response TEXT, tier TEXT NOT NULL DEFAULT 'tier-1', tokens_in INTEGER NOT NULL DEFAULT 0, tokens_out INTEGER NOT NULL DEFAULT 0, latency_ms INTEGER NOT NULL DEFAULT 0, citations TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -737,6 +745,10 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_erp_field_mappings_lookup ON erp_field_mappings(tenant_id, connection_id, entity_type, canonical_field, status)',
     // v59: drift events — list-by-tenant for the cron sweep + UI ack.
     'CREATE INDEX IF NOT EXISTS idx_erp_drift_events_tenant ON erp_schema_drift_events(tenant_id, detected_at DESC)',
+    // v61: process-profile lookup by (tenant, connection) is the hot path
+    // for catalysts that read profile-driven thresholds on every run.
+    'CREATE INDEX IF NOT EXISTS idx_erp_process_profiles_lookup ON erp_process_profiles(tenant_id, connection_id)',
+    'CREATE INDEX IF NOT EXISTS idx_erp_connection_config_conn ON erp_connection_config(tenant_id, connection_id, namespace)',
   ];
 
   for (const idx of erpIndexes) {
