@@ -39,7 +39,11 @@
 // terms days, fiscal year start, approval thresholds, dunning rules).
 // Catalysts can read the profile and operate within the customer's
 // actual business rules instead of running on assumed defaults.
-export const MIGRATION_VERSION = 'v61-erp-process-profile';
+// v62-erp-write-actions: catalyst_actions self-heal columns for
+// write-back action framework (action_type, value_zar,
+// source_finding_id, idempotency_key, connection_id, vendor) so the
+// approval queue + ROI attribution can join across actions.
+export const MIGRATION_VERSION = 'v62-erp-write-actions';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -845,6 +849,13 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     // Phase 9: Run analytics
     { table: 'catalyst_actions', column: 'run_id', definition: 'TEXT' },
     { table: 'catalyst_actions', column: 'processing_time_ms', definition: 'INTEGER' },
+    // v62: write-back actions — query/aggregation columns
+    { table: 'catalyst_actions', column: 'action_type', definition: 'TEXT' },
+    { table: 'catalyst_actions', column: 'value_zar', definition: 'REAL' },
+    { table: 'catalyst_actions', column: 'source_finding_id', definition: 'TEXT' },
+    { table: 'catalyst_actions', column: 'idempotency_key', definition: 'TEXT' },
+    { table: 'catalyst_actions', column: 'connection_id', definition: 'TEXT' },
+    { table: 'catalyst_actions', column: 'vendor', definition: 'TEXT' },
     // Spec 6 P1: Source attribution on process_metrics
     { table: 'process_metrics', column: 'sub_catalyst_name', definition: 'TEXT' },
     { table: 'process_metrics', column: 'source_run_id', definition: 'TEXT' },

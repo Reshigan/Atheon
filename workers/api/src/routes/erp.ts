@@ -19,6 +19,15 @@ import {
   compareSchemaToBaseline,
   calculateAlignmentScore,
 } from '../services/erp-vendor-baselines';
+import {
+  dispatchWriteAction,
+  approveQueuedAction,
+  rejectQueuedAction,
+  type ActionType,
+  type ActionAutonomyTier,
+  type CatalystWriteAction,
+} from '../services/erp-write-actions';
+import '../services/erp-write-adapters'; // side-effect: registers default adapters
 
 const erp = new Hono<AppBindings>();
 
@@ -757,6 +766,170 @@ erp.get('/connections/:id/baseline-comparison', async (c) => {
     flows: baseline.flows,
     alignment_score: Number(alignmentScore.toFixed(2)),
   });
+});
+
+// POST /api/erp/connections/:id/actions — dispatch a write-back action.
+// Honours the catalyst's autonomy_tier — read-only blocks; assisted +
+// transactional queue for HITL approval; autonomous executes (with
+// safety threshold for high-value actions). Always supports a
+// `previewOnly` flag so customers can see exactly what would be sent
+// to their ERP before authorizing.
+//
+// Body: {
+//   idempotency_key, type, catalyst_name, cluster_id,
+//   payload, value_zar?, source_finding_id?, previewOnly?, reasoning?
+// }
+erp.post('/connections/:id/actions', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+
+  const conn = await c.env.DB.prepare(
+    `SELECT ec.id, ea.system as vendor FROM erp_connections ec
+     JOIN erp_adapters ea ON ec.adapter_id = ea.id
+     WHERE ec.id = ? AND ec.tenant_id = ?`
+  ).bind(id, tenantId).first<{ id: string; vendor: string }>();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  type ActionPostBody = {
+    idempotency_key?: string; type?: string;
+    catalyst_name?: string; cluster_id?: string;
+    payload?: Record<string, unknown>;
+    value_zar?: number; source_finding_id?: string;
+    previewOnly?: boolean; reasoning?: string;
+    autonomy_tier?: string;
+  };
+  const body = await c.req.json<ActionPostBody>().catch(() => ({} as ActionPostBody));
+
+  if (!body.idempotency_key || !body.type || !body.catalyst_name || !body.cluster_id || !body.payload) {
+    return c.json({ error: 'Missing required fields: idempotency_key, type, catalyst_name, cluster_id, payload' }, 400);
+  }
+
+  const action: CatalystWriteAction = {
+    idempotency_key: body.idempotency_key,
+    type: body.type as ActionType,
+    tenantId,
+    connectionId: id,
+    catalystName: body.catalyst_name,
+    clusterId: body.cluster_id,
+    payload: body.payload,
+    value_zar: body.value_zar,
+    source_finding_id: body.source_finding_id,
+    previewOnly: body.previewOnly === true,
+    reasoning: body.reasoning,
+  };
+
+  // Autonomy tier defaults to 'assisted' when not supplied — safe default
+  // (queue for approval). Real production callers (catalyst handlers)
+  // pass the cluster's configured tier.
+  const tier: ActionAutonomyTier = (body.autonomy_tier as ActionAutonomyTier) || 'assisted';
+
+  const outcome = await dispatchWriteAction(c.env.DB, conn.vendor, tier, action, { db: c.env.DB });
+  return c.json(outcome);
+});
+
+// GET /api/erp/connections/:id/actions — list write-back actions
+// (pending, approved, completed, rejected). Filter via ?status= and ?limit=.
+erp.get('/connections/:id/actions', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  const status = c.req.query('status');
+  const limit = Math.min(parseInt(c.req.query('limit') || '100', 10) || 100, 500);
+
+  const where = status
+    ? `WHERE tenant_id = ? AND input_data LIKE ? AND status = ?`
+    : `WHERE tenant_id = ? AND input_data LIKE ?`;
+  const stmt = status
+    ? c.env.DB.prepare(`SELECT id, catalyst_name, action, status, input_data, output_data, reasoning, approved_by, created_at, completed_at FROM catalyst_actions ${where} ORDER BY created_at DESC LIMIT ?`).bind(tenantId, `%"connectionId":"${id}"%`, status, limit)
+    : c.env.DB.prepare(`SELECT id, catalyst_name, action, status, input_data, output_data, reasoning, approved_by, created_at, completed_at FROM catalyst_actions ${where} ORDER BY created_at DESC LIMIT ?`).bind(tenantId, `%"connectionId":"${id}"%`, limit);
+
+  const res = await stmt.all<{
+    id: string; catalyst_name: string; action: string; status: string;
+    input_data: string; output_data: string | null; reasoning: string | null;
+    approved_by: string | null; created_at: string; completed_at: string | null;
+  }>();
+  const rows = (res.results || []).map((r) => {
+    let parsedInput: Partial<CatalystWriteAction> = {};
+    try { parsedInput = JSON.parse(r.input_data); } catch { /* tolerate */ }
+    let parsedOutput: unknown = null;
+    try { if (r.output_data) parsedOutput = JSON.parse(r.output_data); } catch { /* tolerate */ }
+    return {
+      id: r.id,
+      catalyst_name: r.catalyst_name,
+      action_type: r.action,
+      status: r.status,
+      value_zar: parsedInput.value_zar || 0,
+      idempotency_key: parsedInput.idempotency_key,
+      payload: parsedInput.payload,
+      reasoning: r.reasoning,
+      output: parsedOutput,
+      approved_by: r.approved_by,
+      created_at: r.created_at,
+      completed_at: r.completed_at,
+    };
+  });
+  return c.json({ connectionId: id, total: rows.length, actions: rows });
+});
+
+// POST /api/erp/connections/:id/actions/:actionId/approve — approve a
+// queued action and execute it. Audit-logged with the approving user.
+erp.post('/connections/:id/actions/:actionId/approve', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const actionId = c.req.param('actionId');
+
+  const conn = await c.env.DB.prepare(
+    `SELECT ec.id, ea.system as vendor FROM erp_connections ec
+     JOIN erp_adapters ea ON ec.adapter_id = ea.id
+     WHERE ec.id = ? AND ec.tenant_id = ?`
+  ).bind(id, tenantId).first<{ id: string; vendor: string }>();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  const auth = c.get('auth') as AuthContext | undefined;
+  const approver = auth?.email || auth?.userId || 'unknown';
+  const outcome = await approveQueuedAction(c.env.DB, actionId, tenantId, approver, conn.vendor, { db: c.env.DB });
+
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId, auth?.userId || null, 'erp.write_action.approved', 'erp', 'catalyst_actions',
+      JSON.stringify({ actionId, status: outcome.status }), 'success',
+    ).run();
+  } catch { /* non-fatal */ }
+
+  return c.json(outcome);
+});
+
+// POST /api/erp/connections/:id/actions/:actionId/reject — reject a queued action.
+erp.post('/connections/:id/actions/:actionId/reject', async (c) => {
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const actionId = c.req.param('actionId');
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(id, tenantId).first();
+  if (!conn) return c.json({ error: 'Connection not found' }, 404);
+
+  const body = await c.req.json<{ reason?: string }>().catch(() => ({} as { reason?: string }));
+  const auth = c.get('auth') as AuthContext | undefined;
+  const rejector = auth?.email || auth?.userId || 'unknown';
+  const outcome = await rejectQueuedAction(c.env.DB, actionId, tenantId, rejector, body.reason);
+
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(), tenantId, auth?.userId || null, 'erp.write_action.rejected', 'erp', 'catalyst_actions',
+      JSON.stringify({ actionId, reason: body.reason }), 'success',
+    ).run();
+  } catch { /* non-fatal */ }
+
+  return c.json(outcome);
 });
 
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
