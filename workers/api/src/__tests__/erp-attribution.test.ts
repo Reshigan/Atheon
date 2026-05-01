@@ -145,6 +145,42 @@ describe('Phase 4 — multi-connection / multi-source attribution', () => {
     expect(attrib).toEqual([]);
   });
 
+  it('GET /api/v1/roi includes breakdown.byActionState (automated/pending/open)', async () => {
+    // Seed roi_tracking + a few catalyst_actions in different states
+    await env.DB.prepare(
+      `INSERT INTO roi_tracking (id, tenant_id, period, total_discrepancy_value_identified, total_discrepancy_value_recovered, total_downstream_losses_prevented, total_person_hours_saved, total_catalyst_runs, licence_cost_annual, roi_multiple, calculated_at)
+       VALUES (?, ?, '2026-05', 1000000, 200000, 0, 100, 50, 250000, 1.5, datetime('now'))`
+    ).bind(crypto.randomUUID(), TENANT).run();
+    await env.DB.prepare(
+      `INSERT INTO catalyst_clusters (id, tenant_id, name, domain, status, autonomy_tier)
+       VALUES ('cluster-roi', ?, 'Cluster', 'finance', 'active', 'assisted')`
+    ).bind(TENANT).run();
+    // 2 completed (automated) at R 100k each, 1 pending at R 50k
+    await env.DB.prepare(
+      `INSERT INTO catalyst_actions (id, tenant_id, cluster_id, catalyst_name, action, status, value_zar, action_type)
+       VALUES (?, ?, 'cluster-roi', 'AR Collection', 'ar_dunning_send', 'completed', 100000, 'ar_dunning_send')`
+    ).bind(crypto.randomUUID(), TENANT).run();
+    await env.DB.prepare(
+      `INSERT INTO catalyst_actions (id, tenant_id, cluster_id, catalyst_name, action, status, value_zar, action_type)
+       VALUES (?, ?, 'cluster-roi', 'AR Collection', 'ar_dunning_send', 'completed', 100000, 'ar_dunning_send')`
+    ).bind(crypto.randomUUID(), TENANT).run();
+    await env.DB.prepare(
+      `INSERT INTO catalyst_actions (id, tenant_id, cluster_id, catalyst_name, action, status, value_zar, action_type)
+       VALUES (?, ?, 'cluster-roi', 'AR Collection', 'ar_dunning_send', 'pending_approval', 50000, 'ar_dunning_send')`
+    ).bind(crypto.randomUUID(), TENANT).run();
+
+    const token = await login(ADMIN, TENANT);
+    const res = await authedGet('/api/v1/roi', token);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { breakdown: { byActionState: { automated_count: number; automated_value_zar: number; pending_count: number; pending_value_zar: number; open_value_zar: number } } };
+    expect(body.breakdown.byActionState.automated_count).toBe(2);
+    expect(body.breakdown.byActionState.automated_value_zar).toBe(200000);
+    expect(body.breakdown.byActionState.pending_count).toBe(1);
+    expect(body.breakdown.byActionState.pending_value_zar).toBe(50000);
+    // Open = identified (1m) - automated (200k) - pending (50k) = 750k
+    expect(body.breakdown.byActionState.open_value_zar).toBe(750000);
+  });
+
   it('GET /api/v1/roi includes breakdown.byConnection', async () => {
     await seedConnection('conn-roi', 'SAP for ROI');
     await seedInvoice('inv-roi', 'SAP', 500000, 'conn-roi');

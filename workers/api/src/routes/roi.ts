@@ -8,6 +8,62 @@ import { calculateROI } from '../services/pattern-engine-v2';
 import { toCSV, csvResponse } from '../services/csv-export';
 import { computeRoiAttribution } from '../services/erp-attribution';
 
+interface RoiActionAttribution {
+  automated_count: number;
+  automated_value_zar: number;
+  pending_count: number;
+  pending_value_zar: number;
+  rejected_count: number;
+  rejected_value_zar: number;
+  open_value_zar: number;
+}
+
+/** Compute the action-state attribution split for the ROI response.
+ *  This bridges the gap between "value identified" and "value realised":
+ *    automated_value_zar   — Atheon wrote-back actions that completed
+ *    pending_value_zar     — actions in the approval queue, value at stake
+ *    open_value_zar        — identified opportunity not yet covered by an
+ *                            automated or pending action (i.e. customer
+ *                            still needs to act, or Atheon hasn't surfaced
+ *                            an automation for it yet)
+ *  This is the v1 attribution model — proves the loop is closed
+ *  end-to-end. Future work: add a finding-resolution signal (customer
+ *  confirms they did it manually) to introduce an `advisory_acted`
+ *  bucket between automated and open. */
+async function computeActionAttribution(
+  db: D1Database, tenantId: string, totalIdentifiedZar: number,
+): Promise<RoiActionAttribution> {
+  const result = {
+    automated_count: 0, automated_value_zar: 0,
+    pending_count: 0, pending_value_zar: 0,
+    rejected_count: 0, rejected_value_zar: 0,
+    open_value_zar: 0,
+  };
+  try {
+    const rows = await db.prepare(
+      `SELECT status, COUNT(*) as count, COALESCE(SUM(value_zar), 0) as value_zar
+         FROM catalyst_actions
+        WHERE tenant_id = ?
+        GROUP BY status`
+    ).bind(tenantId).all<{ status: string; count: number; value_zar: number }>();
+    for (const r of rows.results || []) {
+      if (r.status === 'completed') {
+        result.automated_count = r.count; result.automated_value_zar = r.value_zar;
+      } else if (r.status === 'pending_approval') {
+        result.pending_count = r.count; result.pending_value_zar = r.value_zar;
+      } else if (r.status === 'rejected') {
+        result.rejected_count = r.count; result.rejected_value_zar = r.value_zar;
+      }
+    }
+  } catch { /* tolerate */ }
+
+  result.open_value_zar = Math.max(
+    0,
+    totalIdentifiedZar - result.automated_value_zar - result.pending_value_zar,
+  );
+  return result;
+}
+
 const roi = new Hono<AppBindings>();
 
 const CROSS_TENANT_ROLES = new Set(['superadmin', 'support_admin']);
@@ -47,10 +103,17 @@ roi.get('/', async (c) => {
   // so the customer can audit which connection drove which dollars under the
   // shared-savings model. Best-effort: never fails the response.
   const recovered = (row.total_discrepancy_value_recovered as number) || 0;
+  const identified = (row.total_discrepancy_value_identified as number) || 0;
   let byConnection: Awaited<ReturnType<typeof computeRoiAttribution>> = [];
   try {
     byConnection = await computeRoiAttribution(c.env.DB, tenantId, recovered);
   } catch { /* leave empty */ }
+
+  // v63 — split identified opportunity by action state (automated vs
+  // pending vs open). This proves the read→action loop is closed
+  // end-to-end and shows the customer where each rand of opportunity
+  // sits in the realisation pipeline.
+  const byActionState = await computeActionAttribution(c.env.DB, tenantId, identified);
 
   return c.json({
     id: row.id, period: row.period,
@@ -61,7 +124,7 @@ roi.get('/', async (c) => {
     totalCatalystRuns: row.total_catalyst_runs,
     platformCost: row.licence_cost_annual,
     roiMultiple: row.roi_multiple, calculatedAt: row.calculated_at,
-    breakdown: { byCluster: [], byConnection },
+    breakdown: { byCluster: [], byConnection, byActionState },
   });
 });
 
