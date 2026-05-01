@@ -42,9 +42,13 @@ function fail(summary: string, error: string, details?: Record<string, unknown>)
  *  vendor API calls land, the same outcome shape applies. */
 function stubOutcome(action: { previewOnly?: boolean }, summary: string, details: Record<string, unknown>): ActionExecutionResult {
   if (action.previewOnly) {
-    return { ok: true, status: 'previewed', summary: `[preview] ${summary}`, details };
+    return { ok: true, status: 'previewed', summary: `[preview] ${summary}`, details, mode: 'preview' };
   }
-  return { ok: true, status: 'completed', summary, details };
+  // Stubbed completion — explicitly tagged so the UI shows a "stub" badge
+  // instead of letting the customer think the change actually landed in
+  // their ERP. Once the per-vendor live adapter ships, this falls back
+  // only when live_mode is off.
+  return { ok: true, status: 'completed', summary: `[stub] ${summary}`, details, mode: 'stub' };
 }
 
 function requireField(payload: Record<string, unknown>, key: string): string | null {

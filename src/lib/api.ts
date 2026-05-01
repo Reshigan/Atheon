@@ -838,6 +838,23 @@ export const api = {
         previewed_count: number; previewed_value_zar: number;
         total_count: number; total_value_zar: number;
       } }>(`/api/erp/actions/summary`),
+    // v64: onboarding-status — checklist of what the customer still needs
+    // to do per connection to get full value (sync, review mappings, set
+    // profile rules, choose autonomy, dispatch first action).
+    onboardingStatus: (connectionId: string) =>
+      request<{
+        connectionId: string;
+        vendor: string;
+        steps: Array<{
+          key: 'sync' | 'mappings' | 'profile' | 'autonomy' | 'actions';
+          title: string;
+          description: string;
+          complete: boolean;
+          action_path: string;
+        }>;
+        complete_count: number;
+        total_count: number;
+      }>(`/api/erp/connections/${connectionId}/onboarding-status`),
     // v62: vendor baseline comparison — diffs the customer's profile +
     // discovered schema against the vanilla vendor baseline (SAP/Odoo/Xero).
     baselineComparison: (connectionId: string) =>

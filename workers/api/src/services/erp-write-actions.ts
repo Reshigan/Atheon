@@ -101,6 +101,11 @@ export interface ActionExecutionResult {
   details?: Record<string, unknown>;
   /** Set when the adapter rejected the action (validation, permission, …). */
   error?: string;
+  /** Phase 8-2: 'live' = real vendor API call landed; 'stub' = recorded
+   *  intent only (vendor adapter not yet wired or live_mode disabled);
+   *  'preview' = explicit previewOnly request. UIs render a badge so the
+   *  customer never confuses "completed (stub)" with "completed (live)". */
+  mode?: 'live' | 'stub' | 'preview';
 }
 
 /** Per-ERP adapter contract. Vendor implementations are registered into
