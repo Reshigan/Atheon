@@ -147,15 +147,27 @@ export function getWriteAdapter(vendor: string | null | undefined): CatalystWrit
   // Exact match first
   const direct = adapters.get(norm);
   if (direct) return direct;
-  // Substring match — allows e.g. "QuickBooks Online" → 'quickbooks',
-  // "Microsoft Dynamics 365" → 'dynamics', "SAP S/4HANA Cloud" → 'sap',
-  // "Sage Business Cloud" → 'sage'. The vendor key is a single word that
-  // we expect to appear as a substring of the customer-supplied label.
+  // Substring match with longest-key-first selection so more specific
+  // vendor names (e.g. 'sage intacct') win over generic ones ('sage').
+  // Examples this resolves correctly:
+  //   'QuickBooks Online' → 'quickbooks'
+  //   'Microsoft Dynamics 365' → 'dynamics'
+  //   'SAP S/4HANA Cloud' → 'sap'
+  //   'Sage Business Cloud' → 'sage' (Business Cloud is the historical default)
+  //   'Sage Intacct' → 'sage intacct' (more specific match wins)
+  //   'Sage X3' → 'sage x3'
+  let best: CatalystWriteAdapter | null = null;
+  let bestKeyLen = -1;
   for (const [key, ad] of adapters.entries()) {
     if (key === 'generic') continue;
-    if (norm.includes(key) || key.includes(norm)) return ad;
+    if (norm.includes(key) || key.includes(norm)) {
+      if (key.length > bestKeyLen) {
+        best = ad;
+        bestKeyLen = key.length;
+      }
+    }
   }
-  return null;
+  return best;
 }
 
 export function listRegisteredAdapters(): string[] {
