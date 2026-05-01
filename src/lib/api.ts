@@ -798,6 +798,46 @@ export const api = {
         `/api/erp/connections/${connectionId}/process-profile`,
         { method: 'PUT', body: JSON.stringify(overrides) },
       ),
+    // v63: write-back actions — dispatch, list, approve, reject. Tenant-wide
+    // summary powers the Dashboard pending-count and Apex briefing.
+    dispatchAction: (connectionId: string, body: Record<string, unknown>) =>
+      request<{ action_id: string; status: string; result?: { ok: boolean; status: string; summary: string; details?: Record<string, unknown>; error?: string }; pending_approval?: { reason: string } }>(
+        `/api/erp/connections/${connectionId}/actions`,
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
+    listConnectionActions: (connectionId: string, opts?: { status?: string; limit?: number }) =>
+      request<{ connectionId: string; total: number; actions: Array<{
+        id: string; catalyst_name: string; action_type: string; status: string;
+        value_zar: number; idempotency_key?: string; payload?: Record<string, unknown>;
+        reasoning?: string | null; output?: unknown;
+        approved_by?: string | null; created_at: string; completed_at?: string | null;
+      }> }>(`/api/erp/connections/${connectionId}/actions${qs({ status: opts?.status, limit: opts?.limit !== undefined ? String(opts.limit) : undefined })}`),
+    approveAction: (connectionId: string, actionId: string) =>
+      request<{ action_id: string; status: string; result?: { ok: boolean; summary: string } }>(
+        `/api/erp/connections/${connectionId}/actions/${actionId}/approve`,
+        { method: 'POST', body: JSON.stringify({}) },
+      ),
+    rejectAction: (connectionId: string, actionId: string, reason?: string) =>
+      request<{ ok: boolean; status: string }>(
+        `/api/erp/connections/${connectionId}/actions/${actionId}/reject`,
+        { method: 'POST', body: JSON.stringify({ reason }) },
+      ),
+    listAllActions: (opts?: { status?: string; limit?: number }) =>
+      request<{ tenantId: string; total: number; actions: Array<{
+        id: string; catalyst_name: string; action_type: string; status: string;
+        value_zar: number; source_finding_id?: string | null; connection_id?: string | null;
+        idempotency_key?: string | null; output?: unknown; reasoning?: string | null;
+        approved_by?: string | null; created_at: string; completed_at?: string | null;
+      }> }>(`/api/erp/actions${qs({ status: opts?.status, limit: opts?.limit !== undefined ? String(opts.limit) : undefined })}`),
+    actionsSummary: () =>
+      request<{ tenantId: string; summary: {
+        pending_approval_count: number; pending_approval_value_zar: number;
+        completed_count: number; completed_value_zar: number;
+        rejected_count: number; rejected_value_zar: number;
+        failed_count: number; failed_value_zar: number;
+        previewed_count: number; previewed_value_zar: number;
+        total_count: number; total_value_zar: number;
+      } }>(`/api/erp/actions/summary`),
     // v62: vendor baseline comparison — diffs the customer's profile +
     // discovered schema against the vanilla vendor baseline (SAP/Odoo/Xero).
     baselineComparison: (connectionId: string) =>

@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
 
 import { api } from "@/lib/api";
+import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import { useSelectedCompanyId } from "@/stores/appStore";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cleanLlmText } from "@/lib/utils";
@@ -592,6 +593,11 @@ export function ApexPage() {
  <CSVExportButton endpoint="/api/board-report" filename="board-reports.csv" label="Export Reports" />
  </div>
  </div>
+
+ {/* v63 — executive view of pending high-value write-back actions.
+     Shows the actions awaiting CFO/CEO approval that move the savings
+     numbers reported in the assessment from "advisory" to "realized". */}
+ <ActionQueuePanel variant="executive" allowApprove limit={10} title="Actions awaiting your approval" />
 
  {actionError && (
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">

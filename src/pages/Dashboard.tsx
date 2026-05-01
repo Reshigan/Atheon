@@ -9,6 +9,7 @@ import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 // cleanLlmText now used by IntelligencePanel sub-component
 import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
+import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth, HealthDimensionTraceResponse, DashboardIntelligenceResponse, RadarContextResponse, DiagnosticSummaryResponse, ROITrackingResponse, BaselineComparisonResponse } from "@/lib/api";
 import { AtheonScoreRing } from "@/components/ui/atheon-score-ring";
 import { TraceabilityModal } from "@/components/TraceabilityModal";
@@ -621,6 +622,11 @@ export function Dashboard() {
         </Link>
       </div>
 
+
+      {/* v63 — write-back action queue: pending count + value at stake.
+          Shipped in Phase 7-2 alongside Pulse / Apex equivalents so the
+          customer sees actions across every surface they land on. */}
+      <ActionQueuePanel variant="compact" />
 
       {/* V2 Engine Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
