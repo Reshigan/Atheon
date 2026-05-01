@@ -465,3 +465,72 @@ export async function loadProcessProfile(
   const got = await getProcessProfile(db, tenantId, connectionId);
   return got ? { ...DEFAULT_PROCESS_PROFILE, ...got.profile } : { ...DEFAULT_PROCESS_PROFILE };
 }
+
+/** Public payload — what catalyst handlers attach to every insight as
+ *  `processContext`. Includes the profile values used and per-field source
+ *  so the customer can audit which rules drove each savings calculation. */
+export interface ProcessContextEmission {
+  connection_id?: string;
+  connection_label?: string;
+  profile: ProcessProfile;
+  sources: Record<string, 'inferred' | 'human' | 'default' | 'low-confidence'>;
+}
+
+/** Tenant-level convenience for catalysts that don't have a specific
+ *  connection in scope (most do not — they query tenant-wide canonical
+ *  tables). Picks the most-active connection (by erp_invoices count, then
+ *  erp_customers, etc.) and returns its profile + emission payload.
+ *
+ *  When the tenant has no profiled connection at all, returns a default
+ *  profile + sources marked as 'default' so catalysts behave generically. */
+export async function loadProcessContextForTenant(
+  db: D1Database, tenantId: string,
+): Promise<ProcessContextEmission> {
+  // Pick the most-active connection by invoice count, fall back to any
+  // connection the tenant owns.
+  let chosen: { id: string; name: string } | null = null;
+  try {
+    const r = await db.prepare(
+      `SELECT i.connection_id as id, c.name as name, COUNT(*) as n
+         FROM erp_invoices i
+         LEFT JOIN erp_connections c ON c.id = i.connection_id AND c.tenant_id = i.tenant_id
+        WHERE i.tenant_id = ? AND i.connection_id IS NOT NULL
+        GROUP BY i.connection_id
+        ORDER BY n DESC
+        LIMIT 1`
+    ).bind(tenantId).first<{ id: string; name: string }>();
+    if (r && r.id) chosen = { id: r.id, name: r.name || r.id };
+  } catch { /* invoices.connection_id may be missing; ignore */ }
+
+  if (!chosen) {
+    try {
+      const r = await db.prepare(
+        `SELECT id, name FROM erp_connections WHERE tenant_id = ? ORDER BY name ASC LIMIT 1`
+      ).bind(tenantId).first<{ id: string; name: string }>();
+      if (r) chosen = { id: r.id, name: r.name || r.id };
+    } catch { /* none */ }
+  }
+
+  if (!chosen) {
+    return {
+      profile: { ...DEFAULT_PROCESS_PROFILE },
+      sources: {
+        matching_mode: 'default', tolerance_pct: 'default', payment_terms_days: 'default',
+        fiscal_year_start_month: 'default', default_currency: 'default',
+        approval_thresholds: 'default', dunning_days: 'default',
+      },
+    };
+  }
+
+  const got = await getProcessProfile(db, tenantId, chosen.id);
+  const profile: ProcessProfile = got ? { ...DEFAULT_PROCESS_PROFILE, ...got.profile } : { ...DEFAULT_PROCESS_PROFILE };
+  const sources: Record<string, 'inferred' | 'human' | 'default' | 'low-confidence'> = {};
+  if (got) {
+    for (const [k, v] of Object.entries(got.evidence)) {
+      sources[k] = (v as { source?: 'inferred' | 'human' | 'default' | 'low-confidence' })?.source || 'default';
+    }
+  } else {
+    for (const k of Object.keys(DEFAULT_PROCESS_PROFILE)) sources[k] = 'default';
+  }
+  return { connection_id: chosen.id, connection_label: chosen.name, profile, sources };
+}
