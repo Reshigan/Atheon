@@ -19,6 +19,7 @@ import { verifyCompletedActions } from './erp-action-verification';
 import { detectMetricCorrelations } from './metric-correlation-engine';
 import { sweepExternalSignals } from './external-signals-feed';
 import { attributeSignalsToKpis } from './signal-kpi-attribution';
+import { synthesizeCrossCatalystRca } from './cross-catalyst-rca-synthesizer';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -131,6 +132,13 @@ export async function handleScheduled(
       // Apex narrate "Brent +22% drove procurement costs +6%" instead
       // of two unrelated headlines. Best-effort.
       try { await attributeSignalsToKpis(db, tenantId); } catch (e) { console.error(`Signal attribution failed for ${tenantId}:`, e); }
+
+      // Phase 10-4 — cross-catalyst RCA synthesizer. For each red KPI,
+      // composes a deterministic causal chain from signal_impacts (10-3)
+      // and correlation_events (10-1) — L0 symptom, L1 direct external
+      // drivers, L2 cross-metric drivers, L3 transitive external drivers.
+      // Persists to root_cause_analyses + causal_factors. Best-effort.
+      try { await synthesizeCrossCatalystRca(db, tenantId); } catch (e) { console.error(`Cross-catalyst RCA failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
