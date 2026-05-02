@@ -31,6 +31,7 @@
 
 import { logError, logInfo } from './logger';
 import { forecastMetric, type ForecastPoint } from './kpi-forecasting';
+import { recordOutcome, type GateName } from './inference-calibration';
 
 const NARRATIVE_DEBOUNCE_HOURS = 20; // ~once per day, with slack
 const RCA_LOOKBACK_DAYS = 7;
@@ -429,7 +430,31 @@ export async function closeRecoveredRcas(
     }
 
     const ok = await markResolved(db, tenantId, rca.id, rca.metric_name);
-    if (ok) result.rcasResolved++;
+    if (ok) {
+      result.rcasResolved++;
+      // Phase 10-15: every L1 driver of a recovered RCA is a true_positive
+      // on its source attribution gate. Lets a future PR auto-tune
+      // gate thresholds based on how often recoveries follow attributions.
+      try {
+        const factors = await db.prepare(
+          `SELECT factor_type, layer FROM causal_factors
+            WHERE rca_id = ? AND tenant_id = ? AND layer IN ('L1', 'L3')`
+        ).bind(rca.id, tenantId).all<{ factor_type: string; layer: string }>();
+        for (const f of factors.results || []) {
+          const gate: GateName = f.factor_type === 'cross_metric'
+            ? 'metric_correlation.min_correlation'
+            : 'signal_attribution.min_correlation';
+          await recordOutcome({
+            db, tenantId, gate,
+            outcome: 'true_positive',
+            source: 'auto_resolved',
+            context: { rcaId: rca.id, factorLayer: f.layer, factorType: f.factor_type, metricId: rca.metric_id },
+          });
+        }
+      } catch (calErr) {
+        logError('rca_closure.calibration_failed', calErr, { tenantId }, { rcaId: rca.id });
+      }
+    }
   }
 
   if (result.rcasResolved > 0) {

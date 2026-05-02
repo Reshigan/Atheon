@@ -51,7 +51,12 @@
 // correlation_events.metric_a/metric_b/correlation_type/lag_hours/
 // description (already self-healed since v60s; bump forces a re-run on
 // tenants whose KV migrated flag pre-dates this code).
-export const MIGRATION_VERSION = 'v67-correlation-engine';
+// v68-inference-calibration: new inference_calibration table to
+// track Phase 10 strong-inference gate outcomes (true/false positive)
+// per tenant per gate so future PRs can auto-tune thresholds. Wired
+// initially from closeRecoveredRcas (recovered RCA = true positive
+// on its L1 attribution gate).
+export const MIGRATION_VERSION = 'v68-inference-calibration';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -152,6 +157,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS root_cause_analyses (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), metric_id TEXT NOT NULL, metric_name TEXT NOT NULL, trigger_status TEXT NOT NULL, causal_chain TEXT NOT NULL DEFAULT '[]', confidence REAL NOT NULL DEFAULT 0, impact_summary TEXT, prescription TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'active', source_data_refs TEXT NOT NULL DEFAULT '{}', generated_at TEXT NOT NULL DEFAULT (datetime('now')), resolved_at TEXT);
     CREATE TABLE IF NOT EXISTS causal_factors (id TEXT PRIMARY KEY, rca_id TEXT NOT NULL REFERENCES root_cause_analyses(id), tenant_id TEXT NOT NULL REFERENCES tenants(id), layer TEXT NOT NULL, factor_type TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, evidence TEXT NOT NULL DEFAULT '{}', impact_value REAL, impact_unit TEXT DEFAULT 'ZAR', confidence REAL NOT NULL DEFAULT 0, source_run_ids TEXT NOT NULL DEFAULT '[]', source_metric_ids TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS diagnostic_prescriptions (id TEXT PRIMARY KEY, rca_id TEXT NOT NULL REFERENCES root_cause_analyses(id), tenant_id TEXT NOT NULL REFERENCES tenants(id), priority TEXT NOT NULL DEFAULT 'short-term', title TEXT NOT NULL, description TEXT NOT NULL, expected_impact TEXT, effort_level TEXT NOT NULL DEFAULT 'medium', responsible_domain TEXT, deadline_suggested TEXT, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT);
+    CREATE TABLE IF NOT EXISTS inference_calibration (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), gate_name TEXT NOT NULL, outcome TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'auto', context TEXT NOT NULL DEFAULT '{}', recorded_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS catalyst_prescriptions (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), pattern_id TEXT REFERENCES catalyst_patterns(id), cluster_id TEXT NOT NULL, sub_catalyst_name TEXT NOT NULL, prescription_type TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, steps TEXT NOT NULL DEFAULT '[]', sap_transactions TEXT NOT NULL DEFAULT '[]', expected_impact TEXT, effort_level TEXT NOT NULL DEFAULT 'medium', priority TEXT NOT NULL DEFAULT 'medium', status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT);
     CREATE TABLE IF NOT EXISTS roi_tracking (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), period TEXT NOT NULL, total_discrepancy_value_identified REAL NOT NULL DEFAULT 0, total_discrepancy_value_recovered REAL NOT NULL DEFAULT 0, total_downstream_losses_prevented REAL NOT NULL DEFAULT 0, total_person_hours_saved REAL NOT NULL DEFAULT 0, total_catalyst_runs INTEGER NOT NULL DEFAULT 0, licence_cost_annual REAL NOT NULL DEFAULT 0, roi_multiple REAL NOT NULL DEFAULT 0, calculated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, period));
     CREATE TABLE IF NOT EXISTS board_reports (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), title TEXT NOT NULL, report_type TEXT NOT NULL DEFAULT 'monthly', content TEXT NOT NULL DEFAULT '{}', r2_key TEXT, generated_by TEXT, generated_at TEXT NOT NULL DEFAULT (datetime('now')));
