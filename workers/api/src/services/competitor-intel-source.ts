@@ -35,6 +35,12 @@
 
 import { logError, logInfo } from './logger';
 import { classifyStrategy, decodeBasicEntities } from './competitor-strategy-classifier';
+import {
+  extractHost,
+  qualityForHost,
+  adjustSeverity,
+  loadEffectiveSourceQuality,
+} from './competitor-source-quality';
 
 const GOOGLE_NEWS_DEFAULT = 'https://news.google.com/rss/search';
 const MAX_ITEMS_PER_COMPETITOR = 5;
@@ -144,8 +150,12 @@ async function urlAlreadyIngested(
 async function persistRadarSignal(
   db: D1Database, tenantId: string, competitor: CompetitorRow,
   item: ParsedItem,
+  sourceQualityRegistry: Record<string, number>,
 ): Promise<boolean> {
   const cls = classifyStrategy(item.title);
+  const host = extractHost(item.link);
+  const quality = qualityForHost(host, sourceQualityRegistry);
+  const adjustedSeverity = adjustSeverity(cls.severity, cls.category, quality);
   const rawData = {
     competitor_id: competitor.id,
     competitor_name: competitor.name,
@@ -153,18 +163,21 @@ async function persistRadarSignal(
     matched_keywords: cls.matched,
     item_url: item.link,
     pub_date: item.pubDate,
+    source_host: host,
+    source_quality: quality,
+    raw_severity: cls.severity,
   };
   try {
     await db.prepare(
       `INSERT INTO radar_signals
          (id, tenant_id, source, signal_type, title, description, url,
           raw_data, severity, relevance_score, status, detected_at, created_at)
-       VALUES (?, ?, ?, 'competitor', ?, ?, ?, ?, ?, 0.7, 'new',
+       VALUES (?, ?, ?, 'competitor', ?, ?, ?, ?, ?, ?, 'new',
                datetime('now'), datetime('now'))`
     ).bind(
       crypto.randomUUID(), tenantId, competitor.name,
       item.title, item.description ?? item.title, item.link,
-      JSON.stringify(rawData), cls.severity,
+      JSON.stringify(rawData), adjustedSeverity, quality,
     ).run();
     return true;
   } catch (err) {
@@ -199,6 +212,8 @@ export async function sweepCompetitorIntel(
   result.competitorsScanned = competitors.length;
   if (competitors.length === 0) return result;
 
+  const sourceQualityRegistry = await loadEffectiveSourceQuality(db, tenantId);
+
   for (const c of competitors) {
     try {
       const url = buildGoogleNewsUrl(env, c.name);
@@ -221,7 +236,7 @@ export async function sweepCompetitorIntel(
           result.itemsSkippedDuplicate++;
           continue;
         }
-        const ok = await persistRadarSignal(db, tenantId, c, item);
+        const ok = await persistRadarSignal(db, tenantId, c, item, sourceQualityRegistry);
         if (ok) result.itemsInserted++;
       }
     } catch (err) {
