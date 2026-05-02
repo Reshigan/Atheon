@@ -17,6 +17,7 @@ import { detectErpSchemaDrift } from './erp-drift-detector';
 import { escalateStaleActions } from './erp-hitl-sla';
 import { verifyCompletedActions } from './erp-action-verification';
 import { detectMetricCorrelations } from './metric-correlation-engine';
+import { sweepExternalSignals } from './external-signals-feed';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -134,6 +135,19 @@ export async function handleScheduled(
 
   // §11.4 — Peer benchmarks (daily, global across all tenants)
   try { await calculatePeerBenchmarks(db); } catch (e) { console.error('Peer benchmarks calculation failed:', e); }
+
+  // Phase 10-2 — pull live external macro signals (FX from frankfurter,
+  // Brent crude from EIA when EIA_API_KEY is set) once per tick and fan
+  // them out to every active tenant's external_signals table. Substrate
+  // for Phase 10-3 (signal → KPI attribution) and 10-4 (RCA synthesizer).
+  // Best-effort — never throws.
+  try {
+    await sweepExternalSignals(db, {
+      EIA_API_KEY: (env as { EIA_API_KEY?: string }).EIA_API_KEY,
+    });
+  } catch (e) {
+    console.error('External signals sweep failed:', e);
+  }
 
   // §11.6 — Resolution patterns (monthly aggregation)
   try { await calculateResolutionPatterns(db); } catch (e) { console.error('Resolution patterns calculation failed:', e); }
