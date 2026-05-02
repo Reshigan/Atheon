@@ -16,6 +16,7 @@ import { processDueWebhooks } from './webhook-delivery';
 import { detectErpSchemaDrift } from './erp-drift-detector';
 import { escalateStaleActions } from './erp-hitl-sla';
 import { verifyCompletedActions } from './erp-action-verification';
+import { detectMetricCorrelations } from './metric-correlation-engine';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -115,6 +116,12 @@ export async function handleScheduled(
       // customer + ROI attribution downgrades to never bill on writes the
       // ERP didn't actually record. Best-effort.
       try { await verifyCompletedActions(db, tenantId); } catch (e) { console.error(`Action verification failed for ${tenantId}:`, e); }
+
+      // Phase 10-1 — pairwise metric correlation. Walks the tenant's
+      // metric history and writes correlation_events when two metrics
+      // co-move with |r| ≥ 0.7 over ≥ 14 daily buckets. Substrate for
+      // the cross-catalyst RCA synthesizer (Phase 10-4). Best-effort.
+      try { await detectMetricCorrelations(db, tenantId); } catch (e) { console.error(`Correlation sweep failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,

@@ -47,7 +47,11 @@
 // for the post-action verification cron (verification_status,
 // verification_notes, verified_at). Verification failures downgrade
 // ROI attribution so we never bill on writes the ERP didn't record.
-export const MIGRATION_VERSION = 'v66-erp-action-verification';
+// v67-correlation-engine: metric pairwise correlation sweep populates
+// correlation_events.metric_a/metric_b/correlation_type/lag_hours/
+// description (already self-healed since v60s; bump forces a re-run on
+// tenants whose KV migrated flag pre-dates this code).
+export const MIGRATION_VERSION = 'v67-correlation-engine';
 
 /** Result of a migration run */
 export interface MigrationResult {
