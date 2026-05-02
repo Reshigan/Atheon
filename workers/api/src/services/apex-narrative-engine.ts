@@ -30,6 +30,7 @@
  */
 
 import { logError, logInfo } from './logger';
+import { forecastMetric, type ForecastPoint } from './kpi-forecasting';
 
 const NARRATIVE_DEBOUNCE_HOURS = 20; // ~once per day, with slack
 const RCA_LOOKBACK_DAYS = 7;
@@ -164,6 +165,8 @@ interface KpiMovement {
   value: number;
   unit: string;
   status: string;
+  /** 30/60/90-day linear-trend forecasts. Empty when history < 10 obs. */
+  forecast: ForecastPoint[];
 }
 
 interface OpportunityBullet {
@@ -251,8 +254,10 @@ export async function generateApexNarrative(
     risks.push(await buildRiskBullet(db, tenantId, rca));
     const m = await loadMetric(db, tenantId, rca.metric_id);
     if (m) {
+      const forecast = await forecastMetric(db, tenantId, m.id);
       kpis.push({
         metric: m.name, value: m.value, unit: m.unit ?? '', status: m.status,
+        forecast,
       });
     }
   }
