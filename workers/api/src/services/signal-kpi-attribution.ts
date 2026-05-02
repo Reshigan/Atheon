@@ -32,6 +32,11 @@
 
 import { logError, logInfo } from './logger';
 import { pearson } from './metric-correlation-engine';
+import {
+  canonicaliseDimension,
+  classifyImpactDirection as classifyImpactDirectionByDirection,
+  resolveKpiDirection,
+} from './kpi-classification';
 
 const MIN_PAIRED_OBSERVATIONS = 10;
 const MIN_CORRELATION = 0.6;
@@ -53,6 +58,9 @@ interface MetricRow {
   id: string;
   name: string;
   domain: string | null;
+  threshold_red: number | null;
+  threshold_amber: number | null;
+  threshold_green: number | null;
 }
 
 interface DailyPoint { date: string; value: number }
@@ -180,42 +188,6 @@ async function recentlyAttributed(
   }
 }
 
-function classifyHealthDimension(domain: string | null): string {
-  if (!domain) return 'operational';
-  const d = domain.toLowerCase();
-  if (d.includes('finance') || d.includes('treasury')) return 'financial';
-  if (d.includes('procurement') || d.includes('supply')) return 'cost';
-  if (d.includes('sales') || d.includes('revenue')) return 'revenue';
-  if (d.includes('hr') || d.includes('workforce')) return 'people';
-  return 'operational';
-}
-
-/** Decide impact_direction:
- *  - For cost-type metrics: signal-up causing metric-up = headwind.
- *  - For revenue-type metrics: signal-up causing metric-down = headwind.
- *  - Otherwise default to 'headwind' if metric moved adversely; consumers
- *    can override based on richer business context.
- */
-function classifyImpactDirection(
-  decision: AttributionDecision, healthDimension: string,
-): 'headwind' | 'tailwind' {
-  const signalUp = decision.signalDeltaPct > 0;
-  const metricUp = decision.metricDeltaPct > 0;
-  const positiveCorr = decision.correlation > 0;
-
-  if (healthDimension === 'cost') {
-    // signal up + metric up (cost up) → headwind
-    return positiveCorr && signalUp ? 'headwind' : 'tailwind';
-  }
-  if (healthDimension === 'revenue' || healthDimension === 'financial') {
-    // signal up + metric down (revenue down) → headwind
-    return positiveCorr && metricUp ? 'tailwind' : 'headwind';
-  }
-  // operational / people / unknown — heuristic: if both moved together adversely
-  // (signal up + metric up where metric represents a problem rate), lean headwind.
-  return positiveCorr ? 'headwind' : 'tailwind';
-}
-
 /** Magnitude on the schema's INTEGER 1-5 scale. */
 function classifyMagnitude(decision: AttributionDecision): number {
   const m = Math.round(Math.abs(decision.correlation) * 5);
@@ -226,13 +198,21 @@ async function persistAttribution(
   db: D1Database, tenantId: string,
   signal: SignalRow, metric: MetricRow, decision: AttributionDecision,
 ): Promise<boolean> {
-  const dimension = classifyHealthDimension(metric.domain);
-  const direction = classifyImpactDirection(decision, dimension);
+  const dimension = canonicaliseDimension(metric.domain);
+  const kpiDirection = await resolveKpiDirection(db, tenantId, metric.name, {
+    red: metric.threshold_red,
+    amber: metric.threshold_amber,
+    green: metric.threshold_green,
+  }, metric.domain);
+  const direction = classifyImpactDirectionByDirection(
+    decision.metricDeltaPct, kpiDirection,
+  );
   const magnitude = classifyMagnitude(decision);
   const analysis = {
     metric_id: metric.id,
     metric_name: metric.name,
     metric_domain: metric.domain,
+    kpi_direction: kpiDirection,
     signal_title: signal.title,
     signal_source: signal.source_name,
     correlation: Number(decision.correlation.toFixed(3)),
@@ -300,7 +280,8 @@ export async function attributeSignalsToKpis(
   let metrics: MetricRow[] = [];
   try {
     const r = await db.prepare(
-      `SELECT id, name, domain FROM process_metrics WHERE tenant_id = ?`
+      `SELECT id, name, domain, threshold_red, threshold_amber, threshold_green
+         FROM process_metrics WHERE tenant_id = ?`
     ).bind(tenantId).all<MetricRow>();
     metrics = r.results || [];
   } catch (err) {

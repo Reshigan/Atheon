@@ -125,7 +125,14 @@ const DOMAIN_TO_DIMENSIONS: Record<string, string[]> = {
 };
 
 export function getDimensionsForDomain(domain: string): string[] {
-  return DOMAIN_TO_DIMENSIONS[domain] || ['operational'];
+  if (DOMAIN_TO_DIMENSIONS[domain]) return DOMAIN_TO_DIMENSIONS[domain];
+  // Unknown domain: preserve the customer's own naming as its own
+  // dimension (slugified) instead of silently merging into 'operational'.
+  // Lets Atheon reason about arbitrary customer-defined KPI universes
+  // — see kpi-classification.ts for the same principle in attribution.
+  if (!domain) return ['operational'];
+  const slug = domain.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return slug ? [slug] : ['operational'];
 }
 
 // ── Core: Collect insights during a catalyst run ──
@@ -653,19 +660,18 @@ export async function recalculateHealthScoreFromKpis(
   }
 
   // ── Group KPI values by business dimension ──
+  // Standard categories canonicalise; everything else passes through as
+  // its own dimension (slugified) so customer-defined categories like
+  // 'sustainability' or 'esg-water' are reasoned about as themselves
+  // instead of silently merged into 'operational'.
   const dimensionScores: Record<string, { total: number; green: number; amber: number; red: number; count: number }> = {};
-  const categoryToDimension: Record<string, string> = {
-    'financial': 'financial',
-    'operational': 'operational',
-    'compliance': 'compliance',
-    'strategic': 'strategic',
-    'technology': 'technology',
-    'risk': 'risk',
-  };
+  const STANDARD_CATEGORIES = new Set(['financial', 'operational', 'compliance', 'strategic', 'technology', 'risk', 'people', 'cost', 'revenue']);
 
   for (const kpi of (kpiData.results || [])) {
-    const category = kpi.category as string;
-    const dimension = categoryToDimension[category] || 'operational';
+    const rawCategory = ((kpi.category as string) || '').toLowerCase().trim();
+    const dimension = rawCategory && STANDARD_CATEGORIES.has(rawCategory)
+      ? rawCategory
+      : (rawCategory ? rawCategory.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : 'operational');
     const status = kpi.status as string;
 
     if (!dimensionScores[dimension]) {
