@@ -38,6 +38,7 @@
  */
 
 import { logError, logInfo } from './logger';
+import { getTenantCurrency } from './tenant-currency';
 
 const DEBOUNCE_HOURS = 24;
 const MIN_CAUSAL_FACTORS = 2;
@@ -262,7 +263,7 @@ async function persistRcaWithFactors(
 
 // ── Chain assembly ─────────────────────────────────────────────────────
 
-function buildSymptomFactor(metric: MetricRow): PendingFactor {
+function buildSymptomFactor(metric: MetricRow, currency: string): PendingFactor {
   return {
     layer: 'L0',
     factor_type: 'symptom',
@@ -275,7 +276,7 @@ function buildSymptomFactor(metric: MetricRow): PendingFactor {
     },
     confidence: 95, // status is observed, not inferred
     impact_value: null,
-    impact_unit: 'ZAR',
+    impact_unit: currency,
   };
 }
 
@@ -284,6 +285,7 @@ function buildExternalDriverFactor(
   factorType: 'external_driver' | 'transitive_external',
   metric: MetricRow,
   impact: SignalImpactRow,
+  currency: string,
 ): PendingFactor {
   const a = parseAnalysis(impact.analysis);
   const driverTitle = a.signal_title ?? 'external signal';
@@ -322,12 +324,12 @@ function buildExternalDriverFactor(
     },
     confidence: toFactorConfidence(impact.confidence),
     impact_value: null,
-    impact_unit: 'ZAR',
+    impact_unit: currency,
   };
 }
 
 function buildCrossMetricFactor(
-  symptom: MetricRow, peer: MetricRow, edge: CorrelationEventRow,
+  symptom: MetricRow, peer: MetricRow, edge: CorrelationEventRow, currency: string,
 ): PendingFactor {
   const directionWord = edge.correlation_type === 'negative' ? 'inversely co-moves with' : 'co-moves with';
   return {
@@ -350,19 +352,19 @@ function buildCrossMetricFactor(
     },
     confidence: toFactorConfidence(edge.confidence ?? 0),
     impact_value: null,
-    impact_unit: 'ZAR',
+    impact_unit: currency,
   };
 }
 
 async function assembleChain(
-  db: D1Database, tenantId: string, symptom: MetricRow,
+  db: D1Database, tenantId: string, symptom: MetricRow, currency: string,
 ): Promise<PendingFactor[]> {
-  const factors: PendingFactor[] = [buildSymptomFactor(symptom)];
+  const factors: PendingFactor[] = [buildSymptomFactor(symptom, currency)];
 
   // L1 — direct external drivers of the symptom
   const directImpacts = await loadSignalImpactsForMetric(db, tenantId, symptom.id);
   for (const imp of directImpacts) {
-    factors.push(buildExternalDriverFactor('L1', 'external_driver', symptom, imp));
+    factors.push(buildExternalDriverFactor('L1', 'external_driver', symptom, imp, currency));
   }
 
   // L2 — cross-metric drivers (peer metrics co-moving with the symptom)
@@ -374,12 +376,12 @@ async function assembleChain(
     const peer = await loadMetricById(db, tenantId, peerId);
     if (!peer) continue;
     peerIds.push(peerId);
-    factors.push(buildCrossMetricFactor(symptom, peer, edge));
+    factors.push(buildCrossMetricFactor(symptom, peer, edge, currency));
 
     // L3 — transitive external driver: a signal that drives this peer.
     const peerImpacts = await loadSignalImpactsForMetric(db, tenantId, peerId);
     for (const pImp of peerImpacts.slice(0, 1)) {
-      factors.push(buildExternalDriverFactor('L3', 'transitive_external', peer, pImp));
+      factors.push(buildExternalDriverFactor('L3', 'transitive_external', peer, pImp, currency));
     }
   }
 
@@ -400,12 +402,14 @@ export async function synthesizeCrossCatalystRca(
   result.symptomsScanned = symptoms.length;
   if (symptoms.length === 0) return result;
 
+  const currency = await getTenantCurrency(db, tenantId);
+
   for (const symptom of symptoms) {
     if (await activeRcaWithinDebounce(db, tenantId, symptom.id)) {
       result.symptomsSkippedDebounced++;
       continue;
     }
-    const factors = await assembleChain(db, tenantId, symptom);
+    const factors = await assembleChain(db, tenantId, symptom, currency);
     // factors[0] is L0 symptom; everything beyond is signal/correlation drivers.
     const driverCount = factors.length - 1;
     if (driverCount < MIN_CAUSAL_FACTORS) {

@@ -8,6 +8,7 @@
 import { loadLlmConfig, llmChatWithFallback, stripCodeFences } from './llm-provider';
 import type { LlmMessage } from './llm-provider';
 import { createNotification } from './notifications';
+import { getTenantCurrency } from './tenant-currency';
 
 // ── runRootCauseAnalysis ──
 
@@ -54,6 +55,7 @@ export async function runRootCauseAnalysis(
   // under 'general' until per-tenant industry tagging is reintroduced.
   // Reading the column would throw "no such column: industry" at runtime.
   const tenant: { industry: string } = { industry: 'general' };
+  const currency = await getTenantCurrency(db, tenantId);
   const llmConfig = await loadLlmConfig(db, tenantId);
 
   // L0 factor — Symptom
@@ -81,16 +83,16 @@ export async function runRootCauseAnalysis(
   const messages: LlmMessage[] = [
     {
       role: 'system',
-      content: `You are Atheon Intelligence performing root-cause analysis for a ${tenant?.industry || 'general'} business in South Africa.
+      content: `You are Atheon Intelligence performing root-cause analysis for a ${tenant?.industry || 'general'} business. The tenant operates in ${currency}; quantify financial impact in ${currency}.
 
 Build causal factors for layers L1 through L5:
 L1 — Process Factor: what process step degraded
 L2 — Resource/Config Factor: root resource or configuration cause (staffing gaps, approval workflows, master data issues, SAP config, missing automation)
-L3 — Quantified Impact: financial and operational impact with amounts in ZAR
+L3 — Quantified Impact: financial and operational impact with amounts in ${currency}
 L4 — Downstream Cascade: other metrics/systems affected
 L5 — Prescription: 2-4 prioritised fix prescriptions
 
-For L1-L4, respond with JSON: { "layers": [{ "layer": "L1", "factor_type": "process|resource|impact|cascade", "title": "", "description": "", "confidence": 0-100, "evidence_reasoning": "", "impact_value": null, "impact_unit": "ZAR" }] }
+For L1-L4, respond with JSON: { "layers": [{ "layer": "L1", "factor_type": "process|resource|impact|cascade", "title": "", "description": "", "confidence": 0-100, "evidence_reasoning": "", "impact_value": null, "impact_unit": "${currency}" }] }
 For L5, add: "prescriptions": [{ "priority": "immediate|short-term|strategic", "title": "", "description": "", "expected_impact": "", "effort_level": "low|medium|high", "responsible_domain": "", "sap_transactions": [] }]
 
 Respond ONLY in JSON.`,
@@ -151,7 +153,7 @@ Perform full L1-L5 root cause analysis.`,
       layer.description || '',
       JSON.stringify({ reasoning: layer.evidence_reasoning || '' }),
       layer.impact_value || null,
-      layer.impact_unit || 'ZAR',
+      layer.impact_unit || currency,
       Math.min(100, Math.max(0, layer.confidence || 50)),
       now,
     ).run();
