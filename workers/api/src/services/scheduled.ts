@@ -22,6 +22,7 @@ import { attributeSignalsToKpis } from './signal-kpi-attribution';
 import { synthesizeCrossCatalystRca } from './cross-catalyst-rca-synthesizer';
 import { generateApexNarrative, closeRecoveredRcas } from './apex-narrative-engine';
 import { sweepCompetitorIntel } from './competitor-intel-source';
+import { sweepRegulatoryFeeds } from './regulatory-feed';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -163,6 +164,12 @@ export async function handleScheduled(
       // trouble), persists to radar_signals. No-op for tenants with
       // no competitors. Best-effort.
       try { await sweepCompetitorIntel(db, tenantId, {}); } catch (e) { console.error(`Competitor intel failed for ${tenantId}:`, e); }
+
+      // Phase 10-12 — regulatory feeds. Industry-aware: SARS/SARB
+      // for everyone; FSCA/JSE for finance; SAHPRA for healthcare;
+      // DMRE for mining; NRCS for agri/fmcg/manufacturing; ICASA
+      // for tech. Persists to regulatory_events table. Best-effort.
+      try { await sweepRegulatoryFeeds(db, tenantId, {}); } catch (e) { console.error(`Regulatory feed failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
