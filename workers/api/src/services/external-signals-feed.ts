@@ -27,6 +27,7 @@
  */
 
 import { logError, logInfo } from './logger';
+import { inferTenantIndustryProfile, type Industry } from './industry-profile';
 
 const HISTORY_DAYS = 30;
 
@@ -52,6 +53,11 @@ export interface ExternalSignalSource {
   /** Returns null when source is unavailable (e.g. missing API key) so
    *  the sweep can skip without failing the whole tick. */
   fetchLatest(env: SourceEnv): Promise<ExternalSignalReading[] | null>;
+  /** Industries this source is relevant to. Omit OR include 'general' to
+   *  apply to every tenant. The sweep persists a source's readings only
+   *  to tenants whose inferred industry profile intersects this list.
+   *  Lets a pure-tech tenant skip weather, and an agri tenant pick it up. */
+  applicableTo?: ReadonlyArray<Industry>;
 }
 
 export interface SourceEnv {
@@ -59,6 +65,7 @@ export interface SourceEnv {
   /** Override base URL for tests. */
   FRANKFURTER_BASE?: string;
   EIA_BASE?: string;
+  OPEN_METEO_BASE?: string;
 }
 
 // ── Frankfurter FX source ──────────────────────────────────────────────
@@ -72,6 +79,10 @@ const FX_PAIRS = [
 
 export const frankfurterFxSource: ExternalSignalSource = {
   name: 'frankfurter.fx',
+  // FX moves every business with import/export exposure — applicable
+  // to every industry including pure-tech (cloud spend in USD).
+  applicableTo: ['general', 'mining', 'agriculture', 'healthcare', 'fmcg',
+    'logistics', 'manufacturing', 'finance', 'technology'],
   async fetchLatest(env): Promise<ExternalSignalReading[] | null> {
     const base = env.FRANKFURTER_BASE || FRANKFURTER_DEFAULT;
     const out: ExternalSignalReading[] = [];
@@ -113,6 +124,10 @@ const EIA_DEFAULT = 'https://api.eia.gov/v2';
 
 export const eiaOilSource: ExternalSignalSource = {
   name: 'eia.brent',
+  // Energy/transport input — physical-world industries care; pure-tech
+  // and finance generally don't (no transport exposure to speak of).
+  applicableTo: ['general', 'mining', 'agriculture', 'healthcare', 'fmcg',
+    'logistics', 'manufacturing'],
   async fetchLatest(env): Promise<ExternalSignalReading[] | null> {
     if (!env.EIA_API_KEY) {
       logInfo('external_signals.eia.skipped', { tenantId: 'global', layer: 'analytics', action: 'external_signals' },
@@ -147,6 +162,75 @@ export const eiaOilSource: ExternalSignalSource = {
       logError('external_signals.eia.fetch_failed', err, { tenantId: 'global' }, {});
       return null;
     }
+  },
+};
+
+// ── Open-Meteo source (weather — agri / logistics / fmcg / insurance) ──
+
+const OPEN_METEO_DEFAULT = 'https://api.open-meteo.com/v1';
+// Cape regional cluster — broadly indicative for SA agri/logistics/retail.
+// Customers can later override coordinates per tenant via tenant_settings.
+const WEATHER_LOCATIONS = [
+  { name: 'Johannesburg', lat: -26.2, lon: 28.04 },
+  { name: 'Cape Town', lat: -33.92, lon: 18.42 },
+];
+
+export const openMeteoWeatherSource: ExternalSignalSource = {
+  name: 'open-meteo.weather',
+  // Weather is a real input to agri (irrigation, yields), logistics
+  // (port congestion, delivery delays), fmcg (seasonal demand), and
+  // healthcare (hospital admissions in heat events). Pure-tech and
+  // finance don't need it.
+  applicableTo: ['agriculture', 'logistics', 'fmcg', 'healthcare', 'mining'],
+  async fetchLatest(env): Promise<ExternalSignalReading[] | null> {
+    const base = env.OPEN_METEO_BASE || OPEN_METEO_DEFAULT;
+    const out: ExternalSignalReading[] = [];
+    for (const loc of WEATHER_LOCATIONS) {
+      try {
+        const url = `${base}/forecast?latitude=${loc.lat}&longitude=${loc.lon}` +
+          `&current=temperature_2m,precipitation,wind_speed_10m`;
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!res.ok) {
+          logError('external_signals.open_meteo.http_error', new Error(`HTTP ${res.status}`),
+            { tenantId: 'global' }, { location: loc.name });
+          continue;
+        }
+        const body = await res.json() as { current?: { temperature_2m?: number; precipitation?: number; wind_speed_10m?: number; time?: string } };
+        const c = body.current;
+        if (!c) continue;
+        const slug = loc.name.toLowerCase().replace(/\s+/g, '_');
+        if (typeof c.temperature_2m === 'number') {
+          out.push({
+            category: 'macro',
+            source_name: 'open-meteo.com',
+            signal_key: `weather.${slug}.temp_c`,
+            title: `${loc.name} temperature`,
+            summary: `${loc.name} temperature ${c.temperature_2m.toFixed(1)}°C as of ${c.time ?? 'now'}`,
+            value: c.temperature_2m,
+            unit: '°C',
+            source_url: `${base}/forecast?lat=${loc.lat}&lon=${loc.lon}`,
+            reliability_score: 0.85,
+          });
+        }
+        if (typeof c.precipitation === 'number') {
+          out.push({
+            category: 'macro',
+            source_name: 'open-meteo.com',
+            signal_key: `weather.${slug}.precip_mm`,
+            title: `${loc.name} precipitation`,
+            summary: `${loc.name} precipitation ${c.precipitation.toFixed(2)}mm as of ${c.time ?? 'now'}`,
+            value: c.precipitation,
+            unit: 'mm',
+            source_url: `${base}/forecast?lat=${loc.lat}&lon=${loc.lon}`,
+            reliability_score: 0.85,
+          });
+        }
+      } catch (err) {
+        logError('external_signals.open_meteo.fetch_failed', err,
+          { tenantId: 'global' }, { location: loc.name });
+      }
+    }
+    return out.length ? out : null;
   },
 };
 
@@ -258,46 +342,62 @@ async function persistReading(
 export interface SignalSweepResult {
   sourcesAttempted: number;
   sourcesSucceeded: number;
+  sourcesSkippedNoTenant: number;
   readingsFetched: number;
   signalsInserted: number;
   signalsUpdated: number;
   signalsUnchanged: number;
+  signalsSkippedNotApplicable: number;
+}
+
+/** Default registry — extend by passing a wider list to sweepExternalSignals. */
+export const DEFAULT_SOURCES: ExternalSignalSource[] = [
+  frankfurterFxSource,
+  eiaOilSource,
+  openMeteoWeatherSource,
+];
+
+/** True if `source` is applicable to a tenant whose industry profile
+ *  contains at least one of the source's `applicableTo` industries.
+ *  A source with no `applicableTo` declaration is treated as global. */
+function sourceAppliesToIndustries(
+  source: ExternalSignalSource,
+  industries: ReadonlyArray<Industry>,
+): boolean {
+  if (!source.applicableTo || source.applicableTo.length === 0) return true;
+  for (const ind of industries) {
+    if (source.applicableTo.includes(ind)) return true;
+  }
+  return false;
 }
 
 /**
- * Poll all configured external sources ONCE, then fan out the readings
- * to every active tenant. Returns a sweep summary for logging. Best-
- * effort — a failing source does not abort the others.
+ * Industry-aware sweep:
+ *
+ *  1. Compute every active tenant's industry profile.
+ *  2. Determine the UNION of sources at least one tenant cares about.
+ *     A source no tenant uses is skipped — saves the upstream API call.
+ *  3. Fetch each applicable source ONCE.
+ *  4. Per tenant, persist only readings from sources that are
+ *     applicable to that tenant's industries.
+ *
+ *  This means a pure-tech tenant doesn't get weather pollution in
+ *  external_signals; an agri tenant does. FX is global so everyone
+ *  gets it; Brent is physical-economy so finance/tech skip it.
  */
 export async function sweepExternalSignals(
   db: D1Database,
   env: SourceEnv,
-  sources: ExternalSignalSource[] = [frankfurterFxSource, eiaOilSource],
+  sources: ExternalSignalSource[] = DEFAULT_SOURCES,
 ): Promise<SignalSweepResult> {
   const result: SignalSweepResult = {
-    sourcesAttempted: 0, sourcesSucceeded: 0,
+    sourcesAttempted: 0, sourcesSucceeded: 0, sourcesSkippedNoTenant: 0,
     readingsFetched: 0,
     signalsInserted: 0, signalsUpdated: 0, signalsUnchanged: 0,
+    signalsSkippedNotApplicable: 0,
   };
 
-  // 1. Fetch from each source ONCE (signals are global, not tenant-scoped).
-  const allReadings: ExternalSignalReading[] = [];
-  for (const source of sources) {
-    result.sourcesAttempted++;
-    try {
-      const readings = await source.fetchLatest(env);
-      if (readings && readings.length > 0) {
-        allReadings.push(...readings);
-        result.sourcesSucceeded++;
-        result.readingsFetched += readings.length;
-      }
-    } catch (err) {
-      logError('external_signals.source_failed', err, { tenantId: 'global' }, { source: source.name });
-    }
-  }
-  if (allReadings.length === 0) return result;
-
-  // 2. Fan out to all active tenants.
+  // 1. List active tenants up front — needed for industry inference.
   let tenants: Array<{ id: string }> = [];
   try {
     const r = await db.prepare(`SELECT id FROM tenants WHERE status = 'active'`).all<{ id: string }>();
@@ -306,18 +406,74 @@ export async function sweepExternalSignals(
     logError('external_signals.tenant_list_failed', err, { tenantId: 'global' }, {});
     return result;
   }
+  if (tenants.length === 0) return result;
 
+  // 2. Compute each tenant's industry profile in parallel.
+  const tenantIndustries = new Map<string, ReadonlyArray<Industry>>();
+  await Promise.all(tenants.map(async (t) => {
+    try {
+      const profile = await inferTenantIndustryProfile(db, t.id);
+      tenantIndustries.set(t.id, profile.industries);
+    } catch {
+      tenantIndustries.set(t.id, ['general']);
+    }
+  }));
+
+  // 3. Determine which sources to fetch — the union of what any tenant
+  //    cares about. Skip sources with zero applicable tenants.
+  const sourcesByName = new Map<string, ExternalSignalSource>();
+  for (const source of sources) {
+    let anyMatch = false;
+    for (const industries of tenantIndustries.values()) {
+      if (sourceAppliesToIndustries(source, industries)) { anyMatch = true; break; }
+    }
+    if (anyMatch) {
+      sourcesByName.set(source.name, source);
+    } else {
+      result.sourcesSkippedNoTenant++;
+    }
+  }
+
+  // 4. Fetch each applicable source ONCE; track which source produced
+  //    which readings so we can apply per-tenant filtering.
+  const readingsBySource = new Map<string, ExternalSignalReading[]>();
+  for (const source of sourcesByName.values()) {
+    result.sourcesAttempted++;
+    try {
+      const readings = await source.fetchLatest(env);
+      if (readings && readings.length > 0) {
+        readingsBySource.set(source.name, readings);
+        result.sourcesSucceeded++;
+        result.readingsFetched += readings.length;
+      }
+    } catch (err) {
+      logError('external_signals.source_failed', err, { tenantId: 'global' }, { source: source.name });
+    }
+  }
+  if (readingsBySource.size === 0) return result;
+
+  // 5. Per-tenant fan-out, gated by applicability.
   for (const t of tenants) {
-    for (const reading of allReadings) {
-      const outcome = await persistReading(db, t.id, reading);
-      if (outcome === 'inserted') result.signalsInserted++;
-      else if (outcome === 'updated') result.signalsUpdated++;
-      else result.signalsUnchanged++;
+    const industries = tenantIndustries.get(t.id) ?? ['general'];
+    for (const [sourceName, readings] of readingsBySource) {
+      const source = sourcesByName.get(sourceName)!;
+      if (!sourceAppliesToIndustries(source, industries)) {
+        result.signalsSkippedNotApplicable += readings.length;
+        continue;
+      }
+      for (const reading of readings) {
+        const outcome = await persistReading(db, t.id, reading);
+        if (outcome === 'inserted') result.signalsInserted++;
+        else if (outcome === 'updated') result.signalsUpdated++;
+        else result.signalsUnchanged++;
+      }
     }
   }
 
   if (result.signalsInserted + result.signalsUpdated > 0) {
-    logInfo('external_signals.sweep_completed', { tenantId: 'global', layer: 'analytics', action: 'external_signals' }, { ...result });
+    logInfo('external_signals.sweep_completed',
+      { tenantId: 'global', layer: 'analytics', action: 'external_signals' },
+      { ...result });
   }
   return result;
 }
