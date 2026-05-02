@@ -39,6 +39,11 @@
 
 import { logError, logInfo } from './logger';
 import { getTenantCurrency } from './tenant-currency';
+import {
+  loadTenantMonthlyBase,
+  estimateExternalDriverImpact,
+  estimateCrossMetricImpact,
+} from './financial-impact-quantifier';
 
 const DEBOUNCE_HOURS = 24;
 const MIN_CAUSAL_FACTORS = 2;
@@ -286,6 +291,7 @@ function buildExternalDriverFactor(
   metric: MetricRow,
   impact: SignalImpactRow,
   currency: string,
+  tenantBase: number | null,
 ): PendingFactor {
   const a = parseAnalysis(impact.analysis);
   const driverTitle = a.signal_title ?? 'external signal';
@@ -298,11 +304,19 @@ function buildExternalDriverFactor(
     ? `${driverTitle} driving ${metric.name} (${direction})`
     : `${driverTitle} driving ${metric.name} via correlated peer (${direction})`;
 
+  const impactValue = estimateExternalDriverImpact(
+    { value: metric.value, unit: metric.unit },
+    a.signal_delta_pct, a.correlation, currency, tenantBase,
+  );
+
   const description =
     `External signal "${driverTitle}" (${a.signal_source ?? 'unknown source'}) ` +
     `moved ${dPct !== undefined ? `${dPct.toFixed(1)}%` : 'significantly'} ` +
     `with Pearson r = ${r !== undefined ? r.toFixed(2) : 'n/a'} ` +
-    `at lag ${lag ?? 'n/a'} days against ${metric.name}.`;
+    `at lag ${lag ?? 'n/a'} days against ${metric.name}.` +
+    (impactValue != null
+      ? ` Estimated impact ≈ ${impactValue.toLocaleString()} ${currency}.`
+      : '');
 
   return {
     layer,
@@ -323,23 +337,30 @@ function buildExternalDriverFactor(
       target_metric_id: metric.id,
     },
     confidence: toFactorConfidence(impact.confidence),
-    impact_value: null,
+    impact_value: impactValue,
     impact_unit: currency,
   };
 }
 
 function buildCrossMetricFactor(
-  symptom: MetricRow, peer: MetricRow, edge: CorrelationEventRow, currency: string,
+  symptom: MetricRow, peer: MetricRow, edge: CorrelationEventRow,
+  currency: string, tenantBase: number | null,
 ): PendingFactor {
   const directionWord = edge.correlation_type === 'negative' ? 'inversely co-moves with' : 'co-moves with';
+  const impactValue = estimateCrossMetricImpact(
+    { value: symptom.value, unit: symptom.unit },
+    null, edge.confidence ?? 0, currency, tenantBase,
+  );
   return {
     layer: 'L2',
     factor_type: 'cross_metric',
     title: `${peer.name} ${directionWord} ${symptom.name}`,
-    description:
+    description: (
       `${peer.name} (${peer.status}, ${peer.value} ${peer.unit ?? ''}) ` +
       `${directionWord} ${symptom.name} with confidence ${(edge.confidence ?? 0).toFixed(2)} ` +
-      `at lag ${edge.lag_hours ?? 0}h. ${edge.description ?? ''}`.trim(),
+      `at lag ${edge.lag_hours ?? 0}h. ${edge.description ?? ''}`.trim() +
+      (impactValue != null ? ` Estimated impact ≈ ${impactValue.toLocaleString()} ${currency}.` : '')
+    ).trim(),
     evidence: {
       symptom_metric_id: symptom.id,
       peer_metric_id: peer.id,
@@ -351,20 +372,21 @@ function buildCrossMetricFactor(
       lag_hours: edge.lag_hours,
     },
     confidence: toFactorConfidence(edge.confidence ?? 0),
-    impact_value: null,
+    impact_value: impactValue,
     impact_unit: currency,
   };
 }
 
 async function assembleChain(
-  db: D1Database, tenantId: string, symptom: MetricRow, currency: string,
+  db: D1Database, tenantId: string, symptom: MetricRow,
+  currency: string, tenantBase: number | null,
 ): Promise<PendingFactor[]> {
   const factors: PendingFactor[] = [buildSymptomFactor(symptom, currency)];
 
   // L1 — direct external drivers of the symptom
   const directImpacts = await loadSignalImpactsForMetric(db, tenantId, symptom.id);
   for (const imp of directImpacts) {
-    factors.push(buildExternalDriverFactor('L1', 'external_driver', symptom, imp, currency));
+    factors.push(buildExternalDriverFactor('L1', 'external_driver', symptom, imp, currency, tenantBase));
   }
 
   // L2 — cross-metric drivers (peer metrics co-moving with the symptom)
@@ -376,12 +398,12 @@ async function assembleChain(
     const peer = await loadMetricById(db, tenantId, peerId);
     if (!peer) continue;
     peerIds.push(peerId);
-    factors.push(buildCrossMetricFactor(symptom, peer, edge, currency));
+    factors.push(buildCrossMetricFactor(symptom, peer, edge, currency, tenantBase));
 
     // L3 — transitive external driver: a signal that drives this peer.
     const peerImpacts = await loadSignalImpactsForMetric(db, tenantId, peerId);
     for (const pImp of peerImpacts.slice(0, 1)) {
-      factors.push(buildExternalDriverFactor('L3', 'transitive_external', peer, pImp, currency));
+      factors.push(buildExternalDriverFactor('L3', 'transitive_external', peer, pImp, currency, tenantBase));
     }
   }
 
@@ -403,13 +425,14 @@ export async function synthesizeCrossCatalystRca(
   if (symptoms.length === 0) return result;
 
   const currency = await getTenantCurrency(db, tenantId);
+  const tenantBase = await loadTenantMonthlyBase(db, tenantId);
 
   for (const symptom of symptoms) {
     if (await activeRcaWithinDebounce(db, tenantId, symptom.id)) {
       result.symptomsSkippedDebounced++;
       continue;
     }
-    const factors = await assembleChain(db, tenantId, symptom, currency);
+    const factors = await assembleChain(db, tenantId, symptom, currency, tenantBase);
     // factors[0] is L0 symptom; everything beyond is signal/correlation drivers.
     const driverCount = factors.length - 1;
     if (driverCount < MIN_CAUSAL_FACTORS) {
