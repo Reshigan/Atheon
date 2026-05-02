@@ -20,6 +20,7 @@ import { detectMetricCorrelations } from './metric-correlation-engine';
 import { sweepExternalSignals } from './external-signals-feed';
 import { attributeSignalsToKpis } from './signal-kpi-attribution';
 import { synthesizeCrossCatalystRca } from './cross-catalyst-rca-synthesizer';
+import { generateApexNarrative, closeRecoveredRcas } from './apex-narrative-engine';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -139,6 +140,20 @@ export async function handleScheduled(
       // drivers, L2 cross-metric drivers, L3 transitive external drivers.
       // Persists to root_cause_analyses + causal_factors. Best-effort.
       try { await synthesizeCrossCatalystRca(db, tenantId); } catch (e) { console.error(`Cross-catalyst RCA failed for ${tenantId}:`, e); }
+
+      // Phase 10-5 — RCA closure. For each active RCA whose symptom
+      // metric has held a non-red status across the last N samples,
+      // mark the RCA resolved. Counterpart to verifyCompletedActions:
+      // verification proves the write landed, closure proves the
+      // outcome materialised. Best-effort.
+      try { await closeRecoveredRcas(db, tenantId); } catch (e) { console.error(`RCA closure failed for ${tenantId}:`, e); }
+
+      // Phase 10-5 — Apex narrative. Distils recent active RCAs into
+      // one executive_briefings row per tenant per day (debounced).
+      // Risks = live symptoms with their causal chain; KPI movements =
+      // symptom metric values; Opportunities = RCAs that recently
+      // closed (recovery wins). Best-effort.
+      try { await generateApexNarrative(db, tenantId); } catch (e) { console.error(`Apex narrative failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
