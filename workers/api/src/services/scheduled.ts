@@ -18,6 +18,7 @@ import { escalateStaleActions } from './erp-hitl-sla';
 import { verifyCompletedActions } from './erp-action-verification';
 import { detectMetricCorrelations } from './metric-correlation-engine';
 import { sweepExternalSignals } from './external-signals-feed';
+import { attributeSignalsToKpis } from './signal-kpi-attribution';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -123,6 +124,13 @@ export async function handleScheduled(
       // co-move with |r| ≥ 0.7 over ≥ 14 daily buckets. Substrate for
       // the cross-catalyst RCA synthesizer (Phase 10-4). Best-effort.
       try { await detectMetricCorrelations(db, tenantId); } catch (e) { console.error(`Correlation sweep failed for ${tenantId}:`, e); }
+
+      // Phase 10-3 — signal → KPI attribution. Joins external_signals
+      // history (Phase 10-2) to process_metric_history with a 0–7 day
+      // lag sweep; persists significant joins to signal_impacts. Lets
+      // Apex narrate "Brent +22% drove procurement costs +6%" instead
+      // of two unrelated headlines. Best-effort.
+      try { await attributeSignalsToKpis(db, tenantId); } catch (e) { console.error(`Signal attribution failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
