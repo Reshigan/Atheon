@@ -21,6 +21,7 @@ import { sweepExternalSignals } from './external-signals-feed';
 import { attributeSignalsToKpis } from './signal-kpi-attribution';
 import { synthesizeCrossCatalystRca } from './cross-catalyst-rca-synthesizer';
 import { generateApexNarrative, closeRecoveredRcas } from './apex-narrative-engine';
+import { sweepCompetitorIntel } from './competitor-intel-source';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -154,6 +155,14 @@ export async function handleScheduled(
       // symptom metric values; Opportunities = RCAs that recently
       // closed (recovery wins). Best-effort.
       try { await generateApexNarrative(db, tenantId); } catch (e) { console.error(`Apex narrative failed for ${tenantId}:`, e); }
+
+      // Phase 10-8 — competitor intelligence. Per tenant, reads each
+      // competitors row, queries Google News RSS, classifies each
+      // headline into a strategy category (pricing / product_launch /
+      // market_expansion / hiring / funding_or_ma / partnership /
+      // trouble), persists to radar_signals. No-op for tenants with
+      // no competitors. Best-effort.
+      try { await sweepCompetitorIntel(db, tenantId, {}); } catch (e) { console.error(`Competitor intel failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
