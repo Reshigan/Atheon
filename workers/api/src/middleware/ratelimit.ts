@@ -88,6 +88,42 @@ export const contactRateLimiter = rateLimiter({
   keyPrefix: 'rl:contact',
 });
 
+// Phase 10-25 — DSAR access rate limit. Tightened because the access
+// endpoint can return the full subject record across audit_log,
+// mind_queries, chat_conversations etc. — useful for legitimate DSAR
+// requests but a useful enumeration vector for an attacker who's
+// already past auth (e.g. a compromised non-admin token trying to
+// guess admin emails). 5 requests per hour is plenty for human-led
+// compliance flow; admins doing bulk export should use an offline
+// script with a service token.
+export const dsarRateLimiter = rateLimiter({
+  windowMs: 3600000, // 1 hour
+  maxRequests: 5,
+  keyPrefix: 'rl:dsar',
+});
+
+// Phase 10-25 — DSAR erasure rate limit. Even tighter — erasure is
+// destructive and audit-critical. 3 per day per IP is enough for a
+// real privacy team's workload and surfaces obviously-anomalous
+// activity (mass deletion attack) before it does damage.
+export const dsarErasureRateLimiter = rateLimiter({
+  windowMs: 86400000, // 24 hours
+  maxRequests: 3,
+  keyPrefix: 'rl:dsar-erasure',
+});
+
+// Phase 10-25 — billing endpoints rate limit. Tighter than the 120
+// req/min default because the period-compute query joins
+// root_cause_analyses + causal_factors + diagnostic_prescriptions +
+// catalyst_actions across the period — a tenant with thousands of
+// rows can spike DB read time. 30 req/min is sufficient for a
+// dashboard refresh + ad-hoc invoice review.
+export const billingRateLimiter = rateLimiter({
+  windowMs: 60000,
+  maxRequests: 30,
+  keyPrefix: 'rl:billing',
+});
+
 /**
  * Phase 6.2: Per-Tenant Rate Limiter
  * Reads tenant entitlements to enforce custom rate limits per tenant.
