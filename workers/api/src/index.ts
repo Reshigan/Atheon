@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env, AppBindings } from './types';
-import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter, contactRateLimiter } from './middleware/ratelimit';
+import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter, contactRateLimiter, dsarRateLimiter, dsarErasureRateLimiter, billingRateLimiter } from './middleware/ratelimit';
 import { hashPassword } from './middleware/auth';
 import { auditEnrichment, requestSizeLimiter, getValidatedJsonBody } from './middleware/validation';
 import { runMigrations, MIGRATION_VERSION } from './services/migrate';
@@ -148,6 +148,20 @@ app.use('/api/auth/demo-login', demoAuthRateLimiter);
 app.use('/api/auth/*', authRateLimiter);
 app.use('/api/mind/*', aiRateLimiter);
 app.use('/api/contact', contactRateLimiter);
+
+// Phase 10-25 — strict rate limits for sensitive endpoints. These
+// MUST come BEFORE the general apiRateLimiter so they win on path
+// match. Hono evaluates middleware in registration order.
+// DSAR erasure tightest (3/day); DSAR access tighter (5/hour);
+// billing 30/min (vs default 120/min) to bound the period-compute
+// join cost.
+app.use('/api/dsar/erasure', dsarErasureRateLimiter);
+app.use('/api/v1/dsar/erasure', dsarErasureRateLimiter);
+app.use('/api/dsar/access', dsarRateLimiter);
+app.use('/api/v1/dsar/access', dsarRateLimiter);
+app.use('/api/billing/*', billingRateLimiter);
+app.use('/api/v1/billing/*', billingRateLimiter);
+
 app.use('/api/*', apiRateLimiter);
 
 // License enforcement — only fires when DEPLOYMENT_ROLE === 'customer'
