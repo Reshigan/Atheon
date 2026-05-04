@@ -135,7 +135,14 @@ export async function handleScheduled(
 
       // Phase 10-22 — advance any active orchestration runs by one
       // step. Pull-based engine; idempotent. Best-effort.
-      try { await advanceRunsForTenant(db, tenantId); } catch (e) { console.error(`Orchestration advance failed for ${tenantId}:`, e); }
+      try {
+        await advanceRunsForTenant(db, tenantId, {
+          cache: env.CACHE,
+          ai: env.AI,
+          ollamaApiKey: env.OLLAMA_API_KEY,
+          queue: env.CATALYST_QUEUE,
+        });
+      } catch (e) { console.error(`Orchestration advance failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,

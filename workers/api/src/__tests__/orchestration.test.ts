@@ -183,18 +183,122 @@ describe('Phase 10-22 — orchestration', () => {
     });
   });
 
-  describe('advance — catalyst_action', () => {
-    it('catalyst_action → blocked (deferred to follow-up PR)', async () => {
+  describe('advance — catalyst_action (Phase 10-24)', () => {
+    it('blocks with reason="deps_missing" when deps not provided', async () => {
       const { workflowId } = await defineWorkflow(env.DB, TENANT, {
-        name: 'with-action', steps: [
-          { name: 'cat', type: 'catalyst_action', input: { catalyst: 'procurement' } },
+        name: 'with-action-no-deps', steps: [
+          { name: 'cat', type: 'catalyst_action', input: {
+            clusterId: 'c1', catalystName: 'procurement', action: 'renegotiate',
+          } },
         ],
       });
       const { runId } = await startRun(env.DB, TENANT, workflowId, USER);
-      const r = await advanceRunsForTenant(env.DB, TENANT);
+      const r = await advanceRunsForTenant(env.DB, TENANT); // no deps
       expect(r.runsBlocked).toBe(1);
+      const stepRow = await env.DB.prepare(
+        `SELECT output FROM orchestration_step_executions WHERE run_id = ? AND step_index = 0`
+      ).bind(runId).first<{ output: string }>();
+      const out = JSON.parse(stepRow!.output);
+      expect(out.reason).toMatch(/deps missing/i);
+    });
+
+    it('fails when input is missing required clusterId/catalystName/action', async () => {
+      const { workflowId } = await defineWorkflow(env.DB, TENANT, {
+        name: 'invalid-action', steps: [
+          { name: 'cat', type: 'catalyst_action', input: { /* missing fields */ } },
+        ],
+      });
+      const { runId } = await startRun(env.DB, TENANT, workflowId, USER);
+      // Provide deps so we go past the deps_missing check
+      const fakeCache = { get: async () => null, put: async () => undefined } as unknown as KVNamespace;
+      const fakeAi = {} as unknown as Ai;
+      const r = await advanceRunsForTenant(env.DB, TENANT, { cache: fakeCache, ai: fakeAi });
+      expect(r.runsFailed).toBe(1);
       const s = await getRunStatus(env.DB, TENANT, runId);
-      expect(s?.status).toBe('running');
+      expect(s?.status).toBe('failed');
+      expect(s?.error).toContain('catalyst_action requires');
+    });
+
+    it('completes when linked catalyst_action verifies', async () => {
+      const { workflowId } = await defineWorkflow(env.DB, TENANT, {
+        name: 'pre-existing-action', steps: [
+          { name: 'cat', type: 'catalyst_action', input: {
+            clusterId: 'c-orch', catalystName: 'procurement', action: 'renegotiate',
+          } },
+        ],
+      });
+      const { runId } = await startRun(env.DB, TENANT, workflowId, USER);
+
+      // Manually simulate: action_id already injected as if executeTask ran.
+      // (Avoids running the heavy executeTask in a unit test — we're testing
+      // the polling path here.)
+      const actionId = crypto.randomUUID();
+      const clusterId = 'c-orch-cluster';
+      await env.DB.prepare(
+        `INSERT OR REPLACE INTO catalyst_clusters (id, tenant_id, name, domain, status)
+         VALUES (?, ?, 'orch', 'general', 'active')`
+      ).bind(clusterId, TENANT).run();
+      await env.DB.prepare(
+        `INSERT INTO catalyst_actions
+           (id, cluster_id, tenant_id, catalyst_name, action, status,
+            verification_status, verified_at, completed_at, output_data, created_at)
+         VALUES (?, ?, ?, 'procurement', 'renegotiate', 'completed',
+                 'verified', datetime('now'), datetime('now'), '{"ok":true}', datetime('now'))`
+      ).bind(actionId, clusterId, TENANT).run();
+
+      // Pre-seed the step execution with an action_id in its output, and
+      // mark it 'running' so the engine polls instead of kicking off.
+      await env.DB.prepare(
+        `UPDATE orchestration_step_executions
+            SET status='running', started_at=datetime('now'), output=?
+          WHERE run_id = ? AND step_index = 0`
+      ).bind(JSON.stringify({ action_id: actionId, kicked_off_at: new Date().toISOString() }), runId).run();
+
+      const r = await advanceRunsForTenant(env.DB, TENANT);
+      expect(r.runsCompleted).toBe(1);
+      const s = await getRunStatus(env.DB, TENANT, runId);
+      expect(s?.status).toBe('completed');
+      const finalStep = await env.DB.prepare(
+        `SELECT output FROM orchestration_step_executions WHERE run_id = ? AND step_index = 0`
+      ).bind(runId).first<{ output: string }>();
+      const out = JSON.parse(finalStep!.output);
+      expect(out.action_id).toBe(actionId);
+      expect(out.verification_status).toBe('verified');
+    });
+
+    it('fails when linked catalyst_action verification fails', async () => {
+      const { workflowId } = await defineWorkflow(env.DB, TENANT, {
+        name: 'fail-verify', steps: [
+          { name: 'cat', type: 'catalyst_action', input: {
+            clusterId: 'c1', catalystName: 'procurement', action: 'renegotiate',
+          } },
+        ],
+      });
+      const { runId } = await startRun(env.DB, TENANT, workflowId, USER);
+      const actionId = crypto.randomUUID();
+      const clusterId = 'c-orch-fail';
+      await env.DB.prepare(
+        `INSERT OR REPLACE INTO catalyst_clusters (id, tenant_id, name, domain, status)
+         VALUES (?, ?, 'orch', 'general', 'active')`
+      ).bind(clusterId, TENANT).run();
+      await env.DB.prepare(
+        `INSERT INTO catalyst_actions
+           (id, cluster_id, tenant_id, catalyst_name, action, status,
+            verification_status, verification_notes, completed_at, created_at)
+         VALUES (?, ?, ?, 'procurement', 'renegotiate', 'completed',
+                 'failed', 'ERP did not record the change', datetime('now'), datetime('now'))`
+      ).bind(actionId, clusterId, TENANT).run();
+      await env.DB.prepare(
+        `UPDATE orchestration_step_executions
+            SET status='running', started_at=datetime('now'), output=?
+          WHERE run_id = ? AND step_index = 0`
+      ).bind(JSON.stringify({ action_id: actionId }), runId).run();
+
+      const r = await advanceRunsForTenant(env.DB, TENANT);
+      expect(r.runsFailed).toBe(1);
+      const s = await getRunStatus(env.DB, TENANT, runId);
+      expect(s?.status).toBe('failed');
+      expect(s?.error).toContain('catalyst_action verification failed');
     });
   });
 
