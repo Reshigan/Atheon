@@ -297,13 +297,16 @@ async function seedProcessMetricsAndHistory(
 ): Promise<Array<{ id: string; name: string; status: string }>> {
   const out: Array<{ id: string; name: string; status: string }> = [];
   for (const m of METRIC_SPECS) {
+    // Namespace metric IDs by tenant so the same demo can be seeded
+    // for many tenants in parallel without UNIQUE constraint clashes.
+    const namespacedId = `${m.id}::${tenantId}`;
     await db.prepare(
       `INSERT INTO process_metrics
          (id, tenant_id, name, value, unit, status, threshold_red,
           threshold_amber, threshold_green, domain, source_system, measured_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'sap_ecc', datetime('now'))`
     ).bind(
-      m.id, tenantId, m.name, m.latest, m.unit, m.status,
+      namespacedId, tenantId, m.name, m.latest, m.unit, m.status,
       m.thresholds.red, m.thresholds.amber, m.thresholds.green, m.domain,
     ).run();
 
@@ -313,9 +316,9 @@ async function seedProcessMetricsAndHistory(
       await db.prepare(
         `INSERT INTO process_metric_history (id, tenant_id, metric_id, value, recorded_at)
          VALUES (?, ?, ?, ?, datetime('now', '-' || ? || ' days'))`
-      ).bind(crypto.randomUUID(), tenantId, m.id, series[i], offset).run();
+      ).bind(crypto.randomUUID(), tenantId, namespacedId, series[i], offset).run();
     }
-    out.push({ id: m.id, name: m.name, status: m.status });
+    out.push({ id: namespacedId, name: m.name, status: m.status });
   }
   return out;
 }
