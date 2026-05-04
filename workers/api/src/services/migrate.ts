@@ -60,7 +60,12 @@
 // emitted projection with target_date so the next cron tick can
 // retro-grade it against the actual metric value once horizon elapses.
 // Closes the loop on Phase 10-11 forecasts.
-export const MIGRATION_VERSION = 'v69-forecast-accuracy';
+// v70-industry-patterns: new industry_patterns table holds cross-
+// tenant generalisations — when ≥3 tenants in the same industry have
+// the same external-driver→KPI attribution, the pattern is persisted
+// so new tenants in that industry get the insight before accumulating
+// their own history.
+export const MIGRATION_VERSION = 'v70-industry-patterns';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -163,6 +168,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS diagnostic_prescriptions (id TEXT PRIMARY KEY, rca_id TEXT NOT NULL REFERENCES root_cause_analyses(id), tenant_id TEXT NOT NULL REFERENCES tenants(id), priority TEXT NOT NULL DEFAULT 'short-term', title TEXT NOT NULL, description TEXT NOT NULL, expected_impact TEXT, effort_level TEXT NOT NULL DEFAULT 'medium', responsible_domain TEXT, deadline_suggested TEXT, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT);
     CREATE TABLE IF NOT EXISTS inference_calibration (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), gate_name TEXT NOT NULL, outcome TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'auto', context TEXT NOT NULL DEFAULT '{}', recorded_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS kpi_forecasts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), metric_id TEXT NOT NULL, metric_name TEXT NOT NULL, horizon_days INTEGER NOT NULL, predicted_value REAL NOT NULL, predicted_lower REAL, predicted_upper REAL, r_squared REAL, target_date TEXT NOT NULL, generated_at TEXT NOT NULL DEFAULT (datetime('now')), evaluated_at TEXT, actual_value REAL, abs_error REAL, abs_error_pct REAL, within_band INTEGER);
+    CREATE TABLE IF NOT EXISTS industry_patterns (id TEXT PRIMARY KEY, industry TEXT NOT NULL, signal_key TEXT NOT NULL, metric_name_normalised TEXT NOT NULL, supporting_tenant_count INTEGER NOT NULL, avg_correlation REAL NOT NULL, avg_signal_delta_pct REAL, common_impact_direction TEXT NOT NULL, last_observed_at TEXT NOT NULL DEFAULT (datetime('now')), discovered_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(industry, signal_key, metric_name_normalised));
     CREATE TABLE IF NOT EXISTS catalyst_prescriptions (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), pattern_id TEXT REFERENCES catalyst_patterns(id), cluster_id TEXT NOT NULL, sub_catalyst_name TEXT NOT NULL, prescription_type TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, steps TEXT NOT NULL DEFAULT '[]', sap_transactions TEXT NOT NULL DEFAULT '[]', expected_impact TEXT, effort_level TEXT NOT NULL DEFAULT 'medium', priority TEXT NOT NULL DEFAULT 'medium', status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL DEFAULT (datetime('now')), completed_at TEXT);
     CREATE TABLE IF NOT EXISTS roi_tracking (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), period TEXT NOT NULL, total_discrepancy_value_identified REAL NOT NULL DEFAULT 0, total_discrepancy_value_recovered REAL NOT NULL DEFAULT 0, total_downstream_losses_prevented REAL NOT NULL DEFAULT 0, total_person_hours_saved REAL NOT NULL DEFAULT 0, total_catalyst_runs INTEGER NOT NULL DEFAULT 0, licence_cost_annual REAL NOT NULL DEFAULT 0, roi_multiple REAL NOT NULL DEFAULT 0, calculated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, period));
     CREATE TABLE IF NOT EXISTS board_reports (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), title TEXT NOT NULL, report_type TEXT NOT NULL DEFAULT 'monthly', content TEXT NOT NULL DEFAULT '{}', r2_key TEXT, generated_by TEXT, generated_at TEXT NOT NULL DEFAULT (datetime('now')));
