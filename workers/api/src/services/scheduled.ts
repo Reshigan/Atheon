@@ -20,6 +20,7 @@ import { sweepExternalSignals } from './external-signals-feed';
 import { discoverIndustryPatterns } from './cross-tenant-pattern-discovery';
 import { runPhase10ChainForTenant } from './phase-10-analytics-runner';
 import { enqueueAnalyticsSweeps, shouldFanOut } from './analytics-fanout';
+import { advanceRunsForTenant } from './orchestration-engine';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -131,6 +132,10 @@ export async function handleScheduled(
       // When fan-out is in effect, the per-tenant analytics work
       // happens via handleQueueMessage instead. Enqueueing happens
       // ONCE for all tenants outside this loop (see below).
+
+      // Phase 10-22 — advance any active orchestration runs by one
+      // step. Pull-based engine; idempotent. Best-effort.
+      try { await advanceRunsForTenant(db, tenantId); } catch (e) { console.error(`Orchestration advance failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
