@@ -23,6 +23,7 @@ import { synthesizeCrossCatalystRca } from './cross-catalyst-rca-synthesizer';
 import { generateApexNarrative, closeRecoveredRcas } from './apex-narrative-engine';
 import { sweepCompetitorIntel } from './competitor-intel-source';
 import { sweepRegulatoryFeeds } from './regulatory-feed';
+import { autotuneThresholds } from './threshold-autotune';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -170,6 +171,12 @@ export async function handleScheduled(
       // DMRE for mining; NRCS for agri/fmcg/manufacturing; ICASA
       // for tech. Persists to regulatory_events table. Best-effort.
       try { await sweepRegulatoryFeeds(db, tenantId, {}); } catch (e) { console.error(`Regulatory feed failed for ${tenantId}:`, e); }
+
+      // Phase 10-16 — auto-tune analytical gates from accumulated
+      // calibration outcomes. Reads inference_calibration recommendations
+      // (Phase 10-15) and persists per-tenant threshold overrides.
+      // Manual overrides are skipped. Best-effort.
+      try { await autotuneThresholds(db, tenantId); } catch (e) { console.error(`Threshold autotune failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
