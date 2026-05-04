@@ -25,6 +25,7 @@ import { sweepCompetitorIntel } from './competitor-intel-source';
 import { sweepRegulatoryFeeds } from './regulatory-feed';
 import { autotuneThresholds } from './threshold-autotune';
 import { sweepForecastAccuracy } from './forecast-accuracy-tracker';
+import { discoverIndustryPatterns } from './cross-tenant-pattern-discovery';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -211,6 +212,12 @@ export async function handleScheduled(
 
   // §11.6 — Resolution patterns (monthly aggregation)
   try { await calculateResolutionPatterns(db); } catch (e) { console.error('Resolution patterns calculation failed:', e); }
+
+  // Phase 10-18 — cross-tenant industry pattern discovery. Aggregates
+  // signal_impacts across all active tenants by (industry × signal_key
+  // × metric_name) and persists patterns supported by ≥3 tenants.
+  // Global sweep — runs once per tick, after per-tenant blocks.
+  try { await discoverIndustryPatterns(db); } catch (e) { console.error('Cross-tenant pattern discovery failed:', e); }
 
   // §11.1 — Trial cleanup (remove expired trials)
   try { await cleanupExpiredTrials(db); } catch (e) { console.error('Trial cleanup failed:', e); }
