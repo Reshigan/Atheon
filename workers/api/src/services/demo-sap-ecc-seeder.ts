@@ -376,6 +376,184 @@ async function seedExternalSignals(
   return [sigOilId, sigFxId];
 }
 
+async function seedSubCatalystRunsAndKpiValues(
+  db: D1Database, tenantId: string,
+): Promise<{ runIds: string[]; kpiValueCount: number }> {
+  const clusterId = `cluster-${tenantId}`;
+
+  // Pull KPI definitions we just inserted so we can link kpi_values to them.
+  const kpiDefs = await db.prepare(
+    `SELECT id, kpi_name FROM sub_catalyst_kpi_definitions WHERE tenant_id = ?`
+  ).bind(tenantId).all<{ id: string; kpi_name: string }>();
+  const defByName = new Map<string, string>();
+  for (const r of kpiDefs.results || []) defByName.set(r.kpi_name, r.id);
+
+  const runs = [
+    {
+      sub: 'procurement-cost-monitor', domain: 'procurement',
+      matched: 1240, discrepancies: 87, exceptions_raised: 14,
+      avg_confidence: 0.82, status: 'completed' as const,
+      total_source_value: 6_400_000, total_discrepancy_value: 145_000,
+      reasoning: 'Procurement input cost rose 28% over 30 days; 87 line-item variances flagged against PO master prices, driven by Brent crude pass-through on petrochemical inputs.',
+      kpis: ['Procurement Input Cost'],
+    },
+    {
+      sub: 'finance-margin-watch', domain: 'finance',
+      matched: 980, discrepancies: 32, exceptions_raised: 6,
+      avg_confidence: 0.88, status: 'completed' as const,
+      total_source_value: 22_000_000, total_discrepancy_value: 220_000,
+      reasoning: 'Gross margin trending below the 15% red threshold; 32 invoice variances spotted between AR aging and DPO baseline.',
+      kpis: ['Gross Margin %', 'Days Payable Outstanding', 'Monthly Revenue'],
+    },
+    {
+      sub: 'warehouse-picking-efficiency', domain: 'logistics-warehouse',
+      matched: 1550, discrepancies: 184, exceptions_raised: 22,
+      avg_confidence: 0.79, status: 'completed' as const,
+      total_source_value: 0, total_discrepancy_value: 0,
+      reasoning: 'Picking efficiency fell from 92% to 78% over 30 days; 184 over-time pick events on SKUs with stock-out risk.',
+      kpis: ['Warehouse Picking Efficiency'],
+    },
+    {
+      sub: 'hr-hiring-pipeline', domain: 'hr',
+      matched: 64, discrepancies: 12, exceptions_raised: 3,
+      avg_confidence: 0.91, status: 'completed' as const,
+      total_source_value: 0, total_discrepancy_value: 0,
+      reasoning: 'Open picker reqs grew from 4 to 12 over the window; time-to-hire above target across all open roles.',
+      kpis: ['Open Pickers Reqs'],
+    },
+  ];
+
+  const runIds: string[] = [];
+  let kpiValueCount = 0;
+
+  for (let i = 0; i < runs.length; i++) {
+    const r = runs[i];
+    const runId = `run-${tenantId}-${i}`;
+    runIds.push(runId);
+    const startedOffset = (runs.length - i) * 6 + 2; // staggered hours
+    await db.prepare(
+      `INSERT INTO sub_catalyst_runs
+         (id, tenant_id, cluster_id, sub_catalyst_name, run_number,
+          triggered_by, started_at, completed_at, duration_ms,
+          source_record_count, target_record_count, status, mode,
+          matched, unmatched_source, unmatched_target,
+          discrepancies, exceptions_raised, avg_confidence,
+          min_confidence, max_confidence, reasoning,
+          total_source_value, total_matched_value, total_discrepancy_value,
+          total_exception_value, total_unmatched_value, currency,
+          items_total, items_reviewed, items_approved,
+          review_complete, sign_off_status, created_at)
+       VALUES (?, ?, ?, ?, ?, 'scheduled',
+               datetime('now', '-' || ? || ' hours'),
+               datetime('now', '-' || ? || ' hours'),
+               45000,
+               ?, ?, ?, 'reconciliation',
+               ?, 0, 0, ?, ?, ?,
+               ?, ?, ?,
+               ?, ?, ?,
+               ?, ?, 'ZAR',
+               ?, ?, 0,
+               1, 'open', datetime('now', '-' || ? || ' hours'))`
+    ).bind(
+      runId, tenantId, clusterId, r.sub, i + 1,
+      startedOffset, Math.max(1, startedOffset - 1),
+      r.matched + r.discrepancies, r.matched + r.discrepancies, r.status,
+      r.matched, r.discrepancies, r.exceptions_raised, r.avg_confidence,
+      Math.max(0, r.avg_confidence - 0.1), Math.min(1, r.avg_confidence + 0.05),
+      r.reasoning,
+      r.total_source_value, r.total_source_value - r.total_discrepancy_value,
+      r.total_discrepancy_value,
+      r.total_discrepancy_value * 0.2, 0,
+      r.matched + r.discrepancies, r.matched + r.discrepancies,
+      startedOffset,
+    ).run();
+
+    // Per-KPI values for this run, linked to the KPI definition rows we
+    // already seeded. Each KPI value's status is the same red/amber/green
+    // we set on the matching process_metric so consumers get a
+    // consistent view across both surfaces.
+    for (const kpiName of r.kpis) {
+      const defId = defByName.get(kpiName);
+      if (!defId) continue;
+      const metric = METRIC_SPECS.find((m) => m.name === kpiName);
+      if (!metric) continue;
+      await db.prepare(
+        `INSERT INTO sub_catalyst_kpi_values
+           (id, tenant_id, definition_id, run_id, value, status, trend, measured_at)
+         VALUES (?, ?, ?, ?, ?, ?, '[]', datetime('now', '-' || ? || ' hours'))`
+      ).bind(
+        crypto.randomUUID(), tenantId, defId, runId,
+        metric.latest, metric.status, Math.max(1, startedOffset - 1),
+      ).run();
+      kpiValueCount++;
+    }
+  }
+  return { runIds, kpiValueCount };
+}
+
+async function seedHealthScoresAndInsights(
+  db: D1Database, tenantId: string, runIds: string[],
+): Promise<{ insightsCount: number }> {
+  // Headline health score (composite). Dimensions match the canonical
+  // Atheon five-dimension framework so the Apex score-ring renders.
+  const dimensions = {
+    financial: 38,        // red: margin + DPO + revenue all stressed
+    operational: 52,      // amber: picking efficiency
+    cost: 42,             // red: procurement cost rising
+    people: 56,           // amber: hiring lag
+    revenue: 70,          // amber-flat
+  };
+  const overall = Math.round(
+    Object.values(dimensions).reduce((s, v) => s + v, 0) / Object.values(dimensions).length,
+  );
+  await db.prepare(
+    `INSERT INTO health_scores (id, tenant_id, overall_score, dimensions, calculated_at)
+     VALUES (?, ?, ?, ?, datetime('now'))`
+  ).bind(crypto.randomUUID(), tenantId, overall, JSON.stringify(dimensions)).run();
+
+  // History — 30 days of snapshots showing the deterioration that led
+  // to the current red state. Apex's HealthTrendChart reads this.
+  for (let i = 29; i >= 0; i--) {
+    const t = i / 29;
+    const startScore = 75; // healthy 30 days ago
+    const score = Math.round(startScore + (overall - startScore) * (1 - t));
+    await db.prepare(
+      `INSERT INTO health_score_history (id, tenant_id, overall_score, dimensions,
+                                          source_run_id, catalyst_name, recorded_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now', '-' || ? || ' days'))`
+    ).bind(
+      crypto.randomUUID(), tenantId, score, JSON.stringify(dimensions),
+      runIds[i % runIds.length] ?? null,
+      ['procurement-cost-monitor', 'finance-margin-watch', 'warehouse-picking-efficiency', 'hr-hiring-pipeline'][i % 4],
+      i,
+    ).run();
+  }
+
+  // Catalyst insights — one per run, plus a couple of cross-catalyst
+  // insights for the Apex narrative panel.
+  const insights: Array<{ category: string; title: string; description: string; severity: string; level: string; runId: string | null }> = [
+    { category: 'kpi_movement', title: 'Procurement input cost up 28%', description: 'Procurement input cost has crossed the R5.5M red threshold; 87 line-item variances flagged against PO master prices.', severity: 'critical', level: 'apex', runId: runIds[0] ?? null },
+    { category: 'kpi_movement', title: 'Gross margin breached red', description: 'Gross margin fell below 15% on the back of input cost rises; needs immediate intervention.', severity: 'critical', level: 'apex', runId: runIds[1] ?? null },
+    { category: 'issue_detected', title: 'Picking efficiency degraded', description: 'Warehouse picking efficiency dropped from 92% to 78% across the period; 184 over-time pick events.', severity: 'warning', level: 'pulse', runId: runIds[2] ?? null },
+    { category: 'issue_detected', title: 'Hiring lag widening', description: 'Open picker reqs have tripled to 12; time-to-hire above target.', severity: 'warning', level: 'pulse', runId: runIds[3] ?? null },
+    { category: 'recommendation', title: 'Renegotiate supplier contracts', description: 'Atheon recommends opening price-discovery on top-3 procurement vendors given Brent +22%.', severity: 'info', level: 'apex', runId: runIds[0] ?? null },
+  ];
+  for (const ins of insights) {
+    await db.prepare(
+      `INSERT INTO catalyst_insights
+         (id, tenant_id, source_type, source_run_id, cluster_id,
+          sub_catalyst_name, domain, insight_level, category, title,
+          description, severity, data, traceability, generated_at)
+       VALUES (?, ?, 'catalyst_run', ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', '{}', datetime('now'))`
+    ).bind(
+      crypto.randomUUID(), tenantId, ins.runId, `cluster-${tenantId}`,
+      ins.runId ? `run-${tenantId}` : null,
+      'finance', ins.level, ins.category, ins.title, ins.description, ins.severity,
+    ).run();
+  }
+  return { insightsCount: insights.length };
+}
+
 async function seedVerifiedAction(db: D1Database, tenantId: string): Promise<void> {
   // One verified completed action so future RCA closures (when metrics
   // recover in subsequent ticks) become billable per Phase 10-19.
@@ -422,6 +600,12 @@ export async function seedSapEccDemo(
 
   await seedVerifiedAction(db, tenantId);
   notes.push('Seeded 1 verified catalyst_action for billing eligibility');
+
+  const { runIds, kpiValueCount } = await seedSubCatalystRunsAndKpiValues(db, tenantId);
+  notes.push(`Seeded ${runIds.length} sub_catalyst_runs + ${kpiValueCount} sub_catalyst_kpi_values`);
+
+  const { insightsCount } = await seedHealthScoresAndInsights(db, tenantId, runIds);
+  notes.push(`Seeded health_scores + 30-day history + ${insightsCount} catalyst_insights`);
 
   logInfo('demo_sap_ecc.seed_completed',
     { tenantId, layer: 'demo', action: 'seed' },
