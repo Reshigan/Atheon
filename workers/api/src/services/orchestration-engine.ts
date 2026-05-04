@@ -38,8 +38,21 @@
  */
 
 import { logError, logInfo } from './logger';
+import { executeTask } from './catalyst-engine';
+import type { CatalystQueueMessage } from './scheduled';
 
 // ── Types ──────────────────────────────────────────────────────────────
+
+/** Runtime dependencies passed in by the cron / queue handler so the
+ *  orchestration engine can trigger catalysts. Optional everywhere so
+ *  log/wait/manual_gate workflows still run from callers that don't
+ *  have the full env (e.g. tests). */
+export interface OrchestrationDeps {
+  cache?: KVNamespace;
+  ai?: Ai;
+  ollamaApiKey?: string;
+  queue?: Queue<CatalystQueueMessage>;
+}
 
 export type StepType = 'log' | 'wait' | 'catalyst_action' | 'manual_gate';
 
@@ -184,7 +197,9 @@ interface AdvanceOutcome {
   reason?: string;
 }
 
-async function advanceRun(db: D1Database, tenantId: string, run: RunRow): Promise<AdvanceOutcome> {
+async function advanceRun(
+  db: D1Database, tenantId: string, run: RunRow, deps?: OrchestrationDeps,
+): Promise<AdvanceOutcome> {
   if (run.status !== 'running') return { status: 'noop', reason: 'not running' };
   if (run.current_step >= run.total_steps) {
     await db.prepare(
@@ -259,12 +274,97 @@ async function advanceRun(db: D1Database, tenantId: string, run: RunRow): Promis
         break;
       }
       case 'catalyst_action': {
-        // Forward-compatible placeholder: the catalyst-engine integration
-        // is deferred. For now, mark blocked + output an instruction for
-        // a follow-up PR. Workflows that don't use this step type run
-        // end-to-end today.
-        stepBlocked = true;
-        stepOutput = { pending_catalyst_engine_integration: true, instruction: inputObj };
+        // Phase 10-24: real catalyst-engine integration.
+        //
+        // State machine:
+        //   1. First advance for this step (no action_id in output yet):
+        //      → call executeTask, persist returned action_id, mark blocked.
+        //   2. Subsequent advances:
+        //      → poll catalyst_actions for verification_status:
+        //        - 'verified' → step completes with action_id + outcome
+        //        - 'failed'   → step fails, run fails
+        //        - else       → still blocked (next sweep will re-poll)
+        //
+        // Required inputs on `step.input`:
+        //   { clusterId, catalystName, action, actionInput?,
+        //     riskLevel?: 'high'|'medium'|'low', autonomyTier?: string,
+        //     trustScore?: number, companyId?: string }
+        //
+        // When deps (cache + ai) are not provided (e.g. test caller without
+        // env), we mark the step blocked with a 'deps_missing' reason so
+        // the cron path can re-try once it has the env. This keeps unit
+        // tests for log/wait/manual_gate decoupled from catalyst-engine.
+
+        let prevOutput: Record<string, unknown> = {};
+        try { prevOutput = JSON.parse(stepExec.output ?? '{}'); } catch { prevOutput = {}; }
+        const existingActionId = typeof prevOutput.action_id === 'string'
+          ? prevOutput.action_id : null;
+
+        if (existingActionId) {
+          // Re-poll catalyst_actions for status
+          const actionRow = await db.prepare(
+            `SELECT status, verification_status, verification_notes, output_data
+               FROM catalyst_actions WHERE id = ? AND tenant_id = ? LIMIT 1`
+          ).bind(existingActionId, tenantId).first<{
+            status: string; verification_status: string | null;
+            verification_notes: string | null; output_data: string | null;
+          }>();
+          if (!actionRow) {
+            stepError = `catalyst_action: action ${existingActionId} disappeared from catalyst_actions`;
+          } else if (actionRow.verification_status === 'failed') {
+            stepError = `catalyst_action verification failed: ${actionRow.verification_notes ?? '(no notes)'}`;
+          } else if (actionRow.verification_status === 'verified') {
+            stepCompleted = true;
+            stepOutput = {
+              action_id: existingActionId,
+              status: actionRow.status,
+              verification_status: actionRow.verification_status,
+              output_data: actionRow.output_data ? JSON.parse(actionRow.output_data) : null,
+            };
+          } else {
+            // 'deferred', 'skipped', or null → still waiting
+            stepBlocked = true;
+            stepOutput = { ...prevOutput, current_status: actionRow.status, verification_status: actionRow.verification_status };
+          }
+        } else {
+          // First advance — kick off the action
+          if (!deps?.cache || !deps?.ai) {
+            stepBlocked = true;
+            stepOutput = { reason: 'orchestration deps missing (cache + ai)', expected_input: inputObj };
+            break;
+          }
+          const clusterId = typeof inputObj.clusterId === 'string' ? inputObj.clusterId : null;
+          const catalystName = typeof inputObj.catalystName === 'string' ? inputObj.catalystName : null;
+          const action = typeof inputObj.action === 'string' ? inputObj.action : null;
+          if (!clusterId || !catalystName || !action) {
+            stepError = 'catalyst_action requires clusterId + catalystName + action on step.input';
+            break;
+          }
+          const actionInput = (inputObj.actionInput && typeof inputObj.actionInput === 'object')
+            ? inputObj.actionInput as Record<string, unknown> : {};
+          const riskLevel = (typeof inputObj.riskLevel === 'string'
+            && ['high', 'medium', 'low'].includes(inputObj.riskLevel))
+            ? inputObj.riskLevel as 'high' | 'medium' | 'low' : 'medium';
+          const autonomyTier = typeof inputObj.autonomyTier === 'string'
+            ? inputObj.autonomyTier : 'read-only';
+          const trustScore = typeof inputObj.trustScore === 'number' ? inputObj.trustScore : 50;
+          const companyId = typeof inputObj.companyId === 'string' ? inputObj.companyId : undefined;
+
+          try {
+            const taskResult = await executeTask({
+              clusterId, tenantId, catalystName, action,
+              inputData: actionInput, riskLevel, autonomyTier, trustScore, companyId,
+            }, db, deps.cache, deps.ai, deps.ollamaApiKey, deps.queue);
+            stepBlocked = true; // wait for verification on next sweep
+            stepOutput = {
+              action_id: taskResult.actionId,
+              kicked_off_at: new Date().toISOString(),
+              initial_status: taskResult.status,
+            };
+          } catch (err) {
+            stepError = `catalyst_action executeTask failed: ${err instanceof Error ? err.message : String(err)}`;
+          }
+        }
         break;
       }
       default:
@@ -332,7 +432,7 @@ export interface OrchestrationSweepResult {
 }
 
 export async function advanceRunsForTenant(
-  db: D1Database, tenantId: string,
+  db: D1Database, tenantId: string, deps?: OrchestrationDeps,
 ): Promise<OrchestrationSweepResult> {
   const result: OrchestrationSweepResult = {
     runsScanned: 0, runsAdvanced: 0, runsCompleted: 0,
@@ -353,7 +453,7 @@ export async function advanceRunsForTenant(
   }
   result.runsScanned = runs.length;
   for (const run of runs) {
-    const out = await advanceRun(db, tenantId, run);
+    const out = await advanceRun(db, tenantId, run, deps);
     if (out.status === 'advanced') result.runsAdvanced++;
     else if (out.status === 'completed') result.runsCompleted++;
     else if (out.status === 'blocked') result.runsBlocked++;
