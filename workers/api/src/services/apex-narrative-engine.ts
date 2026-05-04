@@ -32,6 +32,7 @@
 import { logError, logInfo } from './logger';
 import { forecastMetric, type ForecastPoint } from './kpi-forecasting';
 import { recordOutcome, type GateName } from './inference-calibration';
+import { recordEmittedForecasts } from './forecast-accuracy-tracker';
 
 const NARRATIVE_DEBOUNCE_HOURS = 20; // ~once per day, with slack
 const RCA_LOOKBACK_DAYS = 7;
@@ -260,6 +261,15 @@ export async function generateApexNarrative(
         metric: m.name, value: m.value, unit: m.unit ?? '', status: m.status,
         forecast,
       });
+      // Phase 10-17: persist forecasts so a future cron tick can grade
+      // them against actuals once their horizon elapses. Best-effort.
+      if (forecast.length > 0) {
+        try {
+          await recordEmittedForecasts(db, tenantId, m.id, m.name, forecast);
+        } catch (e) {
+          logError('apex_narrative.forecast_record_failed', e, { tenantId }, { metric_id: m.id });
+        }
+      }
     }
   }
   const opportunities = recentlyResolved.map(buildOpportunityBullet);

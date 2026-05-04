@@ -24,6 +24,7 @@ import { generateApexNarrative, closeRecoveredRcas } from './apex-narrative-engi
 import { sweepCompetitorIntel } from './competitor-intel-source';
 import { sweepRegulatoryFeeds } from './regulatory-feed';
 import { autotuneThresholds } from './threshold-autotune';
+import { sweepForecastAccuracy } from './forecast-accuracy-tracker';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
@@ -177,6 +178,11 @@ export async function handleScheduled(
       // (Phase 10-15) and persists per-tenant threshold overrides.
       // Manual overrides are skipped. Best-effort.
       try { await autotuneThresholds(db, tenantId); } catch (e) { console.error(`Threshold autotune failed for ${tenantId}:`, e); }
+
+      // Phase 10-17 — grade elapsed forecasts against actuals; record
+      // true_positive/false_positive on kpi_forecasting.accuracy.
+      // Best-effort.
+      try { await sweepForecastAccuracy(db, tenantId); } catch (e) { console.error(`Forecast accuracy sweep failed for ${tenantId}:`, e); }
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
