@@ -16,23 +16,17 @@ import { processDueWebhooks } from './webhook-delivery';
 import { detectErpSchemaDrift } from './erp-drift-detector';
 import { escalateStaleActions } from './erp-hitl-sla';
 import { verifyCompletedActions } from './erp-action-verification';
-import { detectMetricCorrelations } from './metric-correlation-engine';
 import { sweepExternalSignals } from './external-signals-feed';
-import { attributeSignalsToKpis } from './signal-kpi-attribution';
-import { synthesizeCrossCatalystRca } from './cross-catalyst-rca-synthesizer';
-import { generateApexNarrative, closeRecoveredRcas } from './apex-narrative-engine';
-import { sweepCompetitorIntel } from './competitor-intel-source';
-import { sweepRegulatoryFeeds } from './regulatory-feed';
-import { autotuneThresholds } from './threshold-autotune';
-import { sweepForecastAccuracy } from './forecast-accuracy-tracker';
 import { discoverIndustryPatterns } from './cross-tenant-pattern-discovery';
+import { runPhase10ChainForTenant } from './phase-10-analytics-runner';
+import { enqueueAnalyticsSweeps, shouldFanOut } from './analytics-fanout';
 
 interface ScheduledEnv extends Env {
   CATALYST_QUEUE?: Queue<CatalystQueueMessage>;
 }
 
 export interface CatalystQueueMessage {
-  type: 'catalyst_execution' | 'erp_sync' | 'health_recalc' | 'briefing_gen';
+  type: 'catalyst_execution' | 'erp_sync' | 'health_recalc' | 'briefing_gen' | 'analytics_sweep';
   tenantId: string;
   payload: Record<string, unknown>;
   scheduledAt: string;
@@ -126,64 +120,17 @@ export async function handleScheduled(
       // ERP didn't actually record. Best-effort.
       try { await verifyCompletedActions(db, tenantId); } catch (e) { console.error(`Action verification failed for ${tenantId}:`, e); }
 
-      // Phase 10-1 — pairwise metric correlation. Walks the tenant's
-      // metric history and writes correlation_events when two metrics
-      // co-move with |r| ≥ 0.7 over ≥ 14 daily buckets. Substrate for
-      // the cross-catalyst RCA synthesizer (Phase 10-4). Best-effort.
-      try { await detectMetricCorrelations(db, tenantId); } catch (e) { console.error(`Correlation sweep failed for ${tenantId}:`, e); }
-
-      // Phase 10-3 — signal → KPI attribution. Joins external_signals
-      // history (Phase 10-2) to process_metric_history with a 0–7 day
-      // lag sweep; persists significant joins to signal_impacts. Lets
-      // Apex narrate "Brent +22% drove procurement costs +6%" instead
-      // of two unrelated headlines. Best-effort.
-      try { await attributeSignalsToKpis(db, tenantId); } catch (e) { console.error(`Signal attribution failed for ${tenantId}:`, e); }
-
-      // Phase 10-4 — cross-catalyst RCA synthesizer. For each red KPI,
-      // composes a deterministic causal chain from signal_impacts (10-3)
-      // and correlation_events (10-1) — L0 symptom, L1 direct external
-      // drivers, L2 cross-metric drivers, L3 transitive external drivers.
-      // Persists to root_cause_analyses + causal_factors. Best-effort.
-      try { await synthesizeCrossCatalystRca(db, tenantId); } catch (e) { console.error(`Cross-catalyst RCA failed for ${tenantId}:`, e); }
-
-      // Phase 10-5 — RCA closure. For each active RCA whose symptom
-      // metric has held a non-red status across the last N samples,
-      // mark the RCA resolved. Counterpart to verifyCompletedActions:
-      // verification proves the write landed, closure proves the
-      // outcome materialised. Best-effort.
-      try { await closeRecoveredRcas(db, tenantId); } catch (e) { console.error(`RCA closure failed for ${tenantId}:`, e); }
-
-      // Phase 10-5 — Apex narrative. Distils recent active RCAs into
-      // one executive_briefings row per tenant per day (debounced).
-      // Risks = live symptoms with their causal chain; KPI movements =
-      // symptom metric values; Opportunities = RCAs that recently
-      // closed (recovery wins). Best-effort.
-      try { await generateApexNarrative(db, tenantId); } catch (e) { console.error(`Apex narrative failed for ${tenantId}:`, e); }
-
-      // Phase 10-8 — competitor intelligence. Per tenant, reads each
-      // competitors row, queries Google News RSS, classifies each
-      // headline into a strategy category (pricing / product_launch /
-      // market_expansion / hiring / funding_or_ma / partnership /
-      // trouble), persists to radar_signals. No-op for tenants with
-      // no competitors. Best-effort.
-      try { await sweepCompetitorIntel(db, tenantId, {}); } catch (e) { console.error(`Competitor intel failed for ${tenantId}:`, e); }
-
-      // Phase 10-12 — regulatory feeds. Industry-aware: SARS/SARB
-      // for everyone; FSCA/JSE for finance; SAHPRA for healthcare;
-      // DMRE for mining; NRCS for agri/fmcg/manufacturing; ICASA
-      // for tech. Persists to regulatory_events table. Best-effort.
-      try { await sweepRegulatoryFeeds(db, tenantId, {}); } catch (e) { console.error(`Regulatory feed failed for ${tenantId}:`, e); }
-
-      // Phase 10-16 — auto-tune analytical gates from accumulated
-      // calibration outcomes. Reads inference_calibration recommendations
-      // (Phase 10-15) and persists per-tenant threshold overrides.
-      // Manual overrides are skipped. Best-effort.
-      try { await autotuneThresholds(db, tenantId); } catch (e) { console.error(`Threshold autotune failed for ${tenantId}:`, e); }
-
-      // Phase 10-17 — grade elapsed forecasts against actuals; record
-      // true_positive/false_positive on kpi_forecasting.accuracy.
-      // Best-effort.
-      try { await sweepForecastAccuracy(db, tenantId); } catch (e) { console.error(`Forecast accuracy sweep failed for ${tenantId}:`, e); }
+      // Phase 10-21 — fan-out the Phase 10 analytical chain via queue
+      // when CATALYST_QUEUE is bound AND tenant count crosses the
+      // threshold. Otherwise run inline (backwards compatible).
+      // The runner is idempotent and best-effort per step, so retries
+      // from queue redelivery don't cause duplicate writes.
+      if (!shouldFanOut(env, tenants.results.length)) {
+        try { await runPhase10ChainForTenant(db, tenantId); } catch (e) { console.error(`Phase 10 chain failed for ${tenantId}:`, e); }
+      }
+      // When fan-out is in effect, the per-tenant analytics work
+      // happens via handleQueueMessage instead. Enqueueing happens
+      // ONCE for all tenants outside this loop (see below).
     } catch (err) {
       logError('scheduled.tenant.failed', err, {
         requestId: runId,
@@ -191,6 +138,26 @@ export async function handleScheduled(
         layer: 'scheduled',
         action: 'tenant.failed',
       });
+    }
+  }
+
+  // Phase 10-21 — fan-out enqueue (after the per-tenant inline loop
+  // so we know how many tenants exist). When the queue is bound and
+  // we crossed the threshold, the inline path skipped the Phase 10
+  // chain and we enqueue per-tenant messages here for parallel
+  // processing by handleQueueMessage.
+  if (shouldFanOut(env, tenants.results.length)) {
+    const queue = env.CATALYST_QUEUE;
+    if (queue) {
+      try {
+        await enqueueAnalyticsSweeps(
+          queue,
+          tenants.results.map((t) => ({ id: t.id as string })),
+          'all',
+        );
+      } catch (e) {
+        console.error('Analytics sweep fan-out enqueue failed:', e);
+      }
     }
   }
 
@@ -1359,6 +1326,11 @@ export async function handleQueueMessage(
           break;
         case 'erp_sync':
           // Trigger ERP sync — handled by the ERP route sync endpoint
+          break;
+        case 'analytics_sweep':
+          // Phase 10-21 — fan-out target: run the full Phase 10 chain
+          // for one tenant. Idempotent + best-effort per step.
+          await runPhase10ChainForTenant(env.DB, msg.tenantId);
           break;
       }
       message.ack();
