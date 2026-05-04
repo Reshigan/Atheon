@@ -23,6 +23,7 @@ import type { UserRole } from "@/types";
 // up-front. The named-to-default adapter is needed because most pages use
 // named exports.
 const ApexPage = lazy(() => import("@/pages/ApexPage").then(m => ({ default: m.ApexPage })));
+const ROIDashboardPage = lazy(() => import("@/pages/ROIDashboardPage"));
 const ApexBriefPage = lazy(() => import("@/pages/ApexBriefPage"));
 const PulsePage = lazy(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
 const CatalystsPage = lazy(() => import("@/pages/CatalystsPage").then(m => ({ default: m.CatalystsPage })));
@@ -123,6 +124,9 @@ export default function App() {
                 (the checklist itself is per-user, not per-tenant). */}
             <Route path="/onboarding" element={<OnboardingWizardPage />} />
             <Route path="/apex" element={<ProtectedRoute allowedRoles={EXECUTIVE_ROLES}><ApexPage /></ProtectedRoute>} />
+            {/* Phase 10-23: ROI / Insights dashboard surfacing billing,
+                forecast accuracy, calibration, and DSAR summaries. */}
+            <Route path="/roi-dashboard" element={<ProtectedRoute allowedRoles={EXECUTIVE_ROLES}><ROIDashboardPage /></ProtectedRoute>} />
             {/* Mobile-friendly executive brief — single-screen, no tabs.
                 Open to EXECUTIVE_ROLES + manager (whoever runs board prep). */}
             <Route path="/apex/brief" element={<ProtectedRoute allowedRoles={MANAGER_ROLES}><ApexBriefPage /></ProtectedRoute>} />
