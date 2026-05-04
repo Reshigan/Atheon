@@ -34,6 +34,7 @@ import assessments from './routes/assessments';
 import agentRoutes from './routes/agent-routes';
 import aiCosts from './routes/ai-costs';
 import seedVantaX from './routes/seed-vantax';
+import demoSeedRoutes from './routes/demo-seed';
 import tenantsAdmin from './routes/tenants-admin';
 import radar from './routes/radar';
 import diagnosticsRoutes from './routes/diagnostics';
@@ -469,6 +470,12 @@ app.route('/api/v1/trial', trialAssessment);
 // VantaX demo seeder - restricted to VantaX tenant only (needs tenantIsolation for auth context)
 app.use('/api/v1/seed-vantax/*', tenantIsolation());
 app.route('/api/v1/seed-vantax', seedVantaX);
+
+// Phase 10-26: SAP ECC end-to-end demo seed. Gated on the SETUP_SECRET
+// shared secret (same gate as /admin/migrate) — deploy-time tool, not
+// behind tenant auth.
+app.route('/api/v1/admin', demoSeedRoutes);
+app.route('/api/admin', demoSeedRoutes);
 
 // Tenant admin routes need auth middleware (tenantIsolation sets c.get('auth'))
 // Scoped to /tenants/* so /admin/setup and /admin/migrate (JWT-free) are not blocked
