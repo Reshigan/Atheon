@@ -61,6 +61,7 @@ const TrustPerformancePage = lazy(() => import("@/pages/TrustPerformancePage"));
 const OnboardingWizardPage = lazy(() => import("@/pages/OnboardingWizardPage"));
 const PricingPage = lazy(() => import("@/pages/PricingPage"));
 const CompliancePage = lazy(() => import("@/pages/CompliancePage"));
+const SystemStatusPage = lazy(() => import("@/pages/SystemStatusPage"));
 
 /**
  * 3.10: Role-based frontend route protection
@@ -188,6 +189,7 @@ export default function App() {
             <Route path="/support-tickets" element={<SupportPage />} />
             <Route path="/support-tickets/:id" element={<SupportTicketDetailPage />} />
             <Route path="/support-triage" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><SupportTriagePage /></ProtectedRoute>} />
+            <Route path="/system-status" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><SystemStatusPage /></ProtectedRoute>} />
           </Route>
         </Routes>
       </Suspense>
