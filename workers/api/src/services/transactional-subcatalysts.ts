@@ -1777,4 +1777,678 @@ export async function runExpenseReportAuditor(
   return summary;
 }
 
+// ════════════════════════════════════════════════════════════════
+// Phase 10-33 — Batch 4: 10 more action subcatalysts
+// ════════════════════════════════════════════════════════════════
+//
+// Each replaces a clerical role outside the core finance/AP/AR loop:
+//   25. rma-processor                   (customer service rep)
+//   26. shipping-doc-generator          (logistics admin)
+//   27. contract-renewal-watcher        (contract admin)
+//   28. journal-entry-anomaly-scanner   (internal audit)
+//   29. segregation-of-duties-monitor   (IT GRC)
+//   30. access-recertification-scheduler (IT GRC)
+//   31. cost-centre-mapper              (finance admin)
+//   32. item-master-sync                (MDM steward)
+//   33. financial-report-packager       (financial controller)
+//   34. board-pack-assembler            (corporate secretary)
+
+// ── 25. RMA processor ────────────────────────────────────────────
+// Auto-approve return requests within policy: defective/wrong-item
+// returns inside 30-day window get auto credit notes; everything
+// else routes to HITL.
+
+interface RmaRequestRow {
+  id: string; rma_number: string; customer_id: string | null; customer_name: string | null;
+  order_ref: string | null; sku: string | null; qty: number;
+  return_reason: string; return_value: number; currency: string;
+  original_invoice_date: string | null;
+}
+
+const RMA_AUTO_REASONS = new Set(['defective', 'wrong_item', 'damaged_in_transit']);
+const RMA_AUTO_WINDOW_DAYS = 30;
+
+export async function runRmaProcessor(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'rma-processor', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const rmas = await db.prepare(
+    `SELECT id, rma_number, customer_id, customer_name, order_ref, sku, qty,
+            return_reason, return_value, currency, original_invoice_date
+       FROM rma_requests WHERE tenant_id = ? AND status = 'pending'`,
+  ).bind(tenantId).all<RmaRequestRow>();
+
+  for (const r of rmas.results || []) {
+    summary.processed++;
+    summary.totalValue += r.return_value;
+
+    const daysSinceInvoice = r.original_invoice_date
+      ? Math.floor((Date.now() - new Date(r.original_invoice_date).getTime()) / 86_400_000)
+      : 999;
+    const reasonOk = RMA_AUTO_REASONS.has(r.return_reason);
+    const inWindow = daysSinceInvoice <= RMA_AUTO_WINDOW_DAYS;
+    const autoApprove = reasonOk && inWindow && r.return_value > 0;
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'rma-processor',
+      actionType: autoApprove ? 'ar_cash_apply' : 'ap_invoice_block',
+      targetEntity: 'rma',
+      sourceRecordRef: `rma:${r.rma_number}`,
+      payload: { rma: r, days_since_invoice: daysSinceInvoice, reason_ok: reasonOk, in_window: inWindow },
+      postedValue: -r.return_value, // negative — credit note
+      currency: r.currency,
+      reasoning: autoApprove
+        ? `RMA ${r.rma_number}: ${r.return_reason} within ${RMA_AUTO_WINDOW_DAYS}d → credit note ${r.return_value.toFixed(2)} ${r.currency}`
+        : `RMA ${r.rma_number}: ${!reasonOk ? `reason '${r.return_reason}' not auto-eligible` : `outside window (${daysSinceInvoice}d)`} — manual review`,
+      autoApprove,
+    });
+    await db.prepare(
+      `UPDATE rma_requests SET status = ?, processed_at = ? WHERE id = ?`,
+    ).bind(autoApprove ? 'approved' : 'pending_review', new Date().toISOString(), r.id).run();
+    if (autoApprove) summary.autoPosted++; else summary.blocked++;
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`RMA: ${summary.autoPosted}/${summary.processed} auto-credited, ${summary.blocked} pending CSR review`);
+  }
+  return summary;
+}
+
+// ── 26. Shipping doc generator ───────────────────────────────────
+// For each shipments row ready_to_ship=1 doc_status='pending', stage
+// three docs (BoL + packing list + commercial invoice for international).
+// Auto-approve all; flip doc_status='generated'.
+
+interface ShipmentRow {
+  id: string; shipment_ref: string; so_number: string | null;
+  carrier: string | null; tracking_number: string | null;
+  destination_country: string | null; value: number; currency: string;
+}
+
+export async function runShippingDocGenerator(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'shipping-doc-generator', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const shipments = await db.prepare(
+    `SELECT id, shipment_ref, so_number, carrier, tracking_number, destination_country, value, currency
+       FROM shipments WHERE tenant_id = ? AND ready_to_ship = 1 AND doc_status = 'pending'`,
+  ).bind(tenantId).all<ShipmentRow>();
+
+  for (const s of shipments.results || []) {
+    summary.processed++;
+    summary.totalValue += s.value;
+
+    const isInternational = !!s.destination_country && s.destination_country.toUpperCase() !== 'ZA';
+    const docs = ['bill_of_lading', 'packing_list'];
+    if (isInternational) docs.push('commercial_invoice');
+
+    for (const doc of docs) {
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'shipping-doc-generator',
+        actionType: 'ap_invoice_post', targetEntity: doc,
+        sourceRecordRef: `shipment:${s.shipment_ref}:${doc}`,
+        payload: { shipment: s, doc_type: doc, international: isInternational },
+        postedValue: s.value, currency: s.currency,
+        reasoning: `Generated ${doc} for shipment ${s.shipment_ref} → ${s.destination_country ?? 'ZA'}`,
+        autoApprove: true,
+      });
+    }
+
+    await db.prepare(
+      `UPDATE shipments SET doc_status = 'generated' WHERE id = ?`,
+    ).bind(s.id).run();
+    summary.autoPosted += docs.length;
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`Generated ${summary.autoPosted} shipping docs across ${summary.processed} shipments`);
+  }
+  return summary;
+}
+
+// ── 27. Contract renewal watcher ─────────────────────────────────
+// Three warning levels by days-to-expiry: 60d=info, 30d=warning,
+// 15d=critical (HITL escalation). Auto-renew contracts proceed
+// silently as auto-approve; non-auto-renew always HITL.
+
+interface ContractRow {
+  id: string; contract_ref: string; counterparty_name: string;
+  contract_type: string; annual_value: number; currency: string;
+  end_date: string; auto_renew: number; notice_period_days: number | null;
+}
+
+export async function runContractRenewalWatcher(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'contract-renewal-watcher', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const upcoming = await db.prepare(
+    `SELECT id, contract_ref, counterparty_name, contract_type, annual_value,
+            currency, end_date, auto_renew, notice_period_days
+       FROM contracts WHERE tenant_id = ? AND status = 'active'
+        AND date(end_date) <= date('now', '+60 days')`,
+  ).bind(tenantId).all<ContractRow>();
+
+  for (const c of upcoming.results || []) {
+    summary.processed++;
+    summary.totalValue += c.annual_value;
+
+    const days = Math.floor((new Date(c.end_date).getTime() - Date.now()) / 86_400_000);
+    const level = days <= 15 ? 'critical' : days <= 30 ? 'warning' : 'info';
+    const autoApprove = c.auto_renew === 1 && days > 15;
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'contract-renewal-watcher',
+      actionType: autoApprove ? 'ap_invoice_post' : 'ap_invoice_block',
+      targetEntity: 'contract_renewal',
+      sourceRecordRef: `contract:${c.contract_ref}:${c.end_date}`,
+      payload: { contract: c, days_to_expiry: days, level },
+      postedValue: c.annual_value, currency: c.currency,
+      reasoning: autoApprove
+        ? `Contract ${c.contract_ref} (${c.counterparty_name}) auto-renewing in ${days}d`
+        : `Contract ${c.contract_ref} (${c.counterparty_name}) expires in ${days}d [${level}] — ${c.auto_renew === 0 ? 'no auto-renew, manual decision required' : 'past notice period, escalating'}`,
+      autoApprove,
+    });
+    if (autoApprove) summary.autoPosted++; else summary.blocked++;
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`Contracts: ${summary.autoPosted} auto-renewing, ${summary.blocked} need owner decision`);
+  }
+  return summary;
+}
+
+// ── 28. Journal-entry anomaly scanner ────────────────────────────
+// Reads recent transactional_actions of action_type='gl_journal_entry',
+// scans for fraud-pattern signals: round-number JEs (≥R10k exact
+// thousands), weekend posts, and after-hours posts. Writes findings
+// to audit_anomalies and stages a review action.
+
+interface JournalActionRow {
+  id: string; sub_catalyst_name: string; payload: string;
+  posted_value: number | null; created_at: string; currency: string;
+}
+
+export async function runJournalEntryAnomalyScanner(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'journal-entry-anomaly-scanner', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const recent = await db.prepare(
+    `SELECT id, sub_catalyst_name, payload, posted_value, created_at, currency
+       FROM transactional_actions
+      WHERE tenant_id = ? AND action_type = 'gl_journal_entry'
+        AND date(created_at) >= date('now', '-7 days')`,
+  ).bind(tenantId).all<JournalActionRow>();
+
+  for (const je of recent.results || []) {
+    summary.processed++;
+    const value = Math.abs(je.posted_value ?? 0);
+    const flags: string[] = [];
+
+    // Round-number signal: ≥R10k AND exactly divisible by 1000
+    if (value >= 10_000 && value % 1000 === 0) {
+      flags.push(`round_number:${value}`);
+    }
+
+    // Weekend post
+    const dow = new Date(je.created_at).getUTCDay();
+    if (dow === 0 || dow === 6) flags.push(`weekend_post:${dow === 0 ? 'sun' : 'sat'}`);
+
+    // After-hours post (UTC 18:00 - 06:00 next day; SAST roughly equivalent)
+    const hour = new Date(je.created_at).getUTCHours();
+    if (hour >= 18 || hour < 6) flags.push(`after_hours_post:${hour}h`);
+
+    if (flags.length === 0) continue;
+
+    summary.totalValue += value;
+    const existingAnom = await db.prepare(
+      `SELECT id FROM audit_anomalies WHERE tenant_id = ? AND source_table = 'transactional_actions' AND source_record_id = ?`,
+    ).bind(tenantId, je.id).first<{ id: string }>();
+    if (existingAnom) continue; // already flagged
+
+    await db.prepare(
+      `INSERT INTO audit_anomalies (id, tenant_id, anomaly_type, source_table, source_record_id,
+         severity, description, evidence, status, detected_at)
+       VALUES (?, ?, 'je_pattern', 'transactional_actions', ?, ?, ?, ?, 'open', ?)`,
+    ).bind(
+      `anom-${crypto.randomUUID()}`, tenantId, je.id,
+      flags.length >= 2 ? 'high' : 'medium',
+      `JE ${value.toFixed(2)} ${je.currency} flagged: ${flags.join(', ')}`,
+      JSON.stringify({ source_je: je.id, flags, value, sub_catalyst: je.sub_catalyst_name }),
+      new Date().toISOString(),
+    ).run();
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'journal-entry-anomaly-scanner',
+      actionType: 'ap_invoice_block', targetEntity: 'audit_anomaly',
+      sourceRecordRef: `audit:${je.id}`,
+      payload: { source_je_id: je.id, flags, value, sub_catalyst: je.sub_catalyst_name },
+      postedValue: value, currency: je.currency,
+      reasoning: `Audit flag on JE ${je.id} (${je.sub_catalyst_name}, ${value.toFixed(2)} ${je.currency}): ${flags.join(', ')}`,
+    });
+    summary.blocked++;
+  }
+
+  if (summary.blocked > 0) {
+    summary.reasoning.push(`Audit scan: ${summary.blocked} JE anomalies flagged from ${summary.processed} recent posts`);
+  }
+  return summary;
+}
+
+// ── 29. Segregation-of-duties monitor ────────────────────────────
+// Scan users for conflicting role assignments. Hardcoded conflict
+// matrix mirrors common SAP authorisation conflicts (e.g. 'admin'
+// + 'auditor' = same person can both post AND audit; 'admin' +
+// 'analyst' is fine).
+
+const SOD_CONFLICTS: Array<{ roles: string[]; pattern: string; severity: 'high' | 'medium' }> = [
+  { roles: ['admin', 'support_admin'], pattern: 'admin_and_support_admin', severity: 'high' },
+  // Roles in this codebase: superadmin, support_admin, admin, executive, manager,
+  // analyst, operator, viewer. The "real" SoD conflicts would be tenant-defined
+  // role pairs (e.g. 'ap_clerk' + 'payment_approver' from custom roles); for
+  // the demo we model the platform-role conflicts that matter today.
+  { roles: ['superadmin', 'admin'], pattern: 'platform_admin_and_tenant_admin', severity: 'medium' },
+];
+
+interface UserRow { id: string; email: string; role: string; }
+
+export async function runSodMonitor(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'segregation-of-duties-monitor', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const users = await db.prepare(
+    `SELECT id, email, role FROM users WHERE tenant_id = ?`,
+  ).bind(tenantId).all<UserRow>();
+
+  // Group by email — a user with multiple roles across rows would be
+  // detected here. In this codebase users have a single role per row,
+  // so the conflict is the user's role itself appearing in multiple
+  // tenants. We model SoD via custom-role permissions; for the demo
+  // we surface superadmin presence in tenant-scoped users.
+  const byEmail = new Map<string, string[]>();
+  for (const u of users.results || []) {
+    summary.processed++;
+    const arr = byEmail.get(u.email) ?? [];
+    arr.push(u.role);
+    byEmail.set(u.email, arr);
+  }
+
+  for (const [email, roles] of byEmail) {
+    if (roles.length < 2) continue;
+    for (const conflict of SOD_CONFLICTS) {
+      const has = conflict.roles.every((r) => roles.includes(r));
+      if (!has) continue;
+
+      const userId = (users.results || []).find((u) => u.email === email)?.id ?? '';
+      const existing = await db.prepare(
+        `SELECT id FROM sod_conflicts WHERE tenant_id = ? AND user_id = ? AND conflict_pattern = ? AND status = 'open'`,
+      ).bind(tenantId, userId, conflict.pattern).first<{ id: string }>();
+      if (existing) continue;
+
+      await db.prepare(
+        `INSERT INTO sod_conflicts (id, tenant_id, user_id, user_email, conflicting_roles, conflict_pattern, severity, status, detected_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)`,
+      ).bind(
+        `sod-${crypto.randomUUID()}`, tenantId, userId, email,
+        JSON.stringify(roles), conflict.pattern, conflict.severity,
+        new Date().toISOString(),
+      ).run();
+
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'segregation-of-duties-monitor',
+        actionType: 'ar_credit_hold', targetEntity: 'sod_conflict',
+        sourceRecordRef: `sod:${userId}:${conflict.pattern}`,
+        payload: { user_id: userId, email, roles, pattern: conflict.pattern, severity: conflict.severity },
+        reasoning: `SoD conflict: ${email} has roles ${roles.join('+')} matching ${conflict.pattern}`,
+      });
+      summary.blocked++;
+    }
+  }
+
+  if (summary.blocked > 0) {
+    summary.reasoning.push(`SoD: ${summary.blocked} role-conflict findings flagged`);
+  }
+  return summary;
+}
+
+// ── 30. Access recertification scheduler ─────────────────────────
+// For each user whose access hasn't been recertified in 90+ days,
+// schedule a recertification. Manager performs the actual review;
+// the bot just batches + tracks.
+
+const RECERT_INTERVAL_DAYS = 90;
+
+export async function runAccessRecertificationScheduler(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'access-recertification-scheduler', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const users = await db.prepare(
+    `SELECT u.id, u.email, u.role
+       FROM users u WHERE u.tenant_id = ? AND u.status = 'active'`,
+  ).bind(tenantId).all<UserRow>();
+
+  for (const u of users.results || []) {
+    summary.processed++;
+    const recent = await db.prepare(
+      `SELECT id, scheduled_date FROM access_recertifications
+        WHERE tenant_id = ? AND user_id = ?
+          AND date(scheduled_date) >= date('now', '-${RECERT_INTERVAL_DAYS} days')
+        ORDER BY scheduled_date DESC LIMIT 1`,
+    ).bind(tenantId, u.id).first<{ id: string; scheduled_date: string }>();
+    if (recent) continue;
+
+    const scheduledDate = new Date();
+    scheduledDate.setUTCDate(scheduledDate.getUTCDate() + 7); // give manager 7 days
+    const scheduledIso = scheduledDate.toISOString().slice(0, 10);
+
+    await db.prepare(
+      `INSERT INTO access_recertifications (id, tenant_id, user_id, user_email, role, scheduled_date, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'scheduled')`,
+    ).bind(
+      `recert-${crypto.randomUUID()}`, tenantId, u.id, u.email, u.role, scheduledIso,
+    ).run();
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'access-recertification-scheduler',
+      actionType: 'ar_credit_hold', targetEntity: 'access_recert',
+      sourceRecordRef: `recert:${u.id}:${scheduledIso}`,
+      payload: { user_id: u.id, email: u.email, role: u.role, scheduled: scheduledIso },
+      reasoning: `Scheduled access recertification for ${u.email} (${u.role}) by ${scheduledIso}`,
+    });
+    summary.blocked++; // pending HITL (manager review)
+  }
+
+  if (summary.blocked > 0) {
+    summary.reasoning.push(`Scheduled ${summary.blocked} new access recertifications`);
+  }
+  return summary;
+}
+
+// ── 31. Cost centre mapper ───────────────────────────────────────
+// For each ap_invoice_inbox row without a cost-centre tag (stored in
+// raw_data.cost_centre), match against cost_centre_rules. Tag if
+// matched; flag if not.
+
+interface ApUnmappedRow {
+  id: string; invoice_number: string; vendor_id: string | null;
+  vendor_name: string | null; invoice_amount: number; currency: string;
+  raw_data: string;
+}
+interface CostCentreRuleRow {
+  rule_name: string; vendor_id_pattern: string | null;
+  gl_account_pattern: string | null; target_cost_centre: string;
+  priority: number;
+}
+
+export async function runCostCentreMapper(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'cost-centre-mapper', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const rules = await db.prepare(
+    `SELECT rule_name, vendor_id_pattern, gl_account_pattern, target_cost_centre, priority
+       FROM cost_centre_rules WHERE tenant_id = ? AND enabled = 1 ORDER BY priority ASC`,
+  ).bind(tenantId).all<CostCentreRuleRow>();
+
+  if ((rules.results || []).length === 0) return summary;
+
+  const invoices = await db.prepare(
+    `SELECT id, invoice_number, vendor_id, vendor_name, invoice_amount, currency, raw_data
+       FROM ap_invoice_inbox WHERE tenant_id = ? AND status IN ('received','matched')`,
+  ).bind(tenantId).all<ApUnmappedRow>();
+
+  for (const inv of invoices.results || []) {
+    let raw: Record<string, unknown> = {};
+    try { raw = JSON.parse(inv.raw_data || '{}'); } catch { /* keep empty */ }
+    if (raw.cost_centre) continue; // already tagged
+
+    summary.processed++;
+    summary.totalValue += inv.invoice_amount;
+
+    const matchedRule = (rules.results || []).find((r) => {
+      const vendorMatch = r.vendor_id_pattern && inv.vendor_id?.startsWith(r.vendor_id_pattern.replace(/\*$/, ''));
+      return vendorMatch; // GL account match would need an account field on inv — skipped for v1
+    });
+
+    if (matchedRule) {
+      raw.cost_centre = matchedRule.target_cost_centre;
+      raw.cost_centre_rule = matchedRule.rule_name;
+      await db.prepare(
+        `UPDATE ap_invoice_inbox SET raw_data = ? WHERE id = ?`,
+      ).bind(JSON.stringify(raw), inv.id).run();
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'cost-centre-mapper',
+        actionType: 'gl_journal_entry', targetEntity: 'cost_centre_tag',
+        sourceRecordRef: `cc:${inv.invoice_number}`,
+        payload: { invoice: inv.invoice_number, cost_centre: matchedRule.target_cost_centre, rule: matchedRule.rule_name },
+        postedValue: inv.invoice_amount, currency: inv.currency,
+        reasoning: `Tagged ${inv.invoice_number} → cost centre ${matchedRule.target_cost_centre} via rule "${matchedRule.rule_name}"`,
+        autoApprove: true,
+      });
+      summary.autoPosted++;
+    } else {
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'cost-centre-mapper',
+        actionType: 'ap_invoice_block', targetEntity: 'cost_centre_tag',
+        sourceRecordRef: `cc:${inv.invoice_number}`,
+        payload: { invoice: inv.invoice_number, vendor_id: inv.vendor_id },
+        postedValue: inv.invoice_amount, currency: inv.currency,
+        reasoning: `No cost-centre rule matched for ${inv.invoice_number} (vendor ${inv.vendor_id ?? 'unknown'}) — needs manual coding`,
+      });
+      summary.blocked++;
+    }
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`Cost-centre tagging: ${summary.autoPosted}/${summary.processed} auto-tagged, ${summary.blocked} need manual coding`);
+  }
+  return summary;
+}
+
+// ── 32. Item master sync ─────────────────────────────────────────
+// For each pending item_master_changes row, apply the change to the
+// inventory_items table. Common changes: name update, unit_cost
+// revision, location moves (handled separately by stock-transfer).
+
+interface ItemMasterChangeRow {
+  id: string; sku: string; change_type: string; field_name: string | null;
+  old_value: string | null; new_value: string | null; source_system: string | null;
+}
+
+export async function runItemMasterSync(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'item-master-sync', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const pending = await db.prepare(
+    `SELECT id, sku, change_type, field_name, old_value, new_value, source_system
+       FROM item_master_changes WHERE tenant_id = ? AND sync_status = 'pending'`,
+  ).bind(tenantId).all<ItemMasterChangeRow>();
+
+  for (const ch of pending.results || []) {
+    summary.processed++;
+    let applied = false;
+
+    if (ch.change_type === 'name_update' && ch.new_value) {
+      await db.prepare(
+        `UPDATE inventory_items SET name = ? WHERE tenant_id = ? AND sku = ?`,
+      ).bind(ch.new_value, tenantId, ch.sku).run();
+      applied = true;
+    } else if (ch.change_type === 'cost_update' && ch.new_value) {
+      const newCost = parseFloat(ch.new_value);
+      if (isFinite(newCost) && newCost > 0) {
+        await db.prepare(
+          `UPDATE inventory_items SET unit_cost = ? WHERE tenant_id = ? AND sku = ?`,
+        ).bind(newCost, tenantId, ch.sku).run();
+        applied = true;
+      }
+    }
+
+    if (applied) {
+      await db.prepare(
+        `UPDATE item_master_changes SET sync_status = 'applied', applied_at = ? WHERE id = ?`,
+      ).bind(new Date().toISOString(), ch.id).run();
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'item-master-sync',
+        actionType: 'gl_journal_entry', targetEntity: 'item_master',
+        sourceRecordRef: `item-change:${ch.sku}:${ch.change_type}`,
+        payload: { change: ch },
+        reasoning: `Applied ${ch.change_type} on ${ch.sku}: ${ch.old_value ?? '∅'} → ${ch.new_value ?? '∅'}`,
+        autoApprove: true,
+      });
+      summary.autoPosted++;
+    } else {
+      await db.prepare(
+        `UPDATE item_master_changes SET sync_status = 'failed' WHERE id = ?`,
+      ).bind(ch.id).run();
+      summary.exceptions++;
+    }
+  }
+
+  if (summary.autoPosted > 0 || summary.exceptions > 0) {
+    summary.reasoning.push(`Item master sync: ${summary.autoPosted} applied, ${summary.exceptions} failed`);
+  }
+  return summary;
+}
+
+// ── 33. Financial report packager ────────────────────────────────
+// Once per period, assemble a monthly management pack: AR aging
+// snapshot, AP aging, cash position, KPI summary. In production this
+// would produce a PDF and upload to R2; in test we record the
+// component summary in report_packages and stage a HITL approval.
+
+export async function runFinancialReportPackager(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'financial-report-packager', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+  const period = new Date().toISOString().slice(0, 7);
+  const packageType = 'monthly_management';
+
+  const existing = await db.prepare(
+    `SELECT id, status FROM report_packages WHERE tenant_id = ? AND package_type = ? AND period = ?`,
+  ).bind(tenantId, packageType, period).first<{ id: string; status: string }>();
+  if (existing) return summary;
+
+  // Gather components
+  const arAging = await db.prepare(
+    `SELECT COUNT(*) AS n, COALESCE(SUM(invoice_amount - paid_amount), 0) AS total
+       FROM ar_open_invoices WHERE tenant_id = ? AND status = 'open'`,
+  ).bind(tenantId).first<{ n: number; total: number }>();
+  const apAging = await db.prepare(
+    `SELECT COUNT(*) AS n, COALESCE(SUM(invoice_amount), 0) AS total
+       FROM ap_invoice_inbox WHERE tenant_id = ? AND status IN ('received','matched')`,
+  ).bind(tenantId).first<{ n: number; total: number }>();
+  const cash = await db.prepare(
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM bank_statement_lines
+      WHERE tenant_id = ? AND date(value_date) >= date('now', '-30 days')`,
+  ).bind(tenantId).first<{ total: number }>();
+
+  summary.processed = 1;
+  const components = {
+    ar_aging: { count: arAging?.n ?? 0, total: arAging?.total ?? 0 },
+    ap_aging: { count: apAging?.n ?? 0, total: apAging?.total ?? 0 },
+    cash_30d: cash?.total ?? 0,
+    period,
+  };
+  summary.totalValue = (arAging?.total ?? 0) + (apAging?.total ?? 0);
+
+  await db.prepare(
+    `INSERT INTO report_packages (id, tenant_id, package_type, period, status, components)
+     VALUES (?, ?, ?, ?, 'generated', ?)`,
+  ).bind(
+    `rpt-${tenantId}::${packageType}::${period}`, tenantId, packageType, period,
+    JSON.stringify(components),
+  ).run();
+
+  await stageTransactionalAction(db, {
+    tenantId, erpConnectionId: connId, subCatalystName: 'financial-report-packager',
+    actionType: 'ap_invoice_post', targetEntity: 'report_package',
+    sourceRecordRef: `report:${packageType}:${period}`,
+    payload: { period, components },
+    postedValue: summary.totalValue, currency: 'ZAR',
+    reasoning: `Monthly management pack ${period}: AR ${(arAging?.n ?? 0)} invoices ${(arAging?.total ?? 0).toFixed(0)}, AP ${(apAging?.n ?? 0)} ${(apAging?.total ?? 0).toFixed(0)}, cash 30d ${(cash?.total ?? 0).toFixed(0)} ZAR`,
+    autoApprove: false, // CFO reviews before distribution
+  });
+  summary.blocked = 1;
+  summary.reasoning.push(`Generated ${packageType} pack for ${period}`);
+  return summary;
+}
+
+// ── 34. Board pack assembler ─────────────────────────────────────
+// Quarterly: bundle exec summary, financial highlights, risk
+// register snapshot, action items. HITL gated on distribution.
+
+export async function runBoardPackAssembler(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'board-pack-assembler', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+  const month = new Date().getUTCMonth(); // 0-11
+  const quarter = `${new Date().getUTCFullYear()}-Q${Math.floor(month / 3) + 1}`;
+  const packageType = 'quarterly_board';
+
+  const existing = await db.prepare(
+    `SELECT id FROM report_packages WHERE tenant_id = ? AND package_type = ? AND period = ?`,
+  ).bind(tenantId, packageType, quarter).first<{ id: string }>();
+  if (existing) return summary;
+
+  // Gather: latest health score + active risk_alerts + RCAs
+  const health = await db.prepare(
+    `SELECT overall_score, dimensions FROM health_scores WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1`,
+  ).bind(tenantId).first<{ overall_score: number; dimensions: string }>();
+  const risks = await db.prepare(
+    `SELECT COUNT(*) AS n, COALESCE(SUM(impact_value), 0) AS total
+       FROM risk_alerts WHERE tenant_id = ? AND status = 'active'`,
+  ).bind(tenantId).first<{ n: number; total: number }>();
+  const rcas = await db.prepare(
+    `SELECT COUNT(*) AS n FROM root_cause_analyses WHERE tenant_id = ? AND status = 'active'`,
+  ).bind(tenantId).first<{ n: number }>();
+
+  summary.processed = 1;
+  const components = {
+    quarter,
+    health_score: health?.overall_score ?? null,
+    health_dimensions: health?.dimensions ? JSON.parse(health.dimensions) : null,
+    active_risks: { count: risks?.n ?? 0, total_impact: risks?.total ?? 0 },
+    active_rcas: rcas?.n ?? 0,
+  };
+  summary.totalValue = risks?.total ?? 0;
+
+  await db.prepare(
+    `INSERT INTO report_packages (id, tenant_id, package_type, period, status, components)
+     VALUES (?, ?, ?, ?, 'generated', ?)`,
+  ).bind(
+    `rpt-${tenantId}::${packageType}::${quarter}`, tenantId, packageType, quarter,
+    JSON.stringify(components),
+  ).run();
+
+  await stageTransactionalAction(db, {
+    tenantId, erpConnectionId: connId, subCatalystName: 'board-pack-assembler',
+    actionType: 'ap_invoice_post', targetEntity: 'board_pack',
+    sourceRecordRef: `board:${quarter}`,
+    payload: { quarter, components },
+    postedValue: summary.totalValue, currency: 'ZAR',
+    reasoning: `Board pack ${quarter}: health ${(components.health_score ?? 0).toFixed(0)}, ${components.active_risks.count} risks, ${components.active_rcas} active RCAs`,
+    autoApprove: false, // ExCo signs off before board distribution
+  });
+  summary.blocked = 1;
+  summary.reasoning.push(`Assembled board pack for ${quarter}`);
+  return summary;
+}
+
+
 

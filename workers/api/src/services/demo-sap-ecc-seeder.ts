@@ -191,6 +191,15 @@ async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
     'billable_periods',
     'catalyst_actions',
     'transactional_actions',
+    'audit_anomalies',
+    'sod_conflicts',
+    'access_recertifications',
+    'item_master_changes',
+    'cost_centre_rules',
+    'report_packages',
+    'contracts',
+    'shipments',
+    'rma_requests',
     'expense_lines',
     'expense_reports',
     'stock_transfer_requests',
@@ -1105,6 +1114,124 @@ async function seedTransactionalBatch3Substrate(
   };
 }
 
+/**
+ * Seed substrate for batch 4 (Phase 10-33): RMA, shipping docs,
+ * contracts, JE anomaly scanner, SoD monitor, access recertification,
+ * cost-centre mapper, item-master sync, financial-report packager,
+ * board-pack assembler.
+ *
+ * Each subcatalyst gets at least one auto-pass AND one block case
+ * where applicable. Some subcatalysts (financial-report, board-pack)
+ * don't need pre-seeded "input" rows — they read existing data.
+ */
+async function seedTransactionalBatch4Substrate(
+  db: D1Database, tenantId: string,
+): Promise<{
+  rmaCount: number; shipmentCount: number; contractCount: number;
+  costCentreRuleCount: number; itemMasterChangeCount: number;
+}> {
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // ── 3 RMAs: 1 auto (defective in window), 1 block (out of window),
+  //           1 block (non-eligible reason) ────────────────────────
+  const rmas = [
+    { ref: 'RMA-001', cust: 'C-PNP',     name: 'Pick n Pay',  sku: 'SKU-A001', qty: 5,  reason: 'defective',     value: 12_500, invDate: isoDay(-10) }, // auto
+    { ref: 'RMA-002', cust: 'C-WOOLIES', name: 'Woolworths',  sku: 'SKU-B002', qty: 10, reason: 'wrong_item',    value: 8_500,  invDate: isoDay(-45) }, // out of window
+    { ref: 'RMA-003', cust: 'C-MAKRO',   name: 'Makro',       sku: 'SKU-C003', qty: 1,  reason: 'changed_mind',  value: 3_000,  invDate: isoDay(-3)  }, // non-eligible reason
+  ];
+  for (const r of rmas) {
+    await db.prepare(
+      `INSERT INTO rma_requests (id, tenant_id, rma_number, customer_id, customer_name,
+         order_ref, sku, qty, return_reason, return_value, currency, original_invoice_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?)`,
+    ).bind(
+      `rma-${tenantId}::${r.ref}`, tenantId, r.ref, r.cust, r.name,
+      `SO-FOR-${r.ref}`, r.sku, r.qty, r.reason, r.value, r.invDate,
+    ).run();
+  }
+
+  // ── 3 shipments ready to ship ────────────────────────────────
+  const shipments = [
+    { ref: 'SHIP-001', so: 'SO-3001', carrier: 'DHL',  tracking: 'DHL-12345', dest: 'ZA', value: 250_000 },
+    { ref: 'SHIP-002', so: 'SO-3002', carrier: 'DHL',  tracking: 'DHL-12346', dest: 'US', value: 180_000 }, // international → +commercial invoice
+    { ref: 'SHIP-003', so: 'SO-3003', carrier: 'FedEx',tracking: 'FX-99999',  dest: 'GB', value:  95_000 }, // international
+  ];
+  for (const s of shipments) {
+    await db.prepare(
+      `INSERT INTO shipments (id, tenant_id, shipment_ref, so_number, carrier, tracking_number,
+         destination_country, ready_to_ship, doc_status, value, currency)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?, 'ZAR')`,
+    ).bind(
+      `ship-${tenantId}::${s.ref}`, tenantId, s.ref, s.so, s.carrier, s.tracking,
+      s.dest, s.value,
+    ).run();
+  }
+
+  // ── 4 contracts: 1 critical (≤15d), 1 warning (16-30d),
+  //                1 info (31-60d), 1 outside window (>60d, ignored) ──
+  const contracts = [
+    { ref: 'C-001', party: 'Office Lease — Sandton',     type: 'lease',  value: 1_800_000, end: isoDay(10),  auto: 0 }, // critical, no auto-renew → block
+    { ref: 'C-002', party: 'AWS Enterprise Support',     type: 'service', value: 600_000,   end: isoDay(25),  auto: 1 }, // warning, auto-renew → auto-approve
+    { ref: 'C-003', party: 'Insurance — Public Liability', type: 'insurance', value: 240_000, end: isoDay(50),  auto: 1 }, // info, auto → auto
+    { ref: 'C-004', party: 'Annual Audit (PwC)',         type: 'service', value: 900_000,   end: isoDay(120), auto: 0 }, // outside window — not picked up
+  ];
+  for (const c of contracts) {
+    await db.prepare(
+      `INSERT INTO contracts (id, tenant_id, contract_ref, counterparty_name, contract_type,
+         annual_value, currency, start_date, end_date, auto_renew, notice_period_days, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, 30, 'active')`,
+    ).bind(
+      `contract-${tenantId}::${c.ref}`, tenantId, c.ref, c.party, c.type,
+      c.value, isoDay(-365), c.end, c.auto,
+    ).run();
+  }
+
+  // ── 3 cost-centre rules ──────────────────────────────────────
+  // Rules match against vendor_id_pattern using prefix-style "STARTSWITH".
+  // The seeded vendors V-MAERSK / V-SASOL etc. should match these.
+  const rules = [
+    { name: 'Logistics → CC-LOG', vendor: 'V-MAERSK', cc: 'CC-LOG-1000', prio: 10 },
+    { name: 'Chemicals → CC-PROD', vendor: 'V-SASOL', cc: 'CC-PROD-2000', prio: 20 },
+    { name: 'Catch-all logistics', vendor: 'V-TRANSF', cc: 'CC-LOG-1000', prio: 30 },
+  ];
+  for (const r of rules) {
+    await db.prepare(
+      `INSERT INTO cost_centre_rules (id, tenant_id, rule_name, vendor_id_pattern, target_cost_centre, priority, enabled)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+    ).bind(
+      `ccr-${tenantId}::${r.name.replace(/\s+/g, '_')}`, tenantId, r.name, r.vendor, r.cc, r.prio,
+    ).run();
+  }
+
+  // ── 3 item-master changes pending sync ───────────────────────
+  const changes = [
+    { sku: 'SKU-A001', type: 'name_update', field: 'name',      old: 'Component A', new: 'Component A (revised)' },
+    { sku: 'SKU-B002', type: 'cost_update', field: 'unit_cost', old: '85',          new: '92.50' },
+    { sku: 'SKU-D004', type: 'cost_update', field: 'unit_cost', old: '480',         new: 'invalid' }, // exception
+  ];
+  for (const c of changes) {
+    await db.prepare(
+      `INSERT INTO item_master_changes (id, tenant_id, sku, change_type, field_name, old_value, new_value, source_system, sync_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'manual', 'pending')`,
+    ).bind(
+      `imc-${tenantId}::${c.sku}::${c.type}`, tenantId, c.sku, c.type, c.field, c.old, c.new,
+    ).run();
+  }
+
+  return {
+    rmaCount: rmas.length,
+    shipmentCount: shipments.length,
+    contractCount: contracts.length,
+    costCentreRuleCount: rules.length,
+    itemMasterChangeCount: changes.length,
+  };
+}
+
 async function seedVerifiedAction(db: D1Database, tenantId: string): Promise<void> {
   // One verified completed action so future RCA closures (when metrics
   // recover in subsequent ticks) become billable per Phase 10-19.
@@ -1166,6 +1293,9 @@ export async function seedSapEccDemo(
 
   const txn3 = await seedTransactionalBatch3Substrate(db, tenantId);
   notes.push(`Seeded batch-3 substrate: ${txn3.vendorMasterCount} vendor master, ${txn3.customerMasterCount} customer master, ${txn3.intercompanyCount} IC balances, ${txn3.fxRateCount} FX rates, ${txn3.payrollRunCount} payroll run, ${txn3.inventoryItemCount} items + ${txn3.cycleCountCount} counts, ${txn3.stockTransferCount} stock transfers, ${txn3.expenseReportCount} expense reports, 1 close checklist`);
+
+  const txn4 = await seedTransactionalBatch4Substrate(db, tenantId);
+  notes.push(`Seeded batch-4 substrate: ${txn4.rmaCount} RMAs, ${txn4.shipmentCount} shipments, ${txn4.contractCount} contracts, ${txn4.costCentreRuleCount} cost-centre rules, ${txn4.itemMasterChangeCount} item-master changes`);
 
   logInfo('demo_sap_ecc.seed_completed',
     { tenantId, layer: 'demo', action: 'seed' },

@@ -109,7 +109,19 @@
 //   - expense_reports + expense_lines (expense-report-auditor)
 // cash-position-forecaster reuses existing tables (ap/ar invoices,
 // bank statement lines) so no new substrate needed.
-export const MIGRATION_VERSION = 'v76-transactional-batch-3';
+// v77-transactional-batch-4: 10 more action subcatalysts covering
+// customer service / logistics / contracts / internal audit / GRC /
+// reporting / master data:
+//   - rma_requests                 (rma-processor)
+//   - shipments                    (shipping-doc-generator)
+//   - contracts                    (contract-renewal-watcher)
+//   - audit_anomalies              (journal-entry-anomaly-scanner)
+//   - sod_conflicts                (segregation-of-duties-monitor)
+//   - access_recertifications      (access-recertification-scheduler)
+//   - report_packages              (financial-report-packager + board-pack-assembler)
+//   - cost_centre_rules            (cost-centre-mapper)
+//   - item_master_changes          (item-master-sync)
+export const MIGRATION_VERSION = 'v77-transactional-batch-4';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -279,6 +291,15 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS stock_transfer_requests (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), transfer_ref TEXT NOT NULL, from_location TEXT NOT NULL, to_location TEXT NOT NULL, sku TEXT NOT NULL, qty REAL NOT NULL, currency TEXT DEFAULT 'ZAR', requested_by TEXT, requested_at TEXT NOT NULL DEFAULT (datetime('now')), status TEXT NOT NULL DEFAULT 'requested', executed_at TEXT, UNIQUE(tenant_id, transfer_ref));
     CREATE TABLE IF NOT EXISTS expense_reports (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), employee_id TEXT NOT NULL, employee_name TEXT, report_ref TEXT NOT NULL, period TEXT, total_amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', status TEXT NOT NULL DEFAULT 'submitted', submitted_at TEXT NOT NULL DEFAULT (datetime('now')), audited_at TEXT, UNIQUE(tenant_id, report_ref));
     CREATE TABLE IF NOT EXISTS expense_lines (id TEXT PRIMARY KEY, report_id TEXT NOT NULL REFERENCES expense_reports(id), tenant_id TEXT NOT NULL REFERENCES tenants(id), category TEXT NOT NULL, amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', merchant TEXT, expense_date TEXT, receipt_attached INTEGER NOT NULL DEFAULT 0, policy_violation TEXT, ai_confidence REAL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS rma_requests (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), rma_number TEXT NOT NULL, customer_id TEXT, customer_name TEXT, order_ref TEXT, sku TEXT, qty REAL NOT NULL DEFAULT 1, return_reason TEXT NOT NULL, return_value REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', original_invoice_date TEXT, requested_at TEXT NOT NULL DEFAULT (datetime('now')), status TEXT NOT NULL DEFAULT 'pending', processed_at TEXT, UNIQUE(tenant_id, rma_number));
+    CREATE TABLE IF NOT EXISTS shipments (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), shipment_ref TEXT NOT NULL, so_number TEXT, carrier TEXT, tracking_number TEXT, destination_country TEXT, ready_to_ship INTEGER NOT NULL DEFAULT 0, doc_status TEXT NOT NULL DEFAULT 'pending', shipped_at TEXT, value REAL DEFAULT 0, currency TEXT DEFAULT 'ZAR', created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, shipment_ref));
+    CREATE TABLE IF NOT EXISTS contracts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), contract_ref TEXT NOT NULL, counterparty_id TEXT, counterparty_name TEXT NOT NULL, contract_type TEXT NOT NULL DEFAULT 'service', annual_value REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', start_date TEXT, end_date TEXT NOT NULL, auto_renew INTEGER NOT NULL DEFAULT 0, notice_period_days INTEGER DEFAULT 30, status TEXT NOT NULL DEFAULT 'active', last_renewed_at TEXT, owner_user_id TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, contract_ref));
+    CREATE TABLE IF NOT EXISTS audit_anomalies (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), anomaly_type TEXT NOT NULL, source_table TEXT NOT NULL, source_record_id TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'medium', description TEXT NOT NULL, evidence TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'open', detected_at TEXT NOT NULL DEFAULT (datetime('now')), reviewed_at TEXT);
+    CREATE TABLE IF NOT EXISTS sod_conflicts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT NOT NULL, user_email TEXT, conflicting_roles TEXT NOT NULL DEFAULT '[]', conflict_pattern TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'high', status TEXT NOT NULL DEFAULT 'open', detected_at TEXT NOT NULL DEFAULT (datetime('now')), resolved_at TEXT, resolution_notes TEXT);
+    CREATE TABLE IF NOT EXISTS access_recertifications (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT NOT NULL, user_email TEXT, role TEXT, manager_id TEXT, scheduled_date TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'scheduled', recertified_at TEXT, recertified_by TEXT, decision TEXT, notes TEXT);
+    CREATE TABLE IF NOT EXISTS report_packages (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), package_type TEXT NOT NULL, period TEXT NOT NULL, r2_key TEXT, status TEXT NOT NULL DEFAULT 'generating', components TEXT NOT NULL DEFAULT '{}', generated_at TEXT NOT NULL DEFAULT (datetime('now')), distributed_at TEXT, UNIQUE(tenant_id, package_type, period));
+    CREATE TABLE IF NOT EXISTS cost_centre_rules (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), rule_name TEXT NOT NULL, vendor_id_pattern TEXT, gl_account_pattern TEXT, target_cost_centre TEXT NOT NULL, priority INTEGER NOT NULL DEFAULT 100, enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS item_master_changes (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), sku TEXT NOT NULL, change_type TEXT NOT NULL, field_name TEXT, old_value TEXT, new_value TEXT, source_system TEXT, sync_status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL DEFAULT (datetime('now')), applied_at TEXT);
   `;
 
   const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
@@ -891,6 +912,16 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_stock_xfer_tenant_status ON stock_transfer_requests(tenant_id, status, requested_at)',
     'CREATE INDEX IF NOT EXISTS idx_expense_reports_tenant_status ON expense_reports(tenant_id, status, submitted_at)',
     'CREATE INDEX IF NOT EXISTS idx_expense_lines_report ON expense_lines(report_id, tenant_id)',
+    // v77-transactional-batch-4 indexes
+    'CREATE INDEX IF NOT EXISTS idx_rma_tenant_status ON rma_requests(tenant_id, status, requested_at)',
+    'CREATE INDEX IF NOT EXISTS idx_shipments_tenant_status ON shipments(tenant_id, doc_status, ready_to_ship)',
+    'CREATE INDEX IF NOT EXISTS idx_contracts_tenant_end ON contracts(tenant_id, status, end_date)',
+    'CREATE INDEX IF NOT EXISTS idx_audit_anomalies_tenant ON audit_anomalies(tenant_id, status, severity)',
+    'CREATE INDEX IF NOT EXISTS idx_sod_conflicts_tenant ON sod_conflicts(tenant_id, status, user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_access_recert_tenant ON access_recertifications(tenant_id, status, scheduled_date)',
+    'CREATE INDEX IF NOT EXISTS idx_report_packages_tenant ON report_packages(tenant_id, package_type, period)',
+    'CREATE INDEX IF NOT EXISTS idx_cost_centre_rules_tenant ON cost_centre_rules(tenant_id, enabled, priority)',
+    'CREATE INDEX IF NOT EXISTS idx_item_master_changes_tenant ON item_master_changes(tenant_id, sync_status, sku)',
   ];
 
   for (const idx of erpIndexes) {

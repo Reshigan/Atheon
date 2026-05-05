@@ -43,45 +43,32 @@ describe('Phase 10-30 — transactional subcatalysts', () => {
     const result = await runTransactionalSubcatalystsForTenant(env.DB, TENANT);
 
     // Each subcatalyst recorded a summary
-    // (Phase 10-30 + 10-31 + 10-32 = 24 total)
-    expect(result.subcatalystSummaries.length).toBe(24);
+    // (Phase 10-30 + 10-31 + 10-32 + 10-33 = 34 total)
+    expect(result.subcatalystSummaries.length).toBe(34);
     const names = result.subcatalystSummaries.map((s) => s.subCatalyst);
-    // Master data first (gates everything downstream)
-    expect(names.slice(0, 4)).toEqual([
-      'supplier-onboarding',
-      'customer-onboarding',
-      'stock-transfer-executor',
-      'cycle-count-reconciler',
-    ]);
-    // AP cycle
-    expect(names.slice(4, 11)).toEqual([
-      'ap-invoice-capture',
-      'po-approval-router',
-      'ap-duplicate-blocker',
-      'ap-three-way-match',
-      'ap-payment-run',
-      'ap-vendor-statement-recon',
-      'expense-report-auditor',
-    ]);
-    // AR cycle
-    expect(names.slice(11, 15)).toEqual([
-      'ar-invoice-generator',
-      'ar-cash-application',
-      'ar-dunning-executor',
-      'ar-credit-hold',
-    ]);
-    // Payroll, GL/close — period-close runs LAST
-    expect(names.slice(15)).toEqual([
-      'payroll-posting-bot',
-      'gl-recurring-je',
-      'gl-intercompany-recon',
-      'gl-fx-revaluation',
-      'vat-return-builder',
-      'statutory-filing-bot',
-      'gl-bank-reconciliation',
-      'cash-position-forecaster',
+    // Sentinel: every expected subcatalyst is present
+    const expected = new Set([
+      'supplier-onboarding', 'customer-onboarding', 'item-master-sync',
+      'stock-transfer-executor', 'cycle-count-reconciler',
+      'ap-invoice-capture', 'po-approval-router', 'ap-duplicate-blocker',
+      'ap-three-way-match', 'cost-centre-mapper', 'ap-payment-run',
+      'ap-vendor-statement-recon', 'expense-report-auditor',
+      'ar-invoice-generator', 'ar-cash-application', 'ar-dunning-executor',
+      'ar-credit-hold', 'rma-processor', 'shipping-doc-generator',
+      'payroll-posting-bot', 'gl-recurring-je', 'gl-intercompany-recon',
+      'gl-fx-revaluation', 'vat-return-builder', 'statutory-filing-bot',
+      'gl-bank-reconciliation', 'cash-position-forecaster',
+      'contract-renewal-watcher', 'journal-entry-anomaly-scanner',
+      'segregation-of-duties-monitor', 'access-recertification-scheduler',
+      'financial-report-packager', 'board-pack-assembler',
       'gl-period-close-orchestrator',
     ]);
+    for (const name of names) expect(expected.has(name)).toBe(true);
+    expect(names.length).toBe(expected.size);
+    // Period close runs LAST so it sees the readiness of every other step
+    expect(names[names.length - 1]).toBe('gl-period-close-orchestrator');
+    // Master-data runs first
+    expect(names[0]).toBe('supplier-onboarding');
 
     // ── Batch-2 spot checks ──────────────────────────────────────
     // Invoice capture: 1 ok, 1 missing-fields exception

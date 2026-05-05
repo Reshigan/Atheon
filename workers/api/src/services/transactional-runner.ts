@@ -54,6 +54,16 @@ import {
   runStockTransferExecutor,
   runCashPositionForecaster,
   runExpenseReportAuditor,
+  runRmaProcessor,
+  runShippingDocGenerator,
+  runContractRenewalWatcher,
+  runJournalEntryAnomalyScanner,
+  runSodMonitor,
+  runAccessRecertificationScheduler,
+  runCostCentreMapper,
+  runItemMasterSync,
+  runFinancialReportPackager,
+  runBoardPackAssembler,
 } from './transactional-subcatalysts';
 import type { TransactionalRunSummary } from './transactional-subcatalysts';
 
@@ -179,6 +189,7 @@ export async function runTransactionalSubcatalystsForTenant(
   // downstream (vendor IDs for AP, customer credit limits for AR).
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runSupplierOnboarding(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCustomerOnboarding(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runItemMasterSync(db, tenantId)));
   // Inventory before AP/AR so stock movements are visible to GL
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runStockTransferExecutor(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCycleCountReconciler(db, tenantId)));
@@ -187,6 +198,7 @@ export async function runTransactionalSubcatalystsForTenant(
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runPoApprovalRouter(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApDuplicateBlocker(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApThreeWayMatch(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCostCentreMapper(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApPaymentRun(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApVendorStatementRecon(db, tenantId)));
   // T&E feeds AP-style reimbursement
@@ -196,6 +208,9 @@ export async function runTransactionalSubcatalystsForTenant(
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArCashApplication(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArDunningExecutor(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArCreditHold(db, tenantId)));
+  // Customer service + logistics
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runRmaProcessor(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runShippingDocGenerator(db, tenantId)));
   // Payroll → statutory filings depend on payroll runs
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runPayrollPostingBot(db, tenantId)));
   // GL / period-close — all the close-prerequisite work has happened
@@ -206,6 +221,14 @@ export async function runTransactionalSubcatalystsForTenant(
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runStatutoryFilingBot(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlBankReconciliation(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCashPositionForecaster(db, tenantId)));
+  // Contracts + governance + audit (read substrate that's now stable for this tick)
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runContractRenewalWatcher(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runJournalEntryAnomalyScanner(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runSodMonitor(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runAccessRecertificationScheduler(db, tenantId)));
+  // Reporting (financial pack + board pack consume everything above)
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runFinancialReportPackager(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runBoardPackAssembler(db, tenantId)));
   // Period close runs LAST — checks all the readiness signals above
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlPeriodCloseOrchestrator(db, tenantId)));
 
