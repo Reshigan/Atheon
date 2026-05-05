@@ -230,24 +230,31 @@ async function processEmailQueue(db: D1Database, env: ScheduledEnv): Promise<voi
     const maxRetries = (email.max_retries as number) || 3;
 
     try {
-      // Try Microsoft Graph API
-      const sent = await sendViaGraphAPI(email, env);
-      if (sent) {
+      // Try Microsoft Graph API; result.ok signals delivery,
+      // result.error carries the actual reason on failure
+      const result = await sendViaGraphAPI(email, env);
+      if (result.ok) {
         await db.prepare(
-          "UPDATE email_queue SET status = 'sent', sent_at = datetime('now') WHERE id = ?"
+          "UPDATE email_queue SET status = 'sent', sent_at = datetime('now'), error = NULL WHERE id = ?"
         ).bind(email.id).run();
         continue;
       }
 
-      // If Graph API fails, mark for retry with exponential backoff
+      // If Graph API fails, persist the actual error so operators can
+      // see it in the queue (and the Service Status admin page).
+      // Pre-2026-05-05 this set 'Max retries exceeded' / 'Delivery
+      // failed, will retry' — opaque strings that didn't tell anyone
+      // whether the cause was missing credentials, bad client_id,
+      // mailbox-not-found, etc.
+      const failureReason = result.error ?? 'unknown failure (no reason captured)';
       if (retryCount + 1 >= maxRetries) {
         await db.prepare(
-          "UPDATE email_queue SET status = 'failed', error = 'Max retries exceeded', retry_count = ? WHERE id = ?"
-        ).bind(retryCount + 1, email.id).run();
+          "UPDATE email_queue SET status = 'failed', error = ?, retry_count = ? WHERE id = ?"
+        ).bind(`Max retries exceeded — last error: ${failureReason}`, retryCount + 1, email.id).run();
       } else {
         await db.prepare(
-          "UPDATE email_queue SET retry_count = ?, error = 'Delivery failed, will retry' WHERE id = ?"
-        ).bind(retryCount + 1, email.id).run();
+          "UPDATE email_queue SET retry_count = ?, error = ? WHERE id = ?"
+        ).bind(retryCount + 1, `Will retry — last error: ${failureReason}`, email.id).run();
       }
     } catch (err) {
       console.error(`Email delivery failed for ${email.id}:`, err);
@@ -258,10 +265,29 @@ async function processEmailQueue(db: D1Database, env: ScheduledEnv): Promise<voi
   }
 }
 
-/** Send email via Microsoft Graph API */
-async function sendViaGraphAPI(email: Record<string, unknown>, env: ScheduledEnv): Promise<boolean> {
+interface GraphSendResult {
+  ok: boolean;
+  /** Specific error string for operator triage (token endpoint failure
+   *  HTTP body, sendMail HTTP status + body, missing-secret signal). */
+  error?: string;
+}
+
+/** Send email via Microsoft Graph API.
+ *
+ *  Returns { ok: true } on success or { ok: false, error: '...' }
+ *  with a specific reason on failure. The error string is persisted
+ *  to email_queue.error so operators can triage from the Service
+ *  Status page or a SQL query without spelunking in worker logs.
+ *
+ *  Common failure reasons surfaced:
+ *    - "MS_GRAPH credentials not configured" (secrets missing)
+ *    - "token endpoint 401: AADSTS70011: ..."
+ *    - "sendMail 404: Resource not found" (mailbox missing)
+ *    - "sendMail 403: Mail.Send permission not granted"
+ */
+async function sendViaGraphAPI(email: Record<string, unknown>, env: ScheduledEnv): Promise<GraphSendResult> {
   if (!env.MS_GRAPH_CLIENT_ID || !env.MS_GRAPH_CLIENT_SECRET || !env.MS_GRAPH_TENANT_ID) {
-    return false;
+    return { ok: false, error: 'MS_GRAPH credentials not configured (set MS_GRAPH_CLIENT_ID, MS_GRAPH_CLIENT_SECRET, MS_GRAPH_TENANT_ID via wrangler secret put)' };
   }
 
   try {
@@ -277,8 +303,14 @@ async function sendViaGraphAPI(email: Record<string, unknown>, env: ScheduledEnv
       }),
     });
 
-    if (!tokenRes.ok) return false;
-    const tokenData = await tokenRes.json() as { access_token: string };
+    if (!tokenRes.ok) {
+      const body = await tokenRes.text().catch(() => '<no body>');
+      return { ok: false, error: `token endpoint ${tokenRes.status}: ${body.slice(0, 300)}` };
+    }
+    const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
+    if (!tokenData.access_token) {
+      return { ok: false, error: `token endpoint returned no access_token: ${JSON.stringify(tokenData).slice(0, 300)}` };
+    }
 
     const recipients = JSON.parse(email.recipients as string) as string[];
     const toRecipients = recipients.map(r => ({ emailAddress: { address: r } }));
@@ -298,9 +330,11 @@ async function sendViaGraphAPI(email: Record<string, unknown>, env: ScheduledEnv
       }),
     });
 
-    return sendRes.ok || sendRes.status === 202;
-  } catch {
-    return false;
+    if (sendRes.ok || sendRes.status === 202) return { ok: true };
+    const body = await sendRes.text().catch(() => '<no body>');
+    return { ok: false, error: `sendMail ${sendRes.status}: ${body.slice(0, 300)}` };
+  } catch (err) {
+    return { ok: false, error: `network error: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
 

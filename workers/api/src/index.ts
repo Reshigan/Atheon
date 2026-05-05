@@ -61,6 +61,7 @@ import featureFlagsRoutes from './routes/feature-flags';
 import supportRoutes from './routes/support';
 import openapi from './routes/openapi';
 import compliance from './routes/compliance';
+import systemStatus from './routes/system-status';
 
 // Export Durable Object class for Cloudflare runtime
 export { DashboardRoom };
@@ -201,7 +202,12 @@ app.post('/api/v1/license-status/refresh', async (c) => {
 //     return 503 with a hint to call POST /api/v1/admin/migrate.
 //   - Operators recover by calling /admin/migrate (no time bound) or by
 //     setting the migrated flag manually if the schema is known-good.
-const AUTO_MIGRATE_TIMEOUT_MS = 25_000;
+// Bumped 25s → 28s after the 2026-05-05 prod incident. Cloudflare's
+// non-fetch handler cap is 30s; 28s leaves 2s for the rest of the
+// request lifecycle. The runMigrations() fast-path (see services/
+// migrate.ts) makes "no work needed" returns sub-100ms, so the 28s
+// cap is now only relevant on the FIRST request after a version bump.
+const AUTO_MIGRATE_TIMEOUT_MS = 28_000;
 const AUTO_MIGRATE_LEASE_TTL_S = 60;
 const AUTO_MIGRATE_ERROR_TTL_S = 300;
 
@@ -493,6 +499,14 @@ app.use('/api/admin-tooling/*', tenantIsolation());
 app.route('/api/v1/admin-tooling', adminTooling);
 app.route('/api/admin-tooling', adminTooling);
 
+// Phase 10-36: System Status — read-only operator visibility into
+// migration state, email queue health, KV flags, secrets configured,
+// tenant counts. JWT-backed auth (admin/superadmin/support_admin).
+app.use('/api/v1/admin/system-status', tenantIsolation());
+app.use('/api/admin/system-status', tenantIsolation());
+app.route('/api/v1/admin/system-status', systemStatus);
+app.route('/api/admin/system-status', systemStatus);
+
 // Data Governance aggregation (read-only). Admin+ role enforced inside handler;
 // tenantIsolation provides the JWT-backed auth context.
 app.use('/api/v1/governance/*', tenantIsolation());
@@ -668,8 +682,13 @@ app.post('/api/v1/admin/migrate', async (c) => {
     return c.json({ error: 'Forbidden' }, 403);
   }
 
+  // Operator escape hatch: ?force=true bypasses the fast-path (sentinel
+  // marker check) and re-runs the full DDL. Use when schema drifted or
+  // when an aborted migration left state inconsistent.
+  const force = c.req.query('force') === 'true';
+
   try {
-    const migrationResult = await runMigrations(env.DB);
+    const migrationResult = await runMigrations(env.DB, { force });
 
     // Cache migration status
     const migrationKey = `db:migrated:${MIGRATION_VERSION}`;

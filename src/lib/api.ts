@@ -1659,6 +1659,26 @@ export const api = {
       ),
   },
 
+  // ── System Status (Phase 10-36 operator visibility) ───────────
+  systemStatus: {
+    get: () => request<SystemStatusReport>('/api/v1/admin/system-status'),
+    /** Force-migrate the schema, bypassing the fast-path. Requires
+     *  the SETUP_SECRET to be passed (the UI prompts the operator). */
+    forceMigrate: (setupSecret: string) =>
+      request<{
+        success: boolean;
+        version: string;
+        tablesCreated: number;
+        indexesCreated: number;
+        columnsHealed: number;
+        durationMs: number;
+        errors: string[];
+      }>('/api/v1/admin/migrate?force=true', {
+        method: 'POST',
+        headers: { 'X-Setup-Secret': setupSecret },
+      }),
+  },
+
   // Generic HTTP helpers for pages that call arbitrary endpoints
   get: <T = Record<string, unknown>>(path: string) => request<T>(path),
   post: <T = Record<string, unknown>>(path: string, body?: unknown) =>
@@ -1669,6 +1689,45 @@ export const api = {
 };
 
 // Types for API responses
+// ── System Status (Phase 10-36) ───────────────────────────────────
+export interface SystemStatusReport {
+  generated_at: string;
+  elapsed_ms: number;
+  migration: {
+    code_version: string;
+    marker_present: boolean;
+    marker_version: string | null;
+    marker_completed_at: string | null;
+    marker_duration_ms: number | null;
+    kv_migrated: string | null;
+    kv_migrating_lease: string | null;
+    drift: string | null;
+  };
+  email: {
+    queue: Record<string, number>;
+    recent_failures: Array<{
+      id: string;
+      recipients: string;
+      subject: string;
+      error_excerpt: string;
+      created_at: string;
+      retry_count: number;
+    }>;
+  };
+  secrets: {
+    ms_graph_configured: boolean;
+    sentry_configured: boolean;
+    ollama_configured: boolean;
+    eia_configured: boolean;
+    azure_ad_sso_configured: boolean;
+  };
+  tenants: {
+    total: number;
+    by_status: Record<string, number>;
+  };
+  errors: string[];
+}
+
 export interface TenantBrand {
   /** HTTPS URL or data:image/ URI. Null = no logo override. */
   logoUrl: string | null;
