@@ -201,7 +201,12 @@ app.post('/api/v1/license-status/refresh', async (c) => {
 //     return 503 with a hint to call POST /api/v1/admin/migrate.
 //   - Operators recover by calling /admin/migrate (no time bound) or by
 //     setting the migrated flag manually if the schema is known-good.
-const AUTO_MIGRATE_TIMEOUT_MS = 25_000;
+// Bumped 25s → 28s after the 2026-05-05 prod incident. Cloudflare's
+// non-fetch handler cap is 30s; 28s leaves 2s for the rest of the
+// request lifecycle. The runMigrations() fast-path (see services/
+// migrate.ts) makes "no work needed" returns sub-100ms, so the 28s
+// cap is now only relevant on the FIRST request after a version bump.
+const AUTO_MIGRATE_TIMEOUT_MS = 28_000;
 const AUTO_MIGRATE_LEASE_TTL_S = 60;
 const AUTO_MIGRATE_ERROR_TTL_S = 300;
 
