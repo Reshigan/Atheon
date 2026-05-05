@@ -190,13 +190,17 @@ describe('Phase 10-27 — Dashboard / Pulse / Apex data accuracy', () => {
     };
 
     // The Phase 10 chain writes:
-    //   - sub_catalyst_runs: 6 NEW from the transactional layer (Phase 10-30
-    //     ap-three-way-match, ar-cash-application, etc.) on FIRST tick;
+    //   - sub_catalyst_runs: 12 NEW from the transactional layer
+    //     (Phase 10-30 batch + Phase 10-31 batch — ap-invoice-capture,
+    //     po-approval-router, ap-duplicate-blocker, ap-three-way-match,
+    //     ap-payment-run, ap-vendor-statement-recon, ar-invoice-generator,
+    //     ar-cash-application, ar-dunning-executor, ar-credit-hold,
+    //     gl-recurring-je, gl-bank-reconciliation) on FIRST tick;
     //     idempotent on subsequent ticks (idempotency keys collapse).
     //   - sub_catalyst_kpi_values: grows alongside the runs above
     //   - catalyst_insights: insights-engine path writes per run
     //   - health_score_history: per-tick snapshot
-    expect(after.runs).toBe(before.runs + 6);
+    expect(after.runs).toBe(before.runs + 12);
     expect(after.kpiValues).toBeGreaterThanOrEqual(before.kpiValues);
     expect(after.insights).toBeGreaterThanOrEqual(before.insights);
     expect(after.healthSnapshots).toBeGreaterThanOrEqual(before.healthSnapshots);

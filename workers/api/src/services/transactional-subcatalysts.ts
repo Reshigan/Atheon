@@ -479,3 +479,441 @@ export async function runGlBankReconciliation(
   }
   return summary;
 }
+
+// ── 7. AP invoice capture (Phase 10-31) ──────────────────────────
+// Reads ap_invoice_inbox_raw rows (raw inbound invoices: email/PDF/
+// portal payloads), extracts canonical fields, creates ap_invoice_inbox
+// rows ready for the 3-way match step. In production this would call
+// an OCR service for PDFs; here we parse the JSON `raw_payload` field
+// which downstream connectors (or upload handlers) populate with
+// already-extracted line items.
+
+interface RawInvoiceRow {
+  id: string; raw_payload: string; parsed_status: string;
+  erp_connection_id: string | null;
+}
+
+export async function runApInvoiceCapture(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'ap-invoice-capture', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const rows = await db.prepare(
+    `SELECT id, raw_payload, parsed_status, erp_connection_id
+       FROM ap_invoice_inbox_raw
+      WHERE tenant_id = ? AND parsed_status = 'pending'`,
+  ).bind(tenantId).all<RawInvoiceRow>();
+
+  for (const row of rows.results || []) {
+    summary.processed++;
+    let parsed: Record<string, unknown> | null = null;
+    try { parsed = JSON.parse(row.raw_payload); } catch { /* parsed=null */ }
+
+    const invoiceNumber = parsed?.invoice_number as string | undefined;
+    const vendorId = parsed?.vendor_id as string | undefined;
+    const amount = Number(parsed?.invoice_amount ?? 0);
+
+    if (!parsed || !invoiceNumber || !vendorId || amount <= 0) {
+      await db.prepare(
+        `UPDATE ap_invoice_inbox_raw SET parsed_status = 'failed', error = ?
+          WHERE id = ?`,
+      ).bind('missing required fields (invoice_number, vendor_id, invoice_amount)', row.id).run();
+      summary.exceptions++;
+      continue;
+    }
+
+    summary.totalValue += amount;
+    const newId = `apinv-${tenantId}::${invoiceNumber}`;
+    try {
+      await db.prepare(
+        `INSERT INTO ap_invoice_inbox (id, tenant_id, erp_connection_id, invoice_number,
+           vendor_id, vendor_name, po_number, invoice_amount, currency, invoice_date,
+           due_date, payment_terms, line_items, raw_data, source_system, status, received_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'received', ?)
+         ON CONFLICT(tenant_id, invoice_number) DO NOTHING`,
+      ).bind(
+        newId, tenantId, row.erp_connection_id ?? connId,
+        invoiceNumber, vendorId, (parsed.vendor_name as string) ?? null,
+        (parsed.po_number as string) ?? null, amount,
+        (parsed.currency as string) ?? 'ZAR',
+        (parsed.invoice_date as string) ?? null,
+        (parsed.due_date as string) ?? null,
+        (parsed.payment_terms as string) ?? 'NET30',
+        JSON.stringify(parsed.line_items ?? []),
+        row.raw_payload, 'inbox_capture',
+        new Date().toISOString(),
+      ).run();
+
+      await db.prepare(
+        `UPDATE ap_invoice_inbox_raw SET parsed_status = 'parsed', parse_confidence = ?, parsed_invoice_id = ?
+          WHERE id = ?`,
+      ).bind(0.95, newId, row.id).run();
+      summary.autoPosted++;
+    } catch (err) {
+      await db.prepare(
+        `UPDATE ap_invoice_inbox_raw SET parsed_status = 'failed', error = ? WHERE id = ?`,
+      ).bind(err instanceof Error ? err.message : String(err), row.id).run();
+      summary.exceptions++;
+    }
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`Captured ${summary.autoPosted}/${summary.processed} raw invoices into the inbox`);
+  }
+  return summary;
+}
+
+// ── 8. AP vendor statement reconciliation ────────────────────────
+// For each vendor_statements row recon_status='unmatched', sum the
+// AP invoices (posted) for that vendor in the period and compare to
+// statement closing_balance. If within tolerance → mark reconciled
+// + stage gl_journal_entry for any rounding adjustment. Otherwise
+// stage ap_invoice_block for human review of the gap.
+
+interface VendorStmtRow {
+  id: string; vendor_id: string; vendor_name: string | null;
+  statement_period: string; closing_balance: number;
+  currency: string;
+}
+
+export async function runApVendorStatementRecon(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'ap-vendor-statement-recon', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+  const tolerance = 0.01; // 1% acceptable rounding
+
+  const stmts = await db.prepare(
+    `SELECT id, vendor_id, vendor_name, statement_period, closing_balance, currency
+       FROM vendor_statements WHERE tenant_id = ? AND recon_status = 'unmatched'`,
+  ).bind(tenantId).all<VendorStmtRow>();
+
+  for (const stmt of stmts.results || []) {
+    summary.processed++;
+    summary.totalValue += stmt.closing_balance;
+
+    const ledgerRow = await db.prepare(
+      `SELECT COALESCE(SUM(invoice_amount), 0) AS total
+         FROM ap_invoice_inbox
+        WHERE tenant_id = ? AND vendor_id = ? AND status IN ('matched','received')
+          AND invoice_date IS NOT NULL
+          AND substr(invoice_date, 1, 7) = ?`,
+    ).bind(tenantId, stmt.vendor_id, stmt.statement_period.slice(0, 7))
+      .first<{ total: number }>();
+
+    const ledgerTotal = ledgerRow?.total ?? 0;
+    const delta = stmt.closing_balance - ledgerTotal;
+    const matched = Math.abs(delta) / Math.max(stmt.closing_balance, 1) <= tolerance;
+
+    await db.prepare(
+      `UPDATE vendor_statements SET recon_status = ?, recon_delta = ?, reconciled_at = ?
+        WHERE id = ?`,
+    ).bind(matched ? 'matched' : 'mismatch', delta, new Date().toISOString(), stmt.id).run();
+
+    if (matched && Math.abs(delta) > 0.01) {
+      // Tiny rounding — stage a journal entry to clear it
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'ap-vendor-statement-recon',
+        actionType: 'gl_journal_entry', targetEntity: 'rounding_adjustment',
+        sourceRecordRef: `vendor-stmt:${stmt.vendor_id}:${stmt.statement_period}`,
+        payload: { vendor_id: stmt.vendor_id, period: stmt.statement_period, delta },
+        postedValue: delta, currency: stmt.currency,
+        reasoning: `Vendor ${stmt.vendor_name ?? stmt.vendor_id}: rounding adjustment ${delta.toFixed(2)} ${stmt.currency}`,
+        autoApprove: true,
+      });
+      summary.autoPosted++;
+    } else if (matched) {
+      summary.autoPosted++;
+    } else {
+      await stageTransactionalAction(db, {
+        tenantId, erpConnectionId: connId, subCatalystName: 'ap-vendor-statement-recon',
+        actionType: 'ap_invoice_block', targetEntity: 'vendor_statement',
+        sourceRecordRef: `vendor-stmt:${stmt.vendor_id}:${stmt.statement_period}`,
+        payload: { vendor_id: stmt.vendor_id, period: stmt.statement_period, statement_total: stmt.closing_balance, ledger_total: ledgerTotal, delta },
+        postedValue: delta, currency: stmt.currency,
+        reasoning: `Vendor ${stmt.vendor_name ?? stmt.vendor_id} statement (${stmt.closing_balance.toFixed(2)}) vs ledger (${ledgerTotal.toFixed(2)}) — delta ${delta.toFixed(2)}`,
+      });
+      summary.blocked++;
+    }
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`Vendor statements: ${summary.autoPosted}/${summary.processed} reconciled, ${summary.blocked} flagged for review`);
+  }
+  return summary;
+}
+
+// ── 9. AR invoice generator ──────────────────────────────────────
+// For each fulfilled, billable sales_order with no billed_invoice_number,
+// stage an ar_invoice_post action and create the corresponding
+// ar_open_invoices row.
+
+interface SalesOrderRow {
+  id: string; so_number: string; customer_id: string | null; customer_name: string | null;
+  so_amount: number; currency: string; so_date: string | null; fulfilled_at: string | null;
+}
+
+export async function runArInvoiceGenerator(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'ar-invoice-generator', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const sos = await db.prepare(
+    `SELECT id, so_number, customer_id, customer_name, so_amount, currency, so_date, fulfilled_at
+       FROM sales_orders WHERE tenant_id = ?
+        AND status = 'fulfilled' AND billable = 1 AND billed_invoice_number IS NULL`,
+  ).bind(tenantId).all<SalesOrderRow>();
+
+  for (const so of sos.results || []) {
+    summary.processed++;
+    summary.totalValue += so.so_amount;
+
+    const invoiceNumber = `INV-AUTO-${so.so_number}`;
+    const dueDate = (() => {
+      const base = so.fulfilled_at ?? so.so_date ?? new Date().toISOString();
+      const d = new Date(base);
+      d.setUTCDate(d.getUTCDate() + 30);
+      return d.toISOString().slice(0, 10);
+    })();
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'ar-invoice-generator',
+      actionType: 'ar_cash_apply', // reuses existing dispatch shape; doc id prefix '12'
+      targetEntity: 'ar_invoice',
+      sourceRecordRef: `so:${so.so_number}`,
+      payload: { sales_order: so, invoice_number: invoiceNumber, due_date: dueDate, terms: 'NET30' },
+      postedValue: so.so_amount, currency: so.currency,
+      reasoning: `Auto-generated AR invoice ${invoiceNumber} for SO ${so.so_number} (${so.so_amount.toFixed(2)} ${so.currency})`,
+      autoApprove: true,
+    });
+
+    // Create the AR open invoice + flip SO billed
+    try {
+      await db.prepare(
+        `INSERT INTO ar_open_invoices (id, tenant_id, erp_connection_id, invoice_number, customer_id,
+           customer_name, invoice_amount, currency, invoice_date, due_date, paid_amount, status, source_system)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'open', 'ar_invoice_generator')
+         ON CONFLICT(tenant_id, invoice_number) DO NOTHING`,
+      ).bind(
+        `arinv-${tenantId}::${invoiceNumber}`, tenantId, connId,
+        invoiceNumber, so.customer_id, so.customer_name,
+        so.so_amount, so.currency, so.fulfilled_at?.slice(0, 10) ?? null, dueDate,
+      ).run();
+      await db.prepare(
+        `UPDATE sales_orders SET billed_invoice_number = ?, status = 'billed' WHERE id = ?`,
+      ).bind(invoiceNumber, so.id).run();
+      summary.autoPosted++;
+    } catch (err) {
+      summary.exceptions++;
+      summary.reasoning.push(`SO ${so.so_number}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.unshift(`Generated ${summary.autoPosted}/${summary.processed} AR invoices from fulfilled SOs`);
+  }
+  return summary;
+}
+
+// ── 10. AR dunning executor ──────────────────────────────────────
+// For each open AR invoice past due, decide a dunning level (1=reminder,
+// 2=demand, 3=final notice) based on days overdue. Skip if a dunning
+// event was already sent for this (invoice, level) within the cool-down
+// window. Stage a notification action + write a dunning_events row.
+
+interface OverdueInvoiceRow {
+  id: string; invoice_number: string; customer_id: string | null; customer_name: string | null;
+  invoice_amount: number; paid_amount: number; due_date: string | null; currency: string;
+}
+
+const DUNNING_COOLDOWN_DAYS = 7;
+
+export async function runArDunningExecutor(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'ar-dunning-executor', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const overdue = await db.prepare(
+    `SELECT id, invoice_number, customer_id, customer_name, invoice_amount, paid_amount, due_date, currency
+       FROM ar_open_invoices
+      WHERE tenant_id = ? AND status = 'open'
+        AND due_date IS NOT NULL AND date(due_date) < date('now')`,
+  ).bind(tenantId).all<OverdueInvoiceRow>();
+
+  for (const inv of overdue.results || []) {
+    summary.processed++;
+    const outstanding = inv.invoice_amount - inv.paid_amount;
+    if (outstanding <= 0) continue;
+    summary.totalValue += outstanding;
+
+    const daysOverdue = inv.due_date
+      ? Math.floor((Date.now() - new Date(inv.due_date).getTime()) / 86_400_000)
+      : 0;
+    const aging = daysOverdue >= 90 ? '90+' : daysOverdue >= 60 ? '60-90' : daysOverdue >= 30 ? '30-60' : '0-30';
+    const level = daysOverdue >= 60 ? 3 : daysOverdue >= 30 ? 2 : 1;
+
+    // Cool-down check
+    const recent = await db.prepare(
+      `SELECT id FROM dunning_events
+        WHERE tenant_id = ? AND invoice_number = ? AND level = ?
+          AND date(sent_at) >= date('now', '-${DUNNING_COOLDOWN_DAYS} days')`,
+    ).bind(tenantId, inv.invoice_number, level).first<{ id: string }>();
+    if (recent) continue;
+
+    await db.prepare(
+      `INSERT INTO dunning_events (id, tenant_id, customer_id, customer_name, invoice_number,
+         aging_bucket, level, channel, sent_at, template, recipient)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'email', ?, ?, ?)`,
+    ).bind(
+      `dunn-${crypto.randomUUID()}`, tenantId, inv.customer_id, inv.customer_name,
+      inv.invoice_number, aging, level, new Date().toISOString(),
+      `dunning_l${level}_${aging}`, `accounts-payable@${inv.customer_id ?? 'unknown'}.example`,
+    ).run();
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'ar-dunning-executor',
+      actionType: 'ar_cash_apply', targetEntity: 'dunning_notice',
+      sourceRecordRef: `dunning:${inv.invoice_number}:L${level}`,
+      payload: { invoice: inv, level, aging, days_overdue: daysOverdue, outstanding },
+      postedValue: outstanding, currency: inv.currency,
+      reasoning: `Sent L${level} dunning notice for ${inv.invoice_number} (${aging} bucket, ${outstanding.toFixed(2)} outstanding)`,
+      autoApprove: true,
+    });
+    summary.autoPosted++;
+  }
+
+  if (summary.autoPosted > 0) {
+    summary.reasoning.push(`Sent ${summary.autoPosted} dunning notices across overdue invoices`);
+  }
+  return summary;
+}
+
+// ── 11. GL recurring journal entries ─────────────────────────────
+// For each enabled gl_recurring_schedules row whose next_run_date is
+// today or earlier, stage a gl_journal_entry action and roll the
+// schedule's next_run_date forward by frequency.
+
+interface ScheduleRow {
+  id: string; name: string; je_type: string;
+  debit_account: string; credit_account: string;
+  amount: number; currency: string; frequency: string;
+  next_run_date: string;
+}
+
+function rollFrequency(date: string, freq: string): string {
+  const d = new Date(date);
+  switch (freq) {
+    case 'daily': d.setUTCDate(d.getUTCDate() + 1); break;
+    case 'weekly': d.setUTCDate(d.getUTCDate() + 7); break;
+    case 'monthly': d.setUTCMonth(d.getUTCMonth() + 1); break;
+    case 'quarterly': d.setUTCMonth(d.getUTCMonth() + 3); break;
+    case 'annual': d.setUTCFullYear(d.getUTCFullYear() + 1); break;
+    default: d.setUTCMonth(d.getUTCMonth() + 1);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+export async function runGlRecurringJe(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'gl-recurring-je', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const due = await db.prepare(
+    `SELECT id, name, je_type, debit_account, credit_account, amount, currency, frequency, next_run_date
+       FROM gl_recurring_schedules
+      WHERE tenant_id = ? AND enabled = 1 AND date(next_run_date) <= date('now')`,
+  ).bind(tenantId).all<ScheduleRow>();
+
+  for (const sched of due.results || []) {
+    summary.processed++;
+    summary.totalValue += sched.amount;
+
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'gl-recurring-je',
+      actionType: 'gl_journal_entry', targetEntity: 'recurring_je',
+      sourceRecordRef: `recurring:${sched.id}:${sched.next_run_date}`,
+      payload: {
+        schedule_id: sched.id, name: sched.name, je_type: sched.je_type,
+        debit: { account: sched.debit_account, amount: sched.amount },
+        credit: { account: sched.credit_account, amount: sched.amount },
+      },
+      postedValue: sched.amount, currency: sched.currency,
+      reasoning: `Recurring ${sched.je_type} JE: ${sched.name} — Dr ${sched.debit_account} / Cr ${sched.credit_account} ${sched.amount.toFixed(2)}`,
+      autoApprove: true,
+    });
+    await db.prepare(
+      `UPDATE gl_recurring_schedules SET last_run_date = ?, next_run_date = ? WHERE id = ?`,
+    ).bind(new Date().toISOString().slice(0, 10), rollFrequency(sched.next_run_date, sched.frequency), sched.id).run();
+    summary.autoPosted++;
+  }
+
+  if (summary.autoPosted > 0) {
+    summary.reasoning.push(`Posted ${summary.autoPosted} recurring JEs (${summary.totalValue.toFixed(2)} total)`);
+  }
+  return summary;
+}
+
+// ── 12. PO approval router ───────────────────────────────────────
+// For each open purchase_order without an approval action, look up
+// the matching policy tier and stage either an auto-approve (low
+// value) or a HITL approval (high value, dual signoff if required).
+
+interface POForApproval { po_number: string; vendor_name: string | null; po_amount: number; po_currency: string; }
+interface PolicyRow { tier_name: string; min_amount: number; max_amount: number | null; approver_role: string; requires_dual_signoff: number; }
+
+export async function runPoApprovalRouter(
+  db: D1Database, tenantId: string,
+): Promise<TransactionalRunSummary> {
+  const summary: TransactionalRunSummary = { subCatalyst: 'po-approval-router', processed: 0, autoPosted: 0, blocked: 0, exceptions: 0, totalValue: 0, reasoning: [] };
+  const connId = await loadConnectionId(db, tenantId);
+
+  const policies = await db.prepare(
+    `SELECT tier_name, min_amount, max_amount, approver_role, requires_dual_signoff
+       FROM po_approval_policies WHERE tenant_id = ? ORDER BY min_amount ASC`,
+  ).bind(tenantId).all<PolicyRow>();
+
+  if ((policies.results || []).length === 0) {
+    return summary; // no policy configured — no-op
+  }
+
+  const pos = await db.prepare(
+    `SELECT po_number, vendor_name, po_amount, po_currency FROM purchase_orders
+      WHERE tenant_id = ? AND status = 'open'`,
+  ).bind(tenantId).all<POForApproval>();
+
+  for (const po of pos.results || []) {
+    summary.processed++;
+    summary.totalValue += po.po_amount;
+
+    const policy = (policies.results || []).find((p) =>
+      po.po_amount >= p.min_amount && (p.max_amount == null || po.po_amount <= p.max_amount)
+    );
+    if (!policy) {
+      summary.exceptions++;
+      continue;
+    }
+
+    const autoApprove = policy.approver_role === 'system' && !policy.requires_dual_signoff;
+    await stageTransactionalAction(db, {
+      tenantId, erpConnectionId: connId, subCatalystName: 'po-approval-router',
+      actionType: 'ap_invoice_post', // reuses existing dispatch shape (PO doc); SAP doc-num prefix '51'
+      targetEntity: 'po_approval',
+      sourceRecordRef: `po:${po.po_number}`,
+      payload: { po, policy_tier: policy.tier_name, approver_role: policy.approver_role, dual_signoff: !!policy.requires_dual_signoff },
+      postedValue: po.po_amount, currency: po.po_currency,
+      reasoning: `PO ${po.po_number} (${po.po_amount.toFixed(2)}) routed to ${policy.tier_name} (${policy.approver_role}${policy.requires_dual_signoff ? ' + dual signoff' : ''})`,
+      autoApprove,
+    });
+    if (autoApprove) summary.autoPosted++; else summary.blocked++;
+  }
+
+  if (summary.processed > 0) {
+    summary.reasoning.push(`Routed ${summary.processed} POs: ${summary.autoPosted} auto, ${summary.blocked} pending approval, ${summary.exceptions} no matching tier`);
+  }
+  return summary;
+}
+

@@ -1659,6 +1659,33 @@ export const api = {
       ),
   },
 
+  // ── Transactional Actions (Phase 10-30 / 10-31 action layer HITL) ──
+  transactionalActions: {
+    list: (opts: { status?: string; sub_catalyst?: string; action_type?: string; limit?: number; offset?: number } = {}) =>
+      request<{ actions: TransactionalActionListItem[]; total: number; limit: number; offset: number }>(
+        `/api/v1/transactional-actions${qs(opts as Record<string, string | number | undefined>)}`,
+      ),
+    detail: (id: string) =>
+      request<{ action: TransactionalActionDetail }>(`/api/v1/transactional-actions/${id}`),
+    approve: (id: string) =>
+      request<{ approved: boolean; dispatched: { posted: number; failed: number; skipped: number }; action: TransactionalActionListItem }>(
+        `/api/v1/transactional-actions/${id}/approve`, { method: 'POST', body: JSON.stringify({}) },
+      ),
+    skip: (id: string, reason?: string) =>
+      request<{ skipped: boolean; reason: string }>(
+        `/api/v1/transactional-actions/${id}/skip`,
+        { method: 'POST', body: JSON.stringify({ reason: reason ?? '' }) },
+      ),
+    dispatch: (limit?: number) =>
+      request<{ posted: number; failed: number; skipped: number; errors: string[] }>(
+        `/api/v1/transactional-actions/dispatch${qs({ limit })}`, { method: 'POST', body: JSON.stringify({}) },
+      ),
+    summaryCounts: () =>
+      request<{ counts: Array<{ sub_catalyst_name: string; status: string; n: number; total_value: number }> }>(
+        `/api/v1/transactional-actions/_summary/counts`,
+      ),
+  },
+
   // Generic HTTP helpers for pages that call arbitrary endpoints
   get: <T = Record<string, unknown>>(path: string) => request<T>(path),
   post: <T = Record<string, unknown>>(path: string, body?: unknown) =>
@@ -1669,6 +1696,34 @@ export const api = {
 };
 
 // Types for API responses
+
+// ── Transactional Actions (Phase 10-30 / 10-31) ───────────────────
+export interface TransactionalActionListItem {
+  id: string;
+  tenant_id: string;
+  erp_connection_id: string | null;
+  sub_catalyst_name: string;
+  action_type: string;
+  target_entity: string;
+  source_record_ref: string | null;
+  idempotency_key: string;
+  status: 'pending' | 'approved' | 'posted' | 'failed' | 'skipped';
+  external_doc_id: string | null;
+  posted_at: string | null;
+  error: string | null;
+  retry_count: number;
+  posted_value: number | null;
+  currency: string;
+  reasoning: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TransactionalActionDetail extends TransactionalActionListItem {
+  payload: unknown;
+  payload_hash: string | null;
+}
+
 export interface TenantBrand {
   /** HTTPS URL or data:image/ URI. Null = no logo override. */
   logoUrl: string | null;

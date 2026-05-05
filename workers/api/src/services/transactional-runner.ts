@@ -36,6 +36,12 @@ import {
   runArCashApplication,
   runArCreditHold,
   runGlBankReconciliation,
+  runApInvoiceCapture,
+  runApVendorStatementRecon,
+  runArInvoiceGenerator,
+  runArDunningExecutor,
+  runGlRecurringJe,
+  runPoApprovalRouter,
 } from './transactional-subcatalysts';
 import type { TransactionalRunSummary } from './transactional-subcatalysts';
 
@@ -144,12 +150,30 @@ export async function runTransactionalSubcatalystsForTenant(
 
   const subcatalystSummaries: TransactionalRunSummary[] = [];
 
-  // Order matters — see top-of-file rationale
+  // Order matters — see top-of-file rationale.
+  //
+  // Batch 2 (Phase 10-31) dependencies:
+  //   - invoice-capture writes to ap_invoice_inbox → dup-blocker + 3-way
+  //     read it, so capture runs FIRST
+  //   - PO approval-router gates POs that 3-way match later reads, so
+  //     it also runs before AP processing
+  //   - AR invoice-generator creates ar_open_invoices → cash-app +
+  //     dunning + credit-hold consume them, so it runs before those
+  //   - Vendor statement recon runs late — it reads matched AP
+  //     invoices accumulated in this tick
+  //   - GL recurring JE is fully independent — anywhere is fine; placed
+  //     near GL recon for thematic grouping
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApInvoiceCapture(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runPoApprovalRouter(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApDuplicateBlocker(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApThreeWayMatch(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApPaymentRun(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApVendorStatementRecon(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArInvoiceGenerator(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArCashApplication(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArDunningExecutor(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArCreditHold(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlRecurringJe(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlBankReconciliation(db, tenantId)));
 
   // Dispatch all approved staging rows

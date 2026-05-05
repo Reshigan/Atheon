@@ -42,17 +42,51 @@ describe('Phase 10-30 — transactional subcatalysts', () => {
     // ── RUN ──────────────────────────────────────────────────────
     const result = await runTransactionalSubcatalystsForTenant(env.DB, TENANT);
 
-    // Each subcatalyst recorded a summary
-    expect(result.subcatalystSummaries.length).toBe(6);
+    // Each subcatalyst recorded a summary (Phase 10-30 batch + 10-31 batch = 12 total)
+    expect(result.subcatalystSummaries.length).toBe(12);
     const names = result.subcatalystSummaries.map((s) => s.subCatalyst);
     expect(names).toEqual([
+      'ap-invoice-capture',
+      'po-approval-router',
       'ap-duplicate-blocker',
       'ap-three-way-match',
       'ap-payment-run',
+      'ap-vendor-statement-recon',
+      'ar-invoice-generator',
       'ar-cash-application',
+      'ar-dunning-executor',
       'ar-credit-hold',
+      'gl-recurring-je',
       'gl-bank-reconciliation',
     ]);
+
+    // ── Batch-2 spot checks ──────────────────────────────────────
+    // Invoice capture: 1 ok, 1 missing-fields exception
+    const capture = result.subcatalystSummaries.find((s) => s.subCatalyst === 'ap-invoice-capture');
+    expect(capture!.autoPosted).toBeGreaterThanOrEqual(1);
+    expect(capture!.exceptions).toBeGreaterThanOrEqual(1);
+
+    // PO approval router: 5 POs against 3 tiers — low_value tier auto-approves
+    const poRouter = result.subcatalystSummaries.find((s) => s.subCatalyst === 'po-approval-router');
+    expect(poRouter!.processed).toBeGreaterThanOrEqual(5);
+    expect(poRouter!.autoPosted).toBeGreaterThanOrEqual(1);
+
+    // Vendor statement recon: 1 matches, 1 mismatch
+    const vendStmt = result.subcatalystSummaries.find((s) => s.subCatalyst === 'ap-vendor-statement-recon');
+    expect(vendStmt!.processed).toBe(2);
+    expect(vendStmt!.blocked).toBeGreaterThanOrEqual(1);
+
+    // AR invoice generator: 2 fulfilled+billable+unbilled SOs
+    const arGen = result.subcatalystSummaries.find((s) => s.subCatalyst === 'ar-invoice-generator');
+    expect(arGen!.autoPosted).toBe(2);
+
+    // AR dunning: at least 1 overdue invoice (AR-OVERDUE-1, 45d past due → L2)
+    const dunning = result.subcatalystSummaries.find((s) => s.subCatalyst === 'ar-dunning-executor');
+    expect(dunning!.autoPosted).toBeGreaterThanOrEqual(1);
+
+    // GL recurring: 2 schedules due
+    const recurring = result.subcatalystSummaries.find((s) => s.subCatalyst === 'gl-recurring-je');
+    expect(recurring!.autoPosted).toBe(2);
 
     // 3-way match: 9001+9002+9003 all match cleanly → 3 auto-posts
     // 9004 (no GR) + 9005 (16% over PO) → 2 blocks
