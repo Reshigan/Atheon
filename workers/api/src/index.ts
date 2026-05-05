@@ -90,9 +90,13 @@ app.use('*', cors({
     return null as unknown as string;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key', 'X-Request-ID', 'X-Setup-Secret'],
   exposeHeaders: ['Content-Length', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Request-ID'],
-  maxAge: 86400,
+  // 5-min preflight cache (was 86400). A 24h cache means a CORS
+  // misconfiguration sticks in browsers for a full day after the
+  // server-side fix lands. 5 min keeps perf acceptable (one preflight
+  // per session per browser tab) while letting fixes propagate quickly.
+  maxAge: 300,
   credentials: true,
 }));
 
