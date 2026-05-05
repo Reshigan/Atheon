@@ -81,6 +81,9 @@ const navItems: NavItem[] = [
   // v48: Support ticket system — everyone can file tickets; admins get Triage.
   { path: '/support-tickets', label: 'Support', icon: IconChat, section: 'administration', sublabel: 'File & track tickets' },
   { path: '/support-triage', label: 'Support Triage', icon: IconChat, section: 'admin-tooling', sublabel: 'Tenant Ticket Queue', roles: PLATFORM_ADMIN_ROLES },
+  // Phase 10-30 / 10-31: Action layer HITL queues
+  { path: '/ap-exceptions', label: 'AP Exceptions', icon: IconBolt, section: 'admin-tooling', sublabel: '3-way / Dup / Vendor stmt', roles: OPERATOR_ROLES },
+  { path: '/cash-application', label: 'Cash Application', icon: IconBolt, section: 'admin-tooling', sublabel: 'AR Receipts Review', roles: OPERATOR_ROLES },
 ];
 
 /** Atheon logo mark — geometric triangle with sage/sky/bronze palette */
