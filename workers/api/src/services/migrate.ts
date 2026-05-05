@@ -73,7 +73,17 @@
 // orchestration_step_executions tables for multi-step catalyst
 // workflows. Substrate for "fix-procurement-cost spans 3 catalysts:
 // renegotiate supplier → re-issue PO → update GL coding".
-export const MIGRATION_VERSION = 'v73-orchestration';
+// v74-webhook-hmac: webhook_signing_secrets holds per-tenant,
+// per-source HMAC secrets so untrusted-network callers (banks,
+// payment processors, T&E SaaS) can post to /ingest/* without
+// holding a JWT. Stripe-style signature scheme:
+//    X-Atheon-Signature: t=<unix_ts>,v1=<hex_hmac_sha256>
+//    X-Atheon-Source: <source-id>
+// Worker looks up the secret keyed on (tenant_id, source_id),
+// computes HMAC-SHA256 over `<timestamp>.<request_body>`, and
+// rejects if the signature doesn't match or the timestamp is more
+// than 5 min old (replay protection).
+export const MIGRATION_VERSION = 'v74-webhook-hmac';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -216,6 +226,22 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS federation_observations (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), industry_bucket TEXT NOT NULL DEFAULT 'general', finding_code TEXT NOT NULL, resolved_in_days REAL, recovery_pct REAL, raw_value_zar REAL, observed_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS federation_aggregates (id TEXT PRIMARY KEY, industry_bucket TEXT NOT NULL DEFAULT 'general', finding_code TEXT NOT NULL, n_contributors INTEGER NOT NULL DEFAULT 0, avg_resolved_days REAL NOT NULL DEFAULT 0, avg_recovery_pct REAL NOT NULL DEFAULT 0, p25_recovery_pct REAL DEFAULT 0, p75_recovery_pct REAL DEFAULT 0, epsilon REAL NOT NULL DEFAULT 1, last_refreshed_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(industry_bucket, finding_code));
     CREATE TABLE IF NOT EXISTS billing_checkouts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), plan_id TEXT NOT NULL, billing_cycle TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', stripe_session_id TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS webhook_signing_secrets (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      source_id TEXT NOT NULL,
+      label TEXT NOT NULL,
+      secret_hash TEXT NOT NULL,
+      secret_prefix TEXT NOT NULL,
+      algorithm TEXT NOT NULL DEFAULT 'sha256',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_used_at TEXT,
+      last_rotated_at TEXT,
+      revoked_at TEXT,
+      revoked_reason TEXT
+    );
   `;
 
   const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
@@ -419,6 +445,13 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_federation_observations_lookup ON federation_observations(industry_bucket, finding_code)',
     'CREATE INDEX IF NOT EXISTS idx_federation_observations_tenant ON federation_observations(tenant_id, finding_code)',
     'CREATE INDEX IF NOT EXISTS idx_federation_aggregates_lookup ON federation_aggregates(industry_bucket, finding_code)',
+    // v74-webhook-hmac: lookup by (tenant_id, source_id, status='active')
+    // is the hot path for HMAC verification on every /ingest/* call
+    'CREATE INDEX IF NOT EXISTS idx_webhook_secrets_lookup ON webhook_signing_secrets(tenant_id, source_id, status)',
+    // Partial unique index: at most ONE active secret per (tenant, source).
+    // SQLite supports partial indexes; we use this instead of a column-level
+    // UNIQUE because we want unlimited rotated/revoked history rows.
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_secrets_one_active ON webhook_signing_secrets(tenant_id, source_id) WHERE status = 'active'",
   ];
 
   for (const idx of indexes) {
