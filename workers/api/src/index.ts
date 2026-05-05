@@ -90,7 +90,7 @@ app.use('*', cors({
     return null as unknown as string;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key', 'X-Request-ID', 'X-Setup-Secret'],
   exposeHeaders: ['Content-Length', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Request-ID'],
   maxAge: 86400,
   credentials: true,
