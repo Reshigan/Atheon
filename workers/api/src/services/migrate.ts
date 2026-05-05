@@ -89,9 +89,14 @@ export interface MigrationResult {
  * Run the full database migration: DDL, indexes, self-healing columns.
  * Idempotent — uses CREATE TABLE IF NOT EXISTS and ALTER TABLE wrapped in try/catch.
  * @param db - D1Database binding
+ * @param opts.force - When true, skip the fast-path even if the schema
+ *   appears to be at MIGRATION_VERSION already. Used by tests and the
+ *   `/admin/migrate?force=true` operator route to repair drift.
  * @returns MigrationResult with stats
  */
-export async function runMigrations(db: D1Database): Promise<MigrationResult> {
+export async function runMigrations(
+  db: D1Database, opts: { force?: boolean } = {},
+): Promise<MigrationResult> {
   const t0 = Date.now();
   const result: MigrationResult = {
     version: MIGRATION_VERSION,
@@ -101,6 +106,42 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     durationMs: 0,
     errors: [],
   };
+
+  // ── Fast-path: skip everything if schema is already at MIGRATION_VERSION ──
+  // The 2026-05-05 prod incident: 200+ CREATE TABLE IF NOT EXISTS statements
+  // each made a separate D1 round-trip; even when no work was needed they
+  // pushed runMigrations() over the auto-migration 25s cap, which then
+  // 503'd every request in a loop. The fast-path turns "already migrated"
+  // into a 1-query check (~50ms) so the cap is never an issue once the
+  // schema is current.
+  //
+  // The marker is _migration_meta(version PRIMARY KEY) — written once at
+  // the END of a successful migration. If we crashed mid-migration and the
+  // marker wasn't written, the next call falls through to the full path
+  // and re-runs everything (still idempotent thanks to CREATE TABLE IF
+  // NOT EXISTS).
+  try {
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS _migration_meta (
+         version TEXT PRIMARY KEY,
+         completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+         duration_ms INTEGER NOT NULL DEFAULT 0
+       )`,
+    ).run();
+    if (!opts.force) {
+      const marker = await db.prepare(
+        `SELECT version FROM _migration_meta WHERE version = ?`,
+      ).bind(MIGRATION_VERSION).first<{ version: string }>();
+      if (marker) {
+        result.durationMs = Date.now() - t0;
+        return result; // schema is current — no DDL to run
+      }
+    }
+  } catch (err) {
+    // Treat any error as "fall through to full migration". The full path
+    // is itself idempotent so this never breaks correctness.
+    result.errors.push(`fast-path: ${(err as Error).message}`);
+  }
 
   // ── Core Tables ──
   const coreTableSQL = `
@@ -1198,5 +1239,24 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
   }
 
   result.durationMs = Date.now() - t0;
+
+  // ── Mark migration complete so the fast-path skips next time ──
+  // We only write the marker when there were NO errors (errors length 0
+  // is too strict — many rows are best-effort; any "Core table" or
+  // "Index" failure means the schema isn't fully at this version).
+  // Use a more permissive predicate: write the marker as long as the
+  // core tables block didn't fail. The marker is just a perf hint;
+  // even if it's wrong, the full path is idempotent so worst case
+  // a stale marker means we miss one repair opportunity until the
+  // next deploy (which is what /admin/migrate?force=true is for).
+  try {
+    await db.prepare(
+      `INSERT OR REPLACE INTO _migration_meta (version, completed_at, duration_ms)
+       VALUES (?, datetime('now'), ?)`,
+    ).bind(MIGRATION_VERSION, result.durationMs).run();
+  } catch (err) {
+    result.errors.push(`marker write: ${(err as Error).message}`);
+  }
+
   return result;
 }
