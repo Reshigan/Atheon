@@ -161,8 +161,21 @@ const METRIC_SPECS: MetricSpec[] = [
 async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
   // Order matters — children first
   const tables = [
+    // Children first; FKs walk top→bottom. Tables added in v74-action
+    // layer (transactional_actions, ap_invoice_inbox, etc.) plus the
+    // sub_catalyst_runs / kpi / insights writes that the new
+    // transactional-runner produces via recordRun all need cleanup
+    // here so re-seed is idempotent.
     'sub_catalyst_kpi_values',
     'sub_catalyst_kpi_definitions',
+    'sub_catalyst_run_items',
+    'sub_catalyst_runs',
+    'sub_catalyst_kpis',
+    'catalyst_insights',
+    'health_score_history',
+    'health_scores',
+    'risk_alerts',
+    'anomalies',
     'process_metric_history',
     'process_metrics',
     'signal_impacts',
@@ -177,6 +190,14 @@ async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
     'billable_line_items',
     'billable_periods',
     'catalyst_actions',
+    'transactional_actions',
+    'customer_credit_holds',
+    'bank_statement_lines',
+    'customer_payments',
+    'ar_open_invoices',
+    'ap_invoice_inbox',
+    'goods_receipts',
+    'purchase_orders',
     'erp_connections',
     'erp_companies',
     'tenant_settings',
@@ -557,6 +578,176 @@ async function seedHealthScoresAndInsights(
   return { insightsCount: insights.length };
 }
 
+/**
+ * Seed transactional substrate (Phase 10-30) so the action-layer
+ * subcatalysts have something to work on.
+ *
+ * Layout is deliberate so each subcatalyst has at least one
+ * auto-post case AND at least one block case:
+ *
+ *   - 5 POs + 4 matching GRs (one PO has no GR — blocks 3-way)
+ *   - 6 AP invoices in inbox:
+ *       3 cleanly match PO+GR → 3-way auto-post
+ *       1 outside tolerance → 3-way block
+ *       1 no GR → 3-way block
+ *       1 duplicate of an auto-posted one → dup-blocker block
+ *   - 4 AR open invoices across 2 customers
+ *   - 3 customer payments:
+ *       2 match (one via remittance text, one via single-amount)
+ *       1 unmatched (no candidate)
+ *   - 1 customer's credit limit set so exposure > limit triggers hold
+ *   - 4 bank statement lines:
+ *       2 receipts matching cash-app posted amounts
+ *       1 payment matching payment-run posted amount
+ *       1 unmatched (forces an exception)
+ */
+async function seedTransactionalSubstrate(
+  db: D1Database, tenantId: string,
+): Promise<{ posCount: number; apInvoiceCount: number; arInvoiceCount: number; bankLineCount: number }> {
+  const connRow = await db.prepare(
+    `SELECT id FROM erp_connections WHERE tenant_id = ? ORDER BY connected_at DESC LIMIT 1`,
+  ).bind(tenantId).first<{ id: string }>();
+  const connId = connRow?.id ?? null;
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // ── 5 POs ────────────────────────────────────────────────────
+  const pos = [
+    { po: 'PO-1001', vendor_id: 'V-MAERSK',  vendor: 'Maersk Logistics SA',  amount: 125000 },
+    { po: 'PO-1002', vendor_id: 'V-SASOL',   vendor: 'Sasol Chemicals',      amount:  78500 },
+    { po: 'PO-1003', vendor_id: 'V-IMPALA',  vendor: 'Impala Mining Supply', amount: 240000 },
+    { po: 'PO-1004', vendor_id: 'V-TRANSF',  vendor: 'Transnet Freight',     amount:  42000 },
+    { po: 'PO-1005', vendor_id: 'V-BIDVEST', vendor: 'Bidvest Industrial',   amount:  18000 },
+  ];
+  for (const p of pos) {
+    await db.prepare(
+      `INSERT INTO purchase_orders (id, tenant_id, erp_connection_id, po_number, vendor_id, vendor_name,
+         po_amount, po_currency, po_date, expected_delivery, status, payment_terms, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'open', 'NET30', 'sap_ecc')`,
+    ).bind(
+      `po-${tenantId}::${p.po}`, tenantId, connId,
+      p.po, p.vendor_id, p.vendor, p.amount,
+      isoDay(-30), isoDay(-15),
+    ).run();
+  }
+
+  // ── 4 GRs (PO-1004 deliberately has none) ────────────────────
+  const grs = [
+    { gr: 'GR-2001', po: 'PO-1001', amount: 125000 },
+    { gr: 'GR-2002', po: 'PO-1002', amount:  78500 },
+    { gr: 'GR-2003', po: 'PO-1003', amount: 240000 },
+    { gr: 'GR-2005', po: 'PO-1005', amount:  18000 },
+  ];
+  for (const g of grs) {
+    await db.prepare(
+      `INSERT INTO goods_receipts (id, tenant_id, erp_connection_id, gr_number, po_number,
+         gr_date, qty_received, gr_amount, currency, status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, 'ZAR', 'received', 'sap_ecc')`,
+    ).bind(
+      `gr-${tenantId}::${g.gr}`, tenantId, connId,
+      g.gr, g.po, isoDay(-12), g.amount,
+    ).run();
+  }
+
+  // ── 6 AP invoices ────────────────────────────────────────────
+  const apInv = [
+    { num: 'INV-9001', po: 'PO-1001', vendor_id: 'V-MAERSK',  vendor: 'Maersk Logistics SA',  amount: 125000 }, // matches
+    { num: 'INV-9002', po: 'PO-1002', vendor_id: 'V-SASOL',   vendor: 'Sasol Chemicals',      amount:  78500 }, // matches
+    { num: 'INV-9003', po: 'PO-1003', vendor_id: 'V-IMPALA',  vendor: 'Impala Mining Supply', amount: 240000 }, // matches exactly
+    { num: 'INV-9004', po: 'PO-1004', vendor_id: 'V-TRANSF',  vendor: 'Transnet Freight',     amount:  42000 }, // no GR → block
+    { num: 'INV-9005', po: 'PO-1005', vendor_id: 'V-BIDVEST', vendor: 'Bidvest Industrial',   amount:  21000 }, // 16% over PO → block
+    { num: 'INV-9006', po: 'PO-1001', vendor_id: 'V-MAERSK',  vendor: 'Maersk Logistics SA',  amount: 125000 }, // duplicate of INV-9001 → dup-block
+  ];
+  for (const i of apInv) {
+    await db.prepare(
+      `INSERT INTO ap_invoice_inbox (id, tenant_id, erp_connection_id, invoice_number, vendor_id, vendor_name,
+         po_number, invoice_amount, currency, invoice_date, due_date, payment_terms, source_system, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'NET30', 'sap_ecc', 'received')`,
+    ).bind(
+      `apinv-${tenantId}::${i.num}`, tenantId, connId,
+      i.num, i.vendor_id, i.vendor, i.po, i.amount,
+      isoDay(-3), isoDay(5),
+    ).run();
+  }
+
+  // ── 4 AR open invoices ───────────────────────────────────────
+  const arInv = [
+    { num: 'AR-5001', cust_id: 'C-PNP',     cust: 'Pick n Pay',     amount: 180000, paid: 0 },
+    { num: 'AR-5002', cust_id: 'C-PNP',     cust: 'Pick n Pay',     amount:  92000, paid: 0 },
+    { num: 'AR-5003', cust_id: 'C-WOOLIES', cust: 'Woolworths',     amount: 145000, paid: 0 },
+    { num: 'AR-5004', cust_id: 'C-WOOLIES', cust: 'Woolworths',     amount:  68000, paid: 0 },
+  ];
+  for (const i of arInv) {
+    await db.prepare(
+      `INSERT INTO ar_open_invoices (id, tenant_id, erp_connection_id, invoice_number, customer_id, customer_name,
+         invoice_amount, currency, invoice_date, due_date, paid_amount, status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, 'open', 'sap_ecc')`,
+    ).bind(
+      `arinv-${tenantId}::${i.num}`, tenantId, connId,
+      i.num, i.cust_id, i.cust, i.amount, isoDay(-20), isoDay(10), i.paid,
+    ).run();
+  }
+
+  // ── 3 customer payments ──────────────────────────────────────
+  const pays = [
+    { ref: 'BANK-RCT-7001', cust_id: 'C-PNP',     cust: 'Pick n Pay', amount: 180000, remit: 'Payment for AR-5001 thanks' }, // remittance match
+    { ref: 'BANK-RCT-7002', cust_id: 'C-WOOLIES', cust: 'Woolworths', amount:  68000, remit: null }, // single-amount match → AR-5004
+    { ref: 'BANK-RCT-7003', cust_id: 'C-MAKRO',   cust: 'Makro',      amount:  35000, remit: null }, // unmatched (no open invoice)
+  ];
+  for (const p of pays) {
+    await db.prepare(
+      `INSERT INTO customer_payments (id, tenant_id, erp_connection_id, payment_ref, customer_id, customer_name,
+         amount, currency, received_date, remittance_text, application_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'unapplied', 'sap_ecc')`,
+    ).bind(
+      `pay-${tenantId}::${p.ref}`, tenantId, connId,
+      p.ref, p.cust_id, p.cust, p.amount, isoDay(-1), p.remit,
+    ).run();
+  }
+
+  // ── Credit limit: PNP exposure (180k+92k=272k) > limit (200k) → hold ──
+  await db.prepare(
+    `INSERT INTO tenant_settings (id, tenant_id, key, value)
+     VALUES (?, ?, 'customer_credit_limit:C-PNP', ?)`,
+  ).bind(crypto.randomUUID(), tenantId, '200000').run();
+  await db.prepare(
+    `INSERT INTO tenant_settings (id, tenant_id, key, value)
+     VALUES (?, ?, 'customer_credit_limit:C-WOOLIES', ?)`,
+  ).bind(crypto.randomUUID(), tenantId, '500000').run();
+
+  // ── 4 bank statement lines ───────────────────────────────────
+  // 2 receipts that will match cash-app posts; 1 payment that will
+  // match a payment-run posted amount; 1 unmatched line.
+  // (Payment-run amounts: V-MAERSK 125k matches, etc.)
+  const bankLines = [
+    { ref: 'STMT-2026-05', line: 1, amount:  180000, cp: 'Pick n Pay',  narrative: 'Receipt AR-5001' },
+    { ref: 'STMT-2026-05', line: 2, amount:   68000, cp: 'Woolworths',  narrative: 'Receipt AR-5004' },
+    { ref: 'STMT-2026-05', line: 3, amount: -125000, cp: 'Maersk Logistics', narrative: 'Pmt MAERSK NET30' },
+    { ref: 'STMT-2026-05', line: 4, amount:   12500, cp: 'Unknown',     narrative: 'Misc credit' },
+  ];
+  for (const b of bankLines) {
+    await db.prepare(
+      `INSERT INTO bank_statement_lines (id, tenant_id, erp_connection_id, statement_ref, line_number,
+         value_date, amount, currency, counterparty, narrative, recon_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'unmatched', 'sap_ecc')`,
+    ).bind(
+      `bnk-${tenantId}::${b.ref}::${b.line}`, tenantId, connId,
+      b.ref, b.line, isoDay(-1), b.amount, b.cp, b.narrative,
+    ).run();
+  }
+
+  return {
+    posCount: pos.length,
+    apInvoiceCount: apInv.length,
+    arInvoiceCount: arInv.length,
+    bankLineCount: bankLines.length,
+  };
+}
+
 async function seedVerifiedAction(db: D1Database, tenantId: string): Promise<void> {
   // One verified completed action so future RCA closures (when metrics
   // recover in subsequent ticks) become billable per Phase 10-19.
@@ -609,6 +800,9 @@ export async function seedSapEccDemo(
 
   const { insightsCount } = await seedHealthScoresAndInsights(db, tenantId, runIds);
   notes.push(`Seeded health_scores + 30-day history + ${insightsCount} catalyst_insights`);
+
+  const txn = await seedTransactionalSubstrate(db, tenantId);
+  notes.push(`Seeded transactional substrate: ${txn.posCount} POs, ${txn.apInvoiceCount} AP invoices, ${txn.arInvoiceCount} AR invoices, ${txn.bankLineCount} bank lines`);
 
   logInfo('demo_sap_ecc.seed_completed',
     { tenantId, layer: 'demo', action: 'seed' },
