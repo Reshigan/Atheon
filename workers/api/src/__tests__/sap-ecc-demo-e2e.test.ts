@@ -50,7 +50,7 @@ describe('Phase 10-26 — SAP ECC end-to-end demo', () => {
     // ── RUN THE CHAIN ──────────────────────────────────────────────
     const result = await runPhase10ChainForTenant(env.DB, TENANT);
     expect(result.tenantId).toBe(TENANT);
-    expect(result.steps.length).toBe(9);
+    expect(result.steps.length).toBe(10);
     const failed = result.steps.filter((s) => !s.ok);
     if (failed.length > 0) {
       throw new Error(`Phase 10 chain steps failed: ${JSON.stringify(failed)}`);

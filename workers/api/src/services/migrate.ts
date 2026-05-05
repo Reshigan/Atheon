@@ -73,7 +73,28 @@
 // orchestration_step_executions tables for multi-step catalyst
 // workflows. Substrate for "fix-procurement-cost spans 3 catalysts:
 // renegotiate supplier → re-issue PO → update GL coding".
-export const MIGRATION_VERSION = 'v73-orchestration';
+// v74-transactional-actions: transactional_actions table is the
+// idempotent write-back ledger for the action layer (AP three-way
+// match, AR cash-app, GL bank-recon, etc.). Each row stages one ERP
+// post; the connector layer flips status pending→approved→posted.
+// Supporting source tables (purchase_orders, goods_receipts,
+// ap_invoice_inbox, ar_open_invoices, customer_payments,
+// bank_statement_lines) hold the in-flight transactional substrate
+// the action subcatalysts read from. These mirror the SAP /
+// Odoo / Xero entities at the field level the bots need; full
+// per-vendor adapter responses still live in erp_connections.config.
+// v75-transactional-batch-2: substrate for the next six action
+// subcatalysts:
+//   - ap_invoice_inbox_raw     (ap-invoice-capture parses these into ap_invoice_inbox)
+//   - vendor_statements        (ap-vendor-statement-recon)
+//   - sales_orders             (ar-invoice-generator turns these into ar_open_invoices)
+//   - dunning_events           (ar-dunning-executor)
+//   - gl_recurring_schedules   (gl-recurring-je)
+//   - intercompany_balances    (gl-intercompany-recon)
+//   - po_approval_policies     (po-approval-router uses these + DOA matrix)
+//   - vendor_master            (supplier-onboarding writes here; existing
+//                                tables didn't expose KYC fields)
+export const MIGRATION_VERSION = 'v75-transactional-batch-2';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -216,6 +237,22 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS federation_observations (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), industry_bucket TEXT NOT NULL DEFAULT 'general', finding_code TEXT NOT NULL, resolved_in_days REAL, recovery_pct REAL, raw_value_zar REAL, observed_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS federation_aggregates (id TEXT PRIMARY KEY, industry_bucket TEXT NOT NULL DEFAULT 'general', finding_code TEXT NOT NULL, n_contributors INTEGER NOT NULL DEFAULT 0, avg_resolved_days REAL NOT NULL DEFAULT 0, avg_recovery_pct REAL NOT NULL DEFAULT 0, p25_recovery_pct REAL DEFAULT 0, p75_recovery_pct REAL DEFAULT 0, epsilon REAL NOT NULL DEFAULT 1, last_refreshed_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(industry_bucket, finding_code));
     CREATE TABLE IF NOT EXISTS billing_checkouts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), plan_id TEXT NOT NULL, billing_cycle TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', stripe_session_id TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS transactional_actions (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), sub_catalyst_name TEXT NOT NULL, action_type TEXT NOT NULL, target_entity TEXT NOT NULL, source_record_ref TEXT, idempotency_key TEXT NOT NULL, payload TEXT NOT NULL DEFAULT '{}', payload_hash TEXT, status TEXT NOT NULL DEFAULT 'pending', external_doc_id TEXT, posted_at TEXT, error TEXT, retry_count INTEGER NOT NULL DEFAULT 0, posted_value REAL, currency TEXT DEFAULT 'ZAR', reasoning TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, idempotency_key));
+    CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), po_number TEXT NOT NULL, vendor_id TEXT, vendor_name TEXT, po_amount REAL NOT NULL DEFAULT 0, po_currency TEXT DEFAULT 'ZAR', po_date TEXT, expected_delivery TEXT, status TEXT NOT NULL DEFAULT 'open', payment_terms TEXT, raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, po_number));
+    CREATE TABLE IF NOT EXISTS goods_receipts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), gr_number TEXT NOT NULL, po_number TEXT NOT NULL, gr_date TEXT, qty_received REAL DEFAULT 0, gr_amount REAL DEFAULT 0, currency TEXT DEFAULT 'ZAR', status TEXT NOT NULL DEFAULT 'received', raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, gr_number));
+    CREATE TABLE IF NOT EXISTS ap_invoice_inbox (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), invoice_number TEXT NOT NULL, vendor_id TEXT, vendor_name TEXT, po_number TEXT, invoice_amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', invoice_date TEXT, due_date TEXT, payment_terms TEXT, line_items TEXT NOT NULL DEFAULT '[]', raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, status TEXT NOT NULL DEFAULT 'received', received_at TEXT NOT NULL DEFAULT (datetime('now')), processed_at TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, invoice_number));
+    CREATE TABLE IF NOT EXISTS ar_open_invoices (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), invoice_number TEXT NOT NULL, customer_id TEXT, customer_name TEXT, invoice_amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', invoice_date TEXT, due_date TEXT, paid_amount REAL NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'open', raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, invoice_number));
+    CREATE TABLE IF NOT EXISTS customer_payments (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), payment_ref TEXT NOT NULL, customer_id TEXT, customer_name TEXT, amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', received_date TEXT, applied_to_invoice TEXT, application_status TEXT NOT NULL DEFAULT 'unapplied', remittance_text TEXT, raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, payment_ref));
+    CREATE TABLE IF NOT EXISTS bank_statement_lines (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), statement_ref TEXT NOT NULL, line_number INTEGER NOT NULL DEFAULT 1, value_date TEXT, amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', counterparty TEXT, narrative TEXT, recon_status TEXT NOT NULL DEFAULT 'unmatched', matched_gl_entry TEXT, raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, statement_ref, line_number));
+    CREATE TABLE IF NOT EXISTS customer_credit_holds (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), customer_id TEXT NOT NULL, customer_name TEXT, credit_limit REAL NOT NULL DEFAULT 0, exposure REAL NOT NULL DEFAULT 0, hold_status TEXT NOT NULL DEFAULT 'active', held_at TEXT NOT NULL DEFAULT (datetime('now')), released_at TEXT, reason TEXT, source_run_id TEXT, UNIQUE(tenant_id, customer_id));
+    CREATE TABLE IF NOT EXISTS ap_invoice_inbox_raw (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), source_channel TEXT NOT NULL DEFAULT 'email', received_at TEXT NOT NULL DEFAULT (datetime('now')), raw_payload TEXT NOT NULL DEFAULT '{}', parsed_status TEXT NOT NULL DEFAULT 'pending', parse_confidence REAL, parsed_invoice_id TEXT, error TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS vendor_statements (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), vendor_id TEXT NOT NULL, vendor_name TEXT, statement_period TEXT NOT NULL, opening_balance REAL DEFAULT 0, closing_balance REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', invoices TEXT NOT NULL DEFAULT '[]', recon_status TEXT NOT NULL DEFAULT 'unmatched', recon_delta REAL DEFAULT 0, source_system TEXT, received_at TEXT NOT NULL DEFAULT (datetime('now')), reconciled_at TEXT, UNIQUE(tenant_id, vendor_id, statement_period));
+    CREATE TABLE IF NOT EXISTS sales_orders (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), so_number TEXT NOT NULL, customer_id TEXT, customer_name TEXT, so_amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', so_date TEXT, fulfilled_at TEXT, billable INTEGER NOT NULL DEFAULT 0, billed_invoice_number TEXT, status TEXT NOT NULL DEFAULT 'open', line_items TEXT NOT NULL DEFAULT '[]', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, so_number));
+    CREATE TABLE IF NOT EXISTS dunning_events (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), customer_id TEXT NOT NULL, customer_name TEXT, invoice_number TEXT NOT NULL, aging_bucket TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1, channel TEXT NOT NULL DEFAULT 'email', sent_at TEXT NOT NULL DEFAULT (datetime('now')), template TEXT, recipient TEXT, raw_payload TEXT, source_run_id TEXT);
+    CREATE TABLE IF NOT EXISTS gl_recurring_schedules (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, je_type TEXT NOT NULL, debit_account TEXT NOT NULL, credit_account TEXT NOT NULL, amount REAL NOT NULL, currency TEXT DEFAULT 'ZAR', frequency TEXT NOT NULL DEFAULT 'monthly', next_run_date TEXT NOT NULL, last_run_date TEXT, enabled INTEGER NOT NULL DEFAULT 1, description TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS intercompany_balances (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), entity_a TEXT NOT NULL, entity_b TEXT NOT NULL, period TEXT NOT NULL, ar_balance REAL NOT NULL DEFAULT 0, ap_balance REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', recon_status TEXT NOT NULL DEFAULT 'unmatched', delta REAL DEFAULT 0, reconciled_at TEXT, source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, entity_a, entity_b, period));
+    CREATE TABLE IF NOT EXISTS po_approval_policies (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), tier_name TEXT NOT NULL, min_amount REAL NOT NULL DEFAULT 0, max_amount REAL, approver_role TEXT NOT NULL, requires_dual_signoff INTEGER NOT NULL DEFAULT 0, cost_centre_filter TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, tier_name));
+    CREATE TABLE IF NOT EXISTS vendor_master (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), vendor_id TEXT NOT NULL, vendor_name TEXT NOT NULL, tax_id TEXT, bank_account TEXT, payment_terms TEXT, kyc_status TEXT NOT NULL DEFAULT 'pending', kyc_completed_at TEXT, status TEXT NOT NULL DEFAULT 'active', source_system TEXT, raw_data TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, vendor_id));
   `;
 
   const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
@@ -792,6 +829,30 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     // for catalysts that read profile-driven thresholds on every run.
     'CREATE INDEX IF NOT EXISTS idx_erp_process_profiles_lookup ON erp_process_profiles(tenant_id, connection_id)',
     'CREATE INDEX IF NOT EXISTS idx_erp_connection_config_conn ON erp_connection_config(tenant_id, connection_id, namespace)',
+    // v74-transactional-actions: action-layer indexes
+    'CREATE INDEX IF NOT EXISTS idx_txn_actions_tenant_status ON transactional_actions(tenant_id, status)',
+    'CREATE INDEX IF NOT EXISTS idx_txn_actions_sub ON transactional_actions(tenant_id, sub_catalyst_name, status)',
+    'CREATE INDEX IF NOT EXISTS idx_txn_actions_created ON transactional_actions(tenant_id, created_at)',
+    'CREATE INDEX IF NOT EXISTS idx_po_tenant_status ON purchase_orders(tenant_id, status)',
+    'CREATE INDEX IF NOT EXISTS idx_po_tenant_vendor ON purchase_orders(tenant_id, vendor_id)',
+    'CREATE INDEX IF NOT EXISTS idx_gr_tenant_po ON goods_receipts(tenant_id, po_number)',
+    'CREATE INDEX IF NOT EXISTS idx_ap_inbox_tenant_status ON ap_invoice_inbox(tenant_id, status)',
+    'CREATE INDEX IF NOT EXISTS idx_ap_inbox_tenant_vendor ON ap_invoice_inbox(tenant_id, vendor_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ar_open_tenant_status ON ar_open_invoices(tenant_id, status)',
+    'CREATE INDEX IF NOT EXISTS idx_ar_open_tenant_customer ON ar_open_invoices(tenant_id, customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_cust_pay_tenant_status ON customer_payments(tenant_id, application_status)',
+    'CREATE INDEX IF NOT EXISTS idx_bank_lines_tenant_status ON bank_statement_lines(tenant_id, recon_status)',
+    'CREATE INDEX IF NOT EXISTS idx_credit_hold_tenant_status ON customer_credit_holds(tenant_id, hold_status)',
+    // v75-transactional-batch-2 indexes
+    'CREATE INDEX IF NOT EXISTS idx_ap_raw_tenant_status ON ap_invoice_inbox_raw(tenant_id, parsed_status)',
+    'CREATE INDEX IF NOT EXISTS idx_vendor_stmt_tenant_status ON vendor_statements(tenant_id, recon_status)',
+    'CREATE INDEX IF NOT EXISTS idx_so_tenant_status ON sales_orders(tenant_id, status, billable)',
+    'CREATE INDEX IF NOT EXISTS idx_so_tenant_customer ON sales_orders(tenant_id, customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_dunning_tenant_customer ON dunning_events(tenant_id, customer_id, sent_at)',
+    'CREATE INDEX IF NOT EXISTS idx_gl_recurring_tenant_next ON gl_recurring_schedules(tenant_id, enabled, next_run_date)',
+    'CREATE INDEX IF NOT EXISTS idx_ic_balances_tenant_status ON intercompany_balances(tenant_id, recon_status, period)',
+    'CREATE INDEX IF NOT EXISTS idx_po_policies_tenant ON po_approval_policies(tenant_id, min_amount)',
+    'CREATE INDEX IF NOT EXISTS idx_vendor_master_tenant_status ON vendor_master(tenant_id, kyc_status, status)',
   ];
 
   for (const idx of erpIndexes) {
