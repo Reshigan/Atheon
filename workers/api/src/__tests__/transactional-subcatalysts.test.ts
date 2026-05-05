@@ -42,22 +42,45 @@ describe('Phase 10-30 — transactional subcatalysts', () => {
     // ── RUN ──────────────────────────────────────────────────────
     const result = await runTransactionalSubcatalystsForTenant(env.DB, TENANT);
 
-    // Each subcatalyst recorded a summary (Phase 10-30 batch + 10-31 batch = 12 total)
-    expect(result.subcatalystSummaries.length).toBe(12);
+    // Each subcatalyst recorded a summary
+    // (Phase 10-30 + 10-31 + 10-32 = 24 total)
+    expect(result.subcatalystSummaries.length).toBe(24);
     const names = result.subcatalystSummaries.map((s) => s.subCatalyst);
-    expect(names).toEqual([
+    // Master data first (gates everything downstream)
+    expect(names.slice(0, 4)).toEqual([
+      'supplier-onboarding',
+      'customer-onboarding',
+      'stock-transfer-executor',
+      'cycle-count-reconciler',
+    ]);
+    // AP cycle
+    expect(names.slice(4, 11)).toEqual([
       'ap-invoice-capture',
       'po-approval-router',
       'ap-duplicate-blocker',
       'ap-three-way-match',
       'ap-payment-run',
       'ap-vendor-statement-recon',
+      'expense-report-auditor',
+    ]);
+    // AR cycle
+    expect(names.slice(11, 15)).toEqual([
       'ar-invoice-generator',
       'ar-cash-application',
       'ar-dunning-executor',
       'ar-credit-hold',
+    ]);
+    // Payroll, GL/close — period-close runs LAST
+    expect(names.slice(15)).toEqual([
+      'payroll-posting-bot',
       'gl-recurring-je',
+      'gl-intercompany-recon',
+      'gl-fx-revaluation',
+      'vat-return-builder',
+      'statutory-filing-bot',
       'gl-bank-reconciliation',
+      'cash-position-forecaster',
+      'gl-period-close-orchestrator',
     ]);
 
     // ── Batch-2 spot checks ──────────────────────────────────────

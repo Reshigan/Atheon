@@ -42,6 +42,18 @@ import {
   runArDunningExecutor,
   runGlRecurringJe,
   runPoApprovalRouter,
+  runSupplierOnboarding,
+  runCustomerOnboarding,
+  runGlIntercompanyRecon,
+  runGlPeriodCloseOrchestrator,
+  runGlFxRevaluation,
+  runVatReturnBuilder,
+  runPayrollPostingBot,
+  runStatutoryFilingBot,
+  runCycleCountReconciler,
+  runStockTransferExecutor,
+  runCashPositionForecaster,
+  runExpenseReportAuditor,
 } from './transactional-subcatalysts';
 import type { TransactionalRunSummary } from './transactional-subcatalysts';
 
@@ -163,18 +175,39 @@ export async function runTransactionalSubcatalystsForTenant(
   //     invoices accumulated in this tick
   //   - GL recurring JE is fully independent — anywhere is fine; placed
   //     near GL recon for thematic grouping
+  // Master-data first — supplier/customer onboarding feed everything
+  // downstream (vendor IDs for AP, customer credit limits for AR).
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runSupplierOnboarding(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCustomerOnboarding(db, tenantId)));
+  // Inventory before AP/AR so stock movements are visible to GL
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runStockTransferExecutor(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCycleCountReconciler(db, tenantId)));
+  // AP cycle
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApInvoiceCapture(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runPoApprovalRouter(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApDuplicateBlocker(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApThreeWayMatch(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApPaymentRun(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runApVendorStatementRecon(db, tenantId)));
+  // T&E feeds AP-style reimbursement
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runExpenseReportAuditor(db, tenantId)));
+  // AR cycle
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArInvoiceGenerator(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArCashApplication(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArDunningExecutor(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runArCreditHold(db, tenantId)));
+  // Payroll → statutory filings depend on payroll runs
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runPayrollPostingBot(db, tenantId)));
+  // GL / period-close — all the close-prerequisite work has happened
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlRecurringJe(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlIntercompanyRecon(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlFxRevaluation(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runVatReturnBuilder(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runStatutoryFilingBot(db, tenantId)));
   subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlBankReconciliation(db, tenantId)));
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runCashPositionForecaster(db, tenantId)));
+  // Period close runs LAST — checks all the readiness signals above
+  subcatalystSummaries.push(await runOne(db, tenantId, clusterId, () => runGlPeriodCloseOrchestrator(db, tenantId)));
 
   // Dispatch all approved staging rows
   let dispatch = { posted: 0, failed: 0, skipped: 0 };

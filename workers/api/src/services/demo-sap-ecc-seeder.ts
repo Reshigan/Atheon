@@ -191,6 +191,17 @@ async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
     'billable_periods',
     'catalyst_actions',
     'transactional_actions',
+    'expense_lines',
+    'expense_reports',
+    'stock_transfer_requests',
+    'cycle_counts',
+    'inventory_items',
+    'statutory_filings',
+    'payroll_runs',
+    'vat_returns',
+    'fx_rates',
+    'period_close_checklists',
+    'customer_master',
     'dunning_events',
     'gl_recurring_schedules',
     'intercompany_balances',
@@ -895,6 +906,205 @@ async function seedTransactionalBatch2Substrate(
   };
 }
 
+/**
+ * Seed substrate for the third batch of transactional subcatalysts
+ * (Phase 10-32): supplier-onboarding, customer-onboarding,
+ * gl-intercompany-recon, gl-period-close-orchestrator,
+ * gl-fx-revaluation, vat-return-builder, payroll-posting-bot,
+ * statutory-filing-bot, cycle-count-reconciler,
+ * stock-transfer-executor, cash-position-forecaster,
+ * expense-report-auditor.
+ */
+async function seedTransactionalBatch3Substrate(
+  db: D1Database, tenantId: string,
+): Promise<{
+  vendorMasterCount: number; customerMasterCount: number;
+  intercompanyCount: number; closeChecklistCount: number;
+  fxRateCount: number; payrollRunCount: number;
+  inventoryItemCount: number; cycleCountCount: number;
+  stockTransferCount: number; expenseReportCount: number;
+}> {
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+  const period = today.toISOString().slice(0, 7);
+
+  // ── 3 vendor_master rows: 2 valid, 1 with bad tax_id ─────────
+  const vendors = [
+    { vid: 'V-NEWVENDOR1', name: 'New Vendor One',  tax: '4123456789', bank: '1234567890' }, // valid
+    { vid: 'V-NEWVENDOR2', name: 'New Vendor Two',  tax: '4987654321', bank: '0987654321' }, // valid
+    { vid: 'V-BADVENDOR',  name: 'Bad Vendor Co',   tax: '999',        bank: 'XYZ'        }, // both invalid
+  ];
+  for (const v of vendors) {
+    await db.prepare(
+      `INSERT INTO vendor_master (id, tenant_id, vendor_id, vendor_name, tax_id, bank_account, payment_terms, kyc_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, 'NET30', 'pending', 'sap_ecc')`,
+    ).bind(
+      `vm-${tenantId}::${v.vid}`, tenantId, v.vid, v.name, v.tax, v.bank,
+    ).run();
+  }
+
+  // ── 3 customer_master rows ───────────────────────────────────
+  const customers = [
+    { cid: 'C-NEWCUST1', name: 'New Customer 1', tax: '4234567890', limit: 250_000 }, // valid
+    { cid: 'C-NEWCUST2', name: 'New Customer 2', tax: '4567890123', limit: 500_000 }, // valid
+    { cid: 'C-BADCUST',  name: 'Bad Customer',   tax: '111',        limit: 0       }, // invalid
+  ];
+  for (const c of customers) {
+    await db.prepare(
+      `INSERT INTO customer_master (id, tenant_id, customer_id, customer_name, tax_id, credit_limit, payment_terms, kyc_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, 'NET30', 'pending', 'sap_ecc')`,
+    ).bind(
+      `cm-${tenantId}::${c.cid}`, tenantId, c.cid, c.name, c.tax, c.limit,
+    ).run();
+  }
+
+  // ── 2 intercompany_balances: 1 matching, 1 mismatch ──────────
+  const ic = [
+    { a: 'CO-1000', b: 'CO-2000', ar: 450_000, ap: 450_000 }, // matches
+    { a: 'CO-1000', b: 'CO-3000', ar: 220_000, ap: 195_000 }, // mismatch
+  ];
+  for (const x of ic) {
+    await db.prepare(
+      `INSERT INTO intercompany_balances (id, tenant_id, entity_a, entity_b, period, ar_balance, ap_balance, currency, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'sap_ecc')`,
+    ).bind(
+      `ic-${tenantId}::${x.a}-${x.b}::${period}`, tenantId, x.a, x.b, period, x.ar, x.ap,
+    ).run();
+  }
+
+  // ── 1 period_close_checklist for current period ──────────────
+  await db.prepare(
+    `INSERT INTO period_close_checklists (id, tenant_id, period, status, target_close_date)
+     VALUES (?, ?, ?, 'open', ?)`,
+  ).bind(
+    `close-${tenantId}::${period}`, tenantId, period, isoDay(7),
+  ).run();
+
+  // ── 3 fx_rates for foreign currency revaluation ──────────────
+  const rates = [
+    { pair: 'USD/ZAR', rate: 18.45 },
+    { pair: 'EUR/ZAR', rate: 19.82 },
+    { pair: 'GBP/ZAR', rate: 23.10 },
+  ];
+  for (const r of rates) {
+    await db.prepare(
+      `INSERT INTO fx_rates (id, tenant_id, currency_pair, rate, rate_date, source)
+       VALUES (?, ?, ?, ?, ?, 'frankfurter.fx')`,
+    ).bind(
+      `fx-${tenantId}::${r.pair}::${isoDay(0)}`, tenantId, r.pair, r.rate, isoDay(0),
+    ).run();
+  }
+  // 1 USD-denominated AR + 1 EUR AP for the FX revaluation to act on
+  await db.prepare(
+    `INSERT INTO ar_open_invoices (id, tenant_id, erp_connection_id, invoice_number, customer_id, customer_name,
+       invoice_amount, currency, invoice_date, due_date, paid_amount, status, source_system)
+     VALUES (?, ?, NULL, 'AR-USD-001', 'C-EXPORT', 'Export Customer Inc', 12000, 'USD', ?, ?, 0, 'open', 'sap_ecc')`,
+  ).bind(`arinv-${tenantId}::AR-USD-001`, tenantId, isoDay(-15), isoDay(15)).run();
+  await db.prepare(
+    `INSERT INTO ap_invoice_inbox (id, tenant_id, erp_connection_id, invoice_number, vendor_id, vendor_name,
+       invoice_amount, currency, invoice_date, due_date, payment_terms, source_system, status)
+     VALUES (?, ?, NULL, 'INV-EUR-001', 'V-EUSUPPLIER', 'EU Supplier GmbH', 8500, 'EUR', ?, ?, 'NET45', 'sap_ecc', 'received')`,
+  ).bind(`apinv-${tenantId}::INV-EUR-001`, tenantId, isoDay(-10), isoDay(35)).run();
+
+  // ── 1 payroll_run pending posting ────────────────────────────
+  await db.prepare(
+    `INSERT INTO payroll_runs (id, tenant_id, period, employee_count, gross_pay, paye, uif_employee, uif_employer, sdl, deductions, net_pay, status)
+     VALUES (?, ?, ?, 25, 850000, 145000, 8500, 8500, 8500, 162000, 688000, 'pending')`,
+  ).bind(
+    `payroll-${tenantId}::${period}`, tenantId, period,
+  ).run();
+
+  // ── 5 inventory_items + 3 cycle_counts (1 within tolerance, 2 variance) ──
+  const items = [
+    { sku: 'SKU-A001', name: 'Component A', loc: 'WH-JHB', qty: 500, cost: 120 },
+    { sku: 'SKU-B002', name: 'Component B', loc: 'WH-JHB', qty: 300, cost: 85 },
+    { sku: 'SKU-C003', name: 'Component C', loc: 'WH-JHB', qty: 1200, cost: 25 },
+    { sku: 'SKU-A001', name: 'Component A', loc: 'WH-CPT', qty: 200, cost: 120 },
+    { sku: 'SKU-D004', name: 'Component D', loc: 'WH-CPT', qty: 50, cost: 480 },
+  ];
+  for (const i of items) {
+    await db.prepare(
+      `INSERT INTO inventory_items (id, tenant_id, sku, name, location, system_qty, unit_cost, currency, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'active')`,
+    ).bind(
+      `inv-${tenantId}::${i.sku}::${i.loc}`, tenantId, i.sku, i.name, i.loc, i.qty, i.cost,
+    ).run();
+  }
+  const counts = [
+    { sku: 'SKU-A001', loc: 'WH-JHB', sys: 500, counted: 500 },     // exact match
+    { sku: 'SKU-B002', loc: 'WH-JHB', sys: 300, counted: 290 },     // 3.3% variance — over tolerance
+    { sku: 'SKU-C003', loc: 'WH-JHB', sys: 1200, counted: 1188 },   // 1% variance — within
+  ];
+  for (const c of counts) {
+    await db.prepare(
+      `INSERT INTO cycle_counts (id, tenant_id, sku, location, count_date, system_qty, counted_qty, currency, counted_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'warehouse-staff')`,
+    ).bind(
+      `cycle-${tenantId}::${c.sku}::${c.loc}::${isoDay(-1)}`, tenantId,
+      c.sku, c.loc, isoDay(-1), c.sys, c.counted,
+    ).run();
+  }
+
+  // ── 2 stock_transfer_requests: 1 valid, 1 short ──────────────
+  const transfers = [
+    { ref: 'XFER-001', from: 'WH-JHB', to: 'WH-CPT', sku: 'SKU-A001', qty: 50 },   // valid
+    { ref: 'XFER-002', from: 'WH-JHB', to: 'WH-CPT', sku: 'SKU-D004', qty: 100 },  // not in JHB → block
+  ];
+  for (const t of transfers) {
+    await db.prepare(
+      `INSERT INTO stock_transfer_requests (id, tenant_id, transfer_ref, from_location, to_location, sku, qty, currency, requested_by, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'warehouse-mgr', 'requested')`,
+    ).bind(
+      `xfer-${tenantId}::${t.ref}`, tenantId, t.ref, t.from, t.to, t.sku, t.qty,
+    ).run();
+  }
+
+  // ── 2 expense_reports: 1 clean, 1 with violations ────────────
+  const reports = [
+    { ref: 'EXP-001', emp: 'EMP-101', name: 'Alice Smith', total: 4500, lines: [
+      { cat: 'flights', amt: 3200, receipt: 1, date: isoDay(-5) },
+      { cat: 'meals', amt: 850, receipt: 1, date: isoDay(-5) },
+      { cat: 'taxis', amt: 450, receipt: 1, date: isoDay(-4) },
+    ] },
+    { ref: 'EXP-002', emp: 'EMP-202', name: 'Bob Jones', total: 6000, lines: [
+      { cat: 'flights', amt: 3000, receipt: 0, date: isoDay(-3) },     // no receipt
+      { cat: 'entertainment', amt: 3000, receipt: 1, date: isoDay(-2) }, // suspiciously round
+    ] },
+  ];
+  for (const r of reports) {
+    const reportId = `exp-${tenantId}::${r.ref}`;
+    await db.prepare(
+      `INSERT INTO expense_reports (id, tenant_id, employee_id, employee_name, report_ref, period, total_amount, currency, status, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'submitted', ?)`,
+    ).bind(reportId, tenantId, r.emp, r.name, r.ref, period, r.total, isoDay(-1)).run();
+    for (const l of r.lines) {
+      await db.prepare(
+        `INSERT INTO expense_lines (id, report_id, tenant_id, category, amount, currency, expense_date, receipt_attached)
+         VALUES (?, ?, ?, ?, ?, 'ZAR', ?, ?)`,
+      ).bind(
+        `expl-${crypto.randomUUID()}`, reportId, tenantId, l.cat, l.amt, l.date, l.receipt,
+      ).run();
+    }
+  }
+
+  return {
+    vendorMasterCount: vendors.length,
+    customerMasterCount: customers.length,
+    intercompanyCount: ic.length,
+    closeChecklistCount: 1,
+    fxRateCount: rates.length,
+    payrollRunCount: 1,
+    inventoryItemCount: items.length,
+    cycleCountCount: counts.length,
+    stockTransferCount: transfers.length,
+    expenseReportCount: reports.length,
+  };
+}
+
 async function seedVerifiedAction(db: D1Database, tenantId: string): Promise<void> {
   // One verified completed action so future RCA closures (when metrics
   // recover in subsequent ticks) become billable per Phase 10-19.
@@ -953,6 +1163,9 @@ export async function seedSapEccDemo(
 
   const txn2 = await seedTransactionalBatch2Substrate(db, tenantId);
   notes.push(`Seeded batch-2 substrate: ${txn2.rawInvoiceCount} raw invoices, ${txn2.vendorStmtCount} vendor statements, ${txn2.salesOrderCount} sales orders, ${txn2.recurringScheduleCount} JE schedules, ${txn2.policyCount} PO policies`);
+
+  const txn3 = await seedTransactionalBatch3Substrate(db, tenantId);
+  notes.push(`Seeded batch-3 substrate: ${txn3.vendorMasterCount} vendor master, ${txn3.customerMasterCount} customer master, ${txn3.intercompanyCount} IC balances, ${txn3.fxRateCount} FX rates, ${txn3.payrollRunCount} payroll run, ${txn3.inventoryItemCount} items + ${txn3.cycleCountCount} counts, ${txn3.stockTransferCount} stock transfers, ${txn3.expenseReportCount} expense reports, 1 close checklist`);
 
   logInfo('demo_sap_ecc.seed_completed',
     { tenantId, layer: 'demo', action: 'seed' },
