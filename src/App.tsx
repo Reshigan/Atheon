@@ -63,6 +63,8 @@ const PricingPage = lazy(() => import("@/pages/PricingPage"));
 const CompliancePage = lazy(() => import("@/pages/CompliancePage"));
 const APExceptionsQueuePage = lazy(() => import("@/pages/APExceptionsQueuePage"));
 const CashApplicationReviewPage = lazy(() => import("@/pages/CashApplicationReviewPage"));
+const PeriodClosePage = lazy(() => import("@/pages/PeriodClosePage"));
+const ActionLayerOpsPage = lazy(() => import("@/pages/ActionLayerOpsPage"));
 
 /**
  * 3.10: Role-based frontend route protection
@@ -192,6 +194,8 @@ export default function App() {
             <Route path="/support-triage" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><SupportTriagePage /></ProtectedRoute>} />
             <Route path="/ap-exceptions" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><APExceptionsQueuePage /></ProtectedRoute>} />
             <Route path="/cash-application" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><CashApplicationReviewPage /></ProtectedRoute>} />
+            <Route path="/period-close" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><PeriodClosePage /></ProtectedRoute>} />
+            <Route path="/action-layer" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><ActionLayerOpsPage /></ProtectedRoute>} />
           </Route>
         </Routes>
       </Suspense>

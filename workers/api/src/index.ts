@@ -44,6 +44,7 @@ import dsarRoutes from './routes/dsar';
 import orchestrationRoutes from './routes/orchestration';
 import insightsStatsRoutes from './routes/insights-stats';
 import transactionalActions from './routes/transactional-actions';
+import ingest from './routes/ingest';
 import catalystIntelligence from './routes/catalyst-intelligence';
 import roi from './routes/roi';
 import boardReport from './routes/board-report';
@@ -396,7 +397,7 @@ app.get('/healthz', async (c) => {
 
 // Tenant isolation middleware for protected routes (supports both /api/ and /api/v1/ prefixes)
 // Auth routes are excluded (login/register don't have JWT yet)
-const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments', 'ai-costs', 'radar', 'diagnostics', 'catalyst-intelligence', 'roi', 'board-report', 'onboarding', 'freshness', 'atheon-score', 'baseline', 'targets', 'executive-summary', 'webhooks', 'system-alerts', 'support', 'inferences', 'billing', 'dsar', 'orchestration', 'insights-stats', 'transactional-actions'];
+const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments', 'ai-costs', 'radar', 'diagnostics', 'catalyst-intelligence', 'roi', 'board-report', 'onboarding', 'freshness', 'atheon-score', 'baseline', 'targets', 'executive-summary', 'webhooks', 'system-alerts', 'support', 'inferences', 'billing', 'dsar', 'orchestration', 'insights-stats', 'transactional-actions', 'ingest'];
 for (const prefix of protectedPrefixes) {
   app.use(`/api/${prefix}/*`, tenantIsolation());
   app.use(`/api/v1/${prefix}/*`, tenantIsolation());
@@ -446,6 +447,7 @@ const routeModules: [string, typeof auth][] = [
   ['orchestration', orchestrationRoutes],
   ['insights-stats', insightsStatsRoutes],
   ['transactional-actions', transactionalActions],
+  ['ingest', ingest],
   ['catalyst-intelligence', catalystIntelligence],
   ['roi', roi], ['board-report', boardReport],
   ['onboarding', onboarding], ['freshness', freshness],

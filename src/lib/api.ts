@@ -1659,6 +1659,44 @@ export const api = {
       ),
   },
 
+  // ── Substrate Ingest (Phase 10-34 production webhook surface) ──
+  ingest: {
+    apInvoiceRaw: (payload: { rows?: unknown[]; raw_payload?: unknown; source_channel?: string }) =>
+      request<IngestBatchResponse>('/api/v1/ingest/ap-invoice-raw', { method: 'POST', body: JSON.stringify(payload) }),
+    apInvoice: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/ap-invoice', { method: 'POST', body: JSON.stringify(payload) }),
+    vendorStatement: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/vendor-statement', { method: 'POST', body: JSON.stringify(payload) }),
+    salesOrder: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/sales-order', { method: 'POST', body: JSON.stringify(payload) }),
+    customerPayment: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/customer-payment', { method: 'POST', body: JSON.stringify(payload) }),
+    bankStatement: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/bank-statement', { method: 'POST', body: JSON.stringify(payload) }),
+    fxRate: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/fx-rate', { method: 'POST', body: JSON.stringify(payload) }),
+    payrollRun: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/payroll-run', { method: 'POST', body: JSON.stringify(payload) }),
+    expenseReport: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/expense-report', { method: 'POST', body: JSON.stringify(payload) }),
+    cycleCount: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/cycle-count', { method: 'POST', body: JSON.stringify(payload) }),
+    stockTransfer: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/stock-transfer', { method: 'POST', body: JSON.stringify(payload) }),
+    rma: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/rma', { method: 'POST', body: JSON.stringify(payload) }),
+    shipment: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/shipment', { method: 'POST', body: JSON.stringify(payload) }),
+    contract: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/contract', { method: 'POST', body: JSON.stringify(payload) }),
+    intercompanyBalance: (payload: object) =>
+      request<IngestBatchResponse>('/api/v1/ingest/intercompany-balance', { method: 'POST', body: JSON.stringify(payload) }),
+    periodCloseStatus: (period?: string) =>
+      request<PeriodCloseStatus>(`/api/v1/ingest/_period-close-status${qs({ period })}`),
+    periodCloseHistory: () =>
+      request<{ history: PeriodCloseHistoryItem[] }>(`/api/v1/ingest/_period-close-history`),
+  },
+
   // ── Transactional Actions (Phase 10-30 / 10-31 action layer HITL) ──
   transactionalActions: {
     list: (opts: { status?: string; sub_catalyst?: string; action_type?: string; limit?: number; offset?: number } = {}) =>
@@ -1722,6 +1760,43 @@ export interface TransactionalActionListItem {
 export interface TransactionalActionDetail extends TransactionalActionListItem {
   payload: unknown;
   payload_hash: string | null;
+}
+
+// ── Substrate Ingest (Phase 10-34) ────────────────────────────────
+export interface IngestBatchResponse {
+  inserted: number;
+  duplicates: number;
+  errors: number;
+  items: Array<{ id: string; duplicate: boolean }>;
+  errorDetails?: string[];
+}
+
+export interface PeriodCloseStepResult {
+  id: string;
+  label: string;
+  passed: boolean;
+  evidence: number;
+}
+
+export interface PeriodCloseStatus {
+  exists: boolean;
+  period: string;
+  status?: string;
+  steps_total?: number;
+  steps_completed?: number;
+  target_close_date?: string | null;
+  started_at?: string;
+  completed_at?: string | null;
+  step_results?: PeriodCloseStepResult[];
+}
+
+export interface PeriodCloseHistoryItem {
+  period: string;
+  status: string;
+  steps_completed: number;
+  steps_total: number;
+  started_at: string;
+  completed_at: string | null;
 }
 
 export interface TenantBrand {
