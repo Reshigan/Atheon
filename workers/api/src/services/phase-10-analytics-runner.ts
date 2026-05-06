@@ -24,6 +24,7 @@ import { sweepCompetitorIntel } from './competitor-intel-source';
 import { sweepRegulatoryFeeds } from './regulatory-feed';
 import { autotuneThresholds } from './threshold-autotune';
 import { sweepForecastAccuracy } from './forecast-accuracy-tracker';
+import { runTransactionalSubcatalystsForTenant } from './transactional-runner';
 
 export interface Phase10RunResult {
   tenantId: string;
@@ -67,6 +68,8 @@ export async function runPhase10ChainForTenant(
   await runStep('regulatory_feed', () => sweepRegulatoryFeeds(db, tenantId, {}), steps, tenantId);
   await runStep('threshold_autotune', () => autotuneThresholds(db, tenantId), steps, tenantId);
   await runStep('forecast_accuracy', () => sweepForecastAccuracy(db, tenantId), steps, tenantId);
+  // Phase 10-30 — transactional action layer (AP/AR/GL automation)
+  await runStep('transactional_subcatalysts', () => runTransactionalSubcatalystsForTenant(db, tenantId), steps, tenantId);
 
   const completedAt = new Date().toISOString();
   const durationMs = Date.now() - startMs;
