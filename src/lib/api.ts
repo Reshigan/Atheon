@@ -1659,6 +1659,23 @@ export const api = {
       ),
   },
 
+  // ── Webhook signing secrets (Phase 10-37 HMAC for /ingest/*) ──
+  webhookSecrets: {
+    list: () => request<{ secrets: WebhookSecretRow[] }>('/api/v1/webhook-secrets'),
+    provision: (body: { source_id: string; label?: string }) =>
+      request<WebhookSecretProvisionResponse>('/api/v1/webhook-secrets', {
+        method: 'POST', body: JSON.stringify(body),
+      }),
+    rotate: (id: string) =>
+      request<WebhookSecretProvisionResponse>(`/api/v1/webhook-secrets/${id}/rotate`, {
+        method: 'POST', body: JSON.stringify({}),
+      }),
+    revoke: (id: string, reason?: string) =>
+      request<{ revoked: boolean; reason: string }>(`/api/v1/webhook-secrets/${id}`, {
+        method: 'DELETE', body: JSON.stringify({ reason: reason ?? '' }),
+      }),
+  },
+
   // Generic HTTP helpers for pages that call arbitrary endpoints
   get: <T = Record<string, unknown>>(path: string) => request<T>(path),
   post: <T = Record<string, unknown>>(path: string, body?: unknown) =>
@@ -1669,6 +1686,28 @@ export const api = {
 };
 
 // Types for API responses
+// ── Webhook signing secrets (Phase 10-37) ─────────────────────────
+export interface WebhookSecretRow {
+  id: string;
+  source_id: string;
+  label: string;
+  secret_prefix: string;
+  algorithm: string;
+  status: 'active' | 'rotated' | 'revoked';
+  created_at: string;
+  last_used_at: string | null;
+  last_rotated_at: string | null;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+}
+
+export interface WebhookSecretProvisionResponse {
+  /** Raw secret value — shown EXACTLY ONCE; the API never returns it again. */
+  secret: string;
+  secret_row: WebhookSecretRow;
+  note: string;
+}
+
 export interface TenantBrand {
   /** HTTPS URL or data:image/ URI. Null = no logo override. */
   logoUrl: string | null;
