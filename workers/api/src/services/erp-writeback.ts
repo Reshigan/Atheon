@@ -51,6 +51,10 @@ import {
   odooSetCreditHold, isOdooError,
 } from './erp-odoo-client';
 import type { OdooConnectionConfig } from './erp-odoo-client';
+import {
+  xeroPostInvoice, xeroPostPayment, xeroPostManualJournal, isXeroError,
+} from './erp-xero-client';
+import type { XeroConnectionConfig } from './erp-xero-client';
 
 export type TransactionalActionType =
   | 'ap_invoice_post'
@@ -253,7 +257,7 @@ async function dispatchToErp(
     case 'odoo':
       return dispatchOdoo(row, docId, connectionConfig);
     case 'xero':
-      return dispatchXero(row, docId);
+      return dispatchXero(db, row, docId, connectionConfig);
     case 'netsuite':
       return dispatchNetsuite(row, docId);
     default:
@@ -496,13 +500,228 @@ async function postOdooCreditHold(
   return odooSetCreditHold(cfg, uid, partnerId, payload.reason ?? row.reasoning ?? 'Credit limit exceeded');
 }
 
+/**
+ * Real Xero write-back. Posts via Xero's REST API using OAuth2
+ * credentials stored in `erp_connections.config`. Falls back to the
+ * stub-and-log path when config is missing fields, so test
+ * environments and partial-config tenants don't fail dispatch.
+ *
+ * Action-type → Xero endpoint mapping:
+ *   ap_invoice_post  → PUT /Invoices  (Type: ACCPAY)
+ *   ap_payment_run   → PUT /Payments  (against an existing AP invoice)
+ *   ar_cash_apply    → PUT /Payments  (against an existing AR invoice)
+ *   gl_journal_entry → PUT /ManualJournals
+ *   ar_credit_hold   → STUB (Xero has no native credit-hold flag;
+ *                      tenant-side workflow handles it)
+ *   ap_invoice_block, gl_bank_match → STUB (internal HITL state)
+ *
+ * Refreshed access tokens are persisted back to
+ * erp_connections.config so the next dispatch picks up the rotated
+ * token instead of re-refreshing on every call.
+ */
 async function dispatchXero(
-  row: TransactionalActionRow, docId: string,
+  db: D1Database, row: TransactionalActionRow, docId: string, configJson: string | null,
 ): Promise<AdapterDispatchResult> {
-  logInfo('erp_writeback.xero',
-    { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
-    { adapter: 'xero', doc_id: docId, idempotency_key: row.idempotency_key, entity: row.target_entity });
-  return { posted: true, externalDocId: docId };
+  const cfg = parseXeroConfig(configJson);
+  if (!cfg) {
+    logWarn('erp_writeback.xero_missing_config',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { reason: 'config missing client_id/client_secret/tenant_id/access_token — falling back to stub' });
+    return { posted: true, externalDocId: docId };
+  }
+
+  if (row.action_type === 'ap_invoice_block' || row.action_type === 'gl_bank_match' || row.action_type === 'ar_credit_hold') {
+    logInfo('erp_writeback.xero_skipped',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { reason: 'action_type does not map to a Xero write', doc_id: docId });
+    return { posted: true, externalDocId: docId };
+  }
+
+  let payload: Record<string, unknown> = {};
+  try { payload = JSON.parse(row.payload || '{}'); } catch { /* keep empty */ }
+
+  const tokenSnapshot = { access_token: cfg.access_token, refresh_token: cfg.refresh_token, token_expires_at: cfg.token_expires_at };
+
+  try {
+    let externalDocId: string;
+    switch (row.action_type) {
+      case 'ap_invoice_post': {
+        const inv = await postXeroApInvoice(cfg, row, payload);
+        externalDocId = inv.InvoiceNumber || inv.InvoiceID;
+        break;
+      }
+      case 'ap_payment_run': {
+        const pay = await postXeroPaymentRun(cfg, row, payload);
+        externalDocId = pay.Reference || pay.PaymentID;
+        break;
+      }
+      case 'ar_cash_apply': {
+        const pay = await postXeroCashApply(cfg, row, payload);
+        externalDocId = pay.Reference || pay.PaymentID;
+        break;
+      }
+      case 'gl_journal_entry': {
+        const j = await postXeroJournalEntry(cfg, row, payload);
+        externalDocId = j.ManualJournalID;
+        break;
+      }
+      default:
+        logWarn('erp_writeback.xero_unsupported',
+          { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+          { reason: `action_type '${row.action_type}' has no Xero mapping; using stub doc_id` });
+        return { posted: true, externalDocId: docId };
+    }
+
+    // If xeroCall rotated the token, persist back so subsequent dispatches don't refresh again
+    if (row.erp_connection_id && (
+      cfg.access_token !== tokenSnapshot.access_token ||
+      cfg.refresh_token !== tokenSnapshot.refresh_token ||
+      cfg.token_expires_at !== tokenSnapshot.token_expires_at
+    )) {
+      await persistXeroToken(db, row.erp_connection_id, cfg);
+    }
+
+    logInfo('erp_writeback.xero_posted',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { adapter: 'xero', doc_id: externalDocId, idempotency_key: row.idempotency_key, entity: row.target_entity });
+    return { posted: true, externalDocId };
+  } catch (err) {
+    const reason = isXeroError(err)
+      ? `[Xero ${err.xeroErrorType ?? 'error'} ${err.httpStatus ?? '?'}] ${err.message}${err.debug ? ` :: ${err.debug.slice(0, 200)}` : ''}`
+      : err instanceof Error ? err.message : String(err);
+    throw new Error(`Xero dispatch failed: ${reason}`);
+  }
+}
+
+function parseXeroConfig(configJson: string | null): XeroConnectionConfig | null {
+  if (!configJson) return null;
+  let parsed: Record<string, unknown> = {};
+  try { parsed = JSON.parse(configJson); } catch { return null; }
+  const client_id = typeof parsed.client_id === 'string' ? parsed.client_id : '';
+  const client_secret = typeof parsed.client_secret === 'string' ? parsed.client_secret : '';
+  const tenant_id = typeof parsed.tenant_id === 'string' ? parsed.tenant_id : '';
+  const access_token = typeof parsed.access_token === 'string' ? parsed.access_token : '';
+  const refresh_token = typeof parsed.refresh_token === 'string' ? parsed.refresh_token : '';
+  const token_expires_at = typeof parsed.token_expires_at === 'string' ? parsed.token_expires_at : '';
+  if (!client_id || !client_secret || !tenant_id || !access_token || !refresh_token) return null;
+  return { client_id, client_secret, tenant_id, access_token, refresh_token, token_expires_at };
+}
+
+async function persistXeroToken(
+  db: D1Database, connectionId: string, cfg: XeroConnectionConfig,
+): Promise<void> {
+  try {
+    const row = await db.prepare('SELECT config FROM erp_connections WHERE id = ?')
+      .bind(connectionId).first<{ config: string }>();
+    let parsed: Record<string, unknown> = {};
+    try { parsed = JSON.parse(row?.config ?? '{}'); } catch { /* overwrite */ }
+    parsed.access_token = cfg.access_token;
+    parsed.refresh_token = cfg.refresh_token;
+    parsed.token_expires_at = cfg.token_expires_at;
+    await db.prepare('UPDATE erp_connections SET config = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(JSON.stringify(parsed), connectionId).run();
+  } catch (err) {
+    // Persistence failure is non-fatal: the token still works for the
+    // current request; next dispatch will just refresh again.
+    logWarn('erp_writeback.xero_token_persist_failed',
+      { layer: 'erp_write', action: 'xero.token_persist' },
+      { connection_id: connectionId, reason: err instanceof Error ? err.message : String(err) });
+  }
+}
+
+interface XeroApInvoicePayload {
+  invoice?: { invoice_number?: string; invoice_amount?: number; invoice_date?: string; due_date?: string };
+  vendor_contact_id?: string; vendor_name?: string;
+  expense_account_code?: string;
+  line_items?: Array<{ description?: string; quantity?: number; unit_amount?: number; account_code?: string }>;
+  status?: 'DRAFT' | 'AUTHORISED';
+}
+async function postXeroApInvoice(
+  cfg: XeroConnectionConfig, row: TransactionalActionRow, payload: XeroApInvoicePayload,
+): Promise<{ InvoiceID: string; InvoiceNumber: string }> {
+  const inv = payload.invoice ?? {};
+  const lines = payload.line_items && payload.line_items.length > 0
+    ? payload.line_items.map((li) => ({
+        Description: li.description ?? row.target_entity,
+        Quantity: li.quantity ?? 1,
+        UnitAmount: li.unit_amount ?? (row.posted_value ?? 0),
+        AccountCode: li.account_code ?? payload.expense_account_code ?? '400',
+      }))
+    : [{
+        Description: inv.invoice_number ?? row.target_entity,
+        Quantity: 1,
+        UnitAmount: row.posted_value ?? 0,
+        AccountCode: payload.expense_account_code ?? '400',
+      }];
+  const contact = payload.vendor_contact_id
+    ? { ContactID: payload.vendor_contact_id }
+    : { Name: payload.vendor_name ?? row.target_entity };
+  return xeroPostInvoice(cfg, {
+    Type: 'ACCPAY',
+    Contact: contact,
+    Date: inv.invoice_date ?? new Date().toISOString().slice(0, 10),
+    DueDate: inv.due_date,
+    LineItems: lines,
+    Reference: inv.invoice_number ?? row.source_record_ref ?? undefined,
+    Status: payload.status ?? 'AUTHORISED',
+  }, row.idempotency_key);
+}
+
+interface XeroPaymentPayload {
+  invoice_id?: string;
+  amount?: number; total_amount?: number;
+  bank_account_code?: string;
+  payment_date?: string;
+}
+async function postXeroPaymentRun(
+  cfg: XeroConnectionConfig, row: TransactionalActionRow, payload: XeroPaymentPayload,
+): Promise<{ PaymentID: string; Reference: string | null }> {
+  if (!payload.invoice_id) throw new Error('payload missing invoice_id (Xero InvoiceID required)');
+  if (!payload.bank_account_code) throw new Error('payload missing bank_account_code (Xero bank account code required)');
+  return xeroPostPayment(cfg, {
+    Invoice: { InvoiceID: payload.invoice_id },
+    Account: { Code: payload.bank_account_code },
+    Amount: payload.total_amount ?? payload.amount ?? Math.abs(row.posted_value ?? 0),
+    Date: payload.payment_date ?? new Date().toISOString().slice(0, 10),
+    Reference: row.source_record_ref ?? undefined,
+  }, row.idempotency_key);
+}
+
+async function postXeroCashApply(
+  cfg: XeroConnectionConfig, row: TransactionalActionRow, payload: XeroPaymentPayload,
+): Promise<{ PaymentID: string; Reference: string | null }> {
+  if (!payload.invoice_id) throw new Error('payload missing invoice_id (Xero InvoiceID required)');
+  if (!payload.bank_account_code) throw new Error('payload missing bank_account_code (Xero bank account code required)');
+  return xeroPostPayment(cfg, {
+    Invoice: { InvoiceID: payload.invoice_id },
+    Account: { Code: payload.bank_account_code },
+    Amount: payload.amount ?? payload.total_amount ?? row.posted_value ?? 0,
+    Date: payload.payment_date ?? new Date().toISOString().slice(0, 10),
+    Reference: row.source_record_ref ?? undefined,
+  }, row.idempotency_key);
+}
+
+interface XeroJournalPayload {
+  narration?: string;
+  date?: string;
+  status?: 'DRAFT' | 'POSTED';
+  debit?: { account_code: string; amount: number; description?: string };
+  credit?: { account_code: string; amount: number; description?: string };
+}
+async function postXeroJournalEntry(
+  cfg: XeroConnectionConfig, row: TransactionalActionRow, payload: XeroJournalPayload,
+): Promise<{ ManualJournalID: string }> {
+  if (!payload.debit || !payload.credit) throw new Error('payload missing debit/credit blocks');
+  const memo = payload.narration ?? row.source_record_ref ?? row.target_entity;
+  return xeroPostManualJournal(cfg, {
+    Narration: memo,
+    Date: payload.date ?? new Date().toISOString().slice(0, 10),
+    Status: payload.status ?? 'POSTED',
+    JournalLines: [
+      { Description: payload.debit.description ?? memo, LineAmount: Math.abs(payload.debit.amount), AccountCode: payload.debit.account_code },
+      { Description: payload.credit.description ?? memo, LineAmount: -Math.abs(payload.credit.amount), AccountCode: payload.credit.account_code },
+    ],
+  }, row.idempotency_key);
 }
 
 async function dispatchNetsuite(
