@@ -127,7 +127,7 @@ export async function handleScheduled(
       // The runner is idempotent and best-effort per step, so retries
       // from queue redelivery don't cause duplicate writes.
       if (!shouldFanOut(env, tenants.results.length)) {
-        try { await runPhase10ChainForTenant(db, tenantId); } catch (e) { console.error(`Phase 10 chain failed for ${tenantId}:`, e); }
+        try { await runPhase10ChainForTenant(db, tenantId, { encryptionKey: env.ENCRYPTION_KEY }); } catch (e) { console.error(`Phase 10 chain failed for ${tenantId}:`, e); }
       }
       // When fan-out is in effect, the per-tenant analytics work
       // happens via handleQueueMessage instead. Enqueueing happens
@@ -1342,7 +1342,7 @@ export async function handleQueueMessage(
         case 'analytics_sweep':
           // Phase 10-21 — fan-out target: run the full Phase 10 chain
           // for one tenant. Idempotent + best-effort per step.
-          await runPhase10ChainForTenant(env.DB, msg.tenantId);
+          await runPhase10ChainForTenant(env.DB, msg.tenantId, { encryptionKey: env.ENCRYPTION_KEY });
           break;
       }
       message.ack();
