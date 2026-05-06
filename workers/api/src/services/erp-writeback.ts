@@ -82,8 +82,28 @@ export type TransactionalStatus =
   | 'pending'      // staged, awaiting approval
   | 'approved'     // ready for dispatch
   | 'posted'       // ERP confirmed
-  | 'failed'       // dispatch error
+  | 'failed'       // dispatch error — eligible for retry until retry_count >= MAX_DISPATCH_RETRIES
+  | 'dead_letter'  // retries exhausted; needs manual intervention before further attempts
   | 'skipped';     // duplicate / superseded
+
+/** Exponential backoff schedule, indexed by retry_count (0-based).
+ *  retry_count == 0 means the row has never been attempted; on first
+ *  failure we set retry_count=1 and the next try is delayed by
+ *  BACKOFF_SCHEDULE_S[1]. After BACKOFF_SCHEDULE_S.length retries we
+ *  freeze the row at status='dead_letter'.
+ *
+ *  Total budget: 1m + 5m + 15m + 1h + 6h ≈ 7h 21m. Long enough that a
+ *  multi-hour ERP outage self-heals; short enough that genuinely
+ *  broken payloads surface to ops same-day.
+ */
+const BACKOFF_SCHEDULE_S = [0, 60, 300, 900, 3600, 21600];
+const MAX_DISPATCH_RETRIES = BACKOFF_SCHEDULE_S.length - 1;
+
+function nextRetryAt(retryCountAfter: number): string | null {
+  if (retryCountAfter <= 0 || retryCountAfter > MAX_DISPATCH_RETRIES) return null;
+  const delaySeconds = BACKOFF_SCHEDULE_S[retryCountAfter];
+  return new Date(Date.now() + delaySeconds * 1000).toISOString();
+}
 
 export interface TransactionalActionRow {
   id: string;
@@ -101,6 +121,8 @@ export interface TransactionalActionRow {
   posted_at: string | null;
   error: string | null;
   retry_count: number;
+  next_retry_at: string | null;
+  dead_letter_at: string | null;
   posted_value: number | null;
   currency: string;
   reasoning: string | null;
@@ -194,8 +216,10 @@ export interface DispatchResult {
   errors: string[];
 }
 
-/** Pick up all 'approved' rows for the tenant and dispatch each to
- *  the appropriate adapter. Per-row failures don't abort the batch.
+/** Pick up dispatch-eligible rows for the tenant and run them.
+ *  Eligible = either status='approved' OR status='failed' with the
+ *  backoff window elapsed and retries remaining. Per-row failures
+ *  don't abort the batch.
  *
  *  encryptionKey is the env ENCRYPTION_KEY — used to decrypt
  *  erp_connections.encrypted_config at dispatch time so adapters get
@@ -206,11 +230,22 @@ export async function executePendingActions(
   db: D1Database, tenantId: string, opts: { limit?: number; encryptionKey?: string } = {},
 ): Promise<DispatchResult> {
   const limit = opts.limit ?? 200;
+  // Pickup query: 'approved' rows always, plus 'failed' rows whose backoff
+  // window has elapsed AND haven't exhausted MAX_DISPATCH_RETRIES.
+  // dead_letter rows never come back without manual intervention.
   const rows = await db.prepare(
     `SELECT * FROM transactional_actions
-      WHERE tenant_id = ? AND status = 'approved'
+      WHERE tenant_id = ?
+        AND (
+          status = 'approved'
+          OR (
+            status = 'failed'
+            AND retry_count < ?
+            AND (next_retry_at IS NULL OR next_retry_at <= datetime('now'))
+          )
+        )
       ORDER BY created_at ASC LIMIT ?`,
-  ).bind(tenantId, limit).all<TransactionalActionRow>();
+  ).bind(tenantId, MAX_DISPATCH_RETRIES, limit).all<TransactionalActionRow>();
 
   const result: DispatchResult = { posted: 0, failed: 0, skipped: 0, errors: [] };
   for (const row of rows.results || []) {
@@ -219,7 +254,8 @@ export async function executePendingActions(
       const now = new Date().toISOString();
       await db.prepare(
         `UPDATE transactional_actions SET
-           status = ?, external_doc_id = ?, posted_at = ?, updated_at = ?
+           status = ?, external_doc_id = ?, posted_at = ?, error = NULL,
+           next_retry_at = NULL, updated_at = ?
          WHERE id = ?`,
       ).bind(
         dispatch.posted ? 'posted' : 'skipped',
@@ -230,17 +266,68 @@ export async function executePendingActions(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const now = new Date().toISOString();
+      const newRetryCount = (row.retry_count ?? 0) + 1;
+      const exhausted = newRetryCount >= MAX_DISPATCH_RETRIES;
+      const nextStatus: TransactionalStatus = exhausted ? 'dead_letter' : 'failed';
+      const retryAt = exhausted ? null : nextRetryAt(newRetryCount);
       await db.prepare(
         `UPDATE transactional_actions SET
-           status = 'failed', error = ?, retry_count = retry_count + 1, updated_at = ?
+           status = ?, error = ?, retry_count = ?,
+           next_retry_at = ?, dead_letter_at = ?, updated_at = ?
          WHERE id = ?`,
-      ).bind(msg, now, row.id).run();
+      ).bind(
+        nextStatus, msg, newRetryCount,
+        retryAt, exhausted ? now : null, now, row.id,
+      ).run();
       result.failed++;
       result.errors.push(`${row.id}: ${msg}`);
-      logError('erp_writeback.dispatch_failed', err, { tenantId, layer: 'erp_write', action: row.action_type }, { entity: row.target_entity });
+      logError(
+        exhausted ? 'erp_writeback.dispatch_dead_letter' : 'erp_writeback.dispatch_failed',
+        err, { tenantId, layer: 'erp_write', action: row.action_type },
+        { entity: row.target_entity, retry_count: newRetryCount, next_retry_at: retryAt, dead_letter: exhausted },
+      );
     }
   }
+
+  // Connection-level failure-rate alert: if a single connection has
+  // accumulated ≥5 dead-lettered or ≥10 failed rows in the last 24h,
+  // emit a warn-level event so existing log-based alerting picks it up.
+  await emitConnectionFailureAlerts(db, tenantId);
+
   return result;
+}
+
+/** Emit a warn-level event per ERP connection whose recent failure rate
+ *  crosses the alert threshold. Best-effort — alert failures don't
+ *  bubble. Idempotent in the sense that repeated calls re-emit the
+ *  same warn (downstream alert routing handles dedupe). */
+async function emitConnectionFailureAlerts(
+  db: D1Database, tenantId: string,
+): Promise<void> {
+  try {
+    const rows = await db.prepare(
+      `SELECT erp_connection_id,
+              SUM(CASE WHEN status = 'dead_letter' THEN 1 ELSE 0 END) AS dead_letter_count,
+              SUM(CASE WHEN status = 'failed'      THEN 1 ELSE 0 END) AS failed_count
+         FROM transactional_actions
+        WHERE tenant_id = ? AND erp_connection_id IS NOT NULL
+          AND updated_at >= datetime('now', '-24 hours')
+        GROUP BY erp_connection_id
+       HAVING dead_letter_count >= 5 OR failed_count >= 10`,
+    ).bind(tenantId).all<{ erp_connection_id: string; dead_letter_count: number; failed_count: number }>();
+    for (const r of rows.results ?? []) {
+      logWarn('erp_writeback.connection_failure_threshold',
+        { tenantId, layer: 'erp_write', action: 'dispatch.alert' },
+        {
+          connection_id: r.erp_connection_id,
+          dead_letter_count: r.dead_letter_count,
+          failed_count: r.failed_count,
+          window: '24h',
+        });
+    }
+  } catch {
+    // Non-fatal: dispatch result is more important than alert emission
+  }
 }
 
 interface AdapterDispatchResult {
@@ -1258,3 +1345,25 @@ export async function skipAction(
   ).bind(reason, now, actionId, tenantId).run();
   return (res.meta?.changes ?? 0) > 0;
 }
+
+/** Revive a dead-lettered action so the next sweep picks it up.
+ *
+ *  Resets retry_count to 0 and clears dead_letter_at + next_retry_at,
+ *  flipping status back to 'approved'. Use when ops has fixed the
+ *  underlying cause (rotated creds, corrected partner mapping, ERP
+ *  back online) and wants the action to retry from a clean slate. */
+export async function reviveDeadLetterAction(
+  db: D1Database, tenantId: string, actionId: string,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const res = await db.prepare(
+    `UPDATE transactional_actions
+        SET status = 'approved', retry_count = 0,
+            next_retry_at = NULL, dead_letter_at = NULL, error = NULL,
+            updated_at = ?
+      WHERE id = ? AND tenant_id = ? AND status = 'dead_letter'`,
+  ).bind(now, actionId, tenantId).run();
+  return (res.meta?.changes ?? 0) > 0;
+}
+
+export { MAX_DISPATCH_RETRIES };
