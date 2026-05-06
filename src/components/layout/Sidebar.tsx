@@ -78,6 +78,7 @@ const navItems: NavItem[] = [
   { path: '/data-governance', label: 'Data Governance', icon: IconShield, section: 'admin-tooling', sublabel: 'Retention & DSAR', roles: PLATFORM_ADMIN_ROLES },
   { path: '/integration-health', label: 'Integration Health', icon: IconConnectivity, section: 'admin-tooling', sublabel: 'Sync Monitoring', roles: PLATFORM_ADMIN_ROLES },
   { path: '/system-alerts', label: 'System Alerts', icon: IconApex, section: 'admin-tooling', sublabel: 'Alert Rules', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/webhook-secrets', label: 'Webhook Secrets', icon: IconShield, section: 'admin-tooling', sublabel: 'HMAC for /ingest', roles: PLATFORM_ADMIN_ROLES },
   // v48: Support ticket system — everyone can file tickets; admins get Triage.
   { path: '/support-tickets', label: 'Support', icon: IconChat, section: 'administration', sublabel: 'File & track tickets' },
   { path: '/support-triage', label: 'Support Triage', icon: IconChat, section: 'admin-tooling', sublabel: 'Tenant Ticket Queue', roles: PLATFORM_ADMIN_ROLES },
