@@ -1714,6 +1714,16 @@ export const api = {
         `/api/v1/transactional-actions/${id}/skip`,
         { method: 'POST', body: JSON.stringify({ reason: reason ?? '' }) },
       ),
+    bulkApprove: (ids: string[]) =>
+      request<{ approved: number; errors: Array<{ id: string; reason: string }>; dispatched: { posted: number; failed: number; skipped: number } }>(
+        `/api/v1/transactional-actions/_bulk/approve`,
+        { method: 'POST', body: JSON.stringify({ ids }) },
+      ),
+    bulkSkip: (ids: string[], reason?: string) =>
+      request<{ skipped: number; errors: Array<{ id: string; reason: string }> }>(
+        `/api/v1/transactional-actions/_bulk/skip`,
+        { method: 'POST', body: JSON.stringify({ ids, reason: reason ?? '' }) },
+      ),
     dispatch: (limit?: number) =>
       request<{ posted: number; failed: number; skipped: number; errors: string[] }>(
         `/api/v1/transactional-actions/dispatch${qs({ limit })}`, { method: 'POST', body: JSON.stringify({}) },

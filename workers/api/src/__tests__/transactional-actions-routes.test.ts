@@ -147,4 +147,70 @@ describe('Phase 10-31 — transactional-actions admin routes', () => {
     });
     expect(res.status).toBe(403);
   });
+
+  it('bulk approve posts multiple pending actions in one call', async () => {
+    // Find a few pending rows; need at least 2 for the bulk path to be meaningful
+    const list = await authedFetch('/api/v1/transactional-actions?status=pending&limit=5');
+    const listBody = await list.json<{ actions: Array<{ id: string }> }>();
+    if (listBody.actions.length < 2) return; // not enough to validate bulk in this seed
+    const ids = listBody.actions.slice(0, 2).map((a) => a.id);
+
+    const res = await authedFetch('/api/v1/transactional-actions/_bulk/approve', {
+      method: 'POST', body: JSON.stringify({ ids }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json<{
+      approved: number;
+      errors: Array<{ id: string; reason: string }>;
+      dispatched: { posted: number; failed: number };
+    }>();
+    expect(body.approved).toBe(ids.length);
+    expect(body.errors.length).toBe(0);
+    expect(body.dispatched.posted).toBeGreaterThanOrEqual(ids.length);
+    expect(body.dispatched.failed).toBe(0);
+
+    // All ids should now be 'posted' status
+    for (const id of ids) {
+      const row = await env.DB.prepare(
+        `SELECT status FROM transactional_actions WHERE id = ?`,
+      ).bind(id).first<{ status: string }>();
+      expect(row!.status).toBe('posted');
+    }
+  });
+
+  it('bulk skip flips multiple pending actions to skipped with shared reason', async () => {
+    const list = await authedFetch('/api/v1/transactional-actions?status=pending&limit=3');
+    const listBody = await list.json<{ actions: Array<{ id: string }> }>();
+    if (listBody.actions.length < 2) return;
+    const ids = listBody.actions.slice(0, 2).map((a) => a.id);
+
+    const res = await authedFetch('/api/v1/transactional-actions/_bulk/skip', {
+      method: 'POST',
+      body: JSON.stringify({ ids, reason: 'Bulk-test reason — month-end pause' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json<{ skipped: number; errors: unknown[] }>();
+    expect(body.skipped).toBe(ids.length);
+    expect(body.errors.length).toBe(0);
+
+    for (const id of ids) {
+      const row = await env.DB.prepare(
+        `SELECT status, error FROM transactional_actions WHERE id = ?`,
+      ).bind(id).first<{ status: string; error: string }>();
+      expect(row!.status).toBe('skipped');
+      expect(row!.error).toContain('Bulk-test reason');
+    }
+  });
+
+  it('bulk endpoints reject empty ids and analyst role', async () => {
+    const empty = await authedFetch('/api/v1/transactional-actions/_bulk/approve', {
+      method: 'POST', body: JSON.stringify({ ids: [] }),
+    });
+    expect(empty.status).toBe(400);
+
+    const analyst = await authedFetch('/api/v1/transactional-actions/_bulk/approve', {
+      method: 'POST', body: JSON.stringify({ ids: ['fake-id'] }), role: 'analyst',
+    });
+    expect(analyst.status).toBe(403);
+  });
 });

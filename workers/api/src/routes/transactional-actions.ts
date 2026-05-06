@@ -133,6 +133,68 @@ transactionalActions.get('/:id', async (c) => {
   return c.json({ action: { ...row, payload: payloadObj } });
 });
 
+// ── BULK APPROVE / SKIP ──────────────────────────────────────────
+// Registered BEFORE the `/:id/approve` and `/:id/skip` routes so
+// Hono's first-match-wins router doesn't bind `_bulk` as the :id.
+// Keep this block above the per-row routes whenever you reorganize.
+
+transactionalActions.post('/_bulk/approve', async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant scope required' }, 400);
+  if (!MUTATION_ROLES.has(getUserRole(c))) return c.json({ error: 'forbidden' }, 403);
+
+  const body = await c.req.json<{ ids: string[] }>().catch(() => ({ ids: [] as string[] }));
+  const ids = (body.ids || []).slice(0, 200);
+  if (ids.length === 0) return c.json({ error: 'ids required (max 200 per call)' }, 400);
+
+  const result = { approved: 0, errors: [] as Array<{ id: string; reason: string }> };
+  for (const id of ids) {
+    try {
+      const ok = await approveAction(c.env.DB, tenantId, id);
+      if (ok) result.approved++;
+      else result.errors.push({ id, reason: 'not found or already processed' });
+    } catch (err) {
+      result.errors.push({ id, reason: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  // One dispatch sweep at the end — picks up all approvals at once
+  const dispatch = await executePendingActions(c.env.DB, tenantId, { limit: ids.length + 50 });
+
+  logInfo('transactional_actions.bulk_approved',
+    { tenantId, layer: 'erp_write', action: 'bulk_approve', userId: getUserId(c) },
+    { requested: ids.length, approved: result.approved, dispatched_posted: dispatch.posted, dispatched_failed: dispatch.failed });
+
+  return c.json({ ...result, dispatched: dispatch });
+});
+
+transactionalActions.post('/_bulk/skip', async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant scope required' }, 400);
+  if (!MUTATION_ROLES.has(getUserRole(c))) return c.json({ error: 'forbidden' }, 403);
+
+  const body = await c.req.json<{ ids: string[]; reason?: string }>().catch(() => ({ ids: [] as string[], reason: undefined as string | undefined }));
+  const ids = (body.ids || []).slice(0, 200);
+  if (ids.length === 0) return c.json({ error: 'ids required (max 200 per call)' }, 400);
+  const reason = ((body as { reason?: string }).reason ?? '').slice(0, 500) || `Bulk-skipped by ${getUserId(c)}`;
+
+  const result = { skipped: 0, errors: [] as Array<{ id: string; reason: string }> };
+  for (const id of ids) {
+    try {
+      const ok = await skipAction(c.env.DB, tenantId, id, reason);
+      if (ok) result.skipped++;
+      else result.errors.push({ id, reason: 'not found or already processed' });
+    } catch (err) {
+      result.errors.push({ id, reason: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  logInfo('transactional_actions.bulk_skipped',
+    { tenantId, layer: 'erp_write', action: 'bulk_skip', userId: getUserId(c) },
+    { requested: ids.length, skipped: result.skipped, reason });
+
+  return c.json(result);
+});
+
 // ── APPROVE ──────────────────────────────────────────────────────
 
 transactionalActions.post('/:id/approve', async (c) => {

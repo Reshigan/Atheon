@@ -58,6 +58,9 @@ export function APExceptionsQueuePage() {
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [selected, setSelected] = useState<TransactionalActionDetail | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  // Bulk-action selection state — set of row ids
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,6 +68,13 @@ export function APExceptionsQueuePage() {
       // Pull all rows in the chosen status bucket; client-side filter to AP subcatalysts
       const res = await api.transactionalActions.list({ status: statusFilter, limit: 200 });
       setItems(res.actions.filter((a) => AP_SUBCATALYSTS.has(a.sub_catalyst_name)));
+      // Drop any selected ids that are no longer in the list (status changed)
+      setSelectedIds((prev) => {
+        const stillThere = new Set<string>();
+        const ids = new Set(res.actions.map((a) => a.id));
+        for (const id of prev) if (ids.has(id)) stillThere.add(id);
+        return stillThere;
+      });
     } catch (err) {
       toast.error('Failed to load AP exceptions', {
         message: err instanceof Error ? err.message : 'Unknown error',
@@ -122,6 +132,85 @@ export function APExceptionsQueuePage() {
     return acc;
   }, {});
 
+  // ── Bulk action helpers ───────────────────────────────────────
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Only pending rows are bulk-actionable. Approved/posted/etc. don't
+  // make sense to bulk-mutate.
+  const bulkActionable = items.filter((a) => a.status === 'pending');
+  const allBulkSelected = bulkActionable.length > 0 && bulkActionable.every((a) => selectedIds.has(a.id));
+  const someBulkSelected = bulkActionable.some((a) => selectedIds.has(a.id));
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (allBulkSelected) {
+        // Deselect everything (across all statuses, in case some non-pending got picked)
+        return new Set();
+      }
+      const next = new Set(prev);
+      for (const a of bulkActionable) next.add(a.id);
+      return next;
+    });
+  }, [allBulkSelected, bulkActionable]);
+
+  const handleBulkApprove = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!window.confirm(`Approve ${ids.length} action${ids.length === 1 ? '' : 's'}?\n\nEach will be staged for dispatch and posted to the ERP. This is irreversible once posted.`)) {
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      const res = await api.transactionalActions.bulkApprove(ids);
+      const errCount = res.errors.length;
+      const errSummary = errCount > 0 ? ` · ${errCount} error${errCount === 1 ? '' : 's'}` : '';
+      toast.success(`Bulk approved ${res.approved}/${ids.length}`, {
+        message: `Posted: ${res.dispatched.posted}, failed: ${res.dispatched.failed}${errSummary}`,
+      });
+      if (errCount > 0) {
+        // Surface specific errors so the operator knows which rows didn't go through
+        // eslint-disable-next-line no-console
+        console.warn('Bulk approve errors:', res.errors);
+      }
+      setSelectedIds(new Set());
+      load();
+    } catch (err) {
+      toast.error('Bulk approve failed', { message: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, toast, load]);
+
+  const handleBulkSkip = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const reason = window.prompt(
+      `Skip ${ids.length} action${ids.length === 1 ? '' : 's'}?\n\nReason (will be stored on each row + audit log):`,
+      '',
+    );
+    if (reason === null) return;
+    setBulkBusy(true);
+    try {
+      const res = await api.transactionalActions.bulkSkip(ids, reason || undefined);
+      const errCount = res.errors.length;
+      toast.success(`Bulk skipped ${res.skipped}/${ids.length}`, {
+        message: errCount > 0 ? `${errCount} error${errCount === 1 ? '' : 's'}` : 'All skipped',
+      });
+      setSelectedIds(new Set());
+      load();
+    } catch (err) {
+      toast.error('Bulk skip failed', { message: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, toast, load]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -157,6 +246,40 @@ export function APExceptionsQueuePage() {
         ))}
       </div>
 
+      {/* Bulk action bar — only shows when there are selected pending rows */}
+      {selectedIds.size > 0 && statusFilter === 'pending' && (
+        <Card className="flex items-center justify-between bg-primary/5 p-3">
+          <div className="text-sm">
+            <strong>{selectedIds.size}</strong> selected
+            <span className="ml-2 text-xs text-muted-foreground">(Escape to clear)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded border px-3 py-1 text-xs hover:bg-muted"
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleBulkSkip}
+              disabled={bulkBusy}
+              className="flex items-center gap-1 rounded border px-3 py-1 text-xs hover:bg-muted disabled:opacity-50"
+            >
+              {bulkBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+              Skip selected
+            </button>
+            <button
+              onClick={handleBulkApprove}
+              disabled={bulkBusy}
+              className="flex items-center gap-1 rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {bulkBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+              Approve & post selected
+            </button>
+          </div>
+        </Card>
+      )}
+
       {/* Table */}
       <Card className="overflow-hidden">
         {loading ? (
@@ -173,6 +296,21 @@ export function APExceptionsQueuePage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40">
                 <tr>
+                  <th className="px-3 py-2 w-8">
+                    {/* Header checkbox: select-all bulk-actionable (pending) rows */}
+                    {bulkActionable.length > 0 && (
+                      <input
+                        type="checkbox"
+                        checked={allBulkSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = !allBulkSelected && someBulkSelected;
+                        }}
+                        onChange={toggleSelectAll}
+                        title={allBulkSelected ? 'Deselect all' : 'Select all pending'}
+                        className="cursor-pointer"
+                      />
+                    )}
+                  </th>
                   <th className="px-3 py-2 text-left font-medium">Subcatalyst</th>
                   <th className="px-3 py-2 text-left font-medium">Source ref</th>
                   <th className="px-3 py-2 text-left font-medium">Action</th>
@@ -186,8 +324,21 @@ export function APExceptionsQueuePage() {
               <tbody>
                 {items.map((a) => {
                   const badge = STATUS_BADGE[a.status] ?? STATUS_BADGE.pending;
+                  const selectable = a.status === 'pending';
+                  const isSelected = selectedIds.has(a.id);
                   return (
-                    <tr key={a.id} className="border-b hover:bg-muted/30">
+                    <tr key={a.id} className={`border-b hover:bg-muted/30 ${isSelected ? 'bg-primary/5' : ''}`}>
+                      <td className="px-3 py-2 w-8">
+                        {selectable && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(a.id)}
+                            className="cursor-pointer"
+                            aria-label={`Select ${a.source_record_ref ?? a.id}`}
+                          />
+                        )}
+                      </td>
                       <td className="px-3 py-2 font-mono text-xs">{a.sub_catalyst_name}</td>
                       <td className="px-3 py-2 font-mono text-xs">{a.source_record_ref ?? '—'}</td>
                       <td className="px-3 py-2 text-xs">{a.action_type}</td>
