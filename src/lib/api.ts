@@ -807,6 +807,31 @@ export const api = {
         `/api/erp/connections/${connectionId}/partner-mappings/${partnerType}/${encodeURIComponent(atheonRef)}`,
         { method: 'DELETE' },
       ),
+    /** Phase 10-47: bootstrap proposals from the ERP's partner list. */
+    partnerMappingProposals: (connectionId: string, partnerType: 'vendor' | 'customer') =>
+      request<{
+        system: string;
+        canonical_count: number;
+        erp_partner_count: number;
+        proposals: Array<{
+          atheon_partner_ref: string;
+          atheon_partner_name: string;
+          external_partner_id: string;
+          external_partner_name: string;
+          confidence: number;
+          reason: string;
+        }>;
+        total: number;
+      }>(`/api/erp/connections/${connectionId}/partner-mappings/proposals${qs({ partner_type: partnerType })}`),
+    bulkUpsertPartnerMappings: (
+      connectionId: string,
+      partnerType: 'vendor' | 'customer',
+      mappings: Array<{ atheon_partner_ref: string; external_partner_id: string; external_partner_name?: string }>,
+    ) =>
+      request<{ created: number; updated: number; skipped: number; errors: Array<{ atheon_partner_ref: string; reason: string }> }>(
+        `/api/erp/connections/${connectionId}/partner-mappings/bulk`,
+        { method: 'POST', body: JSON.stringify({ partner_type: partnerType, mappings }) },
+      ),
     // v61: process profile — structured business rules per connection
     // (3-way-match, AP tolerance %, payment terms days, fiscal year start,
     // approval thresholds, dunning days). Catalysts read this to operate

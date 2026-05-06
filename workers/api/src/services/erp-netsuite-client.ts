@@ -278,4 +278,52 @@ export function isNetSuiteError(err: unknown): err is NetSuiteError {
   return err instanceof NetSuiteError;
 }
 
+/**
+ * List vendors / customers for partner-mapping bootstrap via SuiteQL.
+ *
+ * SuiteQL is NetSuite's SQL-over-REST surface — much cheaper than
+ * paging through /vendor and /customer record endpoints, and it lets
+ * us filter inactive rows server-side. Default limit 1000 (SuiteQL
+ * cap) which is sufficient for almost every customer.
+ *
+ * Query target tables:
+ *   - vendor   (vendor records, isInactive='F')
+ *   - customer (customer records, isInactive='F')
+ */
+export async function netsuiteListPartners(
+  cfg: NetSuiteConnectionConfig,
+  partnerType: 'vendor' | 'customer',
+  limit = 1000,
+): Promise<Array<{ id: string; entityId: string; companyName: string | null; email: string | null }>> {
+  const table = partnerType === 'vendor' ? 'vendor' : 'customer';
+  // SuiteQL endpoint isn't under /record/v1; it's /query/v1/suiteql
+  const sql = `SELECT id, entityId, companyName, email FROM ${table} WHERE isInactive = 'F' ORDER BY companyName`;
+  const url = `https://${netsuiteRestHost(cfg.account_id)}/services/rest/query/v1/suiteql?limit=${limit}`;
+  const auth = await buildAuthHeader(cfg, 'POST', url);
+  const headers: Record<string, string> = {
+    Authorization: auth,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    Prefer: 'transient',
+  };
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ q: sql }) });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let parsed: { 'o:errorDetails'?: Array<{ detail: string; 'o:errorCode'?: string }>; title?: string } = {};
+    try { parsed = JSON.parse(text); } catch { /* keep text */ }
+    const detail = parsed['o:errorDetails']?.[0];
+    throw new NetSuiteError(
+      `NetSuite SuiteQL ${res.status}: ${detail?.detail ?? parsed.title ?? text.slice(0, 300)}`,
+      res.status, detail?.['o:errorCode'] ?? null, text.slice(0, 1000) || null,
+    );
+  }
+  const json = await res.json() as { items?: Array<{ id: string; entityid: string; companyname?: string; email?: string }> };
+  return (json.items ?? []).map((r) => ({
+    id: String(r.id),
+    entityId: r.entityid,
+    companyName: r.companyname ?? null,
+    email: r.email ?? null,
+  }));
+}
+
 export { NetSuiteError };
