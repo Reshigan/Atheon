@@ -28,6 +28,10 @@ import {
   type CatalystWriteAction,
 } from '../services/erp-write-actions';
 import '../services/erp-write-adapters'; // side-effect: registers default adapters
+import {
+  upsertPartnerMapping, listPartnerMappings, deletePartnerMapping,
+  type PartnerType,
+} from '../services/erp-partner-mapping';
 
 const erp = new Hono<AppBindings>();
 
@@ -1840,6 +1844,81 @@ erp.get('/data/summary', async (c) => {
       bankBalance: bankBalance?.balance || 0,
     },
   });
+});
+
+// ── Partner-ID mappings (Phase 10-45) ────────────────────────────
+// Maintain the Atheon canonical partner_ref ↔ ERP-native external ID
+// translation table. Required for write-back: subcatalysts stage
+// payloads with the canonical ref (e.g. 'vendor-acme-001'), and the
+// adapter dispatchers look up the ERP-native ID at dispatch time.
+
+function isPartnerType(s: unknown): s is PartnerType {
+  return s === 'vendor' || s === 'customer';
+}
+
+erp.get('/connections/:id/partner-mappings', async (c) => {
+  const tenantId = getTenantId(c);
+  const connectionId = c.req.param('id');
+  const partnerType = c.req.query('partner_type');
+  const filterType = isPartnerType(partnerType) ? partnerType : undefined;
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(connectionId, tenantId).first();
+  if (!conn) return c.json({ error: 'connection_not_found' }, 404);
+
+  const mappings = await listPartnerMappings(c.env.DB, tenantId, connectionId, filterType, 1000);
+  return c.json({ mappings, total: mappings.length });
+});
+
+erp.post('/connections/:id/partner-mappings', async (c) => {
+  const tenantId = getTenantId(c);
+  const connectionId = c.req.param('id');
+  const { data: body, errors } = await getValidatedJsonBody<{
+    partner_type: PartnerType;
+    atheon_partner_ref: string;
+    external_partner_id: string;
+    external_partner_name?: string;
+    metadata?: Record<string, unknown>;
+  }>(c, [
+    { field: 'partner_type', required: true, type: 'string' },
+    { field: 'atheon_partner_ref', required: true, type: 'string' },
+    { field: 'external_partner_id', required: true, type: 'string' },
+  ]);
+  if ((errors && errors.length > 0) || !body) return c.json({ error: 'invalid_body', details: errors }, 400);
+  if (!isPartnerType(body.partner_type)) return c.json({ error: 'partner_type must be vendor|customer' }, 400);
+  if (!body.atheon_partner_ref || !body.external_partner_id) {
+    return c.json({ error: 'atheon_partner_ref and external_partner_id are required' }, 400);
+  }
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(connectionId, tenantId).first();
+  if (!conn) return c.json({ error: 'connection_not_found' }, 404);
+
+  const result = await upsertPartnerMapping(
+    c.env.DB, tenantId, connectionId, body.partner_type,
+    body.atheon_partner_ref, body.external_partner_id,
+    body.external_partner_name, body.metadata,
+  );
+  return c.json({ ...result, partner_type: body.partner_type, atheon_partner_ref: body.atheon_partner_ref }, result.created ? 201 : 200);
+});
+
+erp.delete('/connections/:id/partner-mappings/:partner_type/:atheon_ref', async (c) => {
+  const tenantId = getTenantId(c);
+  const connectionId = c.req.param('id');
+  const partnerType = c.req.param('partner_type');
+  const atheonRef = c.req.param('atheon_ref');
+  if (!isPartnerType(partnerType)) return c.json({ error: 'partner_type must be vendor|customer' }, 400);
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(connectionId, tenantId).first();
+  if (!conn) return c.json({ error: 'connection_not_found' }, 404);
+
+  const removed = await deletePartnerMapping(c.env.DB, tenantId, connectionId, partnerType, atheonRef);
+  if (!removed) return c.json({ error: 'mapping_not_found' }, 404);
+  return c.json({ deleted: true });
 });
 
 export default erp;

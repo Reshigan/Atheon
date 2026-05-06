@@ -65,6 +65,9 @@ import {
   sapPostSupplierInvoice, sapPostIncomingPayment, sapPostJournalEntry, isSapError,
 } from './erp-sap-client';
 import type { SapConnectionConfig } from './erp-sap-client';
+import {
+  lookupPartnerExternalId, lookupPartnerExternalIdNumeric,
+} from './erp-partner-mapping';
 
 export type TransactionalActionType =
   | 'ap_invoice_post'
@@ -303,13 +306,13 @@ async function dispatchToErp(
     case 'sap_ecc':
     case 'sap':
     case 'sap_s4hana':
-      return dispatchSap(row, docId, connectionConfig);
+      return dispatchSap(db, row, docId, connectionConfig);
     case 'odoo':
-      return dispatchOdoo(row, docId, connectionConfig);
+      return dispatchOdoo(db, row, docId, connectionConfig);
     case 'xero':
       return dispatchXero(db, row, docId, connectionConfig, encryptionKey);
     case 'netsuite':
-      return dispatchNetsuite(row, docId, connectionConfig);
+      return dispatchNetsuite(db, row, docId, connectionConfig);
     default:
       // Generic stub — log + return synthesised id
       logInfo('erp_writeback.generic_stub',
@@ -342,7 +345,7 @@ async function dispatchToErp(
  *   ar_credit_hold + ap_invoice_block + gl_bank_match → STUB
  */
 async function dispatchSap(
-  row: TransactionalActionRow, docId: string, configJson: string | null,
+  db: D1Database, row: TransactionalActionRow, docId: string, configJson: string | null,
 ): Promise<AdapterDispatchResult> {
   const cfg = parseSapConfig(configJson);
   if (!cfg) {
@@ -374,12 +377,12 @@ async function dispatchSap(
     let externalDocId: string;
     switch (row.action_type) {
       case 'ap_invoice_post': {
-        const r = await postSapSupplierInvoice(cfg, row, payload);
+        const r = await postSapSupplierInvoice(db, cfg, row, payload);
         externalDocId = r.SupplierInvoice;
         break;
       }
       case 'ar_cash_apply': {
-        const r = await postSapIncomingPayment(cfg, row, payload);
+        const r = await postSapIncomingPayment(db, cfg, row, payload);
         externalDocId = r.PaymentDocument;
         break;
       }
@@ -424,16 +427,21 @@ function parseSapConfig(configJson: string | null): SapConnectionConfig | null {
 interface SapApInvoicePayload {
   invoice?: { invoice_number?: string; invoice_date?: string; due_date?: string };
   company_code?: string;
-  vendor_id?: string;
+  vendor_id?: string; vendor_ref?: string;
   document_currency?: string;
   gross_amount?: number;
   line_items?: Array<{ gl_account: string; amount: number; debit_credit?: 'S' | 'H' }>;
 }
 async function postSapSupplierInvoice(
-  cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapApInvoicePayload,
+  db: D1Database, cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapApInvoicePayload,
 ): Promise<{ SupplierInvoice: string; FiscalYear: string }> {
   if (!payload.company_code) throw new Error('payload missing company_code (SAP CompanyCode required)');
-  if (!payload.vendor_id) throw new Error('payload missing vendor_id (SAP InvoicingParty required)');
+  let vendorId = payload.vendor_id;
+  if (!vendorId && payload.vendor_ref && row.erp_connection_id) {
+    const mapped = await lookupPartnerExternalId(db, row.tenant_id, row.erp_connection_id, 'vendor', payload.vendor_ref);
+    if (mapped) vendorId = mapped;
+  }
+  if (!vendorId) throw new Error('payload missing vendor_id (SAP InvoicingParty required) and no vendor_ref mapping found');
   const inv = payload.invoice ?? {};
   const docDate = inv.invoice_date ?? new Date().toISOString().slice(0, 10);
   const currency = payload.document_currency ?? row.currency ?? 'USD';
@@ -451,7 +459,7 @@ async function postSapSupplierInvoice(
     CompanyCode: payload.company_code,
     DocumentDate: docDate,
     PostingDate: docDate,
-    InvoicingParty: payload.vendor_id,
+    InvoicingParty: vendorId,
     SupplierInvoiceIDByInvcgParty: inv.invoice_number ?? row.source_record_ref ?? undefined,
     DocumentCurrency: currency,
     InvoiceGrossAmount: gross,
@@ -461,7 +469,7 @@ async function postSapSupplierInvoice(
 
 interface SapCashApplyPayload {
   company_code?: string;
-  customer_id?: string;
+  customer_id?: string; customer_ref?: string;
   amount?: number;
   currency?: string;
   house_bank?: string;
@@ -470,14 +478,19 @@ interface SapCashApplyPayload {
   payment_date?: string;
 }
 async function postSapIncomingPayment(
-  cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapCashApplyPayload,
+  db: D1Database, cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapCashApplyPayload,
 ): Promise<{ PaymentDocument: string; FiscalYear: string }> {
   if (!payload.company_code) throw new Error('payload missing company_code (SAP CompanyCode required)');
-  if (!payload.customer_id) throw new Error('payload missing customer_id (SAP Customer required)');
+  let customerId = payload.customer_id;
+  if (!customerId && payload.customer_ref && row.erp_connection_id) {
+    const mapped = await lookupPartnerExternalId(db, row.tenant_id, row.erp_connection_id, 'customer', payload.customer_ref);
+    if (mapped) customerId = mapped;
+  }
+  if (!customerId) throw new Error('payload missing customer_id (SAP Customer required) and no customer_ref mapping found');
   return sapPostIncomingPayment(cfg, {
     CompanyCode: payload.company_code,
     PostingDate: payload.payment_date ?? new Date().toISOString().slice(0, 10),
-    Customer: payload.customer_id,
+    Customer: customerId,
     PaymentAmount: (payload.amount ?? row.posted_value ?? 0).toFixed(2),
     PaymentCurrency: payload.currency ?? row.currency ?? 'USD',
     HouseBank: payload.house_bank,
@@ -543,7 +556,7 @@ async function postSapJournalEntry(
  *   ap_invoice_block → STUB (block is internal HITL state; nothing to write)
  */
 async function dispatchOdoo(
-  row: TransactionalActionRow, docId: string, configJson: string | null,
+  db: D1Database, row: TransactionalActionRow, docId: string, configJson: string | null,
 ): Promise<AdapterDispatchResult> {
   const cfg = parseOdooConfig(configJson);
   if (!cfg) {
@@ -573,19 +586,19 @@ async function dispatchOdoo(
     let result: { id: number; name: string };
     switch (row.action_type) {
       case 'ap_invoice_post':
-        result = await postOdooApInvoice(cfg, uid, row, payload);
+        result = await postOdooApInvoice(db, cfg, uid, row, payload);
         break;
       case 'ap_payment_run':
-        result = await postOdooPaymentRun(cfg, uid, row, payload);
+        result = await postOdooPaymentRun(db, cfg, uid, row, payload);
         break;
       case 'ar_cash_apply':
-        result = await postOdooCashApply(cfg, uid, row, payload);
+        result = await postOdooCashApply(db, cfg, uid, row, payload);
         break;
       case 'gl_journal_entry':
         result = await postOdooJournalEntry(cfg, uid, row, payload);
         break;
       case 'ar_credit_hold':
-        result = await postOdooCreditHold(cfg, uid, row, payload);
+        result = await postOdooCreditHold(db, cfg, uid, row, payload);
         break;
       default:
         logWarn('erp_writeback.odoo_unsupported',
@@ -622,18 +635,42 @@ function parseOdooConfig(configJson: string | null): OdooConnectionConfig | null
   return { url, db, login, password };
 }
 
+/** Resolve an Odoo numeric res.partner.id from either an explicit
+ *  numeric in the payload OR a string vendor_ref that maps via
+ *  erp_partner_mappings. Returns null when neither is available. */
+async function resolveOdooPartnerId(
+  db: D1Database, row: TransactionalActionRow,
+  partnerType: 'vendor' | 'customer',
+  payload: { partner_id?: number; vendor_partner_id?: number; vendor_id?: number;
+             customer_partner_id?: number; customer_id?: number;
+             vendor_ref?: string; customer_ref?: string; partner_ref?: string },
+): Promise<number | null> {
+  // Explicit numeric ID wins (fast path, no DB hit)
+  const explicit = payload.partner_id
+    ?? (partnerType === 'vendor' ? (payload.vendor_partner_id ?? payload.vendor_id) : (payload.customer_partner_id ?? payload.customer_id));
+  if (typeof explicit === 'number') return explicit;
+
+  // String ref via mapping table
+  if (!row.erp_connection_id) return null;
+  const ref = payload.partner_ref
+    ?? (partnerType === 'vendor' ? payload.vendor_ref : payload.customer_ref);
+  if (!ref) return null;
+  return lookupPartnerExternalIdNumeric(db, row.tenant_id, row.erp_connection_id, partnerType, ref);
+}
+
 interface OdooApInvoicePayload {
   invoice?: { invoice_number?: string; invoice_amount?: number; invoice_date?: string; due_date?: string };
   vendor_id?: number; vendor_partner_id?: number; partner_id?: number;
+  vendor_ref?: string; partner_ref?: string;
   expense_account_id?: number;
   line_items?: Array<{ name?: string; quantity?: number; price_unit?: number; account_id?: number }>;
 }
 async function postOdooApInvoice(
-  cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooApInvoicePayload,
+  db: D1Database, cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooApInvoicePayload,
 ): Promise<{ id: number; name: string }> {
-  const partnerId = payload.partner_id ?? payload.vendor_partner_id ?? payload.vendor_id;
+  const partnerId = await resolveOdooPartnerId(db, row, 'vendor', payload);
   if (typeof partnerId !== 'number') {
-    throw new Error('payload missing partner_id / vendor_partner_id (Odoo res.partner numeric ID required)');
+    throw new Error('payload missing partner_id / vendor_partner_id (Odoo res.partner numeric ID required) and no vendor_ref mapping found');
   }
   const inv = payload.invoice ?? {};
   const lines = payload.line_items && payload.line_items.length > 0
@@ -661,14 +698,15 @@ async function postOdooApInvoice(
 
 interface OdooPaymentPayload {
   vendor_id?: number; vendor_partner_id?: number; partner_id?: number;
+  vendor_ref?: string; partner_ref?: string;
   total_amount?: number; amount?: number;
   journal_id?: number;
 }
 async function postOdooPaymentRun(
-  cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooPaymentPayload,
+  db: D1Database, cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooPaymentPayload,
 ): Promise<{ id: number; name: string }> {
-  const partnerId = payload.partner_id ?? payload.vendor_partner_id ?? payload.vendor_id;
-  if (typeof partnerId !== 'number') throw new Error('payload missing partner_id (Odoo numeric ID required)');
+  const partnerId = await resolveOdooPartnerId(db, row, 'vendor', payload);
+  if (typeof partnerId !== 'number') throw new Error('payload missing partner_id (Odoo numeric ID required) and no vendor_ref mapping found');
   if (typeof payload.journal_id !== 'number') throw new Error('payload missing journal_id (Odoo bank journal numeric ID required)');
   return odooPostPayment(cfg, uid, {
     payment_type: 'outbound',
@@ -683,13 +721,14 @@ async function postOdooPaymentRun(
 
 interface OdooCashApplyPayload {
   customer_id?: number; customer_partner_id?: number; partner_id?: number;
+  customer_ref?: string; partner_ref?: string;
   amount?: number; journal_id?: number;
 }
 async function postOdooCashApply(
-  cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooCashApplyPayload,
+  db: D1Database, cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooCashApplyPayload,
 ): Promise<{ id: number; name: string }> {
-  const partnerId = payload.partner_id ?? payload.customer_partner_id ?? payload.customer_id;
-  if (typeof partnerId !== 'number') throw new Error('payload missing partner_id (Odoo numeric ID required)');
+  const partnerId = await resolveOdooPartnerId(db, row, 'customer', payload);
+  if (typeof partnerId !== 'number') throw new Error('payload missing partner_id (Odoo numeric ID required) and no customer_ref mapping found');
   if (typeof payload.journal_id !== 'number') throw new Error('payload missing journal_id (Odoo bank journal numeric ID required)');
   return odooPostPayment(cfg, uid, {
     payment_type: 'inbound',
@@ -727,13 +766,14 @@ async function postOdooJournalEntry(
 
 interface OdooCreditHoldPayload {
   customer_partner_id?: number; partner_id?: number; customer_id?: number;
+  customer_ref?: string; partner_ref?: string;
   reason?: string;
 }
 async function postOdooCreditHold(
-  cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooCreditHoldPayload,
+  db: D1Database, cfg: OdooConnectionConfig, uid: number, row: TransactionalActionRow, payload: OdooCreditHoldPayload,
 ): Promise<{ id: number; name: string }> {
-  const partnerId = payload.partner_id ?? payload.customer_partner_id ?? payload.customer_id;
-  if (typeof partnerId !== 'number') throw new Error('payload missing partner_id (Odoo numeric ID required)');
+  const partnerId = await resolveOdooPartnerId(db, row, 'customer', payload);
+  if (typeof partnerId !== 'number') throw new Error('payload missing partner_id (Odoo numeric ID required) and no customer_ref mapping found');
   return odooSetCreditHold(cfg, uid, partnerId, payload.reason ?? row.reasoning ?? 'Credit limit exceeded');
 }
 
@@ -784,7 +824,7 @@ async function dispatchXero(
     let externalDocId: string;
     switch (row.action_type) {
       case 'ap_invoice_post': {
-        const inv = await postXeroApInvoice(cfg, row, payload);
+        const inv = await postXeroApInvoice(db, cfg, row, payload);
         externalDocId = inv.InvoiceNumber || inv.InvoiceID;
         break;
       }
@@ -890,13 +930,13 @@ async function persistXeroToken(
 
 interface XeroApInvoicePayload {
   invoice?: { invoice_number?: string; invoice_amount?: number; invoice_date?: string; due_date?: string };
-  vendor_contact_id?: string; vendor_name?: string;
+  vendor_contact_id?: string; vendor_name?: string; vendor_ref?: string;
   expense_account_code?: string;
   line_items?: Array<{ description?: string; quantity?: number; unit_amount?: number; account_code?: string }>;
   status?: 'DRAFT' | 'AUTHORISED';
 }
 async function postXeroApInvoice(
-  cfg: XeroConnectionConfig, row: TransactionalActionRow, payload: XeroApInvoicePayload,
+  db: D1Database, cfg: XeroConnectionConfig, row: TransactionalActionRow, payload: XeroApInvoicePayload,
 ): Promise<{ InvoiceID: string; InvoiceNumber: string }> {
   const inv = payload.invoice ?? {};
   const lines = payload.line_items && payload.line_items.length > 0
@@ -912,8 +952,14 @@ async function postXeroApInvoice(
         UnitAmount: row.posted_value ?? 0,
         AccountCode: payload.expense_account_code ?? '400',
       }];
-  const contact = payload.vendor_contact_id
-    ? { ContactID: payload.vendor_contact_id }
+  // Resolve Xero ContactID: explicit ID > mapping table > Name fallback
+  let contactId = payload.vendor_contact_id;
+  if (!contactId && payload.vendor_ref && row.erp_connection_id) {
+    const mapped = await lookupPartnerExternalId(db, row.tenant_id, row.erp_connection_id, 'vendor', payload.vendor_ref);
+    if (mapped) contactId = mapped;
+  }
+  const contact = contactId
+    ? { ContactID: contactId }
     : { Name: payload.vendor_name ?? row.target_entity };
   return xeroPostInvoice(cfg, {
     Type: 'ACCPAY',
@@ -1000,7 +1046,7 @@ async function postXeroJournalEntry(
  * the new record; we use the trailing internalId as external_doc_id.
  */
 async function dispatchNetsuite(
-  row: TransactionalActionRow, docId: string, configJson: string | null,
+  db: D1Database, row: TransactionalActionRow, docId: string, configJson: string | null,
 ): Promise<AdapterDispatchResult> {
   const cfg = parseNetSuiteConfig(configJson);
   if (!cfg) {
@@ -1027,10 +1073,10 @@ async function dispatchNetsuite(
     let internalId: string;
     switch (row.action_type) {
       case 'ap_invoice_post':
-        internalId = (await postNetSuiteVendorBill(cfg, row, payload)).internalId;
+        internalId = (await postNetSuiteVendorBill(db, cfg, row, payload)).internalId;
         break;
       case 'ar_cash_apply':
-        internalId = (await postNetSuiteCustomerPayment(cfg, row, payload)).internalId;
+        internalId = (await postNetSuiteCustomerPayment(db, cfg, row, payload)).internalId;
         break;
       case 'gl_journal_entry':
         internalId = (await postNetSuiteJournalEntry(cfg, row, payload)).internalId;
@@ -1069,14 +1115,19 @@ function parseNetSuiteConfig(configJson: string | null): NetSuiteConnectionConfi
 
 interface NetSuiteVendorBillRowPayload {
   invoice?: { invoice_number?: string; invoice_date?: string; due_date?: string };
-  vendor_internal_id?: string;
+  vendor_internal_id?: string; vendor_ref?: string;
   expense_account_id?: string;
   line_items?: Array<{ description?: string; quantity?: number; amount?: number; account_id?: string }>;
 }
 async function postNetSuiteVendorBill(
-  cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteVendorBillRowPayload,
+  db: D1Database, cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteVendorBillRowPayload,
 ) {
-  if (!payload.vendor_internal_id) throw new Error('payload missing vendor_internal_id (NetSuite vendor internal ID required)');
+  let vendorId = payload.vendor_internal_id;
+  if (!vendorId && payload.vendor_ref && row.erp_connection_id) {
+    const mapped = await lookupPartnerExternalId(db, row.tenant_id, row.erp_connection_id, 'vendor', payload.vendor_ref);
+    if (mapped) vendorId = mapped;
+  }
+  if (!vendorId) throw new Error('payload missing vendor_internal_id (NetSuite vendor internal ID required) and no vendor_ref mapping found');
   const inv = payload.invoice ?? {};
   const expenseLines = payload.line_items && payload.line_items.length > 0
     ? payload.line_items.map((li) => ({
@@ -1091,7 +1142,7 @@ async function postNetSuiteVendorBill(
       }].filter((l) => l.account.id);
   if (expenseLines.length === 0) throw new Error('payload missing expense_account_id (NetSuite GL account internal ID required)');
   return netsuitePostVendorBill(cfg, {
-    entity: { id: payload.vendor_internal_id },
+    entity: { id: vendorId },
     tranDate: inv.invoice_date,
     dueDate: inv.due_date,
     tranId: inv.invoice_number ?? row.source_record_ref ?? undefined,
@@ -1101,19 +1152,24 @@ async function postNetSuiteVendorBill(
 }
 
 interface NetSuiteCustomerPaymentRowPayload {
-  customer_internal_id?: string;
+  customer_internal_id?: string; customer_ref?: string;
   bank_account_id?: string;
   amount?: number;
   invoice_internal_id?: string;
   payment_date?: string;
 }
 async function postNetSuiteCustomerPayment(
-  cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteCustomerPaymentRowPayload,
+  db: D1Database, cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteCustomerPaymentRowPayload,
 ) {
-  if (!payload.customer_internal_id) throw new Error('payload missing customer_internal_id (NetSuite customer internal ID required)');
+  let customerId = payload.customer_internal_id;
+  if (!customerId && payload.customer_ref && row.erp_connection_id) {
+    const mapped = await lookupPartnerExternalId(db, row.tenant_id, row.erp_connection_id, 'customer', payload.customer_ref);
+    if (mapped) customerId = mapped;
+  }
+  if (!customerId) throw new Error('payload missing customer_internal_id (NetSuite customer internal ID required) and no customer_ref mapping found');
   const amount = payload.amount ?? row.posted_value ?? 0;
   return netsuitePostCustomerPayment(cfg, {
-    customer: { id: payload.customer_internal_id },
+    customer: { id: customerId },
     payment: amount,
     tranDate: payload.payment_date ?? new Date().toISOString().slice(0, 10),
     account: payload.bank_account_id ? { id: payload.bank_account_id } : undefined,

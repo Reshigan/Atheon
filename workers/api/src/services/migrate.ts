@@ -83,7 +83,7 @@
 // the action subcatalysts read from. These mirror the SAP /
 // Odoo / Xero entities at the field level the bots need; full
 // per-vendor adapter responses still live in erp_connections.config.
-export const MIGRATION_VERSION = 'v74-transactional-actions';
+export const MIGRATION_VERSION = 'v75-erp-partner-mappings';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -234,6 +234,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS customer_payments (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), payment_ref TEXT NOT NULL, customer_id TEXT, customer_name TEXT, amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', received_date TEXT, applied_to_invoice TEXT, application_status TEXT NOT NULL DEFAULT 'unapplied', remittance_text TEXT, raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, payment_ref));
     CREATE TABLE IF NOT EXISTS bank_statement_lines (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), statement_ref TEXT NOT NULL, line_number INTEGER NOT NULL DEFAULT 1, value_date TEXT, amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', counterparty TEXT, narrative TEXT, recon_status TEXT NOT NULL DEFAULT 'unmatched', matched_gl_entry TEXT, raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, statement_ref, line_number));
     CREATE TABLE IF NOT EXISTS customer_credit_holds (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), customer_id TEXT NOT NULL, customer_name TEXT, credit_limit REAL NOT NULL DEFAULT 0, exposure REAL NOT NULL DEFAULT 0, hold_status TEXT NOT NULL DEFAULT 'active', held_at TEXT NOT NULL DEFAULT (datetime('now')), released_at TEXT, reason TEXT, source_run_id TEXT, UNIQUE(tenant_id, customer_id));
+    CREATE TABLE IF NOT EXISTS erp_partner_mappings (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT NOT NULL REFERENCES erp_connections(id), partner_type TEXT NOT NULL, atheon_partner_ref TEXT NOT NULL, external_partner_id TEXT NOT NULL, external_partner_name TEXT, metadata TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, erp_connection_id, partner_type, atheon_partner_ref));
   `;
 
   const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
