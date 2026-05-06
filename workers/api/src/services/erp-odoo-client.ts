@@ -36,7 +36,6 @@
  * plaintext config; the encrypt-on-write pass is a follow-up.
  */
 
-import { logInfo, logWarn } from './logger';
 
 export interface OdooConnectionConfig {
   url: string;
@@ -269,6 +268,34 @@ export async function odooSetCreditHold(
 
 export function isOdooError(err: unknown): err is OdooError {
   return err instanceof OdooError;
+}
+
+/**
+ * List res.partner rows for partner-mapping bootstrap.
+ *
+ * Filters by supplier_rank > 0 / customer_rank > 0 to skip generic
+ * contacts. Returns up to `limit` rows (default 500) with the fields
+ * the fuzzy matcher needs: id, name, vat (tax registration), email,
+ * is_company.
+ *
+ * Uses search_read which combines a search domain + a read in one
+ * round-trip — cheaper than search() + read() for bootstrap loads.
+ */
+export async function odooListPartners(
+  cfg: OdooConnectionConfig, uid: number,
+  partnerType: 'vendor' | 'customer',
+  limit = 500,
+): Promise<Array<{ id: number; name: string; vat: string | false; email: string | false; is_company: boolean }>> {
+  const rankField = partnerType === 'vendor' ? 'supplier_rank' : 'customer_rank';
+  const domain: Array<[string, string, number] | string> = [[rankField, '>', 0]];
+  const rows = await odooExecuteKw<Array<{
+    id: number; name: string; vat: string | false; email: string | false; is_company: boolean;
+  }>>(
+    cfg, uid, 'res.partner', 'search_read',
+    [domain, ['id', 'name', 'vat', 'email', 'is_company']],
+    { limit, order: 'name asc' },
+  );
+  return rows;
 }
 
 export { OdooError };

@@ -15,7 +15,7 @@
  * — that's the user-visible signal that this page needs attention.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link2, Plus, Trash2, Loader2, X, Search, AlertTriangle, Users, Briefcase } from "lucide-react";
+import { Link2, Plus, Trash2, Loader2, X, Search, AlertTriangle, Users, Briefcase, Sparkles, CheckSquare, Square } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,25 @@ type EditorState =
   | { mode: 'create'; partnerType: PartnerType }
   | { mode: 'edit'; mapping: PartnerMapping };
 
+interface Proposal {
+  atheon_partner_ref: string;
+  atheon_partner_name: string;
+  external_partner_id: string;
+  external_partner_name: string;
+  confidence: number;
+  reason: string;
+}
+
+interface BootstrapState {
+  partnerType: PartnerType;
+  loading: boolean;
+  error: string | null;
+  proposals: Proposal[] | null;
+  selected: Set<string>;
+  submitting: boolean;
+  result: { created: number; updated: number; skipped: number; errors: Array<{ atheon_partner_ref: string; reason: string }> } | null;
+}
+
 export function PartnerMappingsPage() {
   const toast = useToast();
   const [connections, setConnections] = useState<ERPConnection[]>([]);
@@ -55,6 +74,7 @@ export function PartnerMappingsPage() {
   const [search, setSearch] = useState('');
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<PartnerMapping | null>(null);
+  const [bootstrap, setBootstrap] = useState<BootstrapState | null>(null);
 
   // Load connections on mount.
   useEffect(() => {
@@ -133,6 +153,70 @@ export function PartnerMappingsPage() {
     }
   };
 
+  const startBootstrap = async () => {
+    if (!selectedConnId) return;
+    setBootstrap({ partnerType: tab, loading: true, error: null, proposals: null, selected: new Set(), submitting: false, result: null });
+    try {
+      const res = await api.erp.partnerMappingProposals(selectedConnId, tab);
+      // Pre-select all high-confidence (≥0.9) proposals
+      const preselected = new Set(res.proposals.filter((p) => p.confidence >= 0.9).map((p) => p.atheon_partner_ref));
+      setBootstrap({
+        partnerType: tab, loading: false, error: null,
+        proposals: res.proposals, selected: preselected, submitting: false, result: null,
+      });
+    } catch (err) {
+      setBootstrap({
+        partnerType: tab, loading: false, proposals: null, selected: new Set(), submitting: false, result: null,
+        error: err instanceof Error ? err.message : 'Failed to fetch proposals',
+      });
+    }
+  };
+
+  const toggleProposal = (ref: string) => {
+    setBootstrap((s) => {
+      if (!s) return s;
+      const sel = new Set(s.selected);
+      if (sel.has(ref)) sel.delete(ref);
+      else sel.add(ref);
+      return { ...s, selected: sel };
+    });
+  };
+
+  const toggleAllProposals = () => {
+    setBootstrap((s) => {
+      if (!s || !s.proposals) return s;
+      if (s.selected.size === s.proposals.length) return { ...s, selected: new Set() };
+      return { ...s, selected: new Set(s.proposals.map((p) => p.atheon_partner_ref)) };
+    });
+  };
+
+  const submitBootstrap = async () => {
+    if (!bootstrap || !bootstrap.proposals || !selectedConnId) return;
+    const picks = bootstrap.proposals.filter((p) => bootstrap.selected.has(p.atheon_partner_ref));
+    if (picks.length === 0) {
+      toast.error('Select at least one proposal to confirm');
+      return;
+    }
+    setBootstrap({ ...bootstrap, submitting: true });
+    try {
+      const res = await api.erp.bulkUpsertPartnerMappings(
+        selectedConnId, bootstrap.partnerType,
+        picks.map((p) => ({
+          atheon_partner_ref: p.atheon_partner_ref,
+          external_partner_id: p.external_partner_id,
+          external_partner_name: p.external_partner_name || undefined,
+        })),
+      );
+      setBootstrap({ ...bootstrap, submitting: false, result: res });
+      toast.success(`${res.created} added, ${res.updated} updated`,
+        res.skipped > 0 ? `${res.skipped} skipped — see details below` : undefined);
+      await loadMappings();
+    } catch (err) {
+      setBootstrap({ ...bootstrap, submitting: false });
+      toast.error('Bulk confirm failed', err instanceof Error ? err.message : undefined);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
@@ -148,14 +232,25 @@ export function PartnerMappingsPage() {
             </p>
           </div>
         </div>
-        <Button
-          variant="primary"
-          size="md"
-          disabled={!selectedConnId}
-          onClick={() => setEditor({ mode: 'create', partnerType: tab })}
-        >
-          <Plus size={14} /> Add mapping
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="md"
+            disabled={!selectedConnId}
+            onClick={startBootstrap}
+            title="Pull contacts from the ERP and propose mappings via fuzzy match"
+          >
+            <Sparkles size={14} /> Bootstrap from ERP
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            disabled={!selectedConnId}
+            onClick={() => setEditor({ mode: 'create', partnerType: tab })}
+          >
+            <Plus size={14} /> Add mapping
+          </Button>
+        </div>
       </div>
 
       {/* Connection picker */}
@@ -292,6 +387,17 @@ export function PartnerMappingsPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Bootstrap modal */}
+      {bootstrap && selectedConnId && (
+        <BootstrapModal
+          state={bootstrap}
+          onToggle={toggleProposal}
+          onToggleAll={toggleAllProposals}
+          onSubmit={submitBootstrap}
+          onClose={() => setBootstrap(null)}
+        />
       )}
 
       {/* Editor modal */}
@@ -532,6 +638,201 @@ function MappingEditor({ connectionId, initial, partnerType, onSaved, onCancel }
         </Button>
       </div>
     </div>
+  );
+}
+
+// ─── Bootstrap modal ─────────────────────────────────────────────────────
+function BootstrapModal({
+  state, onToggle, onToggleAll, onSubmit, onClose,
+}: {
+  state: BootstrapState;
+  onToggle: (ref: string) => void;
+  onToggleAll: () => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <Portal>
+      <div
+        className="fixed inset-0 z-[9000] flex items-start justify-center p-4 overflow-y-auto"
+        style={{ background: 'rgba(0,0,0,0.6)' }}
+        onClick={onClose}
+      >
+        <div
+          className="relative rounded-2xl border shadow-2xl w-full my-8"
+          style={{
+            background: 'var(--bg-card-solid)',
+            borderColor: 'var(--border-card)',
+            maxWidth: 860,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border-card)' }}>
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-accent" />
+              <h2 className="text-base font-semibold t-primary">
+                Bootstrap {state.partnerType} mappings from ERP
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded hover:bg-[var(--bg-secondary)] t-muted hover:t-primary"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {state.loading ? (
+              <div className="flex items-center justify-center py-10 t-muted">
+                <Loader2 size={16} className="animate-spin mr-2" /> Pulling partners from the ERP and matching against canonical names…
+              </div>
+            ) : state.error ? (
+              <Card variant="outline" className="border-red-500/30">
+                <p className="text-sm text-red-400 flex items-start gap-2">
+                  <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                  <span>{state.error}</span>
+                </p>
+                <p className="text-xs t-muted mt-2">
+                  Bootstrap requires valid credentials in this connection's encrypted_config. Confirm the connection
+                  is one of Odoo/Xero/NetSuite/SAP and that the credentials are configured in the Integrations page.
+                </p>
+              </Card>
+            ) : state.result ? (
+              <div className="space-y-3">
+                <Card>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold t-primary">Bulk confirm result</h3>
+                    <div className="grid grid-cols-3 gap-3 text-center pt-2">
+                      <div>
+                        <div className="text-2xl font-bold text-emerald-400">{state.result.created}</div>
+                        <div className="text-xs t-muted">Added</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-accent">{state.result.updated}</div>
+                        <div className="text-xs t-muted">Updated</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-amber-400">{state.result.skipped}</div>
+                        <div className="text-xs t-muted">Skipped</div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                {state.result.errors.length > 0 && (
+                  <Card variant="outline" className="border-amber-500/30">
+                    <h4 className="text-xs font-semibold t-primary mb-2">Skipped rows</h4>
+                    <ul className="space-y-1 text-xs">
+                      {state.result.errors.slice(0, 10).map((e, i) => (
+                        <li key={i}>
+                          <code className="font-mono t-secondary">{e.atheon_partner_ref}</code>
+                          <span className="t-muted"> — {e.reason}</span>
+                        </li>
+                      ))}
+                      {state.result.errors.length > 10 && (
+                        <li className="t-muted">+{state.result.errors.length - 10} more</li>
+                      )}
+                    </ul>
+                  </Card>
+                )}
+                <div className="flex justify-end pt-2">
+                  <Button variant="primary" onClick={onClose}>Done</Button>
+                </div>
+              </div>
+            ) : !state.proposals || state.proposals.length === 0 ? (
+              <div className="text-center py-10 space-y-3">
+                <Sparkles className="w-10 h-10 t-muted mx-auto" />
+                <h3 className="text-sm font-semibold t-primary">No new proposals</h3>
+                <p className="text-xs t-muted max-w-md mx-auto">
+                  No unmatched canonical {state.partnerType}s could be auto-mapped. Either every canonical
+                  {' '}{state.partnerType} already has a confirmed mapping, or the fuzzy matcher couldn't find
+                  a partner above the 60% confidence floor. Add mappings manually instead.
+                </p>
+                <div className="pt-2">
+                  <Button variant="primary" onClick={onClose}>Close</Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-xs t-muted">
+                    {state.proposals.length} proposed mapping{state.proposals.length === 1 ? '' : 's'}.
+                    High-confidence rows (≥90%) are pre-selected; review carefully before confirming.
+                  </p>
+                  <button
+                    onClick={onToggleAll}
+                    className="text-xs t-muted hover:t-primary flex items-center gap-1"
+                  >
+                    {state.selected.size === state.proposals.length ? (
+                      <><CheckSquare size={12} /> Deselect all</>
+                    ) : (
+                      <><Square size={12} /> Select all</>
+                    )}
+                  </button>
+                </div>
+                <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-card)' }}>
+                  <div className="max-h-[420px] overflow-y-auto">
+                    {state.proposals.map((p) => {
+                      const checked = state.selected.has(p.atheon_partner_ref);
+                      const conf = p.confidence;
+                      const tone: 'success' | 'warning' | 'info' =
+                        conf >= 0.95 ? 'success' : conf >= 0.8 ? 'info' : 'warning';
+                      return (
+                        <button
+                          key={p.atheon_partner_ref}
+                          onClick={() => onToggle(p.atheon_partner_ref)}
+                          className="w-full text-left px-3 py-2 flex items-center gap-3 border-b hover:bg-[var(--bg-secondary)] transition-colors"
+                          style={{ borderColor: 'var(--border-card)' }}
+                        >
+                          {checked
+                            ? <CheckSquare size={14} className="text-accent flex-shrink-0" />
+                            : <Square size={14} className="t-muted flex-shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <code className="text-xs font-mono t-primary">{p.atheon_partner_ref}</code>
+                              <span className="t-muted text-xs">→</span>
+                              <code className="text-xs font-mono text-accent">{p.external_partner_id}</code>
+                              <Badge variant={tone} size="sm">{Math.round(conf * 100)}%</Badge>
+                            </div>
+                            <div className="text-[11px] t-secondary truncate mt-0.5">
+                              {p.atheon_partner_name} <span className="t-muted">↔</span> {p.external_partner_name}
+                            </div>
+                            <div className="text-[10px] t-muted mt-0.5">{p.reason}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2 pt-2">
+                  <span className="text-xs t-muted">
+                    {state.selected.size} of {state.proposals.length} selected
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={onClose} disabled={state.submitting}>Cancel</Button>
+                    <Button
+                      variant="primary"
+                      onClick={onSubmit}
+                      disabled={state.submitting || state.selected.size === 0}
+                    >
+                      {state.submitting && <Loader2 size={12} className="animate-spin mr-1" />}
+                      Confirm {state.selected.size} mapping{state.selected.size === 1 ? '' : 's'}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </Portal>
   );
 }
 

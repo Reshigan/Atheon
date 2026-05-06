@@ -81,14 +81,13 @@ export async function xeroRefreshToken(cfg: XeroConnectionConfig): Promise<{
   return res.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>;
 }
 
-interface XeroResponse<T> {
+interface XeroResponse {
   Id: string;
   Status: string;
   Date?: string;
   // Result envelopes vary by endpoint; we only ever need the
   // first record's identifier (number/name) for the Atheon
-  // external_doc_id. Everything else stays in T for callers who
-  // need it.
+  // external_doc_id.
 }
 
 async function xeroCall<T>(
@@ -228,6 +227,28 @@ export async function xeroPostManualJournal(
 
 export function isXeroError(err: unknown): err is XeroError {
   return err instanceof XeroError;
+}
+
+/**
+ * List Xero Contacts for partner-mapping bootstrap. Filters by
+ * IsSupplier=true / IsCustomer=true so we don't return generic
+ * relationship rows (employees, etc.).
+ *
+ * Xero pages 100 per request; this helper fetches a single page
+ * keyed by `page` (1-indexed). The caller orchestrates pagination
+ * (the proposals route does so until fewer than 100 rows come back).
+ */
+export async function xeroListContacts(
+  cfg: XeroConnectionConfig,
+  partnerType: 'vendor' | 'customer',
+  page = 1,
+): Promise<Array<{ ContactID: string; Name: string; TaxNumber?: string; EmailAddress?: string }>> {
+  const where = partnerType === 'vendor' ? 'IsSupplier==true' : 'IsCustomer==true';
+  const path = `/Contacts?where=${encodeURIComponent(where)}&page=${page}&order=Name`;
+  const res = await xeroCall<{ Contacts: Array<{ ContactID: string; Name: string; TaxNumber?: string; EmailAddress?: string }> }>(
+    cfg, 'GET', path,
+  );
+  return res.Contacts ?? [];
 }
 
 export { XeroError };

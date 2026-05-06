@@ -32,6 +32,10 @@ import {
   upsertPartnerMapping, listPartnerMappings, deletePartnerMapping,
   type PartnerType,
 } from '../services/erp-partner-mapping';
+import {
+  discoverCanonicalVendors, discoverCanonicalCustomers, fetchErpPartners,
+  generateProposals,
+} from '../services/erp-partner-bootstrap';
 
 const erp = new Hono<AppBindings>();
 
@@ -1902,6 +1906,117 @@ erp.post('/connections/:id/partner-mappings', async (c) => {
     body.external_partner_name, body.metadata,
   );
   return c.json({ ...result, partner_type: body.partner_type, atheon_partner_ref: body.atheon_partner_ref }, result.created ? 201 : 200);
+});
+
+/**
+ * Phase 10-47: bootstrap proposals.
+ * Fetches the ERP's contact/vendor list, fuzzy-matches against
+ * canonical Atheon partners discovered from the tenant's data.
+ * Returns DRAFT proposals — nothing is persisted until the operator
+ * confirms via the bulk-upsert route.
+ */
+erp.get('/connections/:id/partner-mappings/proposals', async (c) => {
+  const tenantId = getTenantId(c);
+  const connectionId = c.req.param('id');
+  const partnerType = c.req.query('partner_type');
+  if (!isPartnerType(partnerType)) return c.json({ error: 'partner_type=vendor|customer required' }, 400);
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(connectionId, tenantId).first();
+  if (!conn) return c.json({ error: 'connection_not_found' }, 404);
+
+  // 1. Discover canonical partners
+  const canonical = partnerType === 'vendor'
+    ? await discoverCanonicalVendors(c.env.DB, tenantId)
+    : await discoverCanonicalCustomers(c.env.DB, tenantId);
+
+  // 2. Fetch ERP partners (may throw if creds bad / API down)
+  let erpResult: Awaited<ReturnType<typeof fetchErpPartners>>;
+  try {
+    erpResult = await fetchErpPartners(c.env.DB, connectionId, c.env.ENCRYPTION_KEY, partnerType);
+  } catch (err) {
+    return c.json({
+      error: 'erp_fetch_failed',
+      message: err instanceof Error ? err.message : String(err),
+    }, 502);
+  }
+  if (!erpResult) {
+    return c.json({
+      error: 'unsupported_or_unconfigured',
+      message: 'Bootstrap is only available for Odoo/Xero/NetSuite/SAP connections with valid credentials in encrypted_config (or plaintext config).',
+    }, 400);
+  }
+
+  // 3. Generate proposals
+  const proposals = await generateProposals(
+    c.env.DB, tenantId, connectionId, partnerType, canonical, erpResult.partners,
+  );
+
+  return c.json({
+    system: erpResult.system,
+    canonical_count: canonical.length,
+    erp_partner_count: erpResult.partners.length,
+    proposals,
+    total: proposals.length,
+  });
+});
+
+/**
+ * Phase 10-47: bulk-confirm proposals (or any hand-built batch).
+ * Body: { partner_type, mappings: [{ atheon_partner_ref, external_partner_id, external_partner_name? }, ...] }
+ * Each entry is upserted via the same idempotent path as the single-row POST.
+ * Caps at 500 per call to bound D1 batch size.
+ */
+erp.post('/connections/:id/partner-mappings/bulk', async (c) => {
+  const tenantId = getTenantId(c);
+  const connectionId = c.req.param('id');
+  const { data: body, errors } = await getValidatedJsonBody<{
+    partner_type: PartnerType;
+    mappings: Array<{
+      atheon_partner_ref: string;
+      external_partner_id: string;
+      external_partner_name?: string;
+    }>;
+  }>(c, [
+    { field: 'partner_type', required: true, type: 'string' },
+  ]);
+  if ((errors && errors.length > 0) || !body) return c.json({ error: 'invalid_body', details: errors }, 400);
+  if (!isPartnerType(body.partner_type)) return c.json({ error: 'partner_type must be vendor|customer' }, 400);
+  if (!Array.isArray(body.mappings) || body.mappings.length === 0) {
+    return c.json({ error: 'mappings array required' }, 400);
+  }
+  if (body.mappings.length > 500) {
+    return c.json({ error: 'mappings array capped at 500 per call' }, 400);
+  }
+
+  const conn = await c.env.DB.prepare(
+    'SELECT id FROM erp_connections WHERE id = ? AND tenant_id = ?'
+  ).bind(connectionId, tenantId).first();
+  if (!conn) return c.json({ error: 'connection_not_found' }, 404);
+
+  let created = 0, updated = 0, skipped = 0;
+  const errs: Array<{ atheon_partner_ref: string; reason: string }> = [];
+  for (const m of body.mappings) {
+    if (!m.atheon_partner_ref || !m.external_partner_id) {
+      errs.push({ atheon_partner_ref: m.atheon_partner_ref ?? '<empty>', reason: 'missing atheon_partner_ref or external_partner_id' });
+      skipped++;
+      continue;
+    }
+    try {
+      const r = await upsertPartnerMapping(
+        c.env.DB, tenantId, connectionId, body.partner_type,
+        m.atheon_partner_ref, m.external_partner_id, m.external_partner_name,
+      );
+      if (r.created) created++;
+      else updated++;
+    } catch (err) {
+      skipped++;
+      errs.push({ atheon_partner_ref: m.atheon_partner_ref, reason: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  return c.json({ created, updated, skipped, errors: errs }, errs.length > 0 ? 207 : 200);
 });
 
 erp.delete('/connections/:id/partner-mappings/:partner_type/:atheon_ref', async (c) => {

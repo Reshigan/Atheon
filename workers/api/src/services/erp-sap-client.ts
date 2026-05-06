@@ -228,4 +228,53 @@ export function isSapError(err: unknown): err is SapError {
   return err instanceof SapError;
 }
 
+const SVC_BUSINESS_PARTNER = '/sap/opu/odata/sap/API_BUSINESS_PARTNER';
+
+/**
+ * List business partners for partner-mapping bootstrap.
+ *
+ * SAP S/4HANA exposes vendors and customers through API_BUSINESS_PARTNER's
+ * `A_BusinessPartner` entity set. The role distinguishes them:
+ *   - 'FLVN00' = Supplier (vendor)
+ *   - 'FLCU00' = Customer
+ *
+ * GET requests don't need the CSRF handshake (it's only for state-
+ * changing verbs); a single Basic-auth GET with `$top=<limit>` returns
+ * the partners in one round-trip up to SAP's per-page cap.
+ */
+export async function sapListBusinessPartners(
+  cfg: SapConnectionConfig,
+  partnerType: 'vendor' | 'customer',
+  limit = 1000,
+): Promise<Array<{ BusinessPartner: string; BusinessPartnerName: string | null; BusinessPartnerCategory: string | null }>> {
+  const role = partnerType === 'vendor' ? 'FLVN00' : 'FLCU00';
+  const top = Math.min(Math.max(limit, 1), 5000);
+  const filter = `to_BusinessPartnerRole/any(r:r/BusinessPartnerRole eq '${role}')`;
+  const path = `${SVC_BUSINESS_PARTNER}/A_BusinessPartner?$top=${top}&$select=BusinessPartner,BusinessPartnerName,BusinessPartnerCategory&$filter=${encodeURIComponent(filter)}`;
+  const url = withClient(cfg, `${cfg.base_url}${path}`);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: basicAuth(cfg),
+      Accept: 'application/json',
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let parsed: { error?: { code?: string; message?: { value?: string } | string } } = {};
+    try { parsed = JSON.parse(text); } catch { /* keep text */ }
+    const sapMsg = typeof parsed.error?.message === 'object' ? parsed.error.message?.value : parsed.error?.message;
+    throw new SapError(
+      `SAP GET A_BusinessPartner ${res.status}: ${sapMsg ?? text.slice(0, 300)}`,
+      res.status, parsed.error?.code ?? null, text.slice(0, 1000) || null,
+    );
+  }
+  const json = await res.json() as {
+    d?: { results?: Array<{ BusinessPartner: string; BusinessPartnerName: string | null; BusinessPartnerCategory: string | null }> };
+    value?: Array<{ BusinessPartner: string; BusinessPartnerName: string | null; BusinessPartnerCategory: string | null }>;
+  };
+  // OData v2 wraps in d.results; v4 in value
+  return json.d?.results ?? json.value ?? [];
+}
+
 export { SapError };
