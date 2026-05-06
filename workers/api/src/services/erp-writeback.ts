@@ -55,6 +55,11 @@ import {
   xeroPostInvoice, xeroPostPayment, xeroPostManualJournal, isXeroError,
 } from './erp-xero-client';
 import type { XeroConnectionConfig } from './erp-xero-client';
+import {
+  netsuitePostVendorBill, netsuitePostCustomerPayment, netsuitePostJournalEntry,
+  isNetSuiteError,
+} from './erp-netsuite-client';
+import type { NetSuiteConnectionConfig } from './erp-netsuite-client';
 
 export type TransactionalActionType =
   | 'ap_invoice_post'
@@ -259,7 +264,7 @@ async function dispatchToErp(
     case 'xero':
       return dispatchXero(db, row, docId, connectionConfig);
     case 'netsuite':
-      return dispatchNetsuite(row, docId);
+      return dispatchNetsuite(row, docId, connectionConfig);
     default:
       // Generic stub — log + return synthesised id
       logInfo('erp_writeback.generic_stub',
@@ -724,13 +729,168 @@ async function postXeroJournalEntry(
   }, row.idempotency_key);
 }
 
+/**
+ * Real NetSuite write-back via SuiteTalk REST + OAuth 1.0a TBA.
+ *
+ * Action-type → NetSuite endpoint mapping:
+ *   ap_invoice_post  → POST /vendorBill
+ *   ap_payment_run   → STUB (NetSuite vendor payments need an
+ *                      existing bill internalId + bank account; until
+ *                      payment-run payloads include both, we don't
+ *                      have the data to call vendorPayment cleanly)
+ *   ar_cash_apply    → POST /customerPayment with apply lines
+ *   gl_journal_entry → POST /journalEntry
+ *   ar_credit_hold + ap_invoice_block + gl_bank_match → STUB
+ *
+ * NetSuite returns 204 No Content + a Location header pointing at
+ * the new record; we use the trailing internalId as external_doc_id.
+ */
 async function dispatchNetsuite(
-  row: TransactionalActionRow, docId: string,
+  row: TransactionalActionRow, docId: string, configJson: string | null,
 ): Promise<AdapterDispatchResult> {
-  logInfo('erp_writeback.netsuite',
-    { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
-    { adapter: 'netsuite', doc_id: docId, idempotency_key: row.idempotency_key, entity: row.target_entity });
-  return { posted: true, externalDocId: docId };
+  const cfg = parseNetSuiteConfig(configJson);
+  if (!cfg) {
+    logWarn('erp_writeback.netsuite_missing_config',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { reason: 'config missing account_id/consumer_key/consumer_secret/token_id/token_secret — falling back to stub' });
+    return { posted: true, externalDocId: docId };
+  }
+
+  if (
+    row.action_type === 'ap_invoice_block' || row.action_type === 'gl_bank_match' ||
+    row.action_type === 'ar_credit_hold' || row.action_type === 'ap_payment_run'
+  ) {
+    logInfo('erp_writeback.netsuite_skipped',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { reason: 'action_type does not map to a NetSuite write yet', doc_id: docId });
+    return { posted: true, externalDocId: docId };
+  }
+
+  let payload: Record<string, unknown> = {};
+  try { payload = JSON.parse(row.payload || '{}'); } catch { /* keep empty */ }
+
+  try {
+    let internalId: string;
+    switch (row.action_type) {
+      case 'ap_invoice_post':
+        internalId = (await postNetSuiteVendorBill(cfg, row, payload)).internalId;
+        break;
+      case 'ar_cash_apply':
+        internalId = (await postNetSuiteCustomerPayment(cfg, row, payload)).internalId;
+        break;
+      case 'gl_journal_entry':
+        internalId = (await postNetSuiteJournalEntry(cfg, row, payload)).internalId;
+        break;
+      default:
+        logWarn('erp_writeback.netsuite_unsupported',
+          { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+          { reason: `action_type '${row.action_type}' has no NetSuite mapping; using stub doc_id` });
+        return { posted: true, externalDocId: docId };
+    }
+
+    logInfo('erp_writeback.netsuite_posted',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { adapter: 'netsuite', doc_id: internalId, idempotency_key: row.idempotency_key, entity: row.target_entity });
+    return { posted: true, externalDocId: internalId };
+  } catch (err) {
+    const reason = isNetSuiteError(err)
+      ? `[NetSuite ${err.netsuiteErrorType ?? 'error'} ${err.httpStatus ?? '?'}] ${err.message}${err.debug ? ` :: ${err.debug.slice(0, 200)}` : ''}`
+      : err instanceof Error ? err.message : String(err);
+    throw new Error(`NetSuite dispatch failed: ${reason}`);
+  }
+}
+
+function parseNetSuiteConfig(configJson: string | null): NetSuiteConnectionConfig | null {
+  if (!configJson) return null;
+  let parsed: Record<string, unknown> = {};
+  try { parsed = JSON.parse(configJson); } catch { return null; }
+  const account_id = typeof parsed.account_id === 'string' ? parsed.account_id : '';
+  const consumer_key = typeof parsed.consumer_key === 'string' ? parsed.consumer_key : '';
+  const consumer_secret = typeof parsed.consumer_secret === 'string' ? parsed.consumer_secret : '';
+  const token_id = typeof parsed.token_id === 'string' ? parsed.token_id : '';
+  const token_secret = typeof parsed.token_secret === 'string' ? parsed.token_secret : '';
+  if (!account_id || !consumer_key || !consumer_secret || !token_id || !token_secret) return null;
+  return { account_id, consumer_key, consumer_secret, token_id, token_secret };
+}
+
+interface NetSuiteVendorBillRowPayload {
+  invoice?: { invoice_number?: string; invoice_date?: string; due_date?: string };
+  vendor_internal_id?: string;
+  expense_account_id?: string;
+  line_items?: Array<{ description?: string; quantity?: number; amount?: number; account_id?: string }>;
+}
+async function postNetSuiteVendorBill(
+  cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteVendorBillRowPayload,
+) {
+  if (!payload.vendor_internal_id) throw new Error('payload missing vendor_internal_id (NetSuite vendor internal ID required)');
+  const inv = payload.invoice ?? {};
+  const expenseLines = payload.line_items && payload.line_items.length > 0
+    ? payload.line_items.map((li) => ({
+        account: { id: li.account_id ?? payload.expense_account_id ?? '' },
+        amount: li.amount ?? row.posted_value ?? 0,
+        memo: li.description ?? row.target_entity,
+      })).filter((l) => l.account.id)
+    : [{
+        account: { id: payload.expense_account_id ?? '' },
+        amount: row.posted_value ?? 0,
+        memo: inv.invoice_number ?? row.target_entity,
+      }].filter((l) => l.account.id);
+  if (expenseLines.length === 0) throw new Error('payload missing expense_account_id (NetSuite GL account internal ID required)');
+  return netsuitePostVendorBill(cfg, {
+    entity: { id: payload.vendor_internal_id },
+    tranDate: inv.invoice_date,
+    dueDate: inv.due_date,
+    tranId: inv.invoice_number ?? row.source_record_ref ?? undefined,
+    memo: row.reasoning ?? undefined,
+    expense: { items: expenseLines },
+  });
+}
+
+interface NetSuiteCustomerPaymentRowPayload {
+  customer_internal_id?: string;
+  bank_account_id?: string;
+  amount?: number;
+  invoice_internal_id?: string;
+  payment_date?: string;
+}
+async function postNetSuiteCustomerPayment(
+  cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteCustomerPaymentRowPayload,
+) {
+  if (!payload.customer_internal_id) throw new Error('payload missing customer_internal_id (NetSuite customer internal ID required)');
+  const amount = payload.amount ?? row.posted_value ?? 0;
+  return netsuitePostCustomerPayment(cfg, {
+    customer: { id: payload.customer_internal_id },
+    payment: amount,
+    tranDate: payload.payment_date ?? new Date().toISOString().slice(0, 10),
+    account: payload.bank_account_id ? { id: payload.bank_account_id } : undefined,
+    memo: row.source_record_ref ?? undefined,
+    apply: payload.invoice_internal_id
+      ? { items: [{ apply: true, doc: payload.invoice_internal_id, amount }] }
+      : undefined,
+  });
+}
+
+interface NetSuiteJeRowPayload {
+  date?: string;
+  memo?: string;
+  debit?: { account_id: string; amount: number; memo?: string };
+  credit?: { account_id: string; amount: number; memo?: string };
+}
+async function postNetSuiteJournalEntry(
+  cfg: NetSuiteConnectionConfig, row: TransactionalActionRow, payload: NetSuiteJeRowPayload,
+) {
+  if (!payload.debit || !payload.credit) throw new Error('payload missing debit/credit blocks');
+  const memo = payload.memo ?? row.source_record_ref ?? row.target_entity;
+  return netsuitePostJournalEntry(cfg, {
+    tranDate: payload.date,
+    memo,
+    line: {
+      items: [
+        { account: { id: payload.debit.account_id },  debit: Math.abs(payload.debit.amount),  memo: payload.debit.memo ?? memo },
+        { account: { id: payload.credit.account_id }, credit: Math.abs(payload.credit.amount), memo: payload.credit.memo ?? memo },
+      ],
+    },
+  });
 }
 
 // SAP doc-number conventions: 5-series for AP invoices, 14-series
