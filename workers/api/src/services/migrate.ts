@@ -73,55 +73,18 @@
 // orchestration_step_executions tables for multi-step catalyst
 // workflows. Substrate for "fix-procurement-cost spans 3 catalysts:
 // renegotiate supplier → re-issue PO → update GL coding".
-// v74-transactional-actions: transactional_actions table is the
-// idempotent write-back ledger for the action layer (AP three-way
-// match, AR cash-app, GL bank-recon, etc.). Each row stages one ERP
-// post; the connector layer flips status pending→approved→posted.
-// Supporting source tables (purchase_orders, goods_receipts,
-// ap_invoice_inbox, ar_open_invoices, customer_payments,
-// bank_statement_lines) hold the in-flight transactional substrate
-// the action subcatalysts read from. These mirror the SAP /
-// Odoo / Xero entities at the field level the bots need; full
-// per-vendor adapter responses still live in erp_connections.config.
-// v75-transactional-batch-2: substrate for the next six action
-// subcatalysts:
-//   - ap_invoice_inbox_raw     (ap-invoice-capture parses these into ap_invoice_inbox)
-//   - vendor_statements        (ap-vendor-statement-recon)
-//   - sales_orders             (ar-invoice-generator turns these into ar_open_invoices)
-//   - dunning_events           (ar-dunning-executor)
-//   - gl_recurring_schedules   (gl-recurring-je)
-//   - intercompany_balances    (gl-intercompany-recon)
-//   - po_approval_policies     (po-approval-router uses these + DOA matrix)
-//   - vendor_master            (supplier-onboarding writes here; existing
-//                                tables didn't expose KYC fields)
-// v76-transactional-batch-3: 12 more action subcatalysts replacing
-// finance / tax / payroll / inventory / treasury / T&E clerks:
-//   - customer_master              (customer-onboarding KYC + credit assignment)
-//   - period_close_checklists      (gl-period-close-orchestrator)
-//   - fx_rates                     (gl-fx-revaluation reads month-end rates)
-//   - vat_returns                  (vat-return-builder; computed from
-//                                    ap_invoice_inbox + ar_open_invoices)
-//   - payroll_runs                 (payroll-posting-bot)
-//   - statutory_filings            (statutory-filing-bot — EMP201/UIF/SDL)
-//   - inventory_items              (cycle-count-reconciler reads master)
-//   - cycle_counts                 (cycle-count-reconciler input)
-//   - stock_transfer_requests      (stock-transfer-executor)
-//   - expense_reports + expense_lines (expense-report-auditor)
-// cash-position-forecaster reuses existing tables (ap/ar invoices,
-// bank statement lines) so no new substrate needed.
-// v77-transactional-batch-4: 10 more action subcatalysts covering
-// customer service / logistics / contracts / internal audit / GRC /
-// reporting / master data:
-//   - rma_requests                 (rma-processor)
-//   - shipments                    (shipping-doc-generator)
-//   - contracts                    (contract-renewal-watcher)
-//   - audit_anomalies              (journal-entry-anomaly-scanner)
-//   - sod_conflicts                (segregation-of-duties-monitor)
-//   - access_recertifications      (access-recertification-scheduler)
-//   - report_packages              (financial-report-packager + board-pack-assembler)
-//   - cost_centre_rules            (cost-centre-mapper)
-//   - item_master_changes          (item-master-sync)
-export const MIGRATION_VERSION = 'v77-transactional-batch-4';
+// v74-transactional-actions ... v77-transactional-batch-4: substrate
+// tables for the action layer (PRs #361/#362/#363/#364). See those
+// PRs' commits for full details.
+// v78-webhook-hmac: webhook_signing_secrets table holds per-tenant,
+// per-source HMAC secrets so untrusted-network callers (banks,
+// payment processors, T&E SaaS) can post to /ingest/* without
+// holding a JWT. Stripe-style signature scheme:
+//    X-Atheon-Signature: t=<unix_ts>,v1=<hex_hmac_sha256>
+//    X-Atheon-Source: <source-id>
+//    X-Atheon-Tenant: <tenant-id>
+// Secret stored AES-GCM encrypted at rest with ENCRYPTION_KEY.
+export const MIGRATION_VERSION = 'v78-webhook-hmac';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -300,6 +263,22 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS report_packages (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), package_type TEXT NOT NULL, period TEXT NOT NULL, r2_key TEXT, status TEXT NOT NULL DEFAULT 'generating', components TEXT NOT NULL DEFAULT '{}', generated_at TEXT NOT NULL DEFAULT (datetime('now')), distributed_at TEXT, UNIQUE(tenant_id, package_type, period));
     CREATE TABLE IF NOT EXISTS cost_centre_rules (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), rule_name TEXT NOT NULL, vendor_id_pattern TEXT, gl_account_pattern TEXT, target_cost_centre TEXT NOT NULL, priority INTEGER NOT NULL DEFAULT 100, enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS item_master_changes (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), sku TEXT NOT NULL, change_type TEXT NOT NULL, field_name TEXT, old_value TEXT, new_value TEXT, source_system TEXT, sync_status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL DEFAULT (datetime('now')), applied_at TEXT);
+    CREATE TABLE IF NOT EXISTS webhook_signing_secrets (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id),
+      source_id TEXT NOT NULL,
+      label TEXT NOT NULL,
+      secret_encrypted TEXT NOT NULL,
+      secret_prefix TEXT NOT NULL,
+      algorithm TEXT NOT NULL DEFAULT 'sha256',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_used_at TEXT,
+      last_rotated_at TEXT,
+      revoked_at TEXT,
+      revoked_reason TEXT
+    );
   `;
 
   const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
@@ -503,6 +482,13 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_federation_observations_lookup ON federation_observations(industry_bucket, finding_code)',
     'CREATE INDEX IF NOT EXISTS idx_federation_observations_tenant ON federation_observations(tenant_id, finding_code)',
     'CREATE INDEX IF NOT EXISTS idx_federation_aggregates_lookup ON federation_aggregates(industry_bucket, finding_code)',
+    // v74-webhook-hmac: lookup by (tenant_id, source_id, status='active')
+    // is the hot path for HMAC verification on every /ingest/* call
+    'CREATE INDEX IF NOT EXISTS idx_webhook_secrets_lookup ON webhook_signing_secrets(tenant_id, source_id, status)',
+    // Partial unique index: at most ONE active secret per (tenant, source).
+    // SQLite supports partial indexes; we use this instead of a column-level
+    // UNIQUE because we want unlimited rotated/revoked history rows.
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_secrets_one_active ON webhook_signing_secrets(tenant_id, source_id) WHERE status = 'active'",
   ];
 
   for (const idx of indexes) {

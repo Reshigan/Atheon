@@ -18,6 +18,17 @@ import { verifyToken } from './auth';
  */
 export function tenantIsolation() {
   return async (c: Context<AppBindings>, next: Next) => {
+    // If a prior middleware (e.g. webhookHmacMiddleware on /ingest/*)
+    // already populated c.get('auth'), respect it and skip the JWT
+    // path. This is the integration point that lets HMAC-signed
+    // webhook callers reach the same routes JWT clients use without
+    // either path having to special-case the other.
+    const existing = c.get('auth') as AuthContext | undefined;
+    if (existing && existing.tenantId) {
+      await next();
+      return;
+    }
+
     const authHeader = c.req.header('Authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

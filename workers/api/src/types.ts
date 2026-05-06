@@ -86,6 +86,14 @@ export interface AppBindings {
     auth: AuthContext;
     /** Set by requestIdMiddleware (workers/api/src/middleware/requestid.ts) on every request. */
     requestId: string;
+    /** Set by webhookHmacMiddleware when an HMAC-signed request matches a
+     *  registered source. Downstream handlers (audit, ingest routes) read
+     *  this for source-attribution on inserts. */
+    webhookSourceId?: string;
+    /** Set by webhookHmacMiddleware (which reads body to verify HMAC).
+     *  Downstream handlers can re-parse with JSON.parse(c.get('rawBody'))
+     *  instead of re-reading c.req which is no longer consumable. */
+    rawBody?: string;
   };
 }
 
