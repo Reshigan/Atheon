@@ -58,11 +58,11 @@ describe('Phase 10-37 — webhook HMAC verification', () => {
   }, 60_000);
 
   it('verifies a correctly-signed request', async () => {
-    const { secret } = await provisionWebhookSecret(env.DB, TENANT, 'src-stripe-test', 'Stripe webhook (test)', null);
+    const { secret } = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-stripe-test', 'Stripe webhook (test)', null);
     const body = JSON.stringify({ event: 'test', payload: { x: 1 } });
     const sigHeader = await buildSignatureHeader(secret, body);
 
-    const result = await verifyWebhookSignature(env.DB, TENANT, 'src-stripe-test', sigHeader, body);
+    const result = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-stripe-test', sigHeader, body);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.secret.source_id).toBe('src-stripe-test');
@@ -71,23 +71,23 @@ describe('Phase 10-37 — webhook HMAC verification', () => {
   });
 
   it('rejects a mismatched signature', async () => {
-    await provisionWebhookSecret(env.DB, TENANT, 'src-bad-sig', 'bad sig test', null);
+    await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-bad-sig', 'bad sig test', null);
     const body = JSON.stringify({ event: 'test' });
     // Sign with a DIFFERENT secret
     const wrongSig = await buildSignatureHeader('whsec_wrong', body);
 
-    const result = await verifyWebhookSignature(env.DB, TENANT, 'src-bad-sig', wrongSig, body);
+    const result = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-bad-sig', wrongSig, body);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain('signature mismatch');
   });
 
   it('rejects an expired timestamp', async () => {
-    const { secret } = await provisionWebhookSecret(env.DB, TENANT, 'src-old-ts', 'old ts test', null);
+    const { secret } = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-old-ts', 'old ts test', null);
     const body = JSON.stringify({ event: 'old' });
     const oldTs = Math.floor(Date.now() / 1000) - 600; // 10 min ago
     const sigHeader = await buildSignatureHeader(secret, body, oldTs);
 
-    const result = await verifyWebhookSignature(env.DB, TENANT, 'src-old-ts', sigHeader, body);
+    const result = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-old-ts', sigHeader, body);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain('timestamp out of window');
   });
@@ -96,18 +96,18 @@ describe('Phase 10-37 — webhook HMAC verification', () => {
     const body = JSON.stringify({ event: 'no-secret' });
     const sigHeader = await buildSignatureHeader('whsec_anything', body);
 
-    const result = await verifyWebhookSignature(env.DB, TENANT, 'src-does-not-exist', sigHeader, body);
+    const result = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-does-not-exist', sigHeader, body);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain('no active webhook secret');
   });
 
   it('rejects after revocation', async () => {
-    const { secret, secretRow } = await provisionWebhookSecret(env.DB, TENANT, 'src-revoke', 'revoke test', null);
+    const { secret, secretRow } = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-revoke', 'revoke test', null);
     const body = JSON.stringify({ event: 'revoked' });
 
     // First, signed request works
     const sigHeader = await buildSignatureHeader(secret, body);
-    const before = await verifyWebhookSignature(env.DB, TENANT, 'src-revoke', sigHeader, body);
+    const before = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-revoke', sigHeader, body);
     expect(before.ok).toBe(true);
 
     // Now revoke
@@ -116,40 +116,69 @@ describe('Phase 10-37 — webhook HMAC verification', () => {
 
     // Fresh signature, but secret is gone
     const fresh = await buildSignatureHeader(secret, body);
-    const after = await verifyWebhookSignature(env.DB, TENANT, 'src-revoke', fresh, body);
+    const after = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-revoke', fresh, body);
     expect(after.ok).toBe(false);
     if (!after.ok) expect(after.reason).toContain('no active webhook secret');
   });
 
   it('rotation invalidates the old secret + new secret works', async () => {
-    const first = await provisionWebhookSecret(env.DB, TENANT, 'src-rotate', 'rotate test', null);
-    const second = await provisionWebhookSecret(env.DB, TENANT, 'src-rotate', 'rotate test v2', null);
+    const first = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-rotate', 'rotate test', null);
+    const second = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-rotate', 'rotate test v2', null);
 
     expect(first.secret).not.toBe(second.secret);
     const body = JSON.stringify({ event: 'rotated' });
 
     // Old secret can't sign anymore (it's now status='rotated')
     const oldSig = await buildSignatureHeader(first.secret, body);
-    const oldResult = await verifyWebhookSignature(env.DB, TENANT, 'src-rotate', oldSig, body);
+    const oldResult = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-rotate', oldSig, body);
     expect(oldResult.ok).toBe(false);
 
     // New secret works
     const newSig = await buildSignatureHeader(second.secret, body);
-    const newResult = await verifyWebhookSignature(env.DB, TENANT, 'src-rotate', newSig, body);
+    const newResult = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-rotate', newSig, body);
     expect(newResult.ok).toBe(true);
   });
 
+  it('stores secret encrypted at rest (raw value never in DB column)', async () => {
+    const { secret, secretRow } = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-at-rest', 'at-rest test', null);
+    // Read the raw column value back
+    const row = await env.DB.prepare(
+      `SELECT secret_encrypted FROM webhook_signing_secrets WHERE id = ?`,
+    ).bind(secretRow.id).first<{ secret_encrypted: string }>();
+    expect(row).not.toBeNull();
+    expect(row!.secret_encrypted).toBeTruthy();
+    // The stored value is base64(iv || ciphertext || tag) — must NOT
+    // contain the raw secret string anywhere
+    expect(row!.secret_encrypted).not.toContain(secret);
+    expect(row!.secret_encrypted).not.toContain(secret.slice(7));
+    // It should be base64 (alphanumeric + + / =)
+    expect(row!.secret_encrypted).toMatch(/^[A-Za-z0-9+/=]+$/);
+    // It should be at least IV (12) + min ciphertext (32) + tag (16) = 60 raw bytes ≈ 80 b64
+    expect(row!.secret_encrypted.length).toBeGreaterThan(70);
+  });
+
+  it('decrypt failure (wrong ENCRYPTION_KEY) is reported clearly', async () => {
+    await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-wrong-key', 'wrong key test', null);
+    const body = JSON.stringify({ event: 'x' });
+    const sigHeader = await buildSignatureHeader('whsec_anything', body);
+
+    // Verify with a DIFFERENT encryption key — decrypt fails
+    const result = await verifyWebhookSignature(env.DB, 'totally-different-key', TENANT, 'src-wrong-key', sigHeader, body);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain('decrypt failed');
+  });
+
   it('rejects malformed signature header', async () => {
-    await provisionWebhookSecret(env.DB, TENANT, 'src-malformed', 'malformed test', null);
+    await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-malformed', 'malformed test', null);
     const body = JSON.stringify({ event: 'malformed' });
 
-    const r1 = await verifyWebhookSignature(env.DB, TENANT, 'src-malformed', null, body);
+    const r1 = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-malformed', null, body);
     expect(r1.ok).toBe(false);
 
-    const r2 = await verifyWebhookSignature(env.DB, TENANT, 'src-malformed', 'just-some-string', body);
+    const r2 = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-malformed', 'just-some-string', body);
     expect(r2.ok).toBe(false);
 
-    const r3 = await verifyWebhookSignature(env.DB, TENANT, 'src-malformed', 't=999,v1=tooshort', body);
+    const r3 = await verifyWebhookSignature(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-malformed', 't=999,v1=tooshort', body);
     expect(r3.ok).toBe(false);
   });
 });
@@ -233,10 +262,12 @@ describe('Phase 10-37 — webhook-secrets admin routes', () => {
   });
 
   it('list does not leak any secret values', async () => {
-    const { secret } = await provisionWebhookSecret(env.DB, TENANT, 'src-leak-test', 'Leak test', null);
+    const { secret } = await provisionWebhookSecret(env.DB, env.ENCRYPTION_KEY as string, TENANT, 'src-leak-test', 'Leak test', null);
     const res = await authedFetch('/api/v1/webhook-secrets');
     const body = await res.text();
     expect(body).not.toContain(secret);
-    expect(body).not.toContain('secret_hash');
+    expect(body).not.toContain('secret_encrypted');
+    // Defense in depth: also confirm no fragment of the raw secret leaks
+    expect(body).not.toContain(secret.slice(7, 27)); // 20 chars from middle of the hex part
   });
 });

@@ -79,7 +79,7 @@ webhookSecrets.post('/', async (c) => {
   }
 
   const { secret, secretRow } = await provisionWebhookSecret(
-    c.env.DB, g.tenantId, sourceId, label, g.userId,
+    c.env.DB, c.env.ENCRYPTION_KEY, g.tenantId, sourceId, label, g.userId,
   );
 
   // Audit log
@@ -117,7 +117,7 @@ webhookSecrets.post('/:id/rotate', async (c) => {
 
   // provisionWebhookSecret automatically marks the old active secret 'rotated'
   const { secret, secretRow } = await provisionWebhookSecret(
-    c.env.DB, g.tenantId, existing.source_id, existing.label, g.userId,
+    c.env.DB, c.env.ENCRYPTION_KEY, g.tenantId, existing.source_id, existing.label, g.userId,
   );
 
   try {

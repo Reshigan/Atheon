@@ -231,7 +231,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
       tenant_id TEXT NOT NULL REFERENCES tenants(id),
       source_id TEXT NOT NULL,
       label TEXT NOT NULL,
-      secret_hash TEXT NOT NULL,
+      secret_encrypted TEXT NOT NULL,
       secret_prefix TEXT NOT NULL,
       algorithm TEXT NOT NULL DEFAULT 'sha256',
       status TEXT NOT NULL DEFAULT 'active',

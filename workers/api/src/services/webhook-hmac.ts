@@ -1,5 +1,5 @@
 /**
- * Webhook HMAC Service — Phase 10-37.
+ * Webhook HMAC Service — Phase 10-37 / Phase 10-38 (encrypted at rest).
  *
  * Stripe-style signed webhooks for the /ingest/* surface. Untrusted-
  * network callers (banks, payment processors, T&E SaaS, ERP
@@ -16,34 +16,33 @@
  *
  * Server validates:
  *   1. Both headers present + parseable
- *   2. Source row exists for tenant_id derived from server context
- *      (or from a separate X-Atheon-Tenant header on cross-tenant
- *      callers — out of scope for v1; tenants self-provision their
- *      own secrets so the source-id alone is enough since secrets
- *      are unique per tenant)
+ *   2. Active secret exists for (tenant_id, source_id)
  *   3. Timestamp within ±5 minutes of server clock (replay window)
- *   4. HMAC-SHA256(secret, "<timestamp>.<body>") == provided signature
- *   5. Source status='active' (revoked secrets can't sign)
+ *   4. HMAC-SHA256(decrypt(secret_encrypted), "<ts>.<body>") matches
  *
- * On success, returns the matched secret row so the caller can write
- * an audit trail with the `source_id` and bump `last_used_at`.
+ * At-rest protection (Phase 10-38): the raw secret is AES-GCM
+ * encrypted with the worker's ENCRYPTION_KEY before it ever lands
+ * in D1. A row read alone never leaks the verifier — the worker
+ * has to decrypt with its env-bound key.
  *
- * Provisioning: secrets are hashed at-rest (PBKDF2) so a DB read
- * doesn't leak the verifier; we keep the LAST 8 bytes as
- * `secret_prefix` for human display. Operators see the secret value
- * exactly once at creation time.
+ * Storage shape (in `secret_encrypted` column, base64):
+ *   [12 bytes IV] [variable ciphertext] [16 bytes GCM auth tag]
+ *
+ * Operators see the secret value EXACTLY ONCE at creation. Lost
+ * secrets must be rotated, not recovered.
  */
 
 import { logWarn, logInfo } from './logger';
 
 const REPLAY_WINDOW_SECONDS = 5 * 60;
+const AES_IV_BYTES = 12;
 
 export interface WebhookSecretRow {
   id: string;
   tenant_id: string;
   source_id: string;
   label: string;
-  secret_hash: string;       // PBKDF2-SHA-256 hash of the raw secret (for storage)
+  secret_encrypted: string;  // base64(IV || ciphertext || tag) — never logged
   secret_prefix: string;     // first/last few chars for human ID; never the secret itself
   algorithm: string;
   status: string;
@@ -54,6 +53,67 @@ export interface WebhookSecretRow {
 export type HmacVerifyResult =
   | { ok: true; secret: WebhookSecretRow }
   | { ok: false; reason: string };
+
+// ── Encryption helpers (AES-GCM with ENCRYPTION_KEY) ─────────────
+
+/** Derive the AES-GCM key from the env-bound ENCRYPTION_KEY string.
+ *  We treat the env value as a passphrase and hash it to 256 bits;
+ *  this avoids enforcing exact-32-byte input on operators. */
+async function deriveAesKey(passphrase: string): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  // Hash passphrase to 32 bytes. Stable across worker restarts.
+  const digest = await crypto.subtle.digest('SHA-256', enc.encode(passphrase));
+  return crypto.subtle.importKey(
+    'raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'],
+  );
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/** Encrypt the secret value with AES-GCM. Output is base64-encoded
+ *  IV || ciphertext || auth-tag (the tag is appended by Web Crypto). */
+async function encryptSecret(secret: string, encryptionKey: string): Promise<string> {
+  const key = await deriveAesKey(encryptionKey);
+  const iv = crypto.getRandomValues(new Uint8Array(AES_IV_BYTES));
+  const enc = new TextEncoder();
+  const cipher = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key, enc.encode(secret),
+  );
+  const cipherBytes = new Uint8Array(cipher);
+  const out = new Uint8Array(iv.length + cipherBytes.length);
+  out.set(iv, 0);
+  out.set(cipherBytes, iv.length);
+  return bytesToBase64(out);
+}
+
+/** Decrypt the secret value. Throws on auth-tag mismatch (i.e.
+ *  ciphertext was tampered with or wrong ENCRYPTION_KEY). */
+async function decryptSecret(blob: string, encryptionKey: string): Promise<string> {
+  const bytes = base64ToBytes(blob);
+  if (bytes.length < AES_IV_BYTES + 16) {
+    throw new Error('encrypted secret too short');
+  }
+  const iv = bytes.slice(0, AES_IV_BYTES);
+  const cipher = bytes.slice(AES_IV_BYTES);
+  const key = await deriveAesKey(encryptionKey);
+  const plain = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv }, key, cipher,
+  );
+  return new TextDecoder().decode(plain);
+}
+
+// ── Signature parsing + HMAC ─────────────────────────────────────
 
 /** Parse the X-Atheon-Signature header.
  *  Accepts the Stripe-compatible format `t=<ts>,v1=<sig>`. Multiple
@@ -105,18 +165,18 @@ function timingSafeEqual(a: string, b: string): boolean {
  * Verify a webhook signature against the matching secret row.
  *
  * @param db - D1 binding
- * @param tenantId - Resolved tenant scope (server-side, from URL prefix or header).
- *   v1 ASSUMPTION: tenant is known before HMAC verify — typically because the
- *   ingest URL is `/api/v1/ingest/<resource>` mounted under `tenantIsolation`
- *   middleware OR a separate `X-Atheon-Tenant` header is read first. The HMAC
- *   layer doesn't authoritatively decide tenant; it confirms a known tenant's
+ * @param encryptionKey - The worker's ENCRYPTION_KEY env value, used
+ *   to decrypt the at-rest secret blob before HMAC verification
+ * @param tenantId - Resolved tenant scope. The HMAC layer doesn't
+ *   authoritatively decide tenant; it confirms a known tenant's
  *   secret signed the request.
  * @param sourceId - From the `X-Atheon-Source` header
  * @param signatureHeader - The raw `X-Atheon-Signature` header value
- * @param body - The raw request body bytes (must be the same string fed to the parser)
+ * @param body - The raw request body bytes (must be the same string fed to the signer)
  */
 export async function verifyWebhookSignature(
   db: D1Database,
+  encryptionKey: string,
   tenantId: string,
   sourceId: string,
   signatureHeader: string | null,
@@ -134,7 +194,7 @@ export async function verifyWebhookSignature(
   }
 
   const row = await db.prepare(
-    `SELECT id, tenant_id, source_id, label, secret_hash, secret_prefix, algorithm, status, created_at, last_used_at
+    `SELECT id, tenant_id, source_id, label, secret_encrypted, secret_prefix, algorithm, status, created_at, last_used_at
        FROM webhook_signing_secrets
       WHERE tenant_id = ? AND source_id = ? AND status = 'active'
       LIMIT 1`,
@@ -147,20 +207,20 @@ export async function verifyWebhookSignature(
     return { ok: false, reason: `unsupported algorithm '${row.algorithm}'` };
   }
 
-  // Verify against the secret. Note: secret_hash stored is a PBKDF2
-  // hash for at-rest protection — we can't recover the raw secret to
-  // re-sign with. Instead, we re-derive the HMAC using the SECRET
-  // itself which the caller knows AND we... wait, the worker also
-  // doesn't have it. Resolution: store the secret encrypted with the
-  // worker's encryption key, then decrypt here. For v1, store as
-  // plaintext (still tenant-scoped, accessed only via row reads) and
-  // upgrade to encrypted-at-rest in a follow-up.
-  //
-  // Implementation: secret_hash actually holds the raw secret for v1.
-  // The hash/prefix split is forward-compat; in v2 secret_hash will
-  // become the PBKDF2 output and a `secret_encrypted` column will
-  // hold the AES-GCM-wrapped value the worker uses to verify.
-  const expectedSig = await hmacSha256Hex(row.secret_hash, `${parsed.timestamp}.${body}`);
+  // Decrypt the at-rest blob with the worker's ENCRYPTION_KEY. A DB
+  // read alone never leaks the verifier — only the worker (which
+  // has the key in its env) can recover it.
+  let plainSecret: string;
+  try {
+    plainSecret = await decryptSecret(row.secret_encrypted, encryptionKey);
+  } catch (err) {
+    logWarn('webhook_hmac.decrypt_failed',
+      { tenantId, layer: 'ingest', action: 'hmac_verify' },
+      { source_id: sourceId, secret_id: row.id, error: err instanceof Error ? err.message : String(err) });
+    return { ok: false, reason: 'secret decrypt failed (check ENCRYPTION_KEY consistency)' };
+  }
+
+  const expectedSig = await hmacSha256Hex(plainSecret, `${parsed.timestamp}.${body}`);
   const matched = parsed.sigs.some((s) => timingSafeEqual(s, expectedSig));
   if (!matched) {
     logWarn('webhook_hmac.signature_mismatch',
@@ -169,9 +229,8 @@ export async function verifyWebhookSignature(
     return { ok: false, reason: 'signature mismatch' };
   }
 
-  // Mark last-used. We await rather than fire-and-forget — the latter
-  // orphans the D1 binding past the request and breaks vitest-pool-
-  // workers' isolated storage. The added latency is ~5ms and worth it.
+  // Mark last-used. Awaited (fire-and-forget orphans D1 binding past
+  // the request and breaks vitest-pool-workers' isolated storage).
   try {
     await db.prepare(
       `UPDATE webhook_signing_secrets SET last_used_at = datetime('now') WHERE id = ?`,
@@ -189,14 +248,15 @@ export async function verifyWebhookSignature(
  *
  *  Returns { secret, secretRow } where `secret` is the raw value to
  *  show the operator EXACTLY ONCE, and `secretRow` is the persisted
- *  row (without the secret value). */
+ *  row metadata (encrypted blob is NOT included). */
 export async function provisionWebhookSecret(
   db: D1Database,
+  encryptionKey: string,
   tenantId: string,
   sourceId: string,
   label: string,
   createdByUserId: string | null,
-): Promise<{ secret: string; secretRow: Omit<WebhookSecretRow, 'secret_hash'> }> {
+): Promise<{ secret: string; secretRow: Omit<WebhookSecretRow, 'secret_encrypted'> }> {
   // Generate a 256-bit secret
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const secret = `whsec_${Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
@@ -204,23 +264,25 @@ export async function provisionWebhookSecret(
   // Display-only suffix (last 6 chars of the hex part)
   const prefix = `whsec_…${secret.slice(-6)}`;
 
-  // Mark any existing active secret as 'rotated' so the (tenant, source, status)
-  // UNIQUE allows the new one. This is the rotation path; first-time provision
-  // just no-ops on the UPDATE.
+  // Encrypt the raw secret with the worker's ENCRYPTION_KEY
+  const encrypted = await encryptSecret(secret, encryptionKey);
+
+  // Mark any existing active secret as 'rotated' so the partial
+  // unique index (tenant, source, status='active') allows the new one.
   await db.prepare(
     `UPDATE webhook_signing_secrets SET status = 'rotated', last_rotated_at = datetime('now')
       WHERE tenant_id = ? AND source_id = ? AND status = 'active'`,
   ).bind(tenantId, sourceId).run();
 
   await db.prepare(
-    `INSERT INTO webhook_signing_secrets (id, tenant_id, source_id, label, secret_hash, secret_prefix, algorithm, status, created_by)
+    `INSERT INTO webhook_signing_secrets (id, tenant_id, source_id, label, secret_encrypted, secret_prefix, algorithm, status, created_by)
      VALUES (?, ?, ?, ?, ?, ?, 'sha256', 'active', ?)`,
-  ).bind(id, tenantId, sourceId, label, secret, prefix, createdByUserId).run();
+  ).bind(id, tenantId, sourceId, label, encrypted, prefix, createdByUserId).run();
 
   const row = await db.prepare(
     `SELECT id, tenant_id, source_id, label, secret_prefix, algorithm, status, created_at, last_used_at
        FROM webhook_signing_secrets WHERE id = ?`,
-  ).bind(id).first<Omit<WebhookSecretRow, 'secret_hash'>>();
+  ).bind(id).first<Omit<WebhookSecretRow, 'secret_encrypted'>>();
 
   return { secret, secretRow: row! };
 }
@@ -247,4 +309,82 @@ export async function buildSignatureHeader(
 ): Promise<string> {
   const sig = await hmacSha256Hex(secret, `${timestamp}.${body}`);
   return `t=${timestamp},v1=${sig}`;
+}
+
+// ── Hono middleware factory ──────────────────────────────────────
+
+import type { Context, MiddlewareHandler, Next } from 'hono';
+import type { AppBindings, AuthContext } from '../types';
+
+/**
+ * Hono middleware that authenticates `/ingest/*` requests via either
+ * (a) HMAC signature (X-Atheon-Signature + X-Atheon-Source headers)
+ *     using a tenant-scoped webhook secret — for untrusted-network
+ *     callers like banks, payment processors, T&E SaaS
+ * (b) JWT bearer (the existing tenantIsolation path) — for callers
+ *     that already hold an Atheon session
+ *
+ * Resolution order: if X-Atheon-Signature header is present, attempt
+ * HMAC verification. Otherwise fall through to the next middleware
+ * (which is tenantIsolation in the registered chain).
+ *
+ * On HMAC success, sets `auth` context with role='integration' and
+ * tenantId from the signature lookup, plus a meta field
+ * `webhook_source_id` so downstream handlers can audit-log the source.
+ *
+ * Tenant resolution: HMAC callers MUST send X-Atheon-Tenant with the
+ * tenant ID (plaintext; the secret lookup confirms the caller owns
+ * that tenant's secret, so no impersonation risk).
+ */
+export function webhookHmacMiddleware(): MiddlewareHandler<AppBindings> {
+  return async (c: Context<AppBindings>, next: Next) => {
+    const sigHeader = c.req.header('X-Atheon-Signature');
+    if (!sigHeader) {
+      // No HMAC headers — fall through to JWT auth (tenantIsolation)
+      await next();
+      return;
+    }
+
+    const sourceId = c.req.header('X-Atheon-Source') ?? '';
+    const tenantId = c.req.header('X-Atheon-Tenant') ?? '';
+    if (!tenantId) {
+      return c.json({ error: 'X-Atheon-Tenant header required for HMAC auth' }, 401);
+    }
+
+    const env = c.env as { DB: D1Database; ENCRYPTION_KEY: string };
+    if (!env.ENCRYPTION_KEY) {
+      return c.json({ error: 'server misconfigured: ENCRYPTION_KEY not set' }, 500);
+    }
+
+    // Read body as text. Hono's c.req.text() is consumable once;
+    // we re-attach via c.set so downstream handlers can call
+    // c.req.json() / c.get('rawBody') without re-reading.
+    const body = await c.req.text();
+    c.set('rawBody', body);
+
+    const result = await verifyWebhookSignature(
+      env.DB, env.ENCRYPTION_KEY, tenantId, sourceId, sigHeader, body,
+    );
+    if (!result.ok) {
+      logWarn('webhook_hmac.middleware_rejected',
+        { tenantId, layer: 'ingest', action: 'hmac_reject' },
+        { source_id: sourceId, reason: result.reason });
+      return c.json({ error: 'webhook signature rejected', reason: result.reason }, 401);
+    }
+
+    // Stamp the auth context so downstream code (audit, rate limit,
+    // route handlers) sees a synthetic user representing the source.
+    const auth: AuthContext = {
+      userId: `webhook:${result.secret.source_id}`,
+      email: `webhook+${result.secret.source_id}@${tenantId}.atheon.invalid`,
+      name: result.secret.label,
+      role: 'integration',
+      tenantId,
+      permissions: ['ingest'],
+    };
+    c.set('auth', auth);
+    c.set('webhookSourceId', result.secret.source_id);
+
+    await next();
+  };
 }
