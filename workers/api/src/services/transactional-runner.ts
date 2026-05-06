@@ -134,9 +134,12 @@ async function runOne(
 }
 
 /** Run the full transactional chain for one tenant. Best-effort per
- *  subcatalyst; never throws. */
+ *  subcatalyst; never throws.
+ *
+ *  encryptionKey (env ENCRYPTION_KEY) is forwarded to executePendingActions
+ *  so adapters can decrypt erp_connections.encrypted_config at dispatch time. */
 export async function runTransactionalSubcatalystsForTenant(
-  db: D1Database, tenantId: string,
+  db: D1Database, tenantId: string, opts: { encryptionKey?: string } = {},
 ): Promise<TransactionalRunnerResult> {
   const startedAtIso = new Date().toISOString();
   const startMs = Date.now();
@@ -155,7 +158,7 @@ export async function runTransactionalSubcatalystsForTenant(
   // Dispatch all approved staging rows
   let dispatch = { posted: 0, failed: 0, skipped: 0 };
   try {
-    const res = await executePendingActions(db, tenantId);
+    const res = await executePendingActions(db, tenantId, { encryptionKey: opts.encryptionKey });
     dispatch = { posted: res.posted, failed: res.failed, skipped: res.skipped };
   } catch (err) {
     logError('transactional_runner.dispatch_failed', err,

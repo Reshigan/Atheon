@@ -46,6 +46,7 @@
  */
 
 import { logError, logInfo, logWarn } from './logger';
+import { encrypt, decrypt, isEncrypted } from './encryption';
 import {
   odooAuthenticate, odooPostApInvoice, odooPostPayment, odooPostJournalEntry,
   odooSetCreditHold, isOdooError,
@@ -191,9 +192,15 @@ export interface DispatchResult {
 }
 
 /** Pick up all 'approved' rows for the tenant and dispatch each to
- *  the appropriate adapter. Per-row failures don't abort the batch. */
+ *  the appropriate adapter. Per-row failures don't abort the batch.
+ *
+ *  encryptionKey is the env ENCRYPTION_KEY — used to decrypt
+ *  erp_connections.encrypted_config at dispatch time so adapters get
+ *  plaintext credentials in memory. Optional for backwards compat:
+ *  callers without an encryption key fall through to the plaintext
+ *  config column. */
 export async function executePendingActions(
-  db: D1Database, tenantId: string, opts: { limit?: number } = {},
+  db: D1Database, tenantId: string, opts: { limit?: number; encryptionKey?: string } = {},
 ): Promise<DispatchResult> {
   const limit = opts.limit ?? 200;
   const rows = await db.prepare(
@@ -205,7 +212,7 @@ export async function executePendingActions(
   const result: DispatchResult = { posted: 0, failed: 0, skipped: 0, errors: [] };
   for (const row of rows.results || []) {
     try {
-      const dispatch = await dispatchToErp(db, row);
+      const dispatch = await dispatchToErp(db, row, opts.encryptionKey);
       const now = new Date().toISOString();
       await db.prepare(
         `UPDATE transactional_actions SET
@@ -238,20 +245,54 @@ interface AdapterDispatchResult {
   externalDocId: string;
 }
 
-/** Dispatch one staged row to the right adapter. Per-adapter impls
- *  are skinny stubs today; the SAP RFC / Odoo / Xero real writes
- *  swap in here without touching the staging layer. */
+/** Pick the right column off an erp_connections row and decrypt as
+ *  needed. Returns plaintext JSON (or null) for the adapter to parse.
+ *  Logs decrypt failures but never throws — the adapter falls back
+ *  to its stub path when the config can't be resolved. */
+async function resolveConnectionConfig(
+  conn: { config: string | null; encrypted_config: string | null } | undefined | null,
+  encryptionKey: string | undefined,
+  tenantId: string,
+  connectionId: string,
+): Promise<string | null> {
+  if (!conn) return null;
+  const enc = conn.encrypted_config;
+  if (enc && isEncrypted(enc)) {
+    if (!encryptionKey || encryptionKey.length < 16) {
+      logWarn('erp_writeback.config_decrypt_no_key',
+        { tenantId, layer: 'erp_write', action: 'config_decrypt' },
+        { connection_id: connectionId, reason: 'encrypted_config present but ENCRYPTION_KEY not configured' });
+      // Fall through to plaintext (likely empty); adapter will stub.
+    } else {
+      const dec = await decrypt(enc, encryptionKey);
+      if (dec === null) {
+        logWarn('erp_writeback.config_decrypt_failed',
+          { tenantId, layer: 'erp_write', action: 'config_decrypt' },
+          { connection_id: connectionId, reason: 'AES-GCM auth tag mismatch — wrong key or tampered ciphertext' });
+        return null;
+      }
+      return dec;
+    }
+  }
+  // Plaintext path (legacy, pre-encryption-key, or test fixtures)
+  return conn.config && conn.config !== '{}' ? conn.config : null;
+}
+
+/** Dispatch one staged row to the right adapter. Reads the connection
+ *  config from `erp_connections.encrypted_config` (decrypted with the
+ *  ENCRYPTION_KEY env var) and falls back to the plaintext `config`
+ *  column when not encrypted (legacy / pre-key tenants). */
 async function dispatchToErp(
-  db: D1Database, row: TransactionalActionRow,
+  db: D1Database, row: TransactionalActionRow, encryptionKey?: string,
 ): Promise<AdapterDispatchResult> {
   let adapterId: string | null = null;
   let connectionConfig: string | null = null;
   if (row.erp_connection_id) {
     const conn = await db.prepare(
-      'SELECT adapter_id, config FROM erp_connections WHERE id = ?',
-    ).bind(row.erp_connection_id).first<{ adapter_id: string; config: string }>();
+      'SELECT adapter_id, config, encrypted_config FROM erp_connections WHERE id = ?',
+    ).bind(row.erp_connection_id).first<{ adapter_id: string; config: string | null; encrypted_config: string | null }>();
     adapterId = conn?.adapter_id ?? null;
-    connectionConfig = conn?.config ?? null;
+    connectionConfig = await resolveConnectionConfig(conn, encryptionKey, row.tenant_id, row.erp_connection_id);
   }
 
   // Synthesise a deterministic external doc ID so retries idempotent
@@ -266,7 +307,7 @@ async function dispatchToErp(
     case 'odoo':
       return dispatchOdoo(row, docId, connectionConfig);
     case 'xero':
-      return dispatchXero(db, row, docId, connectionConfig);
+      return dispatchXero(db, row, docId, connectionConfig, encryptionKey);
     case 'netsuite':
       return dispatchNetsuite(row, docId, connectionConfig);
     default:
@@ -717,6 +758,7 @@ async function postOdooCreditHold(
  */
 async function dispatchXero(
   db: D1Database, row: TransactionalActionRow, docId: string, configJson: string | null,
+  encryptionKey?: string,
 ): Promise<AdapterDispatchResult> {
   const cfg = parseXeroConfig(configJson);
   if (!cfg) {
@@ -774,7 +816,7 @@ async function dispatchXero(
       cfg.refresh_token !== tokenSnapshot.refresh_token ||
       cfg.token_expires_at !== tokenSnapshot.token_expires_at
     )) {
-      await persistXeroToken(db, row.erp_connection_id, cfg);
+      await persistXeroToken(db, row.erp_connection_id, cfg, encryptionKey);
     }
 
     logInfo('erp_writeback.xero_posted',
@@ -805,17 +847,38 @@ function parseXeroConfig(configJson: string | null): XeroConnectionConfig | null
 
 async function persistXeroToken(
   db: D1Database, connectionId: string, cfg: XeroConnectionConfig,
+  encryptionKey?: string,
 ): Promise<void> {
   try {
-    const row = await db.prepare('SELECT config FROM erp_connections WHERE id = ?')
-      .bind(connectionId).first<{ config: string }>();
+    const row = await db.prepare('SELECT config, encrypted_config FROM erp_connections WHERE id = ?')
+      .bind(connectionId).first<{ config: string | null; encrypted_config: string | null }>();
+    // Decode the existing config (preserving any non-token fields) — prefer
+    // encrypted_config when present + decryptable, else fall back to plaintext.
     let parsed: Record<string, unknown> = {};
-    try { parsed = JSON.parse(row?.config ?? '{}'); } catch { /* overwrite */ }
+    if (row?.encrypted_config && isEncrypted(row.encrypted_config) && encryptionKey && encryptionKey.length >= 16) {
+      const dec = await decrypt(row.encrypted_config, encryptionKey);
+      try { if (dec) parsed = JSON.parse(dec); } catch { /* overwrite */ }
+    } else if (row?.config) {
+      try { parsed = JSON.parse(row.config); } catch { /* overwrite */ }
+    }
     parsed.access_token = cfg.access_token;
     parsed.refresh_token = cfg.refresh_token;
     parsed.token_expires_at = cfg.token_expires_at;
-    await db.prepare('UPDATE erp_connections SET config = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .bind(JSON.stringify(parsed), connectionId).run();
+    const json = JSON.stringify(parsed);
+
+    // Re-encrypt if a key is configured AND the row was previously encrypted
+    // (don't silently upgrade plaintext tenants — that's an admin/migration
+    // decision, not a side-effect of token refresh).
+    const wasEncrypted = !!(row?.encrypted_config && isEncrypted(row.encrypted_config));
+    if (wasEncrypted && encryptionKey && encryptionKey.length >= 16) {
+      const enc = await encrypt(json, encryptionKey);
+      await db.prepare(
+        `UPDATE erp_connections SET encrypted_config = ?, config = '{}' WHERE id = ?`,
+      ).bind(enc, connectionId).run();
+    } else {
+      await db.prepare('UPDATE erp_connections SET config = ? WHERE id = ?')
+        .bind(json, connectionId).run();
+    }
   } catch (err) {
     // Persistence failure is non-fatal: the token still works for the
     // current request; next dispatch will just refresh again.

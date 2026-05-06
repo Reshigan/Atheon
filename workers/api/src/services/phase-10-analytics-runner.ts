@@ -50,9 +50,13 @@ async function runStep<T>(
 }
 
 /** Run the Phase 10 analytical chain for a single tenant. Best-effort
- *  per step; never throws. Returns a structured result for telemetry. */
+ *  per step; never throws. Returns a structured result for telemetry.
+ *
+ *  encryptionKey forwards env ENCRYPTION_KEY into the transactional
+ *  subcatalysts step so adapters can decrypt erp_connections.encrypted_config
+ *  at dispatch time. */
 export async function runPhase10ChainForTenant(
-  db: D1Database, tenantId: string,
+  db: D1Database, tenantId: string, opts: { encryptionKey?: string } = {},
 ): Promise<Phase10RunResult> {
   const startedAtIso = new Date().toISOString();
   const startMs = Date.now();
@@ -69,7 +73,7 @@ export async function runPhase10ChainForTenant(
   await runStep('threshold_autotune', () => autotuneThresholds(db, tenantId), steps, tenantId);
   await runStep('forecast_accuracy', () => sweepForecastAccuracy(db, tenantId), steps, tenantId);
   // Phase 10-30 — transactional action layer (AP/AR/GL automation)
-  await runStep('transactional_subcatalysts', () => runTransactionalSubcatalystsForTenant(db, tenantId), steps, tenantId);
+  await runStep('transactional_subcatalysts', () => runTransactionalSubcatalystsForTenant(db, tenantId, { encryptionKey: opts.encryptionKey }), steps, tenantId);
 
   const completedAt = new Date().toISOString();
   const durationMs = Date.now() - startMs;

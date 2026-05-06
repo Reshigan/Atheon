@@ -43,7 +43,7 @@ demoSeed.post('/seed-sap-ecc-demo', async (c) => {
 
   let chainResult: Phase10RunResult | null = null;
   if (body.run_chain !== false) {
-    chainResult = await runPhase10ChainForTenant(env.DB, seed.tenantId);
+    chainResult = await runPhase10ChainForTenant(env.DB, seed.tenantId, { encryptionKey: env.ENCRYPTION_KEY });
   }
 
   return c.json({ seed, chain_result: chainResult });
