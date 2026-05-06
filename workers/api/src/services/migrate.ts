@@ -83,7 +83,7 @@
 // the action subcatalysts read from. These mirror the SAP /
 // Odoo / Xero entities at the field level the bots need; full
 // per-vendor adapter responses still live in erp_connections.config.
-export const MIGRATION_VERSION = 'v75-erp-partner-mappings';
+export const MIGRATION_VERSION = 'v76-dispatch-retry-backoff';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -226,7 +226,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS federation_observations (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), industry_bucket TEXT NOT NULL DEFAULT 'general', finding_code TEXT NOT NULL, resolved_in_days REAL, recovery_pct REAL, raw_value_zar REAL, observed_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS federation_aggregates (id TEXT PRIMARY KEY, industry_bucket TEXT NOT NULL DEFAULT 'general', finding_code TEXT NOT NULL, n_contributors INTEGER NOT NULL DEFAULT 0, avg_resolved_days REAL NOT NULL DEFAULT 0, avg_recovery_pct REAL NOT NULL DEFAULT 0, p25_recovery_pct REAL DEFAULT 0, p75_recovery_pct REAL DEFAULT 0, epsilon REAL NOT NULL DEFAULT 1, last_refreshed_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(industry_bucket, finding_code));
     CREATE TABLE IF NOT EXISTS billing_checkouts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), plan_id TEXT NOT NULL, billing_cycle TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', stripe_session_id TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
-    CREATE TABLE IF NOT EXISTS transactional_actions (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), sub_catalyst_name TEXT NOT NULL, action_type TEXT NOT NULL, target_entity TEXT NOT NULL, source_record_ref TEXT, idempotency_key TEXT NOT NULL, payload TEXT NOT NULL DEFAULT '{}', payload_hash TEXT, status TEXT NOT NULL DEFAULT 'pending', external_doc_id TEXT, posted_at TEXT, error TEXT, retry_count INTEGER NOT NULL DEFAULT 0, posted_value REAL, currency TEXT DEFAULT 'ZAR', reasoning TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, idempotency_key));
+    CREATE TABLE IF NOT EXISTS transactional_actions (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), sub_catalyst_name TEXT NOT NULL, action_type TEXT NOT NULL, target_entity TEXT NOT NULL, source_record_ref TEXT, idempotency_key TEXT NOT NULL, payload TEXT NOT NULL DEFAULT '{}', payload_hash TEXT, status TEXT NOT NULL DEFAULT 'pending', external_doc_id TEXT, posted_at TEXT, error TEXT, retry_count INTEGER NOT NULL DEFAULT 0, next_retry_at TEXT, dead_letter_at TEXT, posted_value REAL, currency TEXT DEFAULT 'ZAR', reasoning TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, idempotency_key));
     CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), po_number TEXT NOT NULL, vendor_id TEXT, vendor_name TEXT, po_amount REAL NOT NULL DEFAULT 0, po_currency TEXT DEFAULT 'ZAR', po_date TEXT, expected_delivery TEXT, status TEXT NOT NULL DEFAULT 'open', payment_terms TEXT, raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, po_number));
     CREATE TABLE IF NOT EXISTS goods_receipts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), gr_number TEXT NOT NULL, po_number TEXT NOT NULL, gr_date TEXT, qty_received REAL DEFAULT 0, gr_amount REAL DEFAULT 0, currency TEXT DEFAULT 'ZAR', status TEXT NOT NULL DEFAULT 'received', raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, gr_number));
     CREATE TABLE IF NOT EXISTS ap_invoice_inbox (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), erp_connection_id TEXT REFERENCES erp_connections(id), invoice_number TEXT NOT NULL, vendor_id TEXT, vendor_name TEXT, po_number TEXT, invoice_amount REAL NOT NULL DEFAULT 0, currency TEXT DEFAULT 'ZAR', invoice_date TEXT, due_date TEXT, payment_terms TEXT, line_items TEXT NOT NULL DEFAULT '[]', raw_data TEXT NOT NULL DEFAULT '{}', source_system TEXT, status TEXT NOT NULL DEFAULT 'received', received_at TEXT NOT NULL DEFAULT (datetime('now')), processed_at TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, invoice_number));
@@ -815,6 +815,8 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_txn_actions_tenant_status ON transactional_actions(tenant_id, status)',
     'CREATE INDEX IF NOT EXISTS idx_txn_actions_sub ON transactional_actions(tenant_id, sub_catalyst_name, status)',
     'CREATE INDEX IF NOT EXISTS idx_txn_actions_created ON transactional_actions(tenant_id, created_at)',
+    // v76 dispatch retry: covers the (status, next_retry_at) predicate the sweep uses
+    'CREATE INDEX IF NOT EXISTS idx_txn_actions_retry ON transactional_actions(tenant_id, status, next_retry_at)',
     'CREATE INDEX IF NOT EXISTS idx_po_tenant_status ON purchase_orders(tenant_id, status)',
     'CREATE INDEX IF NOT EXISTS idx_po_tenant_vendor ON purchase_orders(tenant_id, vendor_id)',
     'CREATE INDEX IF NOT EXISTS idx_gr_tenant_po ON goods_receipts(tenant_id, po_number)',
@@ -1089,6 +1091,12 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'erp_gl_accounts',      column: 'connection_id', definition: 'TEXT' },
     { table: 'erp_journal_entries',  column: 'connection_id', definition: 'TEXT' },
     { table: 'erp_bank_transactions',column: 'connection_id', definition: 'TEXT' },
+    // v76: dispatch retry backoff. Failed rows record their next eligible
+    // retry time so executePendingActions only picks them up when the
+    // backoff window has elapsed; rows that exhaust max_retries are frozen
+    // by stamping dead_letter_at and lifting status to 'dead_letter'.
+    { table: 'transactional_actions', column: 'next_retry_at',  definition: 'TEXT' },
+    { table: 'transactional_actions', column: 'dead_letter_at', definition: 'TEXT' },
   ];
 
   for (const col of selfHealColumns) {
