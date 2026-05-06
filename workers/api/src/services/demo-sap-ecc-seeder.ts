@@ -161,8 +161,21 @@ const METRIC_SPECS: MetricSpec[] = [
 async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
   // Order matters — children first
   const tables = [
+    // Children first; FKs walk top→bottom. Tables added in v74-action
+    // layer (transactional_actions, ap_invoice_inbox, etc.) plus the
+    // sub_catalyst_runs / kpi / insights writes that the new
+    // transactional-runner produces via recordRun all need cleanup
+    // here so re-seed is idempotent.
     'sub_catalyst_kpi_values',
     'sub_catalyst_kpi_definitions',
+    'sub_catalyst_run_items',
+    'sub_catalyst_runs',
+    'sub_catalyst_kpis',
+    'catalyst_insights',
+    'health_score_history',
+    'health_scores',
+    'risk_alerts',
+    'anomalies',
     'process_metric_history',
     'process_metrics',
     'signal_impacts',
@@ -177,6 +190,42 @@ async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
     'billable_line_items',
     'billable_periods',
     'catalyst_actions',
+    'transactional_actions',
+    'audit_anomalies',
+    'sod_conflicts',
+    'access_recertifications',
+    'item_master_changes',
+    'cost_centre_rules',
+    'report_packages',
+    'contracts',
+    'shipments',
+    'rma_requests',
+    'expense_lines',
+    'expense_reports',
+    'stock_transfer_requests',
+    'cycle_counts',
+    'inventory_items',
+    'statutory_filings',
+    'payroll_runs',
+    'vat_returns',
+    'fx_rates',
+    'period_close_checklists',
+    'customer_master',
+    'dunning_events',
+    'gl_recurring_schedules',
+    'intercompany_balances',
+    'po_approval_policies',
+    'vendor_statements',
+    'vendor_master',
+    'sales_orders',
+    'ap_invoice_inbox_raw',
+    'customer_credit_holds',
+    'bank_statement_lines',
+    'customer_payments',
+    'ar_open_invoices',
+    'ap_invoice_inbox',
+    'goods_receipts',
+    'purchase_orders',
     'erp_connections',
     'erp_companies',
     'tenant_settings',
@@ -557,6 +606,632 @@ async function seedHealthScoresAndInsights(
   return { insightsCount: insights.length };
 }
 
+/**
+ * Seed transactional substrate (Phase 10-30) so the action-layer
+ * subcatalysts have something to work on.
+ *
+ * Layout is deliberate so each subcatalyst has at least one
+ * auto-post case AND at least one block case:
+ *
+ *   - 5 POs + 4 matching GRs (one PO has no GR — blocks 3-way)
+ *   - 6 AP invoices in inbox:
+ *       3 cleanly match PO+GR → 3-way auto-post
+ *       1 outside tolerance → 3-way block
+ *       1 no GR → 3-way block
+ *       1 duplicate of an auto-posted one → dup-blocker block
+ *   - 4 AR open invoices across 2 customers
+ *   - 3 customer payments:
+ *       2 match (one via remittance text, one via single-amount)
+ *       1 unmatched (no candidate)
+ *   - 1 customer's credit limit set so exposure > limit triggers hold
+ *   - 4 bank statement lines:
+ *       2 receipts matching cash-app posted amounts
+ *       1 payment matching payment-run posted amount
+ *       1 unmatched (forces an exception)
+ */
+async function seedTransactionalSubstrate(
+  db: D1Database, tenantId: string,
+): Promise<{ posCount: number; apInvoiceCount: number; arInvoiceCount: number; bankLineCount: number }> {
+  const connRow = await db.prepare(
+    `SELECT id FROM erp_connections WHERE tenant_id = ? ORDER BY connected_at DESC LIMIT 1`,
+  ).bind(tenantId).first<{ id: string }>();
+  const connId = connRow?.id ?? null;
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // ── 5 POs ────────────────────────────────────────────────────
+  const pos = [
+    { po: 'PO-1001', vendor_id: 'V-MAERSK',  vendor: 'Maersk Logistics SA',  amount: 125000 },
+    { po: 'PO-1002', vendor_id: 'V-SASOL',   vendor: 'Sasol Chemicals',      amount:  78500 },
+    { po: 'PO-1003', vendor_id: 'V-IMPALA',  vendor: 'Impala Mining Supply', amount: 240000 },
+    { po: 'PO-1004', vendor_id: 'V-TRANSF',  vendor: 'Transnet Freight',     amount:  42000 },
+    { po: 'PO-1005', vendor_id: 'V-BIDVEST', vendor: 'Bidvest Industrial',   amount:  18000 },
+  ];
+  for (const p of pos) {
+    await db.prepare(
+      `INSERT INTO purchase_orders (id, tenant_id, erp_connection_id, po_number, vendor_id, vendor_name,
+         po_amount, po_currency, po_date, expected_delivery, status, payment_terms, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'open', 'NET30', 'sap_ecc')`,
+    ).bind(
+      `po-${tenantId}::${p.po}`, tenantId, connId,
+      p.po, p.vendor_id, p.vendor, p.amount,
+      isoDay(-30), isoDay(-15),
+    ).run();
+  }
+
+  // ── 4 GRs (PO-1004 deliberately has none) ────────────────────
+  const grs = [
+    { gr: 'GR-2001', po: 'PO-1001', amount: 125000 },
+    { gr: 'GR-2002', po: 'PO-1002', amount:  78500 },
+    { gr: 'GR-2003', po: 'PO-1003', amount: 240000 },
+    { gr: 'GR-2005', po: 'PO-1005', amount:  18000 },
+  ];
+  for (const g of grs) {
+    await db.prepare(
+      `INSERT INTO goods_receipts (id, tenant_id, erp_connection_id, gr_number, po_number,
+         gr_date, qty_received, gr_amount, currency, status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, 'ZAR', 'received', 'sap_ecc')`,
+    ).bind(
+      `gr-${tenantId}::${g.gr}`, tenantId, connId,
+      g.gr, g.po, isoDay(-12), g.amount,
+    ).run();
+  }
+
+  // ── 6 AP invoices ────────────────────────────────────────────
+  const apInv = [
+    { num: 'INV-9001', po: 'PO-1001', vendor_id: 'V-MAERSK',  vendor: 'Maersk Logistics SA',  amount: 125000 }, // matches
+    { num: 'INV-9002', po: 'PO-1002', vendor_id: 'V-SASOL',   vendor: 'Sasol Chemicals',      amount:  78500 }, // matches
+    { num: 'INV-9003', po: 'PO-1003', vendor_id: 'V-IMPALA',  vendor: 'Impala Mining Supply', amount: 240000 }, // matches exactly
+    { num: 'INV-9004', po: 'PO-1004', vendor_id: 'V-TRANSF',  vendor: 'Transnet Freight',     amount:  42000 }, // no GR → block
+    { num: 'INV-9005', po: 'PO-1005', vendor_id: 'V-BIDVEST', vendor: 'Bidvest Industrial',   amount:  21000 }, // 16% over PO → block
+    { num: 'INV-9006', po: 'PO-1001', vendor_id: 'V-MAERSK',  vendor: 'Maersk Logistics SA',  amount: 125000 }, // duplicate of INV-9001 → dup-block
+  ];
+  for (const i of apInv) {
+    await db.prepare(
+      `INSERT INTO ap_invoice_inbox (id, tenant_id, erp_connection_id, invoice_number, vendor_id, vendor_name,
+         po_number, invoice_amount, currency, invoice_date, due_date, payment_terms, source_system, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'NET30', 'sap_ecc', 'received')`,
+    ).bind(
+      `apinv-${tenantId}::${i.num}`, tenantId, connId,
+      i.num, i.vendor_id, i.vendor, i.po, i.amount,
+      isoDay(-3), isoDay(5),
+    ).run();
+  }
+
+  // ── 4 AR open invoices ───────────────────────────────────────
+  const arInv = [
+    { num: 'AR-5001', cust_id: 'C-PNP',     cust: 'Pick n Pay',     amount: 180000, paid: 0 },
+    { num: 'AR-5002', cust_id: 'C-PNP',     cust: 'Pick n Pay',     amount:  92000, paid: 0 },
+    { num: 'AR-5003', cust_id: 'C-WOOLIES', cust: 'Woolworths',     amount: 145000, paid: 0 },
+    { num: 'AR-5004', cust_id: 'C-WOOLIES', cust: 'Woolworths',     amount:  68000, paid: 0 },
+  ];
+  for (const i of arInv) {
+    await db.prepare(
+      `INSERT INTO ar_open_invoices (id, tenant_id, erp_connection_id, invoice_number, customer_id, customer_name,
+         invoice_amount, currency, invoice_date, due_date, paid_amount, status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, 'open', 'sap_ecc')`,
+    ).bind(
+      `arinv-${tenantId}::${i.num}`, tenantId, connId,
+      i.num, i.cust_id, i.cust, i.amount, isoDay(-20), isoDay(10), i.paid,
+    ).run();
+  }
+
+  // ── 3 customer payments ──────────────────────────────────────
+  const pays = [
+    { ref: 'BANK-RCT-7001', cust_id: 'C-PNP',     cust: 'Pick n Pay', amount: 180000, remit: 'Payment for AR-5001 thanks' }, // remittance match
+    { ref: 'BANK-RCT-7002', cust_id: 'C-WOOLIES', cust: 'Woolworths', amount:  68000, remit: null }, // single-amount match → AR-5004
+    { ref: 'BANK-RCT-7003', cust_id: 'C-MAKRO',   cust: 'Makro',      amount:  35000, remit: null }, // unmatched (no open invoice)
+  ];
+  for (const p of pays) {
+    await db.prepare(
+      `INSERT INTO customer_payments (id, tenant_id, erp_connection_id, payment_ref, customer_id, customer_name,
+         amount, currency, received_date, remittance_text, application_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'unapplied', 'sap_ecc')`,
+    ).bind(
+      `pay-${tenantId}::${p.ref}`, tenantId, connId,
+      p.ref, p.cust_id, p.cust, p.amount, isoDay(-1), p.remit,
+    ).run();
+  }
+
+  // ── Credit limit: PNP exposure (180k+92k=272k) > limit (200k) → hold ──
+  await db.prepare(
+    `INSERT INTO tenant_settings (id, tenant_id, key, value)
+     VALUES (?, ?, 'customer_credit_limit:C-PNP', ?)`,
+  ).bind(crypto.randomUUID(), tenantId, '200000').run();
+  await db.prepare(
+    `INSERT INTO tenant_settings (id, tenant_id, key, value)
+     VALUES (?, ?, 'customer_credit_limit:C-WOOLIES', ?)`,
+  ).bind(crypto.randomUUID(), tenantId, '500000').run();
+
+  // ── 4 bank statement lines ───────────────────────────────────
+  // 2 receipts that will match cash-app posts; 1 payment that will
+  // match a payment-run posted amount; 1 unmatched line.
+  // (Payment-run amounts: V-MAERSK 125k matches, etc.)
+  const bankLines = [
+    { ref: 'STMT-2026-05', line: 1, amount:  180000, cp: 'Pick n Pay',  narrative: 'Receipt AR-5001' },
+    { ref: 'STMT-2026-05', line: 2, amount:   68000, cp: 'Woolworths',  narrative: 'Receipt AR-5004' },
+    { ref: 'STMT-2026-05', line: 3, amount: -125000, cp: 'Maersk Logistics', narrative: 'Pmt MAERSK NET30' },
+    { ref: 'STMT-2026-05', line: 4, amount:   12500, cp: 'Unknown',     narrative: 'Misc credit' },
+  ];
+  for (const b of bankLines) {
+    await db.prepare(
+      `INSERT INTO bank_statement_lines (id, tenant_id, erp_connection_id, statement_ref, line_number,
+         value_date, amount, currency, counterparty, narrative, recon_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 'unmatched', 'sap_ecc')`,
+    ).bind(
+      `bnk-${tenantId}::${b.ref}::${b.line}`, tenantId, connId,
+      b.ref, b.line, isoDay(-1), b.amount, b.cp, b.narrative,
+    ).run();
+  }
+
+  return {
+    posCount: pos.length,
+    apInvoiceCount: apInv.length,
+    arInvoiceCount: arInv.length,
+    bankLineCount: bankLines.length,
+  };
+}
+
+/**
+ * Seed substrate for the second batch of transactional subcatalysts
+ * (Phase 10-31): invoice-capture, vendor-statement-recon, AR
+ * invoice-generator, AR dunning-executor, GL recurring-je, PO
+ * approval-router. Each gets at least one record that triggers an
+ * auto-post AND one that triggers a HITL block, mirroring the
+ * Phase 10-30 seeder pattern.
+ */
+async function seedTransactionalBatch2Substrate(
+  db: D1Database, tenantId: string,
+): Promise<{ rawInvoiceCount: number; vendorStmtCount: number; salesOrderCount: number; recurringScheduleCount: number; policyCount: number }> {
+  const connRow = await db.prepare(
+    `SELECT id FROM erp_connections WHERE tenant_id = ? ORDER BY connected_at DESC LIMIT 1`,
+  ).bind(tenantId).first<{ id: string }>();
+  const connId = connRow?.id ?? null;
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // ── 2 raw inbound invoices ───────────────────────────────────
+  const rawInvoices = [
+    {
+      ref: 'RAW-INB-001',
+      payload: {
+        invoice_number: 'INV-INBOX-001', vendor_id: 'V-NEWVENDOR',
+        vendor_name: 'New Vendor (Pty) Ltd', invoice_amount: 14_500,
+        currency: 'ZAR', invoice_date: isoDay(-2), due_date: isoDay(28),
+        payment_terms: 'NET30', line_items: [{ desc: 'Office supplies', amount: 14_500 }],
+      },
+    },
+    {
+      ref: 'RAW-INB-002',
+      payload: { /* missing vendor_id → exception */
+        invoice_number: 'INV-INBOX-002', invoice_amount: 9_200, currency: 'ZAR',
+      },
+    },
+  ];
+  for (const r of rawInvoices) {
+    await db.prepare(
+      `INSERT INTO ap_invoice_inbox_raw (id, tenant_id, erp_connection_id, source_channel,
+         received_at, raw_payload, parsed_status)
+       VALUES (?, ?, ?, 'email', ?, ?, 'pending')`,
+    ).bind(
+      `raw-${tenantId}::${r.ref}`, tenantId, connId,
+      isoDay(-1), JSON.stringify(r.payload),
+    ).run();
+  }
+
+  // ── 2 vendor statements: one matching, one mismatch ──────────
+  const period = isoDay(-30).slice(0, 7); // YYYY-MM
+  const vendorStmts = [
+    { vendor_id: 'V-MAERSK', name: 'Maersk Logistics SA', closing: 125_000 }, // matches INV-9001
+    { vendor_id: 'V-SASOL',  name: 'Sasol Chemicals',     closing: 85_000  }, // mismatch (ledger 78,500)
+  ];
+  for (const s of vendorStmts) {
+    await db.prepare(
+      `INSERT INTO vendor_statements (id, tenant_id, vendor_id, vendor_name, statement_period,
+         opening_balance, closing_balance, currency, source_system, received_at)
+       VALUES (?, ?, ?, ?, ?, 0, ?, 'ZAR', 'sap_ecc', ?)`,
+    ).bind(
+      `stmt-${tenantId}::${s.vendor_id}::${period}`, tenantId, s.vendor_id, s.name,
+      period, s.closing, isoDay(-1),
+    ).run();
+  }
+
+  // ── 3 sales orders: 2 fulfilled+billable+unbilled, 1 already billed ──
+  const salesOrders = [
+    { so: 'SO-3001', cust_id: 'C-PNP',     cust: 'Pick n Pay',  amount: 250_000, fulfilled: isoDay(-3), billed: false },
+    { so: 'SO-3002', cust_id: 'C-WOOLIES', cust: 'Woolworths',  amount: 180_000, fulfilled: isoDay(-2), billed: false },
+    { so: 'SO-3003', cust_id: 'C-MAKRO',   cust: 'Makro',       amount:  95_000, fulfilled: isoDay(-5), billed: true  },
+  ];
+  for (const s of salesOrders) {
+    await db.prepare(
+      `INSERT INTO sales_orders (id, tenant_id, erp_connection_id, so_number, customer_id, customer_name,
+         so_amount, currency, so_date, fulfilled_at, billable, billed_invoice_number, status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 1, ?, 'fulfilled', 'sap_ecc')`,
+    ).bind(
+      `so-${tenantId}::${s.so}`, tenantId, connId, s.so, s.cust_id, s.cust,
+      s.amount, isoDay(-7), s.fulfilled,
+      s.billed ? `INV-AUTO-${s.so}` : null,
+    ).run();
+  }
+
+  // ── 1 overdue AR invoice for dunning executor ────────────────
+  // Add an invoice 45 days past due so the L2 dunning notice fires.
+  await db.prepare(
+    `INSERT INTO ar_open_invoices (id, tenant_id, erp_connection_id, invoice_number, customer_id, customer_name,
+       invoice_amount, currency, invoice_date, due_date, paid_amount, status, source_system)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 0, 'open', 'sap_ecc')`,
+  ).bind(
+    `arinv-${tenantId}::AR-OVERDUE-1`, tenantId, connId,
+    'AR-OVERDUE-1', 'C-MAKRO', 'Makro', 75_000,
+    isoDay(-75), isoDay(-45),
+  ).run();
+
+  // ── 2 recurring JE schedules due now ─────────────────────────
+  const schedules = [
+    { name: 'Monthly depreciation', je_type: 'depreciation', dr: '6800-DEPR-EXP', cr: '1500-ACCUM-DEPR', amount: 32_000, freq: 'monthly' },
+    { name: 'Quarterly insurance amortisation', je_type: 'prepaid_amort', dr: '6900-INSURANCE', cr: '1700-PREPAID', amount: 18_500, freq: 'quarterly' },
+  ];
+  for (const s of schedules) {
+    await db.prepare(
+      `INSERT INTO gl_recurring_schedules (id, tenant_id, name, je_type, debit_account, credit_account,
+         amount, currency, frequency, next_run_date, enabled, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, 1, ?)`,
+    ).bind(
+      `sched-${tenantId}::${s.name.replace(/\s+/g, '_')}`, tenantId, s.name, s.je_type,
+      s.dr, s.cr, s.amount, s.freq,
+      isoDay(-1), `${s.je_type} for current period`,
+    ).run();
+  }
+
+  // ── 3 PO approval policies + 0 net-new POs (existing PO-1003 = 240k will get routed) ──
+  const policies = [
+    { tier: 'low_value', min: 0, max: 50_000, role: 'system', dual: 0 },
+    { tier: 'mid_value', min: 50_000, max: 250_000, role: 'manager', dual: 0 },
+    { tier: 'exec_signoff', min: 250_000, max: null, role: 'executive', dual: 1 },
+  ];
+  for (const p of policies) {
+    await db.prepare(
+      `INSERT INTO po_approval_policies (id, tenant_id, tier_name, min_amount, max_amount, approver_role, requires_dual_signoff)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      `pol-${tenantId}::${p.tier}`, tenantId, p.tier, p.min, p.max, p.role, p.dual,
+    ).run();
+  }
+
+  return {
+    rawInvoiceCount: rawInvoices.length,
+    vendorStmtCount: vendorStmts.length,
+    salesOrderCount: salesOrders.length,
+    recurringScheduleCount: schedules.length,
+    policyCount: policies.length,
+  };
+}
+
+/**
+ * Seed substrate for the third batch of transactional subcatalysts
+ * (Phase 10-32): supplier-onboarding, customer-onboarding,
+ * gl-intercompany-recon, gl-period-close-orchestrator,
+ * gl-fx-revaluation, vat-return-builder, payroll-posting-bot,
+ * statutory-filing-bot, cycle-count-reconciler,
+ * stock-transfer-executor, cash-position-forecaster,
+ * expense-report-auditor.
+ */
+async function seedTransactionalBatch3Substrate(
+  db: D1Database, tenantId: string,
+): Promise<{
+  vendorMasterCount: number; customerMasterCount: number;
+  intercompanyCount: number; closeChecklistCount: number;
+  fxRateCount: number; payrollRunCount: number;
+  inventoryItemCount: number; cycleCountCount: number;
+  stockTransferCount: number; expenseReportCount: number;
+}> {
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+  const period = today.toISOString().slice(0, 7);
+
+  // ── 3 vendor_master rows: 2 valid, 1 with bad tax_id ─────────
+  const vendors = [
+    { vid: 'V-NEWVENDOR1', name: 'New Vendor One',  tax: '4123456789', bank: '1234567890' }, // valid
+    { vid: 'V-NEWVENDOR2', name: 'New Vendor Two',  tax: '4987654321', bank: '0987654321' }, // valid
+    { vid: 'V-BADVENDOR',  name: 'Bad Vendor Co',   tax: '999',        bank: 'XYZ'        }, // both invalid
+  ];
+  for (const v of vendors) {
+    await db.prepare(
+      `INSERT INTO vendor_master (id, tenant_id, vendor_id, vendor_name, tax_id, bank_account, payment_terms, kyc_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, 'NET30', 'pending', 'sap_ecc')`,
+    ).bind(
+      `vm-${tenantId}::${v.vid}`, tenantId, v.vid, v.name, v.tax, v.bank,
+    ).run();
+  }
+
+  // ── 3 customer_master rows ───────────────────────────────────
+  const customers = [
+    { cid: 'C-NEWCUST1', name: 'New Customer 1', tax: '4234567890', limit: 250_000 }, // valid
+    { cid: 'C-NEWCUST2', name: 'New Customer 2', tax: '4567890123', limit: 500_000 }, // valid
+    { cid: 'C-BADCUST',  name: 'Bad Customer',   tax: '111',        limit: 0       }, // invalid
+  ];
+  for (const c of customers) {
+    await db.prepare(
+      `INSERT INTO customer_master (id, tenant_id, customer_id, customer_name, tax_id, credit_limit, payment_terms, kyc_status, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, 'NET30', 'pending', 'sap_ecc')`,
+    ).bind(
+      `cm-${tenantId}::${c.cid}`, tenantId, c.cid, c.name, c.tax, c.limit,
+    ).run();
+  }
+
+  // ── 2 intercompany_balances: 1 matching, 1 mismatch ──────────
+  const ic = [
+    { a: 'CO-1000', b: 'CO-2000', ar: 450_000, ap: 450_000 }, // matches
+    { a: 'CO-1000', b: 'CO-3000', ar: 220_000, ap: 195_000 }, // mismatch
+  ];
+  for (const x of ic) {
+    await db.prepare(
+      `INSERT INTO intercompany_balances (id, tenant_id, entity_a, entity_b, period, ar_balance, ap_balance, currency, source_system)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'sap_ecc')`,
+    ).bind(
+      `ic-${tenantId}::${x.a}-${x.b}::${period}`, tenantId, x.a, x.b, period, x.ar, x.ap,
+    ).run();
+  }
+
+  // ── 1 period_close_checklist for current period ──────────────
+  await db.prepare(
+    `INSERT INTO period_close_checklists (id, tenant_id, period, status, target_close_date)
+     VALUES (?, ?, ?, 'open', ?)`,
+  ).bind(
+    `close-${tenantId}::${period}`, tenantId, period, isoDay(7),
+  ).run();
+
+  // ── 3 fx_rates for foreign currency revaluation ──────────────
+  const rates = [
+    { pair: 'USD/ZAR', rate: 18.45 },
+    { pair: 'EUR/ZAR', rate: 19.82 },
+    { pair: 'GBP/ZAR', rate: 23.10 },
+  ];
+  for (const r of rates) {
+    await db.prepare(
+      `INSERT INTO fx_rates (id, tenant_id, currency_pair, rate, rate_date, source)
+       VALUES (?, ?, ?, ?, ?, 'frankfurter.fx')`,
+    ).bind(
+      `fx-${tenantId}::${r.pair}::${isoDay(0)}`, tenantId, r.pair, r.rate, isoDay(0),
+    ).run();
+  }
+  // 1 USD-denominated AR + 1 EUR AP for the FX revaluation to act on
+  await db.prepare(
+    `INSERT INTO ar_open_invoices (id, tenant_id, erp_connection_id, invoice_number, customer_id, customer_name,
+       invoice_amount, currency, invoice_date, due_date, paid_amount, status, source_system)
+     VALUES (?, ?, NULL, 'AR-USD-001', 'C-EXPORT', 'Export Customer Inc', 12000, 'USD', ?, ?, 0, 'open', 'sap_ecc')`,
+  ).bind(`arinv-${tenantId}::AR-USD-001`, tenantId, isoDay(-15), isoDay(15)).run();
+  await db.prepare(
+    `INSERT INTO ap_invoice_inbox (id, tenant_id, erp_connection_id, invoice_number, vendor_id, vendor_name,
+       invoice_amount, currency, invoice_date, due_date, payment_terms, source_system, status)
+     VALUES (?, ?, NULL, 'INV-EUR-001', 'V-EUSUPPLIER', 'EU Supplier GmbH', 8500, 'EUR', ?, ?, 'NET45', 'sap_ecc', 'received')`,
+  ).bind(`apinv-${tenantId}::INV-EUR-001`, tenantId, isoDay(-10), isoDay(35)).run();
+
+  // ── 1 payroll_run pending posting ────────────────────────────
+  await db.prepare(
+    `INSERT INTO payroll_runs (id, tenant_id, period, employee_count, gross_pay, paye, uif_employee, uif_employer, sdl, deductions, net_pay, status)
+     VALUES (?, ?, ?, 25, 850000, 145000, 8500, 8500, 8500, 162000, 688000, 'pending')`,
+  ).bind(
+    `payroll-${tenantId}::${period}`, tenantId, period,
+  ).run();
+
+  // ── 5 inventory_items + 3 cycle_counts (1 within tolerance, 2 variance) ──
+  const items = [
+    { sku: 'SKU-A001', name: 'Component A', loc: 'WH-JHB', qty: 500, cost: 120 },
+    { sku: 'SKU-B002', name: 'Component B', loc: 'WH-JHB', qty: 300, cost: 85 },
+    { sku: 'SKU-C003', name: 'Component C', loc: 'WH-JHB', qty: 1200, cost: 25 },
+    { sku: 'SKU-A001', name: 'Component A', loc: 'WH-CPT', qty: 200, cost: 120 },
+    { sku: 'SKU-D004', name: 'Component D', loc: 'WH-CPT', qty: 50, cost: 480 },
+  ];
+  for (const i of items) {
+    await db.prepare(
+      `INSERT INTO inventory_items (id, tenant_id, sku, name, location, system_qty, unit_cost, currency, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'active')`,
+    ).bind(
+      `inv-${tenantId}::${i.sku}::${i.loc}`, tenantId, i.sku, i.name, i.loc, i.qty, i.cost,
+    ).run();
+  }
+  const counts = [
+    { sku: 'SKU-A001', loc: 'WH-JHB', sys: 500, counted: 500 },     // exact match
+    { sku: 'SKU-B002', loc: 'WH-JHB', sys: 300, counted: 290 },     // 3.3% variance — over tolerance
+    { sku: 'SKU-C003', loc: 'WH-JHB', sys: 1200, counted: 1188 },   // 1% variance — within
+  ];
+  for (const c of counts) {
+    await db.prepare(
+      `INSERT INTO cycle_counts (id, tenant_id, sku, location, count_date, system_qty, counted_qty, currency, counted_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'warehouse-staff')`,
+    ).bind(
+      `cycle-${tenantId}::${c.sku}::${c.loc}::${isoDay(-1)}`, tenantId,
+      c.sku, c.loc, isoDay(-1), c.sys, c.counted,
+    ).run();
+  }
+
+  // ── 2 stock_transfer_requests: 1 valid, 1 short ──────────────
+  const transfers = [
+    { ref: 'XFER-001', from: 'WH-JHB', to: 'WH-CPT', sku: 'SKU-A001', qty: 50 },   // valid
+    { ref: 'XFER-002', from: 'WH-JHB', to: 'WH-CPT', sku: 'SKU-D004', qty: 100 },  // not in JHB → block
+  ];
+  for (const t of transfers) {
+    await db.prepare(
+      `INSERT INTO stock_transfer_requests (id, tenant_id, transfer_ref, from_location, to_location, sku, qty, currency, requested_by, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'warehouse-mgr', 'requested')`,
+    ).bind(
+      `xfer-${tenantId}::${t.ref}`, tenantId, t.ref, t.from, t.to, t.sku, t.qty,
+    ).run();
+  }
+
+  // ── 2 expense_reports: 1 clean, 1 with violations ────────────
+  const reports = [
+    { ref: 'EXP-001', emp: 'EMP-101', name: 'Alice Smith', total: 4500, lines: [
+      { cat: 'flights', amt: 3200, receipt: 1, date: isoDay(-5) },
+      { cat: 'meals', amt: 850, receipt: 1, date: isoDay(-5) },
+      { cat: 'taxis', amt: 450, receipt: 1, date: isoDay(-4) },
+    ] },
+    { ref: 'EXP-002', emp: 'EMP-202', name: 'Bob Jones', total: 6000, lines: [
+      { cat: 'flights', amt: 3000, receipt: 0, date: isoDay(-3) },     // no receipt
+      { cat: 'entertainment', amt: 3000, receipt: 1, date: isoDay(-2) }, // suspiciously round
+    ] },
+  ];
+  for (const r of reports) {
+    const reportId = `exp-${tenantId}::${r.ref}`;
+    await db.prepare(
+      `INSERT INTO expense_reports (id, tenant_id, employee_id, employee_name, report_ref, period, total_amount, currency, status, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ZAR', 'submitted', ?)`,
+    ).bind(reportId, tenantId, r.emp, r.name, r.ref, period, r.total, isoDay(-1)).run();
+    for (const l of r.lines) {
+      await db.prepare(
+        `INSERT INTO expense_lines (id, report_id, tenant_id, category, amount, currency, expense_date, receipt_attached)
+         VALUES (?, ?, ?, ?, ?, 'ZAR', ?, ?)`,
+      ).bind(
+        `expl-${crypto.randomUUID()}`, reportId, tenantId, l.cat, l.amt, l.date, l.receipt,
+      ).run();
+    }
+  }
+
+  return {
+    vendorMasterCount: vendors.length,
+    customerMasterCount: customers.length,
+    intercompanyCount: ic.length,
+    closeChecklistCount: 1,
+    fxRateCount: rates.length,
+    payrollRunCount: 1,
+    inventoryItemCount: items.length,
+    cycleCountCount: counts.length,
+    stockTransferCount: transfers.length,
+    expenseReportCount: reports.length,
+  };
+}
+
+/**
+ * Seed substrate for batch 4 (Phase 10-33): RMA, shipping docs,
+ * contracts, JE anomaly scanner, SoD monitor, access recertification,
+ * cost-centre mapper, item-master sync, financial-report packager,
+ * board-pack assembler.
+ *
+ * Each subcatalyst gets at least one auto-pass AND one block case
+ * where applicable. Some subcatalysts (financial-report, board-pack)
+ * don't need pre-seeded "input" rows — they read existing data.
+ */
+async function seedTransactionalBatch4Substrate(
+  db: D1Database, tenantId: string,
+): Promise<{
+  rmaCount: number; shipmentCount: number; contractCount: number;
+  costCentreRuleCount: number; itemMasterChangeCount: number;
+}> {
+  const today = new Date();
+  const isoDay = (offsetDays: number): string => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // ── 3 RMAs: 1 auto (defective in window), 1 block (out of window),
+  //           1 block (non-eligible reason) ────────────────────────
+  const rmas = [
+    { ref: 'RMA-001', cust: 'C-PNP',     name: 'Pick n Pay',  sku: 'SKU-A001', qty: 5,  reason: 'defective',     value: 12_500, invDate: isoDay(-10) }, // auto
+    { ref: 'RMA-002', cust: 'C-WOOLIES', name: 'Woolworths',  sku: 'SKU-B002', qty: 10, reason: 'wrong_item',    value: 8_500,  invDate: isoDay(-45) }, // out of window
+    { ref: 'RMA-003', cust: 'C-MAKRO',   name: 'Makro',       sku: 'SKU-C003', qty: 1,  reason: 'changed_mind',  value: 3_000,  invDate: isoDay(-3)  }, // non-eligible reason
+  ];
+  for (const r of rmas) {
+    await db.prepare(
+      `INSERT INTO rma_requests (id, tenant_id, rma_number, customer_id, customer_name,
+         order_ref, sku, qty, return_reason, return_value, currency, original_invoice_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?)`,
+    ).bind(
+      `rma-${tenantId}::${r.ref}`, tenantId, r.ref, r.cust, r.name,
+      `SO-FOR-${r.ref}`, r.sku, r.qty, r.reason, r.value, r.invDate,
+    ).run();
+  }
+
+  // ── 3 shipments ready to ship ────────────────────────────────
+  const shipments = [
+    { ref: 'SHIP-001', so: 'SO-3001', carrier: 'DHL',  tracking: 'DHL-12345', dest: 'ZA', value: 250_000 },
+    { ref: 'SHIP-002', so: 'SO-3002', carrier: 'DHL',  tracking: 'DHL-12346', dest: 'US', value: 180_000 }, // international → +commercial invoice
+    { ref: 'SHIP-003', so: 'SO-3003', carrier: 'FedEx',tracking: 'FX-99999',  dest: 'GB', value:  95_000 }, // international
+  ];
+  for (const s of shipments) {
+    await db.prepare(
+      `INSERT INTO shipments (id, tenant_id, shipment_ref, so_number, carrier, tracking_number,
+         destination_country, ready_to_ship, doc_status, value, currency)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?, 'ZAR')`,
+    ).bind(
+      `ship-${tenantId}::${s.ref}`, tenantId, s.ref, s.so, s.carrier, s.tracking,
+      s.dest, s.value,
+    ).run();
+  }
+
+  // ── 4 contracts: 1 critical (≤15d), 1 warning (16-30d),
+  //                1 info (31-60d), 1 outside window (>60d, ignored) ──
+  const contracts = [
+    { ref: 'C-001', party: 'Office Lease — Sandton',     type: 'lease',  value: 1_800_000, end: isoDay(10),  auto: 0 }, // critical, no auto-renew → block
+    { ref: 'C-002', party: 'AWS Enterprise Support',     type: 'service', value: 600_000,   end: isoDay(25),  auto: 1 }, // warning, auto-renew → auto-approve
+    { ref: 'C-003', party: 'Insurance — Public Liability', type: 'insurance', value: 240_000, end: isoDay(50),  auto: 1 }, // info, auto → auto
+    { ref: 'C-004', party: 'Annual Audit (PwC)',         type: 'service', value: 900_000,   end: isoDay(120), auto: 0 }, // outside window — not picked up
+  ];
+  for (const c of contracts) {
+    await db.prepare(
+      `INSERT INTO contracts (id, tenant_id, contract_ref, counterparty_name, contract_type,
+         annual_value, currency, start_date, end_date, auto_renew, notice_period_days, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, 30, 'active')`,
+    ).bind(
+      `contract-${tenantId}::${c.ref}`, tenantId, c.ref, c.party, c.type,
+      c.value, isoDay(-365), c.end, c.auto,
+    ).run();
+  }
+
+  // ── 3 cost-centre rules ──────────────────────────────────────
+  // Rules match against vendor_id_pattern using prefix-style "STARTSWITH".
+  // The seeded vendors V-MAERSK / V-SASOL etc. should match these.
+  const rules = [
+    { name: 'Logistics → CC-LOG', vendor: 'V-MAERSK', cc: 'CC-LOG-1000', prio: 10 },
+    { name: 'Chemicals → CC-PROD', vendor: 'V-SASOL', cc: 'CC-PROD-2000', prio: 20 },
+    { name: 'Catch-all logistics', vendor: 'V-TRANSF', cc: 'CC-LOG-1000', prio: 30 },
+  ];
+  for (const r of rules) {
+    await db.prepare(
+      `INSERT INTO cost_centre_rules (id, tenant_id, rule_name, vendor_id_pattern, target_cost_centre, priority, enabled)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+    ).bind(
+      `ccr-${tenantId}::${r.name.replace(/\s+/g, '_')}`, tenantId, r.name, r.vendor, r.cc, r.prio,
+    ).run();
+  }
+
+  // ── 3 item-master changes pending sync ───────────────────────
+  const changes = [
+    { sku: 'SKU-A001', type: 'name_update', field: 'name',      old: 'Component A', new: 'Component A (revised)' },
+    { sku: 'SKU-B002', type: 'cost_update', field: 'unit_cost', old: '85',          new: '92.50' },
+    { sku: 'SKU-D004', type: 'cost_update', field: 'unit_cost', old: '480',         new: 'invalid' }, // exception
+  ];
+  for (const c of changes) {
+    await db.prepare(
+      `INSERT INTO item_master_changes (id, tenant_id, sku, change_type, field_name, old_value, new_value, source_system, sync_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'manual', 'pending')`,
+    ).bind(
+      `imc-${tenantId}::${c.sku}::${c.type}`, tenantId, c.sku, c.type, c.field, c.old, c.new,
+    ).run();
+  }
+
+  return {
+    rmaCount: rmas.length,
+    shipmentCount: shipments.length,
+    contractCount: contracts.length,
+    costCentreRuleCount: rules.length,
+    itemMasterChangeCount: changes.length,
+  };
+}
+
 async function seedVerifiedAction(db: D1Database, tenantId: string): Promise<void> {
   // One verified completed action so future RCA closures (when metrics
   // recover in subsequent ticks) become billable per Phase 10-19.
@@ -609,6 +1284,18 @@ export async function seedSapEccDemo(
 
   const { insightsCount } = await seedHealthScoresAndInsights(db, tenantId, runIds);
   notes.push(`Seeded health_scores + 30-day history + ${insightsCount} catalyst_insights`);
+
+  const txn = await seedTransactionalSubstrate(db, tenantId);
+  notes.push(`Seeded transactional substrate: ${txn.posCount} POs, ${txn.apInvoiceCount} AP invoices, ${txn.arInvoiceCount} AR invoices, ${txn.bankLineCount} bank lines`);
+
+  const txn2 = await seedTransactionalBatch2Substrate(db, tenantId);
+  notes.push(`Seeded batch-2 substrate: ${txn2.rawInvoiceCount} raw invoices, ${txn2.vendorStmtCount} vendor statements, ${txn2.salesOrderCount} sales orders, ${txn2.recurringScheduleCount} JE schedules, ${txn2.policyCount} PO policies`);
+
+  const txn3 = await seedTransactionalBatch3Substrate(db, tenantId);
+  notes.push(`Seeded batch-3 substrate: ${txn3.vendorMasterCount} vendor master, ${txn3.customerMasterCount} customer master, ${txn3.intercompanyCount} IC balances, ${txn3.fxRateCount} FX rates, ${txn3.payrollRunCount} payroll run, ${txn3.inventoryItemCount} items + ${txn3.cycleCountCount} counts, ${txn3.stockTransferCount} stock transfers, ${txn3.expenseReportCount} expense reports, 1 close checklist`);
+
+  const txn4 = await seedTransactionalBatch4Substrate(db, tenantId);
+  notes.push(`Seeded batch-4 substrate: ${txn4.rmaCount} RMAs, ${txn4.shipmentCount} shipments, ${txn4.contractCount} contracts, ${txn4.costCentreRuleCount} cost-centre rules, ${txn4.itemMasterChangeCount} item-master changes`);
 
   logInfo('demo_sap_ecc.seed_completed',
     { tenantId, layer: 'demo', action: 'seed' },
