@@ -60,6 +60,10 @@ import {
   isNetSuiteError,
 } from './erp-netsuite-client';
 import type { NetSuiteConnectionConfig } from './erp-netsuite-client';
+import {
+  sapPostSupplierInvoice, sapPostIncomingPayment, sapPostJournalEntry, isSapError,
+} from './erp-sap-client';
+import type { SapConnectionConfig } from './erp-sap-client';
 
 export type TransactionalActionType =
   | 'ap_invoice_post'
@@ -258,7 +262,7 @@ async function dispatchToErp(
     case 'sap_ecc':
     case 'sap':
     case 'sap_s4hana':
-      return dispatchSap(row, docId);
+      return dispatchSap(row, docId, connectionConfig);
     case 'odoo':
       return dispatchOdoo(row, docId, connectionConfig);
     case 'xero':
@@ -282,14 +286,201 @@ async function dispatchToErp(
 // persisted with the full payload, so the adapter is purely an
 // outbound bridge.
 
+/**
+ * Real SAP S/4HANA write-back via OData v2 services with CSRF token
+ * handshake. Falls back to the synthesised SAP-shaped doc number when
+ * config is incomplete (legacy ECC tenants without a configured
+ * communication user, dev fixtures, etc.).
+ *
+ * Action-type → SAP service mapping:
+ *   ap_invoice_post  → API_SUPPLIERINVOICE_PROCESS_SRV/A_SupplierInvoice
+ *   ar_cash_apply    → API_INCOMINGPAYMENT_SRV/IncomingPayment
+ *   gl_journal_entry → API_JOURNALENTRY_SRV/A_JournalEntry
+ *   ap_payment_run   → STUB (Payment Run F110 isn't a single OData call;
+ *                      tenant-side workflow handles batch payment runs)
+ *   ar_credit_hold + ap_invoice_block + gl_bank_match → STUB
+ */
 async function dispatchSap(
-  row: TransactionalActionRow, docId: string,
+  row: TransactionalActionRow, docId: string, configJson: string | null,
 ): Promise<AdapterDispatchResult> {
-  const sapDoc = mapToSapDoc(row.action_type, docId);
-  logInfo('erp_writeback.sap',
-    { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
-    { adapter: 'sap_ecc', doc_id: sapDoc, idempotency_key: row.idempotency_key, entity: row.target_entity });
-  return { posted: true, externalDocId: sapDoc };
+  const cfg = parseSapConfig(configJson);
+  if (!cfg) {
+    // Existing behaviour: synthesise an SAP-shaped doc number + log.
+    // Lots of tenants in the platform are still on the stub path
+    // (sandbox / demo / pre-production) — don't break them.
+    const sapDoc = mapToSapDoc(row.action_type, docId);
+    logInfo('erp_writeback.sap_missing_config',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { adapter: 'sap_ecc', doc_id: sapDoc, reason: 'config missing base_url/user/password — falling back to synth doc' });
+    return { posted: true, externalDocId: sapDoc };
+  }
+
+  if (
+    row.action_type === 'ap_invoice_block' || row.action_type === 'gl_bank_match' ||
+    row.action_type === 'ar_credit_hold' || row.action_type === 'ap_payment_run'
+  ) {
+    const sapDoc = mapToSapDoc(row.action_type, docId);
+    logInfo('erp_writeback.sap_skipped',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { reason: 'action_type does not map to a single SAP OData call', doc_id: sapDoc });
+    return { posted: true, externalDocId: sapDoc };
+  }
+
+  let payload: Record<string, unknown> = {};
+  try { payload = JSON.parse(row.payload || '{}'); } catch { /* keep empty */ }
+
+  try {
+    let externalDocId: string;
+    switch (row.action_type) {
+      case 'ap_invoice_post': {
+        const r = await postSapSupplierInvoice(cfg, row, payload);
+        externalDocId = r.SupplierInvoice;
+        break;
+      }
+      case 'ar_cash_apply': {
+        const r = await postSapIncomingPayment(cfg, row, payload);
+        externalDocId = r.PaymentDocument;
+        break;
+      }
+      case 'gl_journal_entry': {
+        const r = await postSapJournalEntry(cfg, row, payload);
+        externalDocId = r.AccountingDocument;
+        break;
+      }
+      default: {
+        const sapDoc = mapToSapDoc(row.action_type, docId);
+        logWarn('erp_writeback.sap_unsupported',
+          { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+          { reason: `action_type '${row.action_type}' has no SAP mapping; using synth doc_id`, doc_id: sapDoc });
+        return { posted: true, externalDocId: sapDoc };
+      }
+    }
+
+    logInfo('erp_writeback.sap_posted',
+      { tenantId: row.tenant_id, layer: 'erp_write', action: row.action_type },
+      { adapter: 'sap', doc_id: externalDocId, idempotency_key: row.idempotency_key, entity: row.target_entity });
+    return { posted: true, externalDocId };
+  } catch (err) {
+    const reason = isSapError(err)
+      ? `[SAP ${err.sapErrorCode ?? 'error'} ${err.httpStatus ?? '?'}] ${err.message}${err.debug ? ` :: ${err.debug.slice(0, 200)}` : ''}`
+      : err instanceof Error ? err.message : String(err);
+    throw new Error(`SAP dispatch failed: ${reason}`);
+  }
+}
+
+function parseSapConfig(configJson: string | null): SapConnectionConfig | null {
+  if (!configJson) return null;
+  let parsed: Record<string, unknown> = {};
+  try { parsed = JSON.parse(configJson); } catch { return null; }
+  const base_url = typeof parsed.base_url === 'string' ? parsed.base_url.replace(/\/+$/, '') : '';
+  const user = typeof parsed.user === 'string' ? parsed.user : '';
+  const password = typeof parsed.password === 'string' ? parsed.password : '';
+  const client = typeof parsed.client === 'string' ? parsed.client : undefined;
+  if (!base_url || !user || !password) return null;
+  return { base_url, user, password, client };
+}
+
+interface SapApInvoicePayload {
+  invoice?: { invoice_number?: string; invoice_date?: string; due_date?: string };
+  company_code?: string;
+  vendor_id?: string;
+  document_currency?: string;
+  gross_amount?: number;
+  line_items?: Array<{ gl_account: string; amount: number; debit_credit?: 'S' | 'H' }>;
+}
+async function postSapSupplierInvoice(
+  cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapApInvoicePayload,
+): Promise<{ SupplierInvoice: string; FiscalYear: string }> {
+  if (!payload.company_code) throw new Error('payload missing company_code (SAP CompanyCode required)');
+  if (!payload.vendor_id) throw new Error('payload missing vendor_id (SAP InvoicingParty required)');
+  const inv = payload.invoice ?? {};
+  const docDate = inv.invoice_date ?? new Date().toISOString().slice(0, 10);
+  const currency = payload.document_currency ?? row.currency ?? 'USD';
+  const gross = (payload.gross_amount ?? row.posted_value ?? 0).toFixed(2);
+  const items = payload.line_items && payload.line_items.length > 0
+    ? payload.line_items.map((li) => ({
+        CompanyCode: payload.company_code as string,
+        GLAccount: li.gl_account,
+        DebitCreditCode: (li.debit_credit ?? 'S') as 'S' | 'H',
+        DocumentCurrency: currency,
+        SupplierInvoiceItemAmount: li.amount.toFixed(2),
+      }))
+    : undefined;
+  return sapPostSupplierInvoice(cfg, {
+    CompanyCode: payload.company_code,
+    DocumentDate: docDate,
+    PostingDate: docDate,
+    InvoicingParty: payload.vendor_id,
+    SupplierInvoiceIDByInvcgParty: inv.invoice_number ?? row.source_record_ref ?? undefined,
+    DocumentCurrency: currency,
+    InvoiceGrossAmount: gross,
+    ...(items ? { to_SupplierInvoiceItemGLAcct: { results: items } } : {}),
+  });
+}
+
+interface SapCashApplyPayload {
+  company_code?: string;
+  customer_id?: string;
+  amount?: number;
+  currency?: string;
+  house_bank?: string;
+  house_bank_account?: string;
+  assignment_reference?: string;
+  payment_date?: string;
+}
+async function postSapIncomingPayment(
+  cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapCashApplyPayload,
+): Promise<{ PaymentDocument: string; FiscalYear: string }> {
+  if (!payload.company_code) throw new Error('payload missing company_code (SAP CompanyCode required)');
+  if (!payload.customer_id) throw new Error('payload missing customer_id (SAP Customer required)');
+  return sapPostIncomingPayment(cfg, {
+    CompanyCode: payload.company_code,
+    PostingDate: payload.payment_date ?? new Date().toISOString().slice(0, 10),
+    Customer: payload.customer_id,
+    PaymentAmount: (payload.amount ?? row.posted_value ?? 0).toFixed(2),
+    PaymentCurrency: payload.currency ?? row.currency ?? 'USD',
+    HouseBank: payload.house_bank,
+    HouseBankAccount: payload.house_bank_account,
+    AssignmentReference: payload.assignment_reference ?? row.source_record_ref ?? undefined,
+  });
+}
+
+interface SapJePayload {
+  company_code?: string;
+  document_date?: string;
+  document_type?: string;
+  reference?: string;
+  header_text?: string;
+  currency?: string;
+  debit?: { gl_account: string; amount: number };
+  credit?: { gl_account: string; amount: number };
+}
+async function postSapJournalEntry(
+  cfg: SapConnectionConfig, row: TransactionalActionRow, payload: SapJePayload,
+): Promise<{ AccountingDocument: string; FiscalYear: string }> {
+  if (!payload.company_code) throw new Error('payload missing company_code (SAP CompanyCode required)');
+  if (!payload.debit || !payload.credit) throw new Error('payload missing debit/credit blocks');
+  const docDate = payload.document_date ?? new Date().toISOString().slice(0, 10);
+  const currency = payload.currency ?? row.currency ?? 'USD';
+  const cc = payload.company_code;
+  return sapPostJournalEntry(cfg, {
+    CompanyCode: cc,
+    DocumentDate: docDate,
+    PostingDate: docDate,
+    AccountingDocumentType: payload.document_type ?? 'SA',
+    DocumentReferenceID: payload.reference ?? row.source_record_ref ?? undefined,
+    DocumentHeaderText: payload.header_text ?? row.target_entity,
+    to_JournalEntryItem: {
+      results: [
+        { CompanyCode: cc, GLAccount: payload.debit.gl_account, DebitCreditCode: 'S',
+          AmountInTransactionCurrency: Math.abs(payload.debit.amount).toFixed(2), TransactionCurrency: currency,
+          DocumentItemText: payload.header_text ?? row.target_entity },
+        { CompanyCode: cc, GLAccount: payload.credit.gl_account, DebitCreditCode: 'H',
+          AmountInTransactionCurrency: Math.abs(payload.credit.amount).toFixed(2), TransactionCurrency: currency,
+          DocumentItemText: payload.header_text ?? row.target_entity },
+      ],
+    },
+  });
 }
 
 /**
