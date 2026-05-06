@@ -289,29 +289,45 @@ async function dispatchToErp(
   db: D1Database, row: TransactionalActionRow, encryptionKey?: string,
 ): Promise<AdapterDispatchResult> {
   let adapterId: string | null = null;
+  let adapterSystem: string | null = null;
   let connectionConfig: string | null = null;
   if (row.erp_connection_id) {
+    // Join erp_adapters so we can route on `system` (canonical, e.g. 'SAP',
+    // 'Odoo', 'Xero', 'NetSuite') rather than `adapter_id` strings, which vary
+    // between production seed (`erp-sap-ecc`, `erp-odoo`, `erp-ns`, `erp-xero`)
+    // and test fixtures (`'sap_ecc'`, `'odoo'`, `'xero'`, `'netsuite'`).
     const conn = await db.prepare(
-      'SELECT adapter_id, config, encrypted_config FROM erp_connections WHERE id = ?',
-    ).bind(row.erp_connection_id).first<{ adapter_id: string; config: string | null; encrypted_config: string | null }>();
+      `SELECT ec.adapter_id, ec.config, ec.encrypted_config, ea.system AS adapter_system
+         FROM erp_connections ec
+         LEFT JOIN erp_adapters ea ON ea.id = ec.adapter_id
+        WHERE ec.id = ?`,
+    ).bind(row.erp_connection_id).first<{ adapter_id: string; adapter_system: string | null; config: string | null; encrypted_config: string | null }>();
     adapterId = conn?.adapter_id ?? null;
+    adapterSystem = conn?.adapter_system ?? null;
     connectionConfig = await resolveConnectionConfig(conn, encryptionKey, row.tenant_id, row.erp_connection_id);
   }
 
   // Synthesise a deterministic external doc ID so retries idempotent
   const docId = `${row.action_type.toUpperCase()}-${row.idempotency_key.slice(-12)}`;
 
-  const adapterKey = (adapterId ?? 'sap_ecc').toLowerCase();
+  // Route on system FIRST (production path), fall back to adapter_id (test path).
+  // Both lower-cased so 'SAP'/'sap_ecc'/'sap_s4hana'/'erp-sap-ecc' all land at dispatchSap.
+  const adapterKey = (adapterSystem ?? adapterId ?? 'sap_ecc').toLowerCase();
   switch (adapterKey) {
-    case 'sap_ecc':
     case 'sap':
+    case 'sap_ecc':
     case 'sap_s4hana':
+    case 'erp-sap-s4':
+    case 'erp-sap-ecc':
       return dispatchSap(db, row, docId, connectionConfig);
     case 'odoo':
+    case 'erp-odoo':
       return dispatchOdoo(db, row, docId, connectionConfig);
     case 'xero':
+    case 'erp-xero':
       return dispatchXero(db, row, docId, connectionConfig, encryptionKey);
     case 'netsuite':
+    case 'erp-ns':
       return dispatchNetsuite(db, row, docId, connectionConfig);
     default:
       // Generic stub — log + return synthesised id
