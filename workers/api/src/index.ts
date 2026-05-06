@@ -61,6 +61,7 @@ import featureFlagsRoutes from './routes/feature-flags';
 import supportRoutes from './routes/support';
 import openapi from './routes/openapi';
 import compliance from './routes/compliance';
+import webhookSecrets from './routes/webhook-secrets';
 
 // Export Durable Object class for Cloudflare runtime
 export { DashboardRoom };
@@ -395,7 +396,7 @@ app.get('/healthz', async (c) => {
 
 // Tenant isolation middleware for protected routes (supports both /api/ and /api/v1/ prefixes)
 // Auth routes are excluded (login/register don't have JWT yet)
-const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments', 'ai-costs', 'radar', 'diagnostics', 'catalyst-intelligence', 'roi', 'board-report', 'onboarding', 'freshness', 'atheon-score', 'baseline', 'targets', 'executive-summary', 'webhooks', 'system-alerts', 'support', 'inferences', 'billing', 'dsar', 'orchestration', 'insights-stats'];
+const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments', 'ai-costs', 'radar', 'diagnostics', 'catalyst-intelligence', 'roi', 'board-report', 'onboarding', 'freshness', 'atheon-score', 'baseline', 'targets', 'executive-summary', 'webhooks', 'system-alerts', 'support', 'inferences', 'billing', 'dsar', 'orchestration', 'insights-stats', 'webhook-secrets'];
 for (const prefix of protectedPrefixes) {
   app.use(`/api/${prefix}/*`, tenantIsolation());
   app.use(`/api/v1/${prefix}/*`, tenantIsolation());
@@ -443,6 +444,7 @@ const routeModules: [string, typeof auth][] = [
   ['billing', billingRoutes],
   ['dsar', dsarRoutes],
   ['orchestration', orchestrationRoutes],
+  ['webhook-secrets', webhookSecrets],
   ['insights-stats', insightsStatsRoutes],
   ['catalyst-intelligence', catalystIntelligence],
   ['roi', roi], ['board-report', boardReport],
