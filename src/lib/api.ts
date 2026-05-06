@@ -768,6 +768,45 @@ export const api = {
         `/api/erp/connections/${connectionId}/mappings/reject`,
         { method: 'POST', body: JSON.stringify({ entity_type: entityType, canonical_field: canonicalField, source_field: sourceField }) },
       ),
+    // Phase 10-45: partner-ID mapping table — Atheon canonical partner_ref
+    // ↔ ERP-native external ID. Required for write-back: subcatalysts stage
+    // payloads with the canonical ref (e.g. 'vendor-acme-001'), and the
+    // adapter dispatchers look up the ERP-native ID at dispatch time.
+    partnerMappings: (connectionId: string, partnerType?: 'vendor' | 'customer') =>
+      request<{
+        mappings: Array<{
+          id: string;
+          tenant_id: string;
+          erp_connection_id: string;
+          partner_type: 'vendor' | 'customer';
+          atheon_partner_ref: string;
+          external_partner_id: string;
+          external_partner_name: string | null;
+          metadata: string;
+          created_at: string;
+          updated_at: string;
+        }>;
+        total: number;
+      }>(`/api/erp/connections/${connectionId}/partner-mappings${qs({ partner_type: partnerType })}`),
+    upsertPartnerMapping: (
+      connectionId: string,
+      body: {
+        partner_type: 'vendor' | 'customer';
+        atheon_partner_ref: string;
+        external_partner_id: string;
+        external_partner_name?: string;
+        metadata?: Record<string, unknown>;
+      },
+    ) =>
+      request<{ id: string; created: boolean; partner_type: string; atheon_partner_ref: string }>(
+        `/api/erp/connections/${connectionId}/partner-mappings`,
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
+    deletePartnerMapping: (connectionId: string, partnerType: 'vendor' | 'customer', atheonRef: string) =>
+      request<{ deleted: boolean }>(
+        `/api/erp/connections/${connectionId}/partner-mappings/${partnerType}/${encodeURIComponent(atheonRef)}`,
+        { method: 'DELETE' },
+      ),
     // v61: process profile — structured business rules per connection
     // (3-way-match, AP tolerance %, payment terms days, fiscal year start,
     // approval thresholds, dunning days). Catalysts read this to operate
