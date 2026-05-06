@@ -123,7 +123,75 @@ const AUTH_FIELD_MAP: Record<string, CredField[]> = {
   ],
 };
 
-function getCredentialFields(_authMethods: string[], selectedAuth: string): CredField[] {
+/**
+ * Per-adapter overrides for the four write-back-capable adapters.
+ *
+ * The generic AUTH_FIELD_MAP above uses generic keys (`base_url`,
+ * `username`, `client_id`) that don't match what the action-layer
+ * dispatchers in workers/api/src/services/erp-writeback.ts read. The
+ * dispatchers expect adapter-specific keys, so when the user picks one
+ * of these adapters we replace the generic schema with an explicit
+ * one that lands in `erp_connections.config` with the right shape.
+ *
+ * Backend code that reads these keys:
+ *   - Odoo:     parseOdooConfig() — needs url, db, login, password
+ *   - Xero:     parseXeroConfig() — needs client_id, client_secret,
+ *                tenant_id, access_token, refresh_token, token_expires_at
+ *   - NetSuite: parseNetSuiteConfig() — needs account_id, consumer_key,
+ *                consumer_secret, token_id, token_secret
+ *   - SAP:      parseSapConfig() — needs base_url, user, password,
+ *                client (optional)
+ *
+ * Keyed by `adapter.system` (lowercased) so the override fires on
+ * production seed IDs ('Odoo', 'Xero', 'NetSuite', 'SAP') as well as
+ * any future adapter-id rename.
+ */
+const ADAPTER_FIELD_MAP: Record<string, CredField[]> = {
+  odoo: [
+    { key: 'url', label: 'Odoo URL', placeholder: 'https://your-org.odoo.com', type: 'url', required: true },
+    { key: 'db', label: 'Database', placeholder: 'e.g. acme_prod', type: 'text', required: true },
+    { key: 'login', label: 'Login (email/username)', placeholder: 'atheon-bot@your-org.com', type: 'text', required: true },
+    { key: 'password', label: 'API Key / Password', placeholder: 'Generate via Settings → Users → Developer Mode → API Keys', type: 'password', required: true },
+  ],
+  xero: [
+    { key: 'client_id', label: 'OAuth Client ID', placeholder: 'From Xero developer portal', type: 'text', required: true },
+    { key: 'client_secret', label: 'OAuth Client Secret', placeholder: 'From Xero developer portal', type: 'password', required: true },
+    { key: 'tenant_id', label: 'Xero Org GUID', placeholder: 'Sent in xero-tenant-id header', type: 'text', required: true },
+    { key: 'access_token', label: 'Access Token', placeholder: 'Initial OAuth access token', type: 'password', required: true },
+    { key: 'refresh_token', label: 'Refresh Token', placeholder: 'For automated rotation', type: 'password', required: true },
+    { key: 'token_expires_at', label: 'Token Expires At (ISO)', placeholder: '2026-05-06T12:00:00Z (optional)', type: 'text' },
+  ],
+  netsuite: [
+    { key: 'account_id', label: 'Account ID', placeholder: 'e.g. 1234567 or 1234567_SB1 (sandbox)', type: 'text', required: true },
+    { key: 'consumer_key', label: 'Consumer Key', placeholder: 'From integration record', type: 'text', required: true },
+    { key: 'consumer_secret', label: 'Consumer Secret', placeholder: 'From integration record', type: 'password', required: true },
+    { key: 'token_id', label: 'Token ID', placeholder: 'From access token record', type: 'text', required: true },
+    { key: 'token_secret', label: 'Token Secret', placeholder: 'From access token record', type: 'password', required: true },
+  ],
+  sap: [
+    { key: 'base_url', label: 'SAP Base URL', placeholder: 'https://my-sap.example.com', type: 'url', required: true },
+    { key: 'user', label: 'Communication User', placeholder: 'e.g. ATHEON_BOT', type: 'text', required: true },
+    { key: 'password', label: 'Password', placeholder: 'SAP technical user password', type: 'password', required: true },
+    { key: 'client', label: 'Client / Mandant (optional)', placeholder: 'e.g. 100', type: 'text' },
+  ],
+};
+
+/** Pick the right field schema for the selected adapter + auth method.
+ *  Adapter-specific overrides win for the four write-back adapters
+ *  (Odoo / Xero / NetSuite / SAP) because the dispatchers read
+ *  specific JSON keys; for everything else, the generic auth-method
+ *  schema in AUTH_FIELD_MAP applies. */
+function getCredentialFields(
+  _authMethods: string[],
+  selectedAuth: string,
+  adapterSystem?: string,
+): CredField[] {
+  const sys = (adapterSystem || '').toLowerCase();
+  // Override for write-back-capable adapters. Match canonical system names
+  // ('odoo', 'xero', 'netsuite', 'sap') — same lookup the dispatcher uses.
+  if (sys === 'odoo' || sys === 'xero' || sys === 'netsuite' || sys === 'sap') {
+    return ADAPTER_FIELD_MAP[sys];
+  }
   const fields = AUTH_FIELD_MAP[selectedAuth];
   if (fields) return fields;
   return [
@@ -648,12 +716,12 @@ export function IntegrationsPage() {
   ];
 
   const connectCredFields = selectedAdapter && selectedAuth
-    ? getCredentialFields(selectedAdapter.authMethods, selectedAuth)
+    ? getCredentialFields(selectedAdapter.authMethods, selectedAuth, selectedAdapter.system)
     : [];
 
   const configAdapter = configureConn ? adapters.find(a => a.id === configureConn.adapterId) : null;
   const configCredFields = configAdapter && configAuth
-    ? getCredentialFields(configAdapter.authMethods, configAuth)
+    ? getCredentialFields(configAdapter.authMethods, configAuth, configAdapter.system)
     : [];
 
   return (
