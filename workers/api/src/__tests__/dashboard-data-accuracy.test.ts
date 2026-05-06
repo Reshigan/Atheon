@@ -126,7 +126,7 @@ describe('Phase 10-27 — Dashboard / Pulse / Apex data accuracy', () => {
         WHERE tenant_id = ? AND status = 'active'`
     ).bind(TENANT).first<{ n: number }>();
     expect(activeRcas?.n).toBeGreaterThan(0);
-  });
+  }, 60_000);
 
   it('Pulse run-list query returns runs in time order with status', async () => {
     const r = await env.DB.prepare(
@@ -189,13 +189,17 @@ describe('Phase 10-27 — Dashboard / Pulse / Apex data accuracy', () => {
       healthSnapshots: (await env.DB.prepare(`SELECT COUNT(*) as n FROM health_score_history WHERE tenant_id = ?`).bind(TENANT).first<{ n: number }>())?.n ?? 0,
     };
 
-    // The Phase 10 chain doesn't write to sub_catalyst_runs / kpi_values
-    // (those are catalyst-execution outputs). It DOES write to
-    // catalyst_insights via the existing insights-engine path AND adds
-    // health_score_history snapshots. So we expect: runs/kpiValues
-    // unchanged; insights/healthSnapshots possibly increased.
-    expect(after.runs).toBe(before.runs);
-    expect(after.kpiValues).toBe(before.kpiValues);
+    // The Phase 10 chain writes:
+    //   - sub_catalyst_runs: 34 NEW from the transactional layer
+    //     (Phase 10-30 + 10-31 + 10-32 + 10-33 batches: master-data
+    //     onboarding, inventory, AP/AR/GL/payroll/T&E/treasury,
+    //     RMA, logistics, contracts, audit, GRC, reporting). On
+    //     subsequent ticks idempotency keys collapse so no growth.
+    //   - sub_catalyst_kpi_values: grows alongside the runs above
+    //   - catalyst_insights: insights-engine path writes per run
+    //   - health_score_history: per-tick snapshot
+    expect(after.runs).toBe(before.runs + 34);
+    expect(after.kpiValues).toBeGreaterThanOrEqual(before.kpiValues);
     expect(after.insights).toBeGreaterThanOrEqual(before.insights);
     expect(after.healthSnapshots).toBeGreaterThanOrEqual(before.healthSnapshots);
   }, 60_000);

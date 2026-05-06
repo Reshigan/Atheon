@@ -106,7 +106,7 @@ describe('Phase 10-21 — analytics fan-out', () => {
     it('returns all 9 step names with ok flags + duration_ms', async () => {
       const result = await runPhase10ChainForTenant(env.DB, TENANT);
       expect(result.tenantId).toBe(TENANT);
-      expect(result.steps.length).toBe(9);
+      expect(result.steps.length).toBe(10);
       const names = result.steps.map((s) => s.name);
       expect(names).toContain('metric_correlation');
       expect(names).toContain('signal_attribution');
@@ -130,7 +130,7 @@ describe('Phase 10-21 — analytics fan-out', () => {
          VALUES (?, ?, ?, 'enterprise', 'active')`
       ).bind(newTenant, newTenant, newTenant).run();
       const result = await runPhase10ChainForTenant(env.DB, newTenant);
-      expect(result.steps.length).toBe(9);
+      expect(result.steps.length).toBe(10);
     });
   });
 });
