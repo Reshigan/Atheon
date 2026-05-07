@@ -52,6 +52,7 @@ const navItems: NavItem[] = [
   { path: '/tenants', label: 'Clients', icon: IconClients, section: 'administration', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
   { path: '/integrations', label: 'Integrations', icon: IconERPAdapters, section: 'administration', sublabel: 'Systems & Data Schema', roles: PLATFORM_ADMIN_ROLES },
   { path: '/partner-mappings', label: 'Partner Mappings', icon: IconERPAdapters, section: 'administration', sublabel: 'ERP ID Reconciliation', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/transactional-actions', label: 'Action Layer', icon: IconCatalysts, section: 'administration', sublabel: 'AP/AR/GL Dispatch Queue', roles: PLATFORM_ADMIN_ROLES },
   { path: '/webhooks', label: 'Webhooks', icon: IconBolt, section: 'administration', sublabel: 'Event Subscriptions', roles: PLATFORM_ADMIN_ROLES },
   { path: '/audit', label: 'Audit', icon: IconAudit, section: 'administration', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
   { path: '/compliance', label: 'Compliance', icon: IconAudit, section: 'administration', sublabel: 'SOC 2 evidence pack', roles: PLATFORM_ADMIN_ROLES },
