@@ -1,6 +1,6 @@
 # Atheon Go-Live Checklist
 
-Last updated: 2026-04-27 (assessment overhaul + frontend-findings + demo seeder shipped)
+Last updated: 2026-05-07 (action-layer real ERP write-back stack: PRs #374–#383)
 
 This document tracks the gating items between the current production state and a clean go-live announcement. Items are grouped by tier: **Tier 1 (blockers)** must be resolved before the announcement; **Tier 2 (should-fix)** should be closed within the first week; **Tier 3 (deferred)** are known follow-ups tracked in the backlog.
 
@@ -18,6 +18,33 @@ The assessment engine is the lead-magnet that drives revenue. As of this update:
 - [x] **Frontend Findings tab** in AssessmentsPage — interactive list with severity filters, search, category filter, per-entity tabs, sample-record drill-down, and a Deploy button on each finding's recommended catalyst. PR #278.
 - [x] **Trial flow** runs `detectAllFindings` alongside the legacy value-assessment engine; trial `/results` exposes `findings` + `findingsSummary`. Migration v51-trial-findings. PR #279.
 - [x] **VantaX demo seeder** — `POST /api/v1/seed-vantax/seed-findings-demo` lights up all 40 detectors with ~280 deterministic fixture records so any sales demo runs against a fully-populated Findings tab. PR #280.
+
+## Action-layer ERP write-back — go-live ready
+
+The 9-PR stack (#374 → #383) replaces synth-doc stubs with real writes
+into Odoo / Xero / NetSuite / SAP, plus the operator surface needed to
+run the chain in production. Detailed runbook:
+[RUNBOOK_WRITEBACK.md](RUNBOOK_WRITEBACK.md).
+
+- [x] **Real Xero REST adapter** (#374) — OAuth2 with proactive (60s pre-expiry) + reactive (401) token refresh. PUT `/Invoices`, `/Payments`, `/ManualJournals` with `Idempotency-Key`. 10 unit tests.
+- [x] **Real NetSuite REST adapter** (#375) — OAuth1.0a TBA with HMAC-SHA256 signing, sandbox host normalisation. POST `/vendorBill`, `/customerPayment`, `/journalEntry`. 10 unit tests.
+- [x] **Real SAP S/4HANA OData adapter** (#376) — CSRF token handshake + Basic auth + optional `sap-client`. Posts to `API_SUPPLIERINVOICE_PROCESS_SRV`, `API_INCOMINGPAYMENT_SRV`, `API_JOURNALENTRY_SRV`. 10 unit tests.
+- [x] **Encryption-at-dispatch** (#377) — `erp_connections.encrypted_config` is decrypted with `ENCRYPTION_KEY` at dispatch time; Xero token rotation re-encrypts (no plaintext downgrade). 5 integration tests.
+- [x] **Partner-ID mapping** (#378) — `erp_partner_mappings` table; lookup at dispatch boundary translates Atheon canonical refs (`vendor-acme-001`) to ERP-native IDs (Odoo numeric `res.partner.id`, Xero `ContactID`, NetSuite `internalId`, SAP BUKRS code). 8 service tests.
+- [x] **Partner-mappings admin page** (#379) — `/partner-mappings` under Administration. Connection picker, vendor/customer tabs, list, modal editor.
+- [x] **Adapter-specific config form + dispatcher routing fix** (#380) — IntegrationsPage form renders the right fields per adapter (Odoo url/db/login/password, Xero 6-field OAuth2, NetSuite 5-field TBA, SAP base_url+user+password+client). **Critical bug fix bundled**: dispatcher's `switch (adapterKey)` was matching test-fixture IDs only; production seed `erp-*` IDs now route correctly. 4 routing regression tests.
+- [x] **Bulk partner-mapping bootstrap** (#381) — per-adapter `listPartners` (Odoo `search_read`, Xero `/Contacts` paginated, NetSuite SuiteQL, SAP `API_BUSINESS_PARTNER`). Fuzzy matcher with normalised names + Levenshtein. Operator confirms in bulk via the page. 13 tests.
+- [x] **Dispatch retry / backoff / dead-letter** (#382) — schedule `1m → 5m → 15m → 1h → 6h` then `dead_letter`. `next_retry_at` + `dead_letter_at` columns. `executePendingActions` picks up retry-eligible failed rows; per-connection failure-rate alert (`≥5 dead-lettered or ≥10 failed in 24h`) emitted as warn-level event. `reviveDeadLetterAction` helper for ops. 7 tests.
+- [x] **Action-layer admin page** (#383) — `/transactional-actions` under Administration. Status filter (default "Needs attention" = dead_letter + failed), summary chips, per-row Revive / Approve / Skip. 10 route tests.
+
+**87 tests across 10 files, all green at PR #383 tip.**
+
+### Pre-merge gating items (write-back stack)
+
+- [ ] `ENCRYPTION_KEY` confirmed set on the production worker (`wrangler secret list --name atheon-api | grep ENCRYPTION_KEY`). If missing, every connection that already has `encrypted_config` set will silently fall back to the stub on dispatch — no real ERP writes.
+- [ ] Stack merged in dependency order: `#374 → #375 → #376 → #377 → #378 → #379 → #380 → #381 → #382 → #383`. Order matters: #380 contains the dispatcher routing fix that makes any of the prior adapters actually fire on production seed IDs.
+- [ ] Migration `v76-dispatch-retry-backoff` (or later) confirmed applied on production: `wrangler d1 execute atheon-db --remote --command "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_txn_actions_retry'"` returns one row.
+- [ ] Smoke test sequence in [RUNBOOK_WRITEBACK.md § First-deploy smoke test](RUNBOOK_WRITEBACK.md#first-deploy-smoke-test) executed against one VantaX sandbox tenant before the announcement.
 
 ## Tier 1 — Blockers
 
