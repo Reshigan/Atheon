@@ -33,6 +33,11 @@ import {
   type PartnerType,
 } from '../services/erp-partner-mapping';
 import {
+  reviveDeadLetterAction, approveAction as approveTransactionalAction,
+  skipAction as skipTransactionalAction,
+} from '../services/erp-writeback';
+import type { TransactionalStatus } from '../services/erp-writeback';
+import {
   discoverCanonicalVendors, discoverCanonicalCustomers, fetchErpPartners,
   generateProposals,
 } from '../services/erp-partner-bootstrap';
@@ -2034,6 +2039,110 @@ erp.delete('/connections/:id/partner-mappings/:partner_type/:atheon_ref', async 
   const removed = await deletePartnerMapping(c.env.DB, tenantId, connectionId, partnerType, atheonRef);
   if (!removed) return c.json({ error: 'mapping_not_found' }, 404);
   return c.json({ deleted: true });
+});
+
+// ── Transactional actions admin (Phase 10-30 / 10-48) ───────────
+// Operator surface for the action-layer queue: list, summary, approve,
+// skip, revive (revive only fires when a row is in dead_letter so
+// transient ERP outages have a one-click recovery path).
+
+const TRANSACTIONAL_STATUSES: ReadonlyArray<TransactionalStatus> = [
+  'pending', 'approved', 'posted', 'failed', 'dead_letter', 'skipped',
+] as const;
+
+function isTransactionalStatus(s: unknown): s is TransactionalStatus {
+  return typeof s === 'string' && (TRANSACTIONAL_STATUSES as readonly string[]).includes(s);
+}
+
+erp.get('/transactional-actions', async (c) => {
+  const tenantId = getTenantId(c);
+  const statusFilter = c.req.query('status');
+  const subFilter = c.req.query('sub_catalyst');
+  const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '200', 10), 1), 500);
+
+  const wheres: string[] = ['tenant_id = ?'];
+  const binds: unknown[] = [tenantId];
+  if (statusFilter && isTransactionalStatus(statusFilter)) {
+    wheres.push('status = ?');
+    binds.push(statusFilter);
+  }
+  if (subFilter) {
+    wheres.push('sub_catalyst_name = ?');
+    binds.push(subFilter);
+  }
+  binds.push(limit);
+
+  const rows = await c.env.DB.prepare(
+    `SELECT id, tenant_id, erp_connection_id, sub_catalyst_name, action_type,
+            target_entity, source_record_ref, idempotency_key, status,
+            external_doc_id, posted_at, error, retry_count, next_retry_at,
+            dead_letter_at, posted_value, currency, reasoning,
+            created_at, updated_at
+       FROM transactional_actions
+      WHERE ${wheres.join(' AND ')}
+      ORDER BY
+        CASE status
+          WHEN 'dead_letter' THEN 0
+          WHEN 'failed'      THEN 1
+          WHEN 'pending'     THEN 2
+          WHEN 'approved'    THEN 3
+          WHEN 'posted'      THEN 4
+          ELSE 5
+        END,
+        updated_at DESC
+      LIMIT ?`,
+  ).bind(...binds).all();
+
+  return c.json({ actions: rows.results || [], total: (rows.results || []).length });
+});
+
+erp.get('/transactional-actions/summary', async (c) => {
+  const tenantId = getTenantId(c);
+  const rows = await c.env.DB.prepare(
+    `SELECT status, COUNT(*) AS n,
+            COALESCE(SUM(posted_value), 0) AS total_value
+       FROM transactional_actions
+      WHERE tenant_id = ?
+      GROUP BY status`,
+  ).bind(tenantId).all<{ status: string; n: number; total_value: number }>();
+
+  const summary: Record<string, { count: number; total_value: number }> = {};
+  for (const s of TRANSACTIONAL_STATUSES) summary[s] = { count: 0, total_value: 0 };
+  for (const r of rows.results ?? []) {
+    summary[r.status] = { count: r.n, total_value: r.total_value };
+  }
+  return c.json({ summary });
+});
+
+erp.post('/transactional-actions/:id/revive', async (c) => {
+  const tenantId = getTenantId(c);
+  const actionId = c.req.param('id');
+  const ok = await reviveDeadLetterAction(c.env.DB, tenantId, actionId);
+  if (!ok) {
+    return c.json({
+      error: 'not_revivable',
+      message: 'Action not found, not owned by this tenant, or not in dead_letter status',
+    }, 404);
+  }
+  return c.json({ id: actionId, status: 'approved', revived: true });
+});
+
+erp.post('/transactional-actions/:id/approve', async (c) => {
+  const tenantId = getTenantId(c);
+  const actionId = c.req.param('id');
+  const ok = await approveTransactionalAction(c.env.DB, tenantId, actionId);
+  if (!ok) return c.json({ error: 'not_approvable', message: 'Action not pending or not found' }, 404);
+  return c.json({ id: actionId, status: 'approved' });
+});
+
+erp.post('/transactional-actions/:id/skip', async (c) => {
+  const tenantId = getTenantId(c);
+  const actionId = c.req.param('id');
+  const { data: body } = await getValidatedJsonBody<{ reason?: string }>(c, []);
+  const reason = body?.reason ?? 'Skipped via admin UI';
+  const ok = await skipTransactionalAction(c.env.DB, tenantId, actionId, reason);
+  if (!ok) return c.json({ error: 'not_skippable', message: 'Action not in pending/approved or not found' }, 404);
+  return c.json({ id: actionId, status: 'skipped' });
 });
 
 export default erp;

@@ -832,6 +832,55 @@ export const api = {
         `/api/erp/connections/${connectionId}/partner-mappings/bulk`,
         { method: 'POST', body: JSON.stringify({ partner_type: partnerType, mappings }) },
       ),
+    /** Phase 10-30 / 10-48 — action-layer queue admin */
+    transactionalActions: (opts?: { status?: string; sub_catalyst?: string; limit?: number }) =>
+      request<{
+        actions: Array<{
+          id: string;
+          tenant_id: string;
+          erp_connection_id: string | null;
+          sub_catalyst_name: string;
+          action_type: string;
+          target_entity: string;
+          source_record_ref: string | null;
+          idempotency_key: string;
+          status: 'pending' | 'approved' | 'posted' | 'failed' | 'dead_letter' | 'skipped';
+          external_doc_id: string | null;
+          posted_at: string | null;
+          error: string | null;
+          retry_count: number;
+          next_retry_at: string | null;
+          dead_letter_at: string | null;
+          posted_value: number | null;
+          currency: string;
+          reasoning: string | null;
+          created_at: string;
+          updated_at: string;
+        }>;
+        total: number;
+      }>(`/api/erp/transactional-actions${qs({ status: opts?.status, sub_catalyst: opts?.sub_catalyst, limit: opts?.limit !== undefined ? String(opts.limit) : undefined })}`),
+    transactionalActionsSummary: () =>
+      request<{
+        summary: Record<
+          'pending' | 'approved' | 'posted' | 'failed' | 'dead_letter' | 'skipped',
+          { count: number; total_value: number }
+        >;
+      }>('/api/erp/transactional-actions/summary'),
+    reviveTransactionalAction: (actionId: string) =>
+      request<{ id: string; status: string; revived: boolean }>(
+        `/api/erp/transactional-actions/${actionId}/revive`,
+        { method: 'POST', body: JSON.stringify({}) },
+      ),
+    approveTransactionalAction: (actionId: string) =>
+      request<{ id: string; status: string }>(
+        `/api/erp/transactional-actions/${actionId}/approve`,
+        { method: 'POST', body: JSON.stringify({}) },
+      ),
+    skipTransactionalAction: (actionId: string, reason?: string) =>
+      request<{ id: string; status: string }>(
+        `/api/erp/transactional-actions/${actionId}/skip`,
+        { method: 'POST', body: JSON.stringify({ reason: reason ?? 'Skipped via admin UI' }) },
+      ),
     // v61: process profile — structured business rules per connection
     // (3-way-match, AP tolerance %, payment terms days, fiscal year start,
     // approval thresholds, dunning days). Catalysts read this to operate
