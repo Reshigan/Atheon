@@ -8,6 +8,7 @@
  * Distinct from ConnectivityPage (adapter CRUD); this view is sync-health-focused.
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { IntegrationsTabBar } from '@/components/layout/IntegrationsTabBar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
@@ -134,6 +135,7 @@ export function IntegrationHealthPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <IntegrationsTabBar />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">

@@ -28,6 +28,7 @@ import { api } from "@/lib/api";
 import type { Webhook } from "@/lib/api";
 import { WebhookCreateWizard } from "@/components/WebhookCreateWizard";
 import { WebhookDeliveriesTable } from "@/components/WebhookDeliveriesTable";
+import { IntegrationsTabBar } from "@/components/layout/IntegrationsTabBar";
 
 /** Map a webhook's recent health to a status tone for the list badge. */
 function healthBadge(w: Webhook): { variant: 'success' | 'warning' | 'danger' | 'info'; label: string; icon: typeof CheckCircle } {
@@ -113,6 +114,7 @@ export function WebhooksPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <IntegrationsTabBar />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
