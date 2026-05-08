@@ -89,7 +89,13 @@ export function ProvenanceLink({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          // Stop propagation so wrapping <Link> / clickable cards don't ALSO
+          // navigate when the user just wants the provenance panel.
+          e.stopPropagation();
+          e.preventDefault();
+          setOpen(true);
+        }}
         className="inline-flex items-baseline gap-1 underline decoration-dotted decoration-1 underline-offset-2 hover:decoration-solid hover:text-accent transition-colors"
         title="View provenance"
       >

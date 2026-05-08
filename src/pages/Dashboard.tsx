@@ -22,6 +22,7 @@ import { chartPalette } from "@/lib/chart-theme";
 import { OnboardingChecklist } from "@/components/common/OnboardingChecklist";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { Link } from "react-router-dom";
+import { ProvenanceLink } from "@/components/ui/provenance-link";
 import { KpiGrid } from "./dashboard/KpiCards";
 import { HealthDimensions } from "./dashboard/HealthDimensions";
 import { IntelligencePanel } from "./dashboard/IntelligencePanel";
@@ -713,7 +714,18 @@ export function Dashboard() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold text-emerald-400">
-                    {roiData.roiMultiple}x
+                    <ProvenanceLink
+                      title="ROI multiple"
+                      subtitle="Return-on-investment ratio across all closed billing periods."
+                      sources={[
+                        { label: 'Recovered', value: `R${((roiData.totalDiscrepancyValueRecovered ?? 0) / 1000000).toFixed(1)}M`, tone: 'success' },
+                        { label: 'Prevented', value: `R${((roiData.totalPreventedLosses ?? 0) / 1000000).toFixed(1)}M`, tone: 'info' },
+                        { label: 'Per-line evidence', value: 'View ROI Dashboard', linkTo: '/roi-dashboard' },
+                        { label: 'Audit trail', value: 'View events', linkTo: '/audit?layer=billing' },
+                      ]}
+                    >
+                      {roiData.roiMultiple}x
+                    </ProvenanceLink>
                   </span>
                   <span className="text-xs t-muted">return multiple</span>
                 </div>
@@ -721,13 +733,31 @@ export function Dashboard() {
                   <div>
                     <p className="text-[10px] t-muted">Recovered</p>
                     <p className="text-xs font-medium text-emerald-400">
-                      R{((roiData.totalDiscrepancyValueRecovered ?? 0) / 1000000).toFixed(1)}M
+                      <ProvenanceLink
+                        title="Recovered value"
+                        subtitle="Cumulative R-value recovered through reconciliation discrepancies — every line in billable_line_items where source = 'discrepancy'."
+                        sources={[
+                          { label: 'View per-period', value: 'ROI Dashboard', linkTo: '/roi-dashboard' },
+                          { label: 'Underlying records', value: 'Audit trail', linkTo: '/audit?layer=billing' },
+                        ]}
+                      >
+                        R{((roiData.totalDiscrepancyValueRecovered ?? 0) / 1000000).toFixed(1)}M
+                      </ProvenanceLink>
                     </p>
                   </div>
                   <div>
                     <p className="text-[10px] t-muted">Prevented</p>
                     <p className="text-xs font-medium text-accent">
-                      R{((roiData.totalPreventedLosses ?? 0) / 1000000).toFixed(1)}M
+                      <ProvenanceLink
+                        title="Prevented losses"
+                        subtitle="Cumulative R-value at-stake on risks Atheon mitigated before materialisation."
+                        sources={[
+                          { label: 'View per-risk', value: 'Apex Risks', linkTo: '/apex#risks' },
+                          { label: 'Audit trail', value: 'View events', linkTo: '/audit?layer=risk' },
+                        ]}
+                      >
+                        R{((roiData.totalPreventedLosses ?? 0) / 1000000).toFixed(1)}M
+                      </ProvenanceLink>
                     </p>
                   </div>
                 </div>
