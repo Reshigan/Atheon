@@ -11,6 +11,7 @@ import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import { useSelectedCompanyId } from "@/stores/appStore";
+import { ProvenanceLink } from "@/components/ui/provenance-link";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cleanLlmText } from "@/lib/utils";
 import type { HealthScore, Briefing, Risk, ScenarioItem, HealthHistoryResponse, HealthDimensionTraceResponse, RiskTraceResponse, ApexInsightsResponse, RadarContextResponse, BoardReportItem, PeerBenchmarksResponse } from "@/lib/api";
@@ -1009,26 +1010,69 @@ export function ApexPage() {
  <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-[10px] t-muted uppercase tracking-wider">Health Delta</span>
  <p className={`text-lg font-bold mt-0.5 ${(briefing.healthDelta ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
- {(briefing.healthDelta ?? 0) > 0 ? '+' : ''}{briefing.healthDelta} pts
+   <ProvenanceLink
+     title="Health delta vs prior period"
+     subtitle="Difference between this period's overall health score and the previous one."
+     sources={[
+       { label: 'Period delta', value: `${(briefing.healthDelta ?? 0) > 0 ? '+' : ''}${briefing.healthDelta} pts` },
+       { label: 'Underlying score history', value: 'View Health tab', linkTo: '/apex#health' },
+       { label: 'Provenance ledger', value: 'View Trust', linkTo: '/trust' },
+     ]}
+   >
+     {(briefing.healthDelta ?? 0) > 0 ? '+' : ''}{briefing.healthDelta} pts
+   </ProvenanceLink>
  </p>
  </div>
  )}
  {briefing.redMetricCount !== null && (
  <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-[10px] t-muted uppercase tracking-wider">RED Metrics</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.redMetricCount ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{briefing.redMetricCount}</p>
+ <p className={`text-lg font-bold mt-0.5 ${(briefing.redMetricCount ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+   <ProvenanceLink
+     title={`${briefing.redMetricCount} RED metric${briefing.redMetricCount === 1 ? '' : 's'}`}
+     subtitle="Process metrics whose current status crossed the red threshold."
+     sources={[
+       { label: 'Pulse — Metrics', value: 'Filter to RED', linkTo: '/pulse' },
+       { label: 'Threshold rules', value: 'process_metrics.threshold_red', hint: 'Customer-tunable per metric.' },
+     ]}
+   >
+     {briefing.redMetricCount}
+   </ProvenanceLink>
+ </p>
  </div>
  )}
  {briefing.anomalyCount !== null && (
  <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-[10px] t-muted uppercase tracking-wider">Anomalies</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.anomalyCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.anomalyCount}</p>
+ <p className={`text-lg font-bold mt-0.5 ${(briefing.anomalyCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+   <ProvenanceLink
+     title={`${briefing.anomalyCount} unresolved anomal${briefing.anomalyCount === 1 ? 'y' : 'ies'}`}
+     subtitle="Open anomalies — values that breached the dynamic-band detector and haven't been resolved or suppressed."
+     sources={[
+       { label: 'Pulse — Anomalies', value: 'View list', linkTo: '/pulse' },
+       { label: 'Detector', value: 'metric-correlation-engine + threshold-autotune' },
+     ]}
+   >
+     {briefing.anomalyCount}
+   </ProvenanceLink>
+ </p>
  </div>
  )}
  {briefing.activeRiskCount !== null && (
  <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-[10px] t-muted uppercase tracking-wider">Active Risks</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.activeRiskCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.activeRiskCount}</p>
+ <p className={`text-lg font-bold mt-0.5 ${(briefing.activeRiskCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+   <ProvenanceLink
+     title={`${briefing.activeRiskCount} active risk${briefing.activeRiskCount === 1 ? '' : 's'}`}
+     subtitle="risk_alerts rows where status='active' — each carries a probability + impact value derived from the underlying observations."
+     sources={[
+       { label: 'Risks tab', value: 'Open list', linkTo: '/apex#risks' },
+       { label: 'Audit trail', value: 'View events', linkTo: '/audit?layer=risk' },
+     ]}
+   >
+     {briefing.activeRiskCount}
+   </ProvenanceLink>
+ </p>
  </div>
  )}
  </div>
@@ -1209,7 +1253,32 @@ export function ApexPage() {
  </div>
  <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <span className="text-[10px] t-muted uppercase tracking-wider">Financial Impact</span>
- <p className="text-sm font-bold t-primary mt-0.5">{risk.impactValue.toLocaleString()} {risk.impactUnit}</p>
+ <p className="text-sm font-bold t-primary mt-0.5">
+   <ProvenanceLink
+     title={`Financial impact — ${risk.title}`}
+     subtitle={`${risk.severity} severity · ${risk.category} domain · ${Math.round(risk.probability * 100)}% probability`}
+     sources={[
+       { label: 'Risk ID', value: risk.id },
+       { label: 'Severity', value: risk.severity, tone: risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'info' },
+       { label: 'Category', value: risk.category },
+       { label: 'Probability', value: `${Math.round(risk.probability * 100)}%` },
+       { label: 'Currency', value: risk.impactUnit ?? 'ZAR', tone: 'outline' },
+       { label: 'Detected', value: risk.detectedAt ? new Date(risk.detectedAt).toLocaleString() : 'Unknown' },
+       { label: 'Audit trail', value: 'View events', linkTo: `/audit?resource=risk_alert&resource_id=${encodeURIComponent(risk.id)}` },
+     ]}
+     detail={
+       <p className="text-xs t-secondary leading-relaxed">
+         The exposure is computed as <code className="font-mono">probability × estimated_loss</code>.
+         The estimated loss is itself derived from the risk's underlying observations
+         (linked metrics, anomalies, RCAs). Each observation is recorded in
+         <code className="font-mono"> audit_log</code> and stamped into the
+         provenance ledger so the figure is reproducible from the raw ERP records.
+       </p>
+     }
+   >
+     {risk.impactValue.toLocaleString()} {risk.impactUnit}
+   </ProvenanceLink>
+ </p>
  </div>
  <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <span className="text-[10px] t-muted uppercase tracking-wider">Risk Category</span>
