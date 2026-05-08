@@ -265,7 +265,10 @@ function ExecutiveBriefHero({
 export function ApexPage() {
  const navigate = useNavigate();
  const companyId = useSelectedCompanyId();
- const [activeTab, setActiveTab] = useState<string>('health');
+ // UX audit §5.1: default tab is the brief, not the encyclopedia. Executives
+ // land on "what do I need to know in 30 seconds" before they drill in.
+ // The deeper Health analysis (formerly default) is one click away.
+ const [activeTab, setActiveTab] = useState<string>('briefing');
  const [expandedRisk, setExpandedRisk] = useState<string | null>(null);
  const [health, setHealth] = useState<HealthScore | null>(null);
  const [briefing, setBriefing] = useState<Briefing | null>(null);
@@ -995,6 +998,65 @@ export function ApexPage() {
  {/* Executive Briefing Tab */}
  {activeTab === 'briefing' && (
  <TabPanel>
+ {/* UX audit §5.1: top-of-page "Action Required" callout — the structured
+     top 3 critical/high risks with Mitigate buttons that link straight to
+     the resolving catalyst. Sourced from the real Risk[] state (not the
+     LLM-generated briefing.risks string array used in the cards below). */}
+ {(() => {
+   const topActions = [...risks]
+     .filter((r) => r.severity === 'critical' || r.severity === 'high')
+     .sort((a, b) => {
+       const order: Record<string, number> = { critical: 0, high: 1 };
+       const sev = (order[a.severity] ?? 9) - (order[b.severity] ?? 9);
+       if (sev !== 0) return sev;
+       return (b.impactValue ?? 0) - (a.impactValue ?? 0);
+     })
+     .slice(0, 3);
+   if (topActions.length === 0) return null;
+   return (
+     <Card variant="outline" className="mb-4 border-amber-500/30">
+       <div className="flex items-start gap-3">
+         <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+         <div className="flex-1 min-w-0 space-y-2">
+           <h3 className="text-sm font-semibold t-primary">Top {topActions.length} action{topActions.length === 1 ? '' : 's'} for your attention</h3>
+           <div className="space-y-2">
+             {topActions.map((risk) => {
+               const rec = recommendForRisk({ category: risk.category, title: risk.title });
+               return (
+                 <div key={risk.id} className="flex items-center justify-between gap-2 py-2 border-b border-[var(--border-card)] last:border-0">
+                   <div className="flex-1 min-w-0">
+                     <div className="flex items-center gap-2 flex-wrap">
+                       <Badge variant={risk.severity === 'critical' ? 'danger' : 'warning'} size="sm">
+                         {risk.severity}
+                       </Badge>
+                       <span className="text-sm t-primary truncate">{risk.title}</span>
+                     </div>
+                     {typeof risk.impactValue === 'number' && risk.impactValue > 0 && (
+                       <p className="text-[11px] t-muted mt-0.5">
+                         Exposure: {risk.impactUnit ?? 'ZAR'} {risk.impactValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                       </p>
+                     )}
+                   </div>
+                   {rec && (
+                     <Button
+                       variant="primary"
+                       size="sm"
+                       onClick={() => navigate(catalystDeployUrl(rec))}
+                       title={`Mitigate via ${rec.subCatalyst ?? rec.catalyst}`}
+                     >
+                       <Zap size={12} className="mr-1" /> Mitigate
+                     </Button>
+                   )}
+                 </div>
+               );
+             })}
+           </div>
+         </div>
+       </div>
+     </Card>
+   );
+ })()}
+
  <Card>
  <div className="flex items-center gap-2 mb-3">
  <FileText className="w-4 h-4 text-accent" />

@@ -24,7 +24,6 @@ import type { UserRole } from "@/types";
 // named exports.
 const ApexPage = lazy(() => import("@/pages/ApexPage").then(m => ({ default: m.ApexPage })));
 const ROIDashboardPage = lazy(() => import("@/pages/ROIDashboardPage"));
-const ApexBriefPage = lazy(() => import("@/pages/ApexBriefPage"));
 const PulsePage = lazy(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
 const CatalystsPage = lazy(() => import("@/pages/CatalystsPage").then(m => ({ default: m.CatalystsPage })));
 const CatalystRunDetailPage = lazy(() => import("@/pages/CatalystRunDetailPage").then(m => ({ default: m.CatalystRunDetailPage })));
@@ -127,9 +126,12 @@ export default function App() {
             {/* Phase 10-23: ROI / Insights dashboard surfacing billing,
                 forecast accuracy, calibration, and DSAR summaries. */}
             <Route path="/roi-dashboard" element={<ProtectedRoute allowedRoles={EXECUTIVE_ROLES}><ROIDashboardPage /></ProtectedRoute>} />
-            {/* Mobile-friendly executive brief — single-screen, no tabs.
-                Open to EXECUTIVE_ROLES + manager (whoever runs board prep). */}
-            <Route path="/apex/brief" element={<ProtectedRoute allowedRoles={MANAGER_ROLES}><ApexBriefPage /></ProtectedRoute>} />
+            {/* UX audit §5.1: /apex/brief is now redundant — Apex itself
+                defaults to the brief view. Redirect for backwards-compat with
+                bookmarks and email links. The standalone ApexBriefPage
+                component stays in the codebase (un-routed) until we're sure
+                nothing else references it. */}
+            <Route path="/apex/brief" element={<Navigate to="/apex" replace />} />
             <Route path="/pulse" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><PulsePage /></ProtectedRoute>} />
             <Route path="/catalysts" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><CatalystsPage /></ProtectedRoute>} />
             <Route path="/catalysts/runs/:runId" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><CatalystRunDetailPage /></ProtectedRoute>} />
