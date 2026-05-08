@@ -54,6 +54,22 @@ export function CatalystsPage() {
  const toast = useToast();
  const isAdmin = user?.role === 'superadmin' || user?.role === 'support_admin' || user?.role === 'admin' || user?.role === 'executive';
  const { activeTab, setActiveTab } = useTabState('clusters');
+
+ // UX audit Wave 8: hash-based tab routing. A link like /catalysts#exceptions
+ // (e.g. from the Apex briefing tab's risk row, or a saved bookmark) lands
+ // the user directly on that tab instead of the default 'clusters'. We
+ // strip the leading '#' and only honor a hash that maps to a valid tab.
+ // Runs once on mount; subsequent in-app tab clicks are not overridden.
+ useEffect(() => {
+   const validTabs = new Set([
+     'clusters', 'intelligence', 'success-stories', 'actions',
+     'execution-logs', 'exceptions', 'hitl-permissions',
+     'run-analytics', 'governance',
+   ]);
+   const hash = window.location.hash.replace(/^#/, '');
+   if (hash && validTabs.has(hash)) setActiveTab(hash);
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
  const [expandedAction, setExpandedAction] = useState<string | null>(null);
  const [clusters, setClusters] = useState<ClusterItem[]>([]);
  const [actions, setActions] = useState<ActionItem[]>([]);
