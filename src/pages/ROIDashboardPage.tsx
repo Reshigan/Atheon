@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, AlertCircle, Shield, Activity } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ConfidenceBadge } from '@/components/ui/confidence-badge';
 
 interface CalibrationGate {
   gate: string;
@@ -230,21 +231,36 @@ export default function ROIDashboardPage(): JSX.Element {
             <thead className="text-left text-xs text-muted-foreground">
               <tr>
                 <th className="py-1">Gate</th><th>TP</th><th>FP</th><th>TN</th><th>FN</th>
-                <th>FP rate</th><th>Rec</th>
+                <th>FP rate</th><th>Confidence</th><th>Rec</th>
               </tr>
             </thead>
             <tbody>
-              {calibration.gates.map((g) => (
-                <tr key={g.gate} className="border-t border-border/40">
-                  <td className="py-2 font-mono text-xs">{g.gate}</td>
-                  <td>{g.true_positives}</td>
-                  <td>{g.false_positives}</td>
-                  <td>{g.true_negatives}</td>
-                  <td>{g.false_negatives}</td>
-                  <td>{g.false_positive_rate != null ? `${(g.false_positive_rate * 100).toFixed(1)}%` : '—'}</td>
-                  <td>{recBadge(g.recommendation)}</td>
-                </tr>
-              ))}
+              {calibration.gates.map((g) => {
+                // Precision = TP / (TP + FP) — the gate's confidence in its
+                // positive inferences. Total = TP+FP+TN+FN, the evidence pool.
+                const denom = g.true_positives + g.false_positives;
+                const precision = denom > 0 ? g.true_positives / denom : null;
+                return (
+                  <tr key={g.gate} className="border-t border-border/40">
+                    <td className="py-2 font-mono text-xs">{g.gate}</td>
+                    <td>{g.true_positives}</td>
+                    <td>{g.false_positives}</td>
+                    <td>{g.true_negatives}</td>
+                    <td>{g.false_negatives}</td>
+                    <td>{g.false_positive_rate != null ? `${(g.false_positive_rate * 100).toFixed(1)}%` : '—'}</td>
+                    <td>
+                      {precision !== null ? (
+                        <ConfidenceBadge
+                          confidence={precision}
+                          sampleSize={g.total}
+                          compact
+                        />
+                      ) : '—'}
+                    </td>
+                    <td>{recBadge(g.recommendation)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : <div className="text-sm text-muted-foreground">No calibration data.</div>}
