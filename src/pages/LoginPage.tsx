@@ -272,7 +272,8 @@ export function LoginPage() {
                 <h3 className="text-sm font-semibold t-primary">Two-factor authentication</h3>
               </div>
               <p className="text-xs t-secondary">
-                Enter the 6-digit code from your authenticator app, or a backup code in <code className="text-[11px]">xxxx-xxxx</code> format.
+                Enter the 6-digit code from your authenticator app, or a backup code (8 alphanumeric characters,
+                with or without the dash — e.g. <code className="text-[11px]">a1b2-c3d4</code> or <code className="text-[11px]">a1b2c3d4</code>).
               </p>
               <input
                 type="text"

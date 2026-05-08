@@ -426,31 +426,19 @@ def verify_atheon_signature(headers, raw_body, secret):
     return hmac.compare_digest(expected, received)`;
 
 function ReceiverDocsSection() {
-  const [open, setOpen] = useState(false);
+  // Wave-1 polish: lift the contract to an always-visible callout (your eng
+  // team needs to know the 4 required headers + the verification rule before
+  // they touch the receiver code). Keep code snippets behind a toggle so the
+  // page isn't a wall of code for admins who aren't building receivers.
+  const [showSnippets, setShowSnippets] = useState(false);
   return (
     <Card variant="outline">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between text-left"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-2">
-          <Code size={14} className="text-accent" />
-          <div>
-            <h3 className="text-sm font-semibold t-primary">Receiver-side verification docs</h3>
-            <p className="text-[10px] t-muted">How to validate `X-Atheon-Signature` on your server</p>
-          </div>
-        </div>
-        {open ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
-      </button>
-
-      {open && (
-        <div className="mt-4 space-y-4">
+      <div className="flex items-start gap-2">
+        <Code size={14} className="text-accent mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <h3 className="text-sm font-semibold t-primary">Validate `X-Atheon-Signature` on your receiver</h3>
           <div className="text-xs t-secondary space-y-2">
-            <p>
-              Every delivery includes these headers:
-            </p>
+            <p>Every delivery includes these headers:</p>
             <ul className="list-disc list-inside space-y-0.5 t-muted">
               <li><code className="font-mono">X-Atheon-Signature: sha256=&lt;hex&gt;</code></li>
               <li><code className="font-mono">X-Atheon-Timestamp: &lt;unix_seconds&gt;</code></li>
@@ -464,10 +452,24 @@ function ReceiverDocsSection() {
             </p>
           </div>
 
-          <CodeBlock title="Node.js" snippet={NODE_SNIPPET} />
-          <CodeBlock title="Python" snippet={PYTHON_SNIPPET} />
+          <button
+            type="button"
+            onClick={() => setShowSnippets((o) => !o)}
+            className="text-[11px] t-muted hover:t-primary inline-flex items-center gap-1"
+            aria-expanded={showSnippets}
+          >
+            {showSnippets ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {showSnippets ? 'Hide' : 'Show'} ready-to-paste snippets (Node.js / Python)
+          </button>
+
+          {showSnippets && (
+            <div className="space-y-3 pt-1">
+              <CodeBlock title="Node.js" snippet={NODE_SNIPPET} />
+              <CodeBlock title="Python" snippet={PYTHON_SNIPPET} />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </Card>
   );
 }
