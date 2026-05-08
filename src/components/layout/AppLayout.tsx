@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { TenantContextBanner } from "./TenantContextBanner";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { OnboardingWizard } from "@/components/common/OnboardingWizard";
 import { HelpButton } from "@/components/common/HelpButton";
@@ -97,6 +98,7 @@ export function AppLayout() {
         )}
       >
         <div id="main-content" className="p-4 sm:p-5 lg:p-6">
+          <TenantContextBanner />
           <Breadcrumbs />
           <Outlet />
         </div>
