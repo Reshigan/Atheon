@@ -22,6 +22,7 @@ import {
 import { api, ApiError } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
 import { useToast } from "@/components/ui/toast";
+import { GovernanceTabBar } from "@/components/layout/GovernanceTabBar";
 
 type EvidencePack = Awaited<ReturnType<typeof api.compliance.evidencePack>>;
 
@@ -106,6 +107,7 @@ export function CompliancePage(): JSX.Element {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" data-testid="compliance-page">
+      <GovernanceTabBar />
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold t-primary mb-1">Compliance — SOC 2 Evidence Pack</h1>

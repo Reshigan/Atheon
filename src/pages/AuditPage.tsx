@@ -7,6 +7,7 @@ import { Shield, CheckCircle, XCircle, Clock, Filter, Loader2, Download, FileTex
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { ProvenanceVerifyPanel } from "@/components/ProvenanceVerifyPanel";
+import { GovernanceTabBar } from "@/components/layout/GovernanceTabBar";
 
 export function AuditPage() {
  const toast = useToast();
@@ -61,6 +62,7 @@ export function AuditPage() {
 
  return (
  <div className="space-y-6 animate-fadeIn">
+ <GovernanceTabBar />
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
  <div className=" w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
