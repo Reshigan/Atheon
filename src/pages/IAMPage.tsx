@@ -11,8 +11,9 @@ import { useToast } from "@/components/ui/toast";
 import {
  Shield, Key, Users, UserCheck, Lock, Unlock, Plus, UserPlus,
  ShieldCheck, Globe, Loader2, X, Pencil, Trash2, Save, Mail,
- Ban, CheckCircle, RotateCcw, Eye, ChevronDown, ChevronUp
+ Ban, CheckCircle, RotateCcw, Eye, ChevronDown, ChevronUp, Wrench
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 /** Per-role permission map */
 const ROLE_PERMISSIONS: Record<string, { pages: string[]; actions: string[] }> = {
@@ -555,6 +556,32 @@ export function IAMPage() {
      {activeTab === 'roles' && (
        <TabPanel>
          <div className="space-y-4">
+           {/* UX audit §4.4 + §5.5: Roles tab is the natural entry point for
+               role management; the Custom Role Builder is one click away
+               instead of a separate sidebar destination. Full merge of
+               CustomRoleBuilderPage into this tab is queued in the audit's
+               Wave 8; this banner gives operators a single navigation point
+               in the meantime. */}
+           <Card variant="outline" className="border-accent/30">
+             <div className="flex items-center justify-between gap-3 flex-wrap">
+               <div className="flex items-start gap-3">
+                 <Wrench size={16} className="text-accent mt-0.5 flex-shrink-0" />
+                 <div>
+                   <h3 className="text-sm font-semibold t-primary">Need a non-standard role?</h3>
+                   <p className="text-xs t-muted">
+                     Compose a custom role from canonical permissions, inherit from a base role,
+                     and assign it to users.
+                   </p>
+                 </div>
+               </div>
+               <Link
+                 to="/custom-roles"
+                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-accent text-white hover:opacity-90"
+               >
+                 Open Custom Role Builder →
+               </Link>
+             </div>
+           </Card>
            {roles.map((role) => {
              const Icon = role.name.toLowerCase().includes('admin') ? ShieldCheck : role.name.toLowerCase().includes('exec') ? Shield : role.name.toLowerCase().includes('manager') ? UserCheck : Users;
              const color = role.name.toLowerCase().includes('admin') ? 'text-red-400' : role.name.toLowerCase().includes('exec') ? 'text-amber-400' : role.name.toLowerCase().includes('manager') ? 'text-accent' : 'text-accent';
