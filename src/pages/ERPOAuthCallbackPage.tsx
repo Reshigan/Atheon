@@ -25,8 +25,17 @@ export function ERPOAuthCallbackPage() {
     setProvider(providerParam);
 
     if (!code) {
+      // OAuth providers redirect with `error=...` + `error_description=...`
+      // when the user denies consent or something explodes server-side. Surface
+      // those reasons explicitly instead of the generic "may have been cancelled."
+      const oauthError = searchParams.get('error');
+      const oauthErrorDesc = searchParams.get('error_description');
       setStatus('error');
-      setMessage('Missing authorization code. The OAuth flow may have been cancelled.');
+      if (oauthError) {
+        setMessage(`OAuth provider returned: ${oauthError}${oauthErrorDesc ? ` — ${oauthErrorDesc}` : ''}`);
+      } else {
+        setMessage('Missing authorization code. The OAuth flow may have been cancelled.');
+      }
       return;
     }
 
@@ -83,13 +92,13 @@ export function ERPOAuthCallbackPage() {
 
         <div className="flex gap-3 justify-center">
           {status === 'success' && (
-            <Button variant="primary" size="md" onClick={() => navigate('/erp-adapters')} title="Go to ERP connections page">
+            <Button variant="primary" size="md" onClick={() => navigate('/integrations')} title="Go to ERP connections page">
               View Connections
             </Button>
           )}
           {status === 'error' && (
             <>
-              <Button variant="secondary" size="md" onClick={() => navigate('/erp-adapters')} title="Go back to ERP adapters page">
+              <Button variant="secondary" size="md" onClick={() => navigate('/integrations')} title="Go back to ERP adapters page">
                 Back to ERP
               </Button>
               <Button variant="primary" size="md" onClick={() => window.location.reload()} title="Retry the OAuth authorization">

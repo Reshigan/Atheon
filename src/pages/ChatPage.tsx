@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,9 @@ import { MessageSquare, Send, Plus, User, Sparkles, Loader2, Trash2, ChevronDown
 import { IconAttachment } from "@/components/icons/AtheonIcons";
 import type { AtheonLayer } from "@/types";
 
-/** PR #226: friendly message when tenant LLM budget is exhausted. */
+/** PR #226: friendly message when tenant LLM budget is exhausted.
+ *  Used as a sentinel — the message renderer below detects this exact
+ *  string and surfaces an actionable CTA instead of a dead-end string. */
 const BUDGET_EXCEEDED_MESSAGE =
   "Your tenant's LLM budget has been reached for this month. Contact your admin to increase it.";
 
@@ -305,6 +308,19 @@ export function ChatPage() {
  <div className="text-sm t-primary whitespace-pre-wrap leading-relaxed">
   {msg.role === 'assistant' ? renderMarkdown(msg.content) : msg.content}
   </div>
+
+ {/* PR #385 / Wave-1 polish: when the assistant message is the LLM-budget
+     dead-end string, surface an actionable CTA instead of a flat sentence. */}
+ {msg.role === 'assistant' && msg.content === BUDGET_EXCEEDED_MESSAGE && (
+ <div className="mt-3 flex flex-wrap gap-2">
+ <Link to="/settings" className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-accent text-white hover:opacity-90">
+ Open Settings → LLM Budget
+ </Link>
+ <Link to="/support-tickets" className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium border border-[var(--border-card)] t-primary hover:bg-[var(--bg-secondary)]">
+ Ask admin to raise budget
+ </Link>
+ </div>
+ )}
 
  {/* Citations */}
  {msg.citations && msg.citations.length > 0 && (
