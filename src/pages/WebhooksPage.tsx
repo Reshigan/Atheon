@@ -56,6 +56,10 @@ export function WebhooksPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(routeWebhookId || null);
+  // UX audit §4.4: replace window.confirm with a styled modal so users get
+  // visible context (which webhook they're revoking) before they commit.
+  const [revokeTarget, setRevokeTarget] = useState<Webhook | null>(null);
+  const [revoking, setRevoking] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -94,15 +98,22 @@ export function WebhooksPage() {
     toast.success('Webhook created', 'The signing secret is only shown once — make sure you saved it.');
   };
 
-  const handleRevoke = async (id: string) => {
-    if (!window.confirm('Revoke this webhook? Deliveries will stop immediately and this cannot be undone.')) return;
+  const askRevoke = (w: Webhook) => setRevokeTarget(w);
+
+  const confirmRevoke = async () => {
+    if (!revokeTarget) return;
+    const id = revokeTarget.id;
+    setRevoking(true);
     try {
       await api.webhooks.delete(id);
       toast.success('Webhook revoked');
       if (detailId === id) closeDetail();
+      setRevokeTarget(null);
       await load();
     } catch (err) {
       toast.error('Failed to revoke webhook', err instanceof Error ? err.message : undefined);
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -196,7 +207,7 @@ export function WebhooksPage() {
                     <Button variant="outline" size="sm" onClick={() => openDetail(w.id)}>
                       View
                     </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleRevoke(w.id)}>
+                    <Button variant="danger" size="sm" onClick={() => askRevoke(w)}>
                       <Trash2 size={12} /> Revoke
                     </Button>
                   </div>
@@ -229,9 +240,56 @@ export function WebhooksPage() {
           <WebhookDetail
             webhookId={detailId}
             initialData={activeWebhook}
-            onRevoke={() => handleRevoke(detailId)}
+            onRevoke={() => activeWebhook && askRevoke(activeWebhook)}
           />
         </Modal>
+      )}
+
+      {/* Revoke confirm modal — replaces window.confirm so the user sees
+          the URL of the webhook they're revoking before committing. */}
+      {revokeTarget && (
+        <Portal>
+          <div
+            className="fixed inset-0 z-[9000] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.6)' }}
+            onClick={() => !revoking && setRevokeTarget(null)}
+          >
+            <div
+              className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4"
+              style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
+                  <Trash2 size={18} className="text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold t-primary">Revoke webhook?</h3>
+                  <p className="text-xs t-muted mt-1">
+                    Deliveries will stop immediately and this cannot be undone.
+                    To rotate the signing secret instead, revoke this webhook and
+                    create a new one.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-md p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+                <code className="text-xs font-mono t-primary break-all">{revokeTarget.url}</code>
+                {revokeTarget.description && (
+                  <p className="text-[11px] t-muted mt-1">{revokeTarget.description}</p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setRevokeTarget(null)} disabled={revoking}>
+                  Cancel
+                </Button>
+                <Button variant="danger" onClick={confirmRevoke} disabled={revoking}>
+                  {revoking && <Loader2 size={12} className="animate-spin mr-1" />}
+                  <Trash2 size={12} className="mr-1" /> Revoke webhook
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );
