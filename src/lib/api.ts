@@ -1572,6 +1572,11 @@ export const api = {
       request<Webhook>(`/api/v1/webhooks/${id}`),
     create: (data: { url: string; event_types: string[]; description?: string }) =>
       request<WebhookCreateResponse>('/api/v1/webhooks', { method: 'POST', body: JSON.stringify(data) }),
+    /** Edit an existing webhook. Backend accepts url / events / active; the
+     *  signing secret is intentionally NOT editable (rotate via revoke + recreate
+     *  per the create wizard's "secret shown once" contract). */
+    update: (id: string, data: { url?: string; events?: string[]; active?: boolean }) =>
+      request<{ success: boolean }>(`/api/v1/webhooks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) =>
       request<{ success: boolean }>(`/api/v1/webhooks/${id}`, { method: 'DELETE' }),
     test: (id: string) =>

@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Webhook as WebhookIcon, Plus, Trash2, Send, Loader2, X, ChevronDown, ChevronUp,
-  CheckCircle, Clock, AlertTriangle, ShieldCheck, Code, Copy, CheckCircle2,
+  CheckCircle, Clock, AlertTriangle, ShieldCheck, Code, Copy, CheckCircle2, Pencil,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -290,6 +290,12 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
   const [webhook, setWebhook] = useState<Webhook | null>(initialData);
   const [loading, setLoading] = useState(!initialData);
   const [testing, setTesting] = useState(false);
+  // Wave-1 polish (UX audit §4.4): inline edit instead of delete-and-recreate
+  const [editing, setEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editUrl, setEditUrl] = useState('');
+  const [editEvents, setEditEvents] = useState('');
+  const [editActive, setEditActive] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -319,6 +325,42 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
       toast.error('Failed to queue test delivery', err instanceof Error ? err.message : undefined);
     }
     setTesting(false);
+  };
+
+  const startEdit = () => {
+    if (!webhook) return;
+    setEditUrl(webhook.url);
+    setEditEvents(webhook.event_types.join(', '));
+    setEditActive(!webhook.disabled);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => setEditing(false);
+
+  const saveEdit = async () => {
+    if (!webhook) return;
+    const url = editUrl.trim();
+    const events = editEvents.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!url) {
+      toast.error('URL is required');
+      return;
+    }
+    if (events.length === 0) {
+      toast.error('At least one event type is required');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await api.webhooks.update(webhookId, { url, events, active: editActive });
+      const fresh = await api.webhooks.get(webhookId);
+      setWebhook(fresh);
+      setEditing(false);
+      toast.success('Webhook updated');
+    } catch (err) {
+      toast.error('Failed to update webhook', err instanceof Error ? err.message : undefined);
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   if (loading || !webhook) {
@@ -367,16 +409,71 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
         </div>
       </section>
 
-      {/* Actions */}
-      <section className="flex flex-wrap gap-2">
-        <Button variant="primary" size="sm" onClick={handleTest} disabled={testing}>
-          {testing ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-          Send test payload
-        </Button>
-        <Button variant="danger" size="sm" onClick={onRevoke}>
-          <Trash2 size={12} /> Revoke webhook
-        </Button>
-      </section>
+      {/* Edit form (inline; replaces actions while open) */}
+      {editing ? (
+        <section className="space-y-3 p-3 rounded-lg" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+          <h3 className="text-xs font-semibold t-primary flex items-center gap-2">
+            <Pencil size={12} className="text-accent" /> Edit webhook
+          </h3>
+          <div className="space-y-2">
+            <label className="text-[10px] font-medium t-muted">Receiver URL</label>
+            <input
+              type="url"
+              value={editUrl}
+              onChange={(e) => setEditUrl(e.target.value)}
+              placeholder="https://your-receiver.example.com/webhooks/atheon"
+              className="w-full px-2 py-1.5 rounded-md text-xs font-mono"
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-medium t-muted">Event types (comma-separated)</label>
+            <input
+              type="text"
+              value={editEvents}
+              onChange={(e) => setEditEvents(e.target.value)}
+              placeholder="catalyst.completed, anomaly.detected"
+              className="w-full px-2 py-1.5 rounded-md text-xs font-mono"
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
+            />
+            <p className="text-[10px] t-muted">Use <code className="font-mono">*</code> as a wildcard or list specific events.</p>
+          </div>
+          <label className="flex items-center gap-2 text-xs t-secondary cursor-pointer">
+            <input
+              type="checkbox"
+              checked={editActive}
+              onChange={(e) => setEditActive(e.target.checked)}
+              className="accent-current"
+            />
+            Active (uncheck to pause delivery without revoking)
+          </label>
+          <p className="text-[10px] t-muted">
+            The signing secret is <em>not</em> editable — rotate by revoking this webhook + creating a new one.
+          </p>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={cancelEdit} disabled={savingEdit}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit && <Loader2 size={12} className="animate-spin mr-1" />}
+              Save
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <section className="flex flex-wrap gap-2">
+          <Button variant="primary" size="sm" onClick={handleTest} disabled={testing}>
+            {testing ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            Send test payload
+          </Button>
+          <Button variant="outline" size="sm" onClick={startEdit}>
+            <Pencil size={12} /> Edit
+          </Button>
+          <Button variant="danger" size="sm" onClick={onRevoke}>
+            <Trash2 size={12} /> Revoke webhook
+          </Button>
+        </section>
+      )}
 
       {/* Deliveries */}
       <section>
