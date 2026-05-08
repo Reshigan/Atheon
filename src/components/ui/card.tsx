@@ -9,6 +9,8 @@ export interface CardProps {
   variant?: 'default' | 'black' | 'mint' | 'accent' | 'glass' | 'outline';
   onClick?: () => void;
   style?: React.CSSProperties;
+  /** DOM id — useful for in-page anchor links to specific cards. */
+  id?: string;
 }
 
 const variantClass: Record<string, string> = {
@@ -20,9 +22,10 @@ const variantClass: Record<string, string> = {
   outline: 'card-glass',
 };
 
-export function Card({ children, className, hover, glow, variant = 'default', onClick, style }: CardProps) {
+export function Card({ children, className, hover, glow, variant = 'default', onClick, style, id }: CardProps) {
   return (
     <div
+      id={id}
       className={cn(
         variantClass[variant] || 'card-glass',
         'p-5 rounded-2xl',

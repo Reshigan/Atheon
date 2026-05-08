@@ -214,9 +214,38 @@ export function SettingsPage() {
  </div>
  </div>
 
+ {/* UX audit §4.6: orientation strip — eight sections on one page is a lot
+     to scroll. This sticky nav lets users jump to a section without losing
+     their place. Native anchor links so it works without router. */}
+ <div
+   className="sticky top-0 z-10 -mx-6 px-6 py-2 backdrop-blur-md flex items-center gap-1 overflow-x-auto"
+   style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid var(--border-card)' }}
+ >
+   <span className="text-[10px] uppercase tracking-wide t-muted flex-shrink-0 mr-2">Jump to</span>
+   {[
+     { id: 'profile', label: 'Profile' },
+     { id: 'notifications', label: 'Notifications' },
+     { id: 'appearance', label: 'Appearance' },
+     { id: 'security', label: 'Security' },
+     { id: 'api-keys', label: 'API Key' },
+     { id: 'privacy', label: 'Privacy' },
+     { id: 'ai-engine', label: 'AI Engine' },
+     { id: 'platform', label: 'Platform' },
+   ].map((s) => (
+     <a
+       key={s.id}
+       href={`#settings-${s.id}`}
+       className="flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-medium t-muted hover:t-primary transition-colors"
+       style={{ border: '1px solid var(--border-card)' }}
+     >
+       {s.label}
+     </a>
+   ))}
+ </div>
+
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Profile */}
- <Card>
+ <Card id="settings-profile">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <User className="w-4 h-4 text-accent" /> Profile
  </h3>
@@ -263,7 +292,7 @@ export function SettingsPage() {
  </Card>
 
  {/* Notifications */}
- <Card>
+ <Card id="settings-notifications">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Bell className="w-4 h-4 text-accent" /> Notifications
  </h3>
@@ -295,7 +324,7 @@ export function SettingsPage() {
  </Card>
 
  {/* Appearance */}
- <Card>
+ <Card id="settings-appearance">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Palette className="w-4 h-4 text-accent" /> Appearance
  </h3>
@@ -357,7 +386,7 @@ export function SettingsPage() {
  </Card>
 
  {/* Phase 4.4: MFA / Two-Factor Authentication — summary card; full UX at /settings/mfa */}
- <Card>
+ <Card id="settings-security">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Shield className="w-4 h-4 text-accent" /> Two-Factor Authentication
  </h3>
@@ -412,7 +441,7 @@ export function SettingsPage() {
  </Card>
 
  {/* Phase 4.4: API Key */}
- <Card>
+ <Card id="settings-api-keys">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Key className="w-4 h-4 text-accent" /> API Key
  </h3>
@@ -454,7 +483,7 @@ export function SettingsPage() {
  </Card>
 
  {/* Spec 7 POPIA-3: Data & Privacy */}
- <Card>
+ <Card id="settings-privacy">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Shield className="w-4 h-4 text-accent" /> Data &amp; Privacy (POPIA)
  </h3>
@@ -505,7 +534,7 @@ export function SettingsPage() {
 
  {/* LLM Configuration — Superadmin Only */}
  {isSuperadmin && (
- <Card>
+ <Card id="settings-ai-engine">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Brain className="w-4 h-4 text-purple-400" /> AI Engine Configuration
  <Badge variant="warning" size="sm">Superadmin</Badge>
@@ -554,7 +583,7 @@ export function SettingsPage() {
  )}
 
  {/* Platform Info */}
- <Card>
+ <Card id="settings-platform">
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <Cpu className="w-4 h-4 text-accent" /> Platform
  </h3>
