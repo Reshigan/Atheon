@@ -44,7 +44,10 @@ const ENTITY_TYPES = [
 
 export function MemoryPage() {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState<"entities" | "relationships" | "search">("entities");
+  // UX audit §4.3: search-first ordering. The analyst's "why" (ask the
+  // graph a question) is the headline use case; entities + relationships
+  // are admin/curation work and live behind it.
+  const [activeTab, setActiveTab] = useState<"entities" | "relationships" | "search">("search");
 
   const [entities, setEntities] = useState<GraphEntity[]>([]);
   const [relationships, setRelationships] = useState<GraphRelationship[]>([]);
@@ -201,10 +204,11 @@ export function MemoryPage() {
 
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
+        {/* Search first (analyst landing); curation tabs trail. */}
         {[
+          { id: "search" as const, label: "GraphRAG Search" },
           { id: "entities" as const, label: "Entities" },
           { id: "relationships" as const, label: "Relationships" },
-          { id: "search" as const, label: "GraphRAG Search" },
         ].map((tab) => (
           <button
             key={tab.id}
