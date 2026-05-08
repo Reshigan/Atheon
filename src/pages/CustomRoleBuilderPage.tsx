@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Portal } from '@/components/ui/portal';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import { api, ApiError } from '@/lib/api';
@@ -69,6 +70,9 @@ export function CustomRoleBuilderPage() {
   const [saving, setSaving] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // UX audit §4.4: replace window.confirm with a styled modal so the user
+  // sees the role name + user-count guard before committing.
+  const [deleteTarget, setDeleteTarget] = useState<CustomRole | null>(null);
 
   const showError = useCallback((title: string, err: unknown, fallback: string) => {
     const message = err instanceof Error ? err.message : fallback;
@@ -202,17 +206,23 @@ export function CustomRoleBuilderPage() {
     }
   };
 
-  const handleDelete = async (role: CustomRole) => {
+  const askDelete = (role: CustomRole) => {
     if (role.userCount > 0) {
       toast.error('Cannot delete', { message: `${role.userCount} user(s) are still assigned to "${role.name}".` });
       return;
     }
-    if (!window.confirm(`Delete custom role "${role.name}"? This cannot be undone.`)) return;
+    setDeleteTarget(role);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const role = deleteTarget;
     setDeletingId(role.id);
     try {
       await api.iam.deleteCustomRole(role.id, tenantId);
       setRoles(prev => prev.filter(r => r.id !== role.id));
       toast.success('Role deleted', { message: role.name });
+      setDeleteTarget(null);
     } catch (err) {
       showError('Delete failed', err, 'Could not delete role');
     } finally {
@@ -322,7 +332,7 @@ export function CustomRoleBuilderPage() {
                     <Pencil size={14} />
                   </button>
                   <button
-                    onClick={() => handleDelete(role)}
+                    onClick={() => askDelete(role)}
                     disabled={deletingId === role.id || role.userCount > 0}
                     className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title={role.userCount > 0 ? `${role.userCount} user(s) assigned — cannot delete` : 'Delete'}
@@ -468,6 +478,56 @@ export function CustomRoleBuilderPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete-confirm modal — replaces window.confirm with a styled
+          dialog showing the role name + permission summary. */}
+      {deleteTarget && (
+        <Portal>
+          <div
+            className="fixed inset-0 z-[9000] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.6)' }}
+            onClick={() => deletingId !== deleteTarget.id && setDeleteTarget(null)}
+          >
+            <div
+              className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4"
+              style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
+                  <Trash2 size={18} className="text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold t-primary">Delete custom role?</h3>
+                  <p className="text-xs t-muted mt-1">
+                    This cannot be undone. Users assigned to a built-in role
+                    are unaffected; only this custom role definition is removed.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-md p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+                <div className="text-sm font-semibold t-primary">{deleteTarget.name}</div>
+                {deleteTarget.description && (
+                  <p className="text-[11px] t-muted mt-1">{deleteTarget.description}</p>
+                )}
+                <p className="text-[10px] t-muted mt-2">
+                  {deleteTarget.permissions.length} explicit permission{deleteTarget.permissions.length === 1 ? '' : 's'}
+                  {deleteTarget.inheritsFrom ? ` · inherits from ${deleteTarget.inheritsFrom}` : ''}
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deletingId === deleteTarget.id}>
+                  Cancel
+                </Button>
+                <Button variant="danger" onClick={confirmDelete} disabled={deletingId === deleteTarget.id}>
+                  {deletingId === deleteTarget.id && <Loader2 size={12} className="animate-spin mr-1" />}
+                  <Trash2 size={12} className="mr-1" /> Delete role
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );
