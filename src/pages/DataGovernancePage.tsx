@@ -16,6 +16,7 @@ import { api, ApiError } from '@/lib/api';
 import type { GovernanceResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
+import { GovernanceTabBar } from '@/components/layout/GovernanceTabBar';
 import {
   Shield, Lock, FileText, Database, Loader2,
   AlertCircle, RefreshCw, Activity, CheckCircle, XCircle,
@@ -101,6 +102,7 @@ export function DataGovernancePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <GovernanceTabBar />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
