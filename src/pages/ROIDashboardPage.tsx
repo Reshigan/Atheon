@@ -18,10 +18,11 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, AlertCircle, Shield, Activity } from 'lucide-react';
+import { TrendingUp, AlertCircle, Shield, Activity, ExternalLink, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface CalibrationGate {
@@ -139,42 +140,74 @@ export default function ROIDashboardPage(): JSX.Element {
       <h1 className="text-2xl font-semibold">ROI &amp; Insights Dashboard</h1>
       <p className="text-sm text-muted-foreground">
         Surfaces the cumulative value Atheon has delivered + the calibration
-        of its analytical inferences. Updated daily.
+        of its analytical inferences. Updated daily. Click any card's
+        <span className="font-medium"> View detail</span> link to drill into the
+        underlying records.
       </p>
 
       {/* Billing summary */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp size={18} />
-          <h2 className="text-lg font-semibold">Shared-savings billing</h2>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} />
+            <h2 className="text-lg font-semibold">Shared-savings billing</h2>
+          </div>
+          <Link
+            to="/audit?layer=billing"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+            title="Open the audit log filtered to billing events — every period's provenance trail"
+          >
+            View detail <ExternalLink size={12} />
+          </Link>
         </div>
         {billing ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <div className="text-xs text-muted-foreground">Periods invoiced</div>
-              <div className="text-2xl font-semibold">{billing.periods_count}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Total realised savings</div>
-              <div className="text-2xl font-semibold">
-                {formatCurrency(billing.total_realised_savings, billing.currency)}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Periods invoiced</div>
+                <div className="text-2xl font-semibold">{billing.periods_count}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Total realised savings</div>
+                <div className="text-2xl font-semibold">
+                  {formatCurrency(billing.total_realised_savings, billing.currency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Atheon share</div>
+                <div className="text-2xl font-semibold">
+                  {formatCurrency(billing.total_atheon_revenue, billing.currency)}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Atheon share</div>
-              <div className="text-2xl font-semibold">
-                {formatCurrency(billing.total_atheon_revenue, billing.currency)}
-              </div>
+            <div className="mt-4 pt-3 border-t border-border/40 flex items-start gap-2 text-[11px] text-muted-foreground">
+              <FileText size={12} className="mt-0.5 flex-shrink-0" />
+              <span>
+                Every realised-savings line traces to a specific RCA + metric attribution + confidence score
+                in <code className="font-mono">billable_line_items</code>, signed into the provenance ledger
+                at period close. Use <Link to="/audit?layer=billing" className="text-accent hover:underline">View detail</Link> to
+                walk the chain or <Link to="/trust" className="text-accent hover:underline">Trust</Link> to verify
+                the Merkle root.
+              </span>
             </div>
-          </div>
+          </>
         ) : <div className="text-sm text-muted-foreground">No billing data yet.</div>}
       </Card>
 
       {/* Forecast accuracy */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Activity size={18} />
-          <h2 className="text-lg font-semibold">Forecast accuracy (last {forecast?.lookback_days ?? 90} days)</h2>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Activity size={18} />
+            <h2 className="text-lg font-semibold">Forecast accuracy (last {forecast?.lookback_days ?? 90} days)</h2>
+          </div>
+          <Link
+            to="/pulse"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+            title="Open Pulse to see the actual vs predicted time-series per metric"
+          >
+            View per-metric in Pulse <ExternalLink size={12} />
+          </Link>
         </div>
         {forecast && forecast.total_graded > 0 ? (
           <>
@@ -221,9 +254,18 @@ export default function ROIDashboardPage(): JSX.Element {
 
       {/* Calibration */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <AlertCircle size={18} />
-          <h2 className="text-lg font-semibold">Inference calibration</h2>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} />
+            <h2 className="text-lg font-semibold">Inference calibration</h2>
+          </div>
+          <Link
+            to="/trust"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+            title="Trust dashboard — calibration history, provenance Merkle root, peer benchmarks"
+          >
+            View in Trust <ExternalLink size={12} />
+          </Link>
         </div>
         {calibration && calibration.gates.length > 0 ? (
           <table className="w-full text-sm">
@@ -252,9 +294,18 @@ export default function ROIDashboardPage(): JSX.Element {
 
       {/* DSAR */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Shield size={18} />
-          <h2 className="text-lg font-semibold">DSAR (POPIA / GDPR) requests</h2>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Shield size={18} />
+            <h2 className="text-lg font-semibold">DSAR (POPIA / GDPR) requests</h2>
+          </div>
+          <Link
+            to="/data-governance"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+            title="Data Governance — full DSAR / erasure workflow + retention policy"
+          >
+            Open Data Governance <ExternalLink size={12} />
+          </Link>
         </div>
         {dsar && dsar.by_type_and_status.length > 0 ? (
           <table className="w-full text-sm">
