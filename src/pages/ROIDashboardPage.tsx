@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, AlertCircle, Shield, Activity } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ProvenanceLink } from '@/components/ui/provenance-link';
 
 interface CalibrationGate {
   gate: string;
@@ -152,18 +153,50 @@ export default function ROIDashboardPage(): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <div className="text-xs text-muted-foreground">Periods invoiced</div>
-              <div className="text-2xl font-semibold">{billing.periods_count}</div>
+              <div className="text-2xl font-semibold">
+                <ProvenanceLink
+                  title={`${billing.periods_count} billable periods invoiced`}
+                  subtitle="Each period rolls up RCAs that closed during the window into a billable_periods row."
+                  sources={[
+                    { label: 'Period closure rule', value: 'Auto-generated monthly', hint: 'See billing-engine.ts for the cadence + share-percent.' },
+                    { label: 'Audit trail', value: 'View events', linkTo: '/audit?layer=billing' },
+                  ]}
+                >
+                  {billing.periods_count}
+                </ProvenanceLink>
+              </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Total realised savings</div>
               <div className="text-2xl font-semibold">
-                {formatCurrency(billing.total_realised_savings, billing.currency)}
+                <ProvenanceLink
+                  title="Total realised savings"
+                  subtitle="Aggregate of every billable_line_items row across all closed periods. Each line carries its own RCA + metric attribution + confidence."
+                  sources={[
+                    { label: 'Currency', value: billing.currency, tone: 'outline' },
+                    { label: 'Closed periods', value: String(billing.periods_count) },
+                    { label: 'Per-line evidence', value: 'View audit log', linkTo: '/audit?layer=billing' },
+                    { label: 'Provenance ledger Merkle root', value: 'View Trust', linkTo: '/trust' },
+                  ]}
+                >
+                  {formatCurrency(billing.total_realised_savings, billing.currency)}
+                </ProvenanceLink>
               </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Atheon share</div>
               <div className="text-2xl font-semibold">
-                {formatCurrency(billing.total_atheon_revenue, billing.currency)}
+                <ProvenanceLink
+                  title="Atheon revenue share"
+                  subtitle="Calculated as atheon_share_pct × total_realised_savings, persisted on each billable_periods row at period close."
+                  sources={[
+                    { label: 'Effective share %', value: billing.total_realised_savings > 0 ? `${(100 * billing.total_atheon_revenue / billing.total_realised_savings).toFixed(1)}%` : '—' },
+                    { label: 'Currency', value: billing.currency, tone: 'outline' },
+                    { label: 'Per-period detail', value: 'View audit log', linkTo: '/audit?layer=billing' },
+                  ]}
+                >
+                  {formatCurrency(billing.total_atheon_revenue, billing.currency)}
+                </ProvenanceLink>
               </div>
             </div>
           </div>
