@@ -769,3 +769,527 @@ For each screen, ask Stitch to produce:
 - Mobile-responsive variant (if applicable per Section 9)
 
 All screen names use the URL path as the canonical identifier — `/apex`, `/integrations`, etc. Refer to them by URL when iterating.
+
+---
+
+## 12. Process flows
+
+Twelve end-to-end user journeys that span multiple screens. Each flow lists the goal, the persona running it, the trigger that starts it, the step-by-step sequence (screen → action → state change), and any error / edge paths. Where a flow has meaningful branching, a Mermaid diagram is included.
+
+These flows are how the screens connect. When designing each screen, refer to the flow it participates in to make sure the affordances are consistent (button labels, state transitions, where the user lands next).
+
+### 12.1 First-run customer onboarding
+
+**Goal:** brand-new customer admin lands on a tenant for the first time and reaches a first real ERP write within ~30 minutes.
+
+**Persona:** IT admin (`admin` role).
+
+**Trigger:** invitation email → first sign-in.
+
+```mermaid
+flowchart TD
+  A[/login — first sign-in/] --> B{MFA enrolment required?}
+  B -- yes --> C[/settings/mfa — wizard/]
+  B -- no --> D[/onboarding — wizard step 1: Connect ERP/]
+  C --> D
+  D --> E[/integrations — Connect modal w/ adapter-specific fields/]
+  E --> F[Test Connection]
+  F -- pass --> G[Save → encrypted_config persisted]
+  F -- fail --> E
+  G --> H[/partner-mappings — Bootstrap from ERP/]
+  H --> I[Confirm proposals]
+  I --> J[/onboarding — wizard step 2: Deploy Catalyst/]
+  J --> K[/catalysts — pick cluster + sub-catalyst → Deploy/]
+  K --> L[/onboarding — wizard step 3: Run Catalyst/]
+  L --> M[/catalysts/:runId — Run Detail/]
+  M --> N[/onboarding — wizard step 4: Review Action/]
+  N --> O[/transactional-actions — approve first action/]
+  O --> P[Background dispatch → real ERP write]
+  P --> Q[/onboarding — wizard steps 5-7: Diagnostics, Report, Invite User/]
+```
+
+**Step-by-step:**
+
+1. `/login` — admin enters credentials → MFA grace warning (14-day) shown if MFA not yet enrolled.
+2. *(optional)* `/settings/mfa` — MFA wizard: scan QR → enter TOTP → save backup codes → confirmation.
+3. `/onboarding` — wizard step 1 ("Connect ERP"). Primary CTA jumps to `/integrations` with `?onboarding=1` so the page knows to highlight the Connect modal.
+4. `/integrations` — admin picks an adapter card (Odoo / Xero / NetSuite / SAP / etc.). Connect modal opens with **adapter-specific credential fields** (per §6.4 — these are not generic).
+5. **Test Connection** button fires before save. On failure, inline error tells the admin which field is wrong (token expired vs. host unreachable vs. credentials invalid).
+6. On save: credentials encrypted at rest with `ENCRYPTION_KEY`. Connection appears in the Connected Systems list with status pill `connected`.
+7. `/partner-mappings` — admin picks the new connection. **Bootstrap from ERP** modal: 3 stages (loading → proposals list → result card). High-confidence (≥90%) proposals pre-checked.
+8. Onboarding wizard auto-advances to step 2 ("Deploy Catalyst").
+9. `/catalysts` — admin picks a cluster (e.g. Finance → AP 3-way Match), reads the sub-catalyst description, clicks Deploy. Status flips from `available` to `deployed`.
+10. Wizard step 3 ("Run Catalyst") → admin clicks "Run now" or schedules. A run starts immediately.
+11. `/catalysts/:runId` — Run Detail page populates as the run progresses.
+12. Wizard step 4 ("Review Action") → admin opens `/transactional-actions`, sees first staged action, clicks **Approve**.
+13. The action enters dispatch loop. The next sweep posts it to the real ERP (per §6.2 Action Layer). Result shows `posted` with the ERP-issued document ID (NOT a synth stub).
+14. Wizard steps 5-7: review Diagnostics → generate Report PDF → invite first additional user via `/iam`.
+
+**Success criterion:** end of flow shows the wizard's "All set!" card. The customer's first claim of shared savings is now traceable end-to-end.
+
+**Edge paths:**
+- ERP is in maintenance mode → step 5 fails → admin retries later. Sync schedule auto-resumes once connection passes.
+- Encrypted_config can't decrypt (e.g. ENCRYPTION_KEY rotated) → dispatch falls through to stub path → admin's first action shows synth doc ID. **Detection:** `external_doc_id` matches `AP_INVOICE_POST-XXXXXXXX` shape. **Recovery:** rotate config + re-test.
+
+---
+
+### 12.2 Operator's daily exception triage
+
+**Goal:** AP/AR clerk works the day's queue down to zero by end of shift.
+
+**Persona:** Operator.
+
+**Trigger:** morning sign-in.
+
+```mermaid
+flowchart LR
+  A[/login/] --> B[/catalysts — default landing/]
+  B --> C{Exception banner shown?}
+  C -- yes --> D[Click View Exceptions]
+  C -- no --> E[/transactional-actions]
+  D --> F[/catalysts#exceptions — direct deep-link/]
+  F --> G[Pick row]
+  E --> H[Filter: Needs attention]
+  H --> I[Pick row]
+  G --> J{Reviewable now?}
+  I --> J
+  J -- approve --> K[POST /approve → status=approved]
+  J -- skip --> L[Skip modal w/ reason → status=skipped]
+  J -- needs ERP fix --> M[Skip + escalate via Support ticket]
+  J -- dead_letter --> N[Operator confirms root cause fixed → Revive]
+  K --> O[Next sweep dispatches → status=posted]
+  N --> O
+```
+
+**Step-by-step:**
+
+1. `/login` → role-aware landing → `/catalysts`.
+2. If `exceptionCount > 0`, the **red Exception banner** appears at the top with "View Exceptions" button.
+3. Operator clicks → URL becomes `/catalysts#exceptions` → Exceptions tab is active (per §6.2 hash routing).
+4. *Alternative path:* operator goes straight to `/transactional-actions` for the dispatch queue. Default filter "Needs attention" surfaces only `dead_letter + failed` rows.
+5. For each row:
+   - **Inspect.** Click `<ProvenanceLink>` on the posted_value to drill into the underlying ERP record (invoice / PO / journal entry).
+   - **Check the error.** Truncated error string in the row; full error in the side panel.
+   - **Approve** if the action looks right but was waiting on HITL.
+   - **Skip** with reason if the action is wrong (e.g. duplicate invoice that should not have been staged). Skip modal asks for a reason — the reason persists into `error` for audit.
+   - **Revive** if the row is `dead_letter` AND the operator has confirmed the underlying cause is fixed (e.g. credentials rotated, partner mapping added). Revive flips back to `approved`, retry_count=0.
+6. Each action triggers a toast + in-place row update. The operator never leaves the page during a normal triage cycle.
+
+**Success criterion:** Action Layer's "Needs attention" filter reaches 0 rows by end of shift.
+
+**Edge paths:**
+- Action references a vendor with no partner mapping → error reads "payload missing partner_id … and no vendor_ref mapping found". Operator clicks the error → side panel includes a link to `/partner-mappings?atheon_ref=…` to fix the mapping inline.
+- Action's underlying record was deleted in the ERP → operator skips with reason "source record deleted upstream".
+
+---
+
+### 12.3 Executive monthly review
+
+**Goal:** CFO answers "is Atheon paying for itself this period?" in <30 seconds.
+
+**Persona:** Executive.
+
+**Trigger:** monthly board prep.
+
+```mermaid
+flowchart TD
+  A[/login on phone or desktop/] --> B[/apex — Briefing tab is default/]
+  B --> C{Top Actions callout has rows?}
+  C -- yes --> D[Click Mitigate on top risk]
+  D --> E[/catalysts#exceptions — direct/]
+  C -- no --> F[Read Daily Executive Briefing]
+  B --> G[Click any KPI in strip]
+  G --> H[ProvenanceLink panel — drill to source]
+  H --> I[Optional: View in Trust / View in Pulse]
+  B --> J[Click 'Print board brief']
+  J --> K[Renders ExecutiveSummaryPage layout to PDF]
+  B --> L[Switch to Health tab]
+  L --> M[Deep score-history charts + dimension drill]
+  B --> N[/roi-dashboard for billing-period detail]
+```
+
+**Step-by-step:**
+
+1. `/login` → role-aware landing → `/apex` (Briefing is the default tab; same view on mobile + desktop).
+2. **Top Actions callout** (orange, top of Briefing tab) shows top 3 critical/high risks ranked by severity then impact. Each row has a Mitigate button that deep-links to `/catalysts#exceptions` filtered to the resolving catalyst.
+3. **Daily Executive Briefing** card has the LLM-generated summary + KPI strip (Health Delta · RED Metrics · Anomalies · Active Risks).
+4. CFO clicks any number in the KPI strip → `<ProvenanceLink>` side panel slides in with: source label, drill links to `/audit?layer=billing` + `/trust` (Merkle root) + the underlying records list.
+5. **Print board brief** button generates a PDF version of the page (the `ExecutiveSummaryPage` layout).
+6. *(Optional deeper dive)* CFO switches to Health tab for score history + dimension breakdown.
+7. *(Optional billing detail)* CFO opens `/roi-dashboard` — 4 cards (Shared-savings billing · Forecast accuracy · Inference calibration · DSAR). Each card has a "View detail" link to the right destination + the **Provenance footer** explaining how figures trace.
+
+**Success criterion:** CFO can repeat any number on the page in the next earnings call with the audit trail one click away.
+
+**Edge paths:**
+- Briefing card is empty (no LLM narrative generated yet) → KPI strip + Top Actions still render. Empty-state copy: "Daily briefing generates 24 hours after first ERP sync."
+
+---
+
+### 12.4 Action dispatch lifecycle (system + operator)
+
+**Goal:** show how a single transactional action moves from staged → posted, including retries + dead-letter + manual revival.
+
+**Personas:** Catalyst (system) → Operator (HITL when needed).
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: Catalyst stages action
+  pending --> approved: Operator approves OR auto-approve threshold met
+  approved --> posted: Dispatch sweep success
+  approved --> failed: Dispatch sweep failure
+  failed --> approved: Backoff window elapses → next sweep retries
+  failed --> dead_letter: retry_count >= MAX_DISPATCH_RETRIES (5)
+  dead_letter --> approved: Operator clicks Revive (after fixing root cause)
+  pending --> skipped: Operator skips with reason
+  approved --> skipped: Operator skips with reason
+  posted --> [*]
+  skipped --> [*]
+```
+
+**State details:**
+
+- **`pending`** — staged by a catalyst, awaiting approval. Auto-approve fires inline for high-confidence rows (subcatalyst-defined threshold).
+- **`approved`** — picked up by the next dispatch sweep (every 5 min by default).
+- **`posted`** — ERP confirmed. `external_doc_id` is the ERP-issued reference (NOT a synth stub).
+- **`failed`** — dispatch error. `error` carries human-readable reason. `next_retry_at` is set per the backoff schedule:
+
+  | Retry # | Wait |
+  |---|---|
+  | 1 | 60 s |
+  | 2 | 5 min |
+  | 3 | 15 min |
+  | 4 | 1 h |
+  | 5 | 6 h → terminal (`dead_letter`) |
+
+  Total budget ≈ 7 h 21 min — long enough that a multi-hour ERP outage self-heals; short enough that genuinely-broken payloads surface to ops same day.
+
+- **`dead_letter`** — retries exhausted. `dead_letter_at` is stamped. Operator must Revive after fixing root cause.
+- **`skipped`** — operator-rejected with reason persisted into `error`.
+
+**Connection-level alert:** when ≥5 dead-lettered or ≥10 failed rows accumulate in 24 h on a single connection, a warn-level event `erp_writeback.connection_failure_threshold` is emitted for log-based alerting (see runbook).
+
+**Operator UI implications:**
+
+- Action Layer page (`/transactional-actions`) defaults filter to `dead_letter + failed` so the rows that need attention are at the top.
+- Each row shows `next_retry_at` countdown + `retry_count` badge so the operator understands timing without opening details.
+- **Revive** button only appears for `dead_letter` rows. Skip + Approve only for the relevant statuses.
+
+---
+
+### 12.5 ERP connection lifecycle
+
+**Goal:** admin connects an ERP, monitors its health, recovers from a circuit-breaker open state.
+
+**Persona:** IT admin.
+
+```mermaid
+flowchart TD
+  A[/integrations — click Connect/] --> B[Pick adapter card]
+  B --> C[Modal renders adapter-specific fields]
+  C --> D[Test Connection button]
+  D -- pass --> E[Save → encrypted_config persisted]
+  D -- fail --> C
+  E --> F[Sync runs hourly via cron]
+  F --> G{Sync error?}
+  G -- no --> H[/integration-health — green pill/]
+  G -- yes --> I[Circuit breaker increments error count]
+  I --> J{Threshold breached?}
+  J -- no --> F
+  J -- yes --> K[Circuit OPEN — all calls fast-fail]
+  K --> L[/integration-health — red pill, Reset Circuit btn]
+  L --> M[Admin investigates: ERP outage? cred rotated?]
+  M --> N[Fix root cause]
+  N --> O[Click Reset Circuit → state HALF_OPEN]
+  O --> P[Next sync probes the connection]
+  P -- pass --> Q[State CLOSED → green]
+  P -- fail --> K
+```
+
+**Key UI states across the integration sub-nav:**
+
+- `/integrations` (Connections tab) — list of connections, status pill per row.
+- `/integration-health` — sync errors, freshness, circuit state. Each errored connection shows a Reset Circuit button when state is `OPEN` or `HALF_OPEN`.
+- `/connectivity` — live test, manual sync trigger, multi-company badge.
+- `/partner-mappings` — every connection appears in the picker; mappings live per-connection.
+- `/webhooks` — webhooks fire on connection events (sync.completed, dispatch.failed, etc.).
+
+The shared **`<IntegrationsTabBar>`** at the top of every page in this domain means the admin can move between "where do I configure?" → "why is it broken?" → "is it broken at the partner-mapping layer or the connection layer?" without leaving the workspace.
+
+---
+
+### 12.6 Partner-mapping bootstrap
+
+**Goal:** admin populates the canonical-ref → ERP-native-ID translation table for a freshly-connected ERP, in bulk, in <2 minutes.
+
+**Persona:** IT admin.
+
+```mermaid
+flowchart TD
+  A[/partner-mappings — pick connection/] --> B[Pick Vendors or Customers tab]
+  B --> C[Click 'Bootstrap from ERP']
+  C --> D[Modal: loading state]
+  D --> E[Backend pulls ERP's partner list + canonical Atheon partners]
+  E --> F[Fuzzy matcher runs name normalisation + Levenshtein]
+  F --> G[Modal: proposals list w/ ConfidenceBadge per row]
+  G --> H{Proposals returned?}
+  H -- no --> I[Empty: 'No new proposals — every canonical partner is already mapped or below 60%']
+  H -- yes --> J[Pre-select all >=90% confidence]
+  J --> K[Operator inspects, deselects noisy rows]
+  K --> L[Click 'Confirm N mappings']
+  L --> M[Modal: result card — created / updated / skipped tiles]
+  M --> N{Errors?}
+  N -- yes --> O[Per-row error list shown below result tiles]
+  N -- no --> P[Done]
+```
+
+**Detail:**
+
+- Proposal rows render as: `[checkbox] atheon_ref → external_id <ConfidenceBadge> reason text`.
+- Confidence reasons are concrete: "Exact match after normalisation" / "Substring contains the canonical name" / "Fuzzy name similarity 78%". Never "AI suggested".
+- Confidence floor is 60% — below that, no proposal is offered (operator must hand-add).
+- Bulk-confirm route caps at 500 mappings per call; the modal disables Confirm above that count and prompts to split.
+
+**Success criterion:** action layer dispatches no longer fail with "payload missing partner_id … and no vendor_ref mapping found".
+
+---
+
+### 12.7 Webhook setup + receiver verification
+
+**Goal:** admin subscribes their org's downstream system to Atheon events with HMAC-signed delivery.
+
+**Persona:** IT admin (often paired with their engineering team for receiver-side work).
+
+```mermaid
+flowchart TD
+  A[/webhooks — click 'New webhook'/] --> B[Wizard step 1: receiver URL]
+  B --> C[Wizard step 2: event type checklist]
+  C --> D[Wizard step 3: description optional]
+  D --> E[Wizard step 4: review + create]
+  E --> F[Backend: POST /api/v1/webhooks generates signing secret]
+  F --> G[Modal shows the raw secret — ONE TIME ONLY]
+  G --> H[Admin copies secret to their secret manager]
+  H --> I[Webhook appears in list w/ health badge]
+  I --> J[Click 'Send test payload']
+  J --> K[Receiver-side eng verifies signature]
+  K --> L[Live deliveries flow]
+  L --> M{Delivery fails?}
+  M -- yes --> N[Webhook health badge flips to Failing]
+  M -- no --> L
+  N --> O[Admin opens detail → Deliveries table → debug]
+```
+
+**Receiver-side verification contract (always-visible callout on `/webhooks` page):**
+
+Every delivery includes:
+- `X-Atheon-Signature: sha256=<hex>`
+- `X-Atheon-Timestamp: <unix_seconds>`
+- `X-Atheon-Event: <event_type>`
+- `X-Atheon-Webhook-Id: <webhook_id>`
+
+Verification: compute `HMAC-SHA256(secret, timestamp + "." + raw_body)`, constant-time compare to the signature, reject if timestamp >5 min old (replay protection). Code snippets for Node + Python sit collapsed below the contract.
+
+**Edit flow:** admin can change URL, event types, and active toggle without rotating the secret. Secret rotation is intentionally delete + recreate — the "shown once" semantic stays intact.
+
+**Revoke flow:** styled modal (not `window.confirm`) shows the URL + description + impact statement before committing.
+
+---
+
+### 12.8 Auditor walkthrough
+
+**Goal:** internal auditor or external SOC2 auditor traces a claimed savings dollar back to the underlying ERP records.
+
+**Persona:** Analyst (or external auditor with read-only access).
+
+```mermaid
+flowchart TD
+  A[/apex — Briefing tab/] --> B[Click Health Delta number]
+  B --> C[ProvenanceLink panel]
+  C --> D[Click 'View audit log' link]
+  D --> E[/audit?layer=billing — filtered/]
+  E --> F[ProvenanceVerifyPanel at top]
+  F --> G[Click Verify Merkle root]
+  G --> H[Cryptographic proof of chain integrity]
+  E --> I[Find the relevant audit row]
+  I --> J[Click row to expand details JSON]
+  J --> K[Cross-reference with billable_line_items via row metadata]
+  E --> L[Export CSV/Report for evidence pack]
+  A --> M[Switch to /compliance for SOC2 evidence pack]
+  M --> N[Download JSON snapshot]
+```
+
+**Why this works:**
+
+- Every $-figure on Apex / ROI / Compliance is `<ProvenanceLink>`-wrapped → side panel includes drill to `/audit` filtered to the relevant layer.
+- `ProvenanceVerifyPanel` at the top of `/audit` lets the auditor verify the Merkle root → cryptographic proof that the audit log has not been tampered with.
+- `/compliance` produces a JSON snapshot suitable for direct attachment to a SOC2 evidence packet.
+- Export CSV on `/audit` sanitises against formula injection (cells starting with `=`, `+`, `-`, `@`, tab, CR are quoted).
+
+**Success criterion:** auditor's question "where did this $1.2M come from?" is answered in 3 clicks: number → side panel → audit log row.
+
+---
+
+### 12.9 Provenance drill (cross-cutting micro-flow)
+
+**Goal:** any user, on any screen, opens the source for any number they're looking at.
+
+**Persona:** Any.
+
+This is the smallest, most-frequent flow in the product. It happens dozens of times per session.
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant N as Number on screen
+  participant P as ProvenanceLink button
+  participant SP as Side panel
+  participant T as Target page
+
+  U->>N: Sees a number with dotted underline
+  U->>P: Clicks
+  P->>SP: Slides in from right (480px wide)
+  SP->>U: Shows title, subtitle, sources list, optional detail
+  U->>SP: Clicks one of the source links (linkTo)
+  SP->>T: Closes panel, navigates
+  T->>U: Lands on the target page (e.g. /audit filtered)
+```
+
+**UX contract:**
+
+- The wrapped number is rendered inline (no layout shift).
+- Affordance: dotted underline on the number, becoming solid on hover. Cursor pointer.
+- Click intercepts `e.stopPropagation()` so a wrapped number inside an outer `<Link>` doesn't double-fire (the user gets the panel without losing their place).
+- Escape closes the panel.
+- Footer reminder always reads: "Every claimed figure must trace to ERP record + field mapping + confidence. Use Audit for the full chain."
+
+---
+
+### 12.10 VantaX support handles a customer ticket
+
+**Goal:** support engineer responds to a ticket without losing tenant context across the 4-page workflow.
+
+**Persona:** VantaX support (`support_admin`) or superadmin.
+
+```mermaid
+flowchart TD
+  A[/login — role-aware landing/] --> B[/support — Support Console]
+  B --> C[Search for tenant by name or slug]
+  C --> D[Click 'Set as context']
+  D --> E[setActiveTenant + setTenantOverride api-side]
+  E --> F[TenantContextBanner appears on every page]
+  F --> G[/support — Tickets tab now scoped to tenant]
+  G --> H[Click ticket row]
+  H --> I[/support-tickets/:id — detail]
+  I --> J{Need to investigate platform state?}
+  J -- yes --> K[/audit, /integration-health, /company-health w/ context preserved]
+  K --> L[Return to ticket via breadcrumb]
+  J -- no --> M[Reply via composer]
+  L --> M
+  M --> N[Change ticket status: open → in_progress → resolved]
+  N --> O[Click 'Clear context' on banner]
+  O --> P[setActiveTenant null + reload]
+```
+
+**Why the TenantContextBanner matters:** without it, a CSM impersonates a tenant to debug, gets distracted, the next page they hit is happening "as" that tenant — without realising it. The orange banner is unmissable.
+
+**Cross-tenant search vs. tenant-scoped action:** the support engineer can SEARCH across tenants from `/support`. Once they SET CONTEXT, every action they take applies to that tenant only (audited as the operator, but visible in the customer's audit log too).
+
+**Success criterion:** ticket-to-resolution time <5 min for the median support interaction.
+
+---
+
+### 12.11 Authentication: sign-in + MFA + role landing
+
+**Goal:** user signs in, satisfies any second-factor challenge, lands somewhere they can immediately act.
+
+**Persona:** Any.
+
+```mermaid
+flowchart TD
+  A[/login] --> B[Enter email + password]
+  B --> C{Multiple tenants matched?}
+  C -- yes --> D[Tenant selection state — cards per tenant]
+  D --> B
+  C -- no --> E{MFA required?}
+  E -- yes --> F[MFA challenge state — TOTP or backup code input]
+  F -- valid --> G[Backend issues session token]
+  F -- invalid --> H[Inline error: 'Invalid code']
+  H --> F
+  E -- no --> G
+  G --> I[handleAuthResult sets user + clears tenant override]
+  I --> J{Role}
+  J -- executive --> K[/apex]
+  J -- manager --> L[/pulse]
+  J -- operator --> M[/catalysts]
+  J -- analyst --> N[/mind]
+  J -- admin --> O[/integrations]
+  J -- support_admin --> P[/support]
+  J -- superadmin --> P
+  J -- viewer --> Q[/dashboard]
+```
+
+**MFA challenge UI rules:**
+
+- Single input field accepts BOTH formats: 6-digit TOTP `123456` OR 8-character backup code `a1b2-c3d4` / `a1b2c3d4` (dash optional).
+- Hint copy: "6-digit code from your authenticator app, or backup code (8 alphanumeric, with or without dash)".
+- Backup-codes-low warning shown when `backupCodesRemaining < 3` (amber inline message).
+- "Back to sign in" link clears the challenge state without leaving the page.
+
+**Forgot-password sub-flow:**
+
+1. `/login` → "Forgot password?" → email input.
+2. Backend sends email via MS Graph (`waitUntil` so request returns immediately even if Graph is slow).
+3. User clicks email link → `/reset-password?token=...`.
+4. New-password form → submit.
+5. Auto-login → role-aware landing.
+
+**SSO sub-flow:**
+
+1. `/login` → SSO provider redirect (Azure AD / Okta / SAML).
+2. Provider posts back to `/login?code=...&state=...`.
+3. `api.auth.ssoCallback(code, state)` → handleAuthResult → role-aware landing.
+
+---
+
+### 12.12 Onboarding wizard (post-signup)
+
+**Goal:** new user (any role) sees a guided 7-step path to "first value" so they don't wander aimlessly on their first session.
+
+**Persona:** Any new user. Steps adapt by role (admin sees Connect ERP first; operator sees a pre-deployed catalyst).
+
+```mermaid
+flowchart LR
+  A[Step 1: Connect ERP] --> B[Step 2: Deploy Catalyst]
+  B --> C[Step 3: Run Catalyst]
+  C --> D[Step 4: Review Action]
+  D --> E[Step 5: Run Diagnostics]
+  E --> F[Step 6: Generate Report]
+  F --> G[Step 7: Invite User]
+  G --> H[All set! 🎉]
+```
+
+**Per-step pattern:**
+
+- Sticky progress bar at top — "Step 3 of 7" + percent complete.
+- Big icon + title + 1-paragraph explainer of what the step accomplishes + WHY it matters (not just what to do).
+- Primary CTA jumps to the relevant page with a query param (`?onboarding=1&step=N`) so the page can highlight the relevant element.
+- "Skip for now" link top-right, persists state — user can come back later.
+- Completed steps show a green checkmark + "Edit" link in the sidebar of the wizard.
+
+**Success criterion:** ≥70% of new admins reach step 4 (Review Action) within 24 h of signup.
+
+**Exit to Dashboard:** the wizard dismisses on step 7 and the user lands at their role-appropriate landing URL — NOT back to a generic dashboard.
+
+---
+
+## 13. Stitch generation order (revised)
+
+Updating the §11 import notes now that we have process flows:
+
+1. **Section 5 (IA)** → global shell.
+2. **Section 7 (Reusable components)** → produce primitives once, reference them in screen specs.
+3. **Section 12 (Process flows)** → generate the **flow-level user journeys** as scrollable storyboards. This gives the designer a "movie" of how screens connect before any individual screen is laid out.
+4. **Section 6 (Screen specs)** → generate one screen at a time. For each, request all 5 states (default · loading · empty · error · mobile).
+5. **Section 4 (Cross-cutting principles)** is the design system's truth-set — every screen must surface provenance and confidence.
+6. **Section 2 (Brand)** constrains visual language across everything.
+
+For each process flow in §12, request a single artboard showing the screens in sequence (left-to-right or top-to-bottom) with arrows for transitions and callouts for state changes (e.g. "TenantContextBanner appears" or "Modal: loading state"). This makes onboarding new designers + auditing for consistency much faster than reading individual screen specs.
