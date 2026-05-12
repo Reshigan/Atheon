@@ -19,8 +19,9 @@ import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import { api, ApiError } from '@/lib/api';
 import type { CustomRole } from '@/lib/api';
+import { Link } from 'react-router-dom';
 import {
-  Shield, Plus, Pencil, Trash2, CheckCircle, Loader2, AlertCircle, Users,
+  Shield, Plus, Pencil, Trash2, CheckCircle, Loader2, AlertCircle, Users, ArrowLeft,
 } from 'lucide-react';
 
 type BaseRole = { id: string; name: string; permissions: string[] };
@@ -233,6 +234,14 @@ export function CustomRoleBuilderPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {/* Breadcrumb back to IAM — Custom Role Builder is reached from
+          IAM's Roles tab; the back-link keeps that trail explicit. */}
+      <Link
+        to="/iam"
+        className="inline-flex items-center gap-1 text-xs t-muted hover:t-primary"
+      >
+        <ArrowLeft size={12} /> Back to IAM — Roles &amp; Permissions
+      </Link>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
