@@ -936,40 +936,46 @@ export function ApexPage() {
  {activeTab === 'briefing' && (
  <TabPanel>
  <ExecutiveActionsCallout risks={risks} onTrace={handleOpenRiskTrace} />
- <Card className="mt-6">
- <div className="flex items-center gap-2 mb-3">
- <FileText className="w-4 h-4 text-accent" />
-  <h3 className="text-lg font-semibold t-primary">Daily Executive Briefing</h3>
+ <Card className="mt-6 glass-card">
+ <div className="flex items-center justify-between mb-4">
+  <div className="flex items-center gap-2">
+   <Sparkles className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+   <h3 className="text-headline-md font-semibold t-primary">Daily Briefing Narrative</h3>
+  </div>
+  <span className="text-caption font-mono t-muted flex items-center gap-1.5">
+   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34D399' }} aria-hidden="true" />
+   Generated 08:00 AM
+  </span>
  </div>
  {briefing?.summary ? (
  <>
- <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{briefing.summary}</p>
+ <p className="text-body-base leading-relaxed t-secondary">{briefing.summary}</p>
  {(briefing.healthDelta !== null || briefing.redMetricCount !== null || briefing.anomalyCount !== null || briefing.activeRiskCount !== null) && (
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
  {briefing.healthDelta !== null && (
- <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-label">Health Delta</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.healthDelta ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
- {(briefing.healthDelta ?? 0) > 0 ? '+' : ''}{briefing.healthDelta} pts
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+ <span className="text-caption uppercase tracking-wider t-muted">Health Delta</span>
+ <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.healthDelta ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+ {(briefing.healthDelta ?? 0) > 0 ? '+' : ''}{briefing.healthDelta}<span className="text-body-sm font-normal t-muted ml-0.5">pts</span>
  </p>
  </div>
  )}
  {briefing.redMetricCount !== null && (
- <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-label">RED Metrics</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.redMetricCount ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{briefing.redMetricCount}</p>
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
+ <span className="text-caption uppercase tracking-wider t-muted">RED Metrics</span>
+ <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.redMetricCount ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{briefing.redMetricCount}</p>
  </div>
  )}
  {briefing.anomalyCount !== null && (
- <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-label">Anomalies</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.anomalyCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.anomalyCount}</p>
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+ <span className="text-caption uppercase tracking-wider t-muted">Anomalies</span>
+ <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.anomalyCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.anomalyCount}</p>
  </div>
  )}
  {briefing.activeRiskCount !== null && (
- <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-label">Active Risks</span>
- <p className={`text-lg font-bold mt-0.5 ${(briefing.activeRiskCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.activeRiskCount}</p>
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+ <span className="text-caption uppercase tracking-wider t-muted">Active Risks</span>
+ <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.activeRiskCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.activeRiskCount}</p>
  </div>
  )}
  </div>
