@@ -14,6 +14,7 @@
  * the global company picker.
  */
 import { useState, useEffect, useCallback } from "react";
+import { IntegrationsTabBar } from "@/components/layout/IntegrationsTabBar";
 import { api, ApiError } from "@/lib/api";
 import type { ERPConnection, CircuitBreakerState, ERPCompany } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -144,6 +145,7 @@ export function ConnectivityPage() {
 
   return (
     <div className="space-y-6">
+      <IntegrationsTabBar />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <Plug size={20} style={{ color: "var(--accent)" }} />

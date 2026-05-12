@@ -22,6 +22,7 @@ import {
 import { IconERP_SAP, IconERP_Cloud, IconERP_Generic, IconERP_Odoo } from "@/components/icons/AtheonIcons";
 import { useAppStore } from "@/stores/appStore";
 import { OnboardingPanel } from "@/components/dashboard/OnboardingPanel";
+import { IntegrationsTabBar } from "@/components/layout/IntegrationsTabBar";
 
 const systemIconMap: Record<string, React.FC<{ size?: number }>> = {
   SAP: IconERP_SAP, SF: IconERP_Cloud, WD: IconERP_Generic, ORC: IconERP_Generic,
@@ -658,6 +659,7 @@ export function IntegrationsPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <IntegrationsTabBar />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center">
