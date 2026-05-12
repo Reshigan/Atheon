@@ -27,9 +27,9 @@ export function TintedCard({ children, className = "" }: { children: ReactNode; 
     <div
       className={`rounded-2xl p-5 ${className}`}
       style={{
-        background: "linear-gradient(135deg, rgba(74, 107, 90, 0.06), rgba(93, 138, 111, 0.03))",
-        border: "1px solid rgba(74, 107, 90, 0.10)",
-        boxShadow: "0 2px 12px rgba(74, 107, 90, 0.05)",
+        background: "linear-gradient(135deg, rgba(163, 177, 138, 0.06), rgba(126, 179, 205, 0.03))",
+        border: "1px solid rgba(163, 177, 138, 0.10)",
+        boxShadow: "0 2px 12px rgba(163, 177, 138, 0.05)",
       }}
     >
       {children}

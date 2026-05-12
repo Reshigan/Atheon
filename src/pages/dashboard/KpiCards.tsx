@@ -44,7 +44,7 @@ export function KpiCard({ label, value, trend = "stable", delta, sparkData, badg
           </div>
         </div>
         {sparkData && sparkData.length > 0 && (
-          <Sparkline data={sparkData} width={60} height={24} color={trend === "down" || trend === "declining" ? "#ef4444" : "#4A6B5A"} />
+          <Sparkline data={sparkData} width={60} height={24} color={trend === "down" || trend === "declining" ? "#ef4444" : "#A3B18A"} />
         )}
       </div>
     </DashCard>

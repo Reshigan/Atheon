@@ -17,7 +17,7 @@ export const chartTheme = {
   text: {
     fill: 'var(--chart-text)',
     fontSize: 12,
-    fontFamily: "'Outfit', sans-serif",
+    fontFamily: "'Inter', sans-serif",
   },
   tooltip: {
     background: 'var(--chart-tooltip-bg)',
@@ -33,9 +33,9 @@ export const chartTheme = {
 
 // Recharts-compatible color palette
 export const chartPalette = [
-  '#4A6B5A', // sage
-  '#c9a059', // bronze
-  '#7AACB5', // sky
+  '#A3B18A', // sage
+  '#CDA37E', // bronze
+  '#7EB3CD', // sky
   '#10b981', // success
   '#f59e0b', // warning
   '#ef4444', // danger

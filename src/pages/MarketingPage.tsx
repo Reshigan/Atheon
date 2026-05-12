@@ -11,11 +11,11 @@ const marketingCSS = `
   --void: #06090d;
   --abyss: #0a0f14;
   --deep: #0e151c;
-  --sage: #4A6B5A;
+  --sage: #A3B18A;
   --sage-b: #5d8a6f;
   --sage-d: rgba(74,107,90,.08);
-  --bronze: #c9a059;
-  --sky: #7AACB5;
+  --bronze: #CDA37E;
+  --sky: #7EB3CD;
   --cream: #e8e4dc;
   --chalk: #c4bfb4;
   --slate: #586573;
@@ -726,10 +726,10 @@ const marketingCSS = `
 
 const AtheonLogo = ({ size = 28 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-    <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
-    <line x1="9" y1="20" x2="23" y2="20" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
-    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
-    <circle cx="16" cy="9" r="1.5" fill="#c9a059" />
+    <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
+    <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
+    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
+    <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
   </svg>
 );
 
