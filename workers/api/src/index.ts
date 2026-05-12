@@ -90,7 +90,12 @@ app.use('*', cors({
     return null as unknown as string;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key'],
+  // X-Request-ID added 2026-05-12: the frontend api client attaches a
+  // correlation ID to every request (Security S8), and the browser CORS
+  // preflight blocks the request unless we declare it allowed here.
+  // X-Setup-Secret added so the documented /admin/setup curl path works
+  // from a browser-based debug surface, not just from terminal curl.
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Licence-Key', 'X-Request-ID', 'X-Setup-Secret'],
   exposeHeaders: ['Content-Length', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Request-ID'],
   maxAge: 86400,
   credentials: true,
