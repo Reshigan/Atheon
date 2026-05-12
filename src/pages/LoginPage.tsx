@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Building2, Loader2, ShieldCheck, UserPlus } from "lucide-react";
 import { api, setToken, getToken, setTenantOverride } from "@/lib/api";
+import { defaultLandingForRole } from "@/lib/roleLanding";
 import type { IndustryVertical, UserRole } from "@/types";
 
 type AuthMode= 'login' | 'register';
@@ -63,7 +64,11 @@ export function LoginPage() {
     setIndustry((res.user.tenantIndustry || 'general') as IndustryVertical);
     // Persist MFA grace-period warning (if any) so the Dashboard / Settings pages can surface it.
     setMfaEnforcementWarning(res.mfaEnforcementWarning ?? null);
-    navigate('/dashboard');
+    // Role-aware landing (UX audit §5.6): every role lands on a screen
+    // they can immediately act on, not the generic Dashboard. Mapping is
+    // in `src/lib/roleLanding.ts`; Dashboard remains accessible for any
+    // role via /dashboard.
+    navigate(defaultLandingForRole(res.user.role as UserRole));
   };
 
   useEffect(() => {
@@ -81,7 +86,7 @@ export function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (existingUser && getToken()) navigate('/dashboard', { replace: true });
+    if (existingUser && getToken()) navigate(defaultLandingForRole(existingUser.role), { replace: true });
   }, [existingUser, navigate]);
 
   useEffect(() => {
