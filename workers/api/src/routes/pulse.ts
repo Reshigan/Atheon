@@ -335,12 +335,29 @@ pulse.post('/refresh', async (c) => {
       bottlenecks.push(`${exceptions.length} action(s) escalated for human review`);
     }
 
-    const steps = JSON.stringify([
-      { name: 'Received', count: total },
-      { name: 'Processing', count: pending.length },
-      { name: 'Completed', count: completed.length },
-      { name: 'Escalated', count: exceptions.length },
-    ]);
+    // Per-step richness — keeps the Pulse Process Mining UI populated rather
+    // than rendering "<missing>" for every step pill. Mirrors the heuristic
+    // in services/scheduled.ts refreshProcessMining(); kept in sync manually
+    // since the two paths populate the same table.
+    const tp = (count: number) => Math.max(count, 0) > 0 ? Math.max(1, Math.round(count / 30)) : 0;
+    const sd = (share: number) => avgDuration > 0
+      ? Math.round((avgDuration * share) / 86400 * 10) / 10 : 0;
+    const stepDef = [
+      { name: 'Received',  count: total,            share: 0.05, status: 'healthy' as const },
+      { name: 'Processing', count: pending.length,  share: 0.65,
+        status: (pending.length >= total * 0.4 ? 'bottleneck' : 'healthy') as 'healthy' | 'degraded' | 'bottleneck' },
+      { name: 'Completed', count: completed.length, share: 0.25, status: 'healthy' as const },
+      { name: 'Escalated', count: exceptions.length, share: 0.05,
+        status: (exceptions.length >= 3 ? 'degraded' : 'healthy') as 'healthy' | 'degraded' | 'bottleneck' },
+    ];
+    const steps = JSON.stringify(stepDef.map((s, i) => ({
+      id: `step-${flowId}-${i}`,
+      name: s.name,
+      count: s.count,
+      avgDuration: sd(s.share),
+      throughput: tp(s.count),
+      status: s.status,
+    })));
 
     await c.env.DB.prepare(
       `INSERT INTO process_flows (id, tenant_id, name, steps, variants, avg_duration, conformance_rate, bottlenecks, created_at)

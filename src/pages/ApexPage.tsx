@@ -18,7 +18,6 @@ import type { HealthScore, Briefing, Risk, ScenarioItem, HealthHistoryResponse, 
 import { PeerComparisonBar } from "@/components/ui/peer-comparison-bar";
 import { Portal } from "@/components/ui/portal";
 import { TraceabilityModal } from "@/components/TraceabilityModal";
-import { FlipCard } from "@/components/ui/flip-card";
 import {
  Crown, TrendingUp, TrendingDown, Minus, AlertTriangle, FileText,
  Play, BarChart3, Shield, Lightbulb, Loader2, AlertCircle, X,
@@ -173,7 +172,7 @@ function ExecutiveBriefHero({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Crown className="w-4 h-4 text-accent" />
-            <h3 className="text-sm font-semibold t-primary">Business Health</h3>
+            <h3 className="text-sm font-semibold t-primary">Atheon Score</h3>
           </div>
           {delta !== null && (
             <span className={`text-xs font-medium ${deltaPositive ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 't-muted'}`}>
@@ -278,9 +277,8 @@ export function ApexPage() {
  const [healthHistory, setHealthHistory] = useState<HealthHistoryResponse | null>(null);
  
  
- // Flip card state for dashboard cards
- const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
- const toggleFlip = (cardId: string) => setFlippedCards(prev => ({ ...prev, [cardId]: !prev[cardId] }));
+ // FlipCard state removed alongside the duplicate health hero — see
+ // ApexPage §A.1 cleanup. No remaining call sites.
 
  // Traceability modal state
  const [showTraceabilityModal, setShowTraceabilityModal] = useState(false);
@@ -767,61 +765,28 @@ export function ApexPage() {
   {/* 2.1.2 Health Score Trend Chart */}
   <HealthTrendChart companyId={companyId || undefined} initialHistory={healthHistory} />
 
-  {/* Top Row: Health Ring + Dimensions */}
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-   <FlipCard
-    className="lg:col-span-1"
-    isFlipped={!!flippedCards['apex-health']}
-    onFlip={() => toggleFlip('apex-health')}
-    front={
-     <Card variant="black" className="h-full flex flex-col items-center justify-center">
-      <ScoreRing score={overallScore} size="xl" label="Overall Health" />
-      {health?.calculatedAt && healthHistory && (
-       <div className="flex flex-col items-center gap-2 mt-4">
-        {healthHistory.history.length > 1 && (
-         <Sparkline data={healthHistory.history.map(h => h.overallScore)} width={120} height={30} color={healthHistory.delta >= 0 ? '#10b981' : '#ef4444'} />
-        )}
-        <div className="flex items-center gap-2">
-         {trendIcon(healthHistory.delta > 0 ? 'up' : healthHistory.delta < 0 ? 'down' : 'stable')}
-         <span className={`text-sm ${healthHistory.delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{healthHistory.deltaLabel}</span>
-        </div>
-       </div>
-      )}
-      {!health?.calculatedAt && overallScore === 0 && (
-       <p className="text-xs t-muted mt-4 text-center">No health data yet. Run a catalyst to populate metrics.</p>
-      )}
-     </Card>
-    }
-    back={
-     <Card variant="black" className="h-full">
-      <div className="flex items-center justify-between mb-3">
-       <h4 className="text-sm font-semibold t-primary">Health Score Breakdown</h4>
-      </div>
-      <div className="space-y-2.5">
-       {dimensions.map((dim) => (
-        <div key={dim.key} className="flex items-center gap-2">
-         <span className="text-xs t-secondary w-32 truncate">{dim.name}</span>
-         <div className="flex-1">
-          <Progress value={dim.score} color={dim.score >= 80 ? 'emerald' : dim.score >= 60 ? 'amber' : 'red'} size="sm" />
-         </div>
-         <span className="text-xs font-bold t-primary w-8 text-right">{dim.score}</span>
-        </div>
-       ))}
-       {dimensions.length === 0 && (
-        <p className="text-xs t-muted text-center py-4">No dimension data yet</p>
-       )}
-      </div>
-      <div className="mt-3 pt-2 border-t border-[var(--border-card)]">
-       <div className="flex justify-between text-xs">
-        <span className="t-muted">Composite Score</span>
-        <span className="font-bold t-primary">{overallScore}/100</span>
-       </div>
-      </div>
-     </Card>
-    }
-   />
-
-   <Card className="lg:col-span-2">
+  {/* Phase 1 / WORLD_CLASS §A.1: removed the FlipCard "Overall Health" ring
+      hero — the page already shows the same `overall` number in the Brief
+      banner at the top of every tab via <ApexBriefHero>. Showing it here
+      again was the literal duplicate the user flagged ("two health scores
+      at 55"). Per-dimension breakdown lives in the Business Dimensions
+      card below, now full-width. The trend sparkline is preserved as a
+      small strip above the dimensions list. */}
+  {healthHistory && healthHistory.history.length > 1 && (
+    <div className="mb-4 flex items-center gap-3 px-1">
+      <span className="text-label">Trend</span>
+      <Sparkline
+        data={healthHistory.history.map(h => h.overallScore)}
+        width={180} height={28}
+        color={healthHistory.delta >= 0 ? '#10b981' : '#ef4444'}
+      />
+      <span className={`text-caption font-medium ${healthHistory.delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+        {healthHistory.delta >= 0 ? '▲' : '▼'} {healthHistory.deltaLabel}
+      </span>
+    </div>
+  )}
+  <div className="grid grid-cols-1 gap-6 mb-6">
+   <Card>
     <h3 className="text-lg font-semibold t-primary mb-4">Business Dimensions</h3>
     {dimensions.length === 0 || overallScore === 0 ? (
      <div className="flex items-center gap-3 py-6 px-4">

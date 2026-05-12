@@ -375,10 +375,11 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Hero: Health Score as central KPI */}
+      {/* Hero: Atheon Score as central KPI (canonical name — see
+          UI_POLISH_PRINCIPLES + WORLD_CLASS_FRONTEND_PROPOSAL §A.4). */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Card variant="mint" className="lg:col-span-1 flex flex-col items-center justify-center py-6">
-          <ScoreRing score={overallScore} size="xl" label="Business Health" />
+          <ScoreRing score={overallScore} size="xl" label="Atheon Score" />
           <div className="flex items-center gap-2 mt-4">
             {trendIcon(healthTrend)}
             <span className={`text-sm ${avgDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -900,7 +901,7 @@ export function Dashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <Card>
-                  <p className="text-sm font-semibold t-primary mb-3">Health Score Trend</p>
+                  <p className="text-sm font-semibold t-primary mb-3">Atheon Score Trend</p>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={metricsOverTime}>

@@ -95,7 +95,7 @@ export function HealthTrendChart({ companyId, initialHistory = null }: HealthTre
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className="text-accent" />
-          <h3 className="text-sm font-semibold t-primary">Health Score Trend</h3>
+          <h3 className="text-sm font-semibold t-primary">Atheon Score Trend</h3>
         </div>
         <div className="flex items-center gap-2">
           {dimensionKeys.length > 0 && (
