@@ -10,6 +10,7 @@ import { CompanySwitcher } from "@/components/CompanySwitcher";
 import { ActionQueueWidget } from "@/components/layout/ActionQueueWidget";
 import { CalibrationChip } from "@/components/layout/CalibrationChip";
 import { PlatformTotalsChip } from "@/components/layout/PlatformTotalsChip";
+import { ModuleSwitcher } from "@/components/layout/ModuleSwitcher";
 
 const PLATFORM_ADMIN_ROLES = ['superadmin', 'support_admin', 'admin'];
 
@@ -299,6 +300,9 @@ export function Header() {
         <div className="hidden sm:block">
           <CompanySwitcher />
         </div>
+
+        {/* Intelligence-module quick switch (Stitch top bar pattern) */}
+        <ModuleSwitcher />
 
         {/* §9.3 Global freshness indicator */}
         <FreshnessDot />
