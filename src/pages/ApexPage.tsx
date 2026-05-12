@@ -547,9 +547,21 @@ export function ApexPage() {
  ];
 
   const pageHeader = (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-      <h1 className="text-3xl sm:text-4xl font-bold t-primary">Apex</h1>
-      <Badge variant="info">Executive Intelligence</Badge>
+    <div className="flex items-center gap-3">
+      <div
+        className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
+        style={{
+          background: 'rgba(163, 177, 138, 0.10)',
+          borderColor: 'rgba(163, 177, 138, 0.25)',
+        }}
+        aria-hidden="true"
+      >
+        <Crown className="w-5 h-5" style={{ color: 'var(--accent)' }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Apex</h1>
+        <p className="text-body-sm t-muted mt-0.5">Executive Intelligence &amp; Strategic Context</p>
+      </div>
       <SectionFreshness section="Health" />
     </div>
   );
