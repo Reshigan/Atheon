@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/ui/sparkline";
+import { Numeric } from "@/components/ui/numeric";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { DashCard } from "./DashCard";
 
@@ -28,7 +29,11 @@ export function KpiCard({ label, value, trend = "stable", delta, sparkData, badg
       </div>
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-2xl font-bold t-primary">{value}</p>
+          {typeof value === 'number' ? (
+            <Numeric value={value} size="xl" />
+          ) : (
+            <p className="text-2xl font-bold t-primary tabular-nums">{value}</p>
+          )}
           <div className="flex items-center gap-1.5 mt-1">
             {trendIcon(trend)}
             {delta !== undefined && (
@@ -59,7 +64,7 @@ interface KpiGridProps {
 export function KpiGrid({ overallScore, healthTrend, avgDelta, activeCatalysts, totalTasks, risksCount, anomaliesCount }: KpiGridProps) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <KpiCard label="Health Score" value={overallScore} trend={healthTrend} delta={avgDelta} badge="Live" badgeVariant="success" />
+      <KpiCard label="Atheon Score" value={overallScore} trend={healthTrend} delta={avgDelta} badge="Live" badgeVariant="success" />
       <KpiCard label="Active Catalysts" value={activeCatalysts} trend="stable" badge={`${totalTasks} tasks`} />
       <KpiCard label="Active Risks" value={risksCount} trend={risksCount > 3 ? "up" : "stable"} badgeVariant={risksCount > 3 ? "danger" : "default"} />
       <KpiCard label="Anomalies" value={anomaliesCount} trend={anomaliesCount > 2 ? "up" : "stable"} badgeVariant={anomaliesCount > 2 ? "warning" : "default"} />

@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { AlertTriangle, Shield } from "lucide-react";
 import type { Risk } from "@/lib/api";
 
@@ -35,7 +35,7 @@ export function RiskMatrix({ risks }: RiskMatrixProps) {
                   <p className="text-sm font-medium t-primary">{r.title}</p>
                   <p className="text-xs t-secondary mt-0.5">{r.description}</p>
                 </div>
-                <Badge variant="danger" size="sm">{r.severity}</Badge>
+                <StatusPill status={r.severity} size="sm" />
               </div>
             ))}
           </div>
@@ -52,7 +52,7 @@ export function RiskMatrix({ risks }: RiskMatrixProps) {
                   <p className="text-sm font-medium t-primary">{r.title}</p>
                   <p className="text-xs t-secondary mt-0.5">{r.description}</p>
                 </div>
-                <Badge variant="warning" size="sm">{r.severity}</Badge>
+                <StatusPill status={r.severity} size="sm" />
               </div>
             ))}
           </div>
@@ -69,7 +69,7 @@ export function RiskMatrix({ risks }: RiskMatrixProps) {
                   <p className="text-sm font-medium t-primary">{r.title}</p>
                   <p className="text-xs t-secondary mt-0.5">{r.description}</p>
                 </div>
-                <Badge variant="default" size="sm">{r.severity}</Badge>
+                <StatusPill status={r.severity} size="sm" />
               </div>
             ))}
           </div>

@@ -21,6 +21,7 @@ import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusPill } from '@/components/ui/status-pill';
 import { ScoreRing } from '@/components/ui/score-ring';
 import { Sparkline } from '@/components/ui/sparkline';
 import type { ExecutiveSummaryResponse } from '@/lib/api';
@@ -35,9 +36,6 @@ const formatCurrency = (value: number): string => {
   if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
   return `$${value.toFixed(0)}`;
 };
-
-const severityColor = (s: string): 'danger' | 'warning' | 'info' | 'default' =>
-  s === 'critical' ? 'danger' : s === 'high' ? 'warning' : s === 'medium' ? 'info' : 'default';
 
 const targetStatusColor = (s: string): 'success' | 'warning' | 'danger' | 'info' => {
   const v = (s || '').toLowerCase();
@@ -256,7 +254,7 @@ export function ExecutiveSummaryPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium t-primary truncate">{risk.title}</p>
-                    <Badge variant={severityColor(risk.severity)} className="text-caption">{risk.severity}</Badge>
+                    <StatusPill status={risk.severity} size="sm" />
                   </div>
                   {!!risk.impactValue && (
                     <p className="text-caption t-muted mt-0.5">Est. impact {formatCurrency(risk.impactValue)}</p>

@@ -8,6 +8,8 @@ import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/state";
+import { StatusPill } from "@/components/ui/status-pill";
+import { Numeric } from "@/components/ui/numeric";
 
 import { api } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
@@ -39,8 +41,6 @@ const trendIcon = (trend: string, size = 14) => {
  if (trend === 'down' || trend === 'declining') return <TrendingDown size={size} className="text-red-400" />;
  return <Minus size={size} className="text-gray-400" />;
 };
-
-const severityColor = (s: string) => s === 'critical' ? 'danger' : s === 'high' ? 'warning' : s === 'medium' ? 'info' : 'default';
 
 const riskImpactLabel = (probability: number) => probability >= 0.7 ? 'Very High' : probability >= 0.5 ? 'High' : probability >= 0.3 ? 'Medium' : 'Low';
 const riskLikelihoodBar = (probability: number) => Math.round(probability * 100);
@@ -207,14 +207,19 @@ function ExecutiveBriefHero({
           <div className="space-y-2">
             {top3.map(r => (
               <div key={r.id} className="flex items-start gap-2 text-xs">
-                <Badge variant={severityColor(r.severity)} size="sm">{r.severity}</Badge>
+                <StatusPill status={r.severity} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="t-primary font-medium truncate">{r.title}</div>
                   {r.impactValue ? (
                     <div className="t-muted text-caption mt-0.5">
-                      Impact: {r.impactUnit === 'ZAR' || r.impactUnit === 'currency'
-                        ? `R${Math.round(r.impactValue).toLocaleString()}`
-                        : `${r.impactValue.toLocaleString()} ${r.impactUnit ?? ''}`}
+                      Impact:{' '}
+                      <Numeric
+                        value={r.impactValue}
+                        unit={r.impactUnit === 'currency' ? 'ZAR' : (r.impactUnit ?? undefined)}
+                        compact
+                        size="sm"
+                        tone="mute"
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -243,7 +248,7 @@ function ExecutiveBriefHero({
         {topSignal ? (
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Badge variant={severityColor(topSignal.severity)} size="sm">{topSignal.severity}</Badge>
+              <StatusPill status={topSignal.severity} size="sm" />
               <span className="text-label">{topSignal.signalType}</span>
             </div>
             <div className="text-sm font-medium t-primary line-clamp-2 mb-1">{topSignal.title}</div>
@@ -887,11 +892,20 @@ export function ApexPage() {
         <div className="flex-1 min-w-0">
          <div className="flex items-start justify-between gap-2">
           <span className="text-sm font-medium t-primary">{risk.title}</span>
-          <Badge variant={severityColor(risk.severity)} size="sm">{risk.severity}</Badge>
+          <StatusPill status={risk.severity} size="sm" />
          </div>
          <p className="text-xs t-muted mt-0.5 truncate">{risk.description}</p>
          <div className="flex items-center gap-2 mt-1">
-          <span className="text-caption t-muted">Impact: {risk.impactValue} {risk.impactUnit}</span>
+          <span className="text-caption t-muted inline-flex items-center gap-1">
+           Impact:
+           <Numeric
+            value={risk.impactValue}
+            unit={risk.impactUnit === 'currency' ? 'ZAR' : (risk.impactUnit ?? undefined)}
+            compact
+            size="sm"
+            tone="mute"
+           />
+          </span>
           <span className="text-caption t-muted">|</span>
           <span className="text-caption t-muted">{risk.category}</span>
          </div>
@@ -1076,14 +1090,23 @@ export function ApexPage() {
  >
  <Link2 size={14} />
  </button>
- <Badge variant={severityColor(risk.severity)}>{risk.severity}</Badge>
+ <StatusPill status={risk.severity} size="sm" />
  </div>
  </div>
  <p className="text-sm t-muted mt-1">{risk.description}</p>
  <div className="flex items-center justify-between gap-3 mt-2">
    <div className="flex items-center gap-4 text-xs text-gray-400">
      <span>Probability: {Math.round(risk.probability * 100)}%</span>
-     <span>Impact: {risk.impactValue} {risk.impactUnit}</span>
+     <span className="inline-flex items-center gap-1">
+       Impact:
+       <Numeric
+         value={risk.impactValue}
+         unit={risk.impactUnit === 'currency' ? 'ZAR' : (risk.impactUnit ?? undefined)}
+         compact
+         size="sm"
+         tone="mute"
+       />
+     </span>
    </div>
    {(() => {
      const rec = recommendForRisk({ category: risk.category, title: risk.title });
@@ -1719,7 +1742,7 @@ export function ApexPage() {
         <Card key={signal.id} hover onClick={() => setExpandedSignal(expandedSignal === signal.id ? null : signal.id)}>
          <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-           <Badge variant={severityColor(signal.severity)} size="sm">{signal.severity}</Badge>
+           <StatusPill status={signal.severity} size="sm" />
            <span className="text-sm font-medium t-primary">{signal.title}</span>
            <Badge variant="info" size="sm">{signal.signalType}</Badge>
           </div>

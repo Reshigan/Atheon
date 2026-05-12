@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusPill } from '@/components/ui/status-pill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { LoadingState, EmptyState } from '@/components/ui/state';
@@ -279,12 +280,6 @@ export function SystemAlertsPage() {
   };
 
   // ── UI helpers ────────────────────────────────────────────────
-  const severityColor = (s: string): 'danger' | 'warning' | 'info' | 'default' => {
-    if (s === 'critical' || s === 'high') return 'danger';
-    if (s === 'medium') return 'warning';
-    if (s === 'info' || s === 'low') return 'info';
-    return 'default';
-  };
   const channelIcon = (ch: string) => {
     const found = CHANNELS.find(c => c.value === ch);
     if (!found) return <Bell size={12} />;
@@ -362,7 +357,7 @@ export function SystemAlertsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium t-primary">{r.name}</p>
-                        <Badge variant={severityColor(r.severity)} className="text-caption">{r.severity}</Badge>
+                        <StatusPill status={r.severity} size="sm" />
                         {r.silenced && <Badge variant="warning" className="text-caption">silenced</Badge>}
                         {!r.enabled && <Badge variant="default" className="text-caption">disabled</Badge>}
                       </div>
@@ -430,7 +425,7 @@ export function SystemAlertsPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium t-primary">{r.name}</p>
-                      <Badge variant={severityColor(r.severity)} className="text-caption">{r.severity}</Badge>
+                      <StatusPill status={r.severity} size="sm" />
                     </div>
                     <p className="text-xs t-muted mt-0.5">
                       {r.description || `Triggered on ${r.event_type}`}

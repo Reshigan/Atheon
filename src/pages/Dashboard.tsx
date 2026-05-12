@@ -1,5 +1,7 @@
 import { useState, useEffect, useId, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
+import { Numeric } from "@/components/ui/numeric";
 import { Sparkline } from "@/components/ui/sparkline";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { ScoreRing } from "@/components/ui/score-ring";
@@ -762,7 +764,7 @@ export function Dashboard() {
                       <p className="text-xs font-medium t-primary truncate">{risk.title}</p>
                       <p className="text-caption t-muted truncate">{risk.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'info'} size="sm">{risk.severity}</Badge>
+                        <StatusPill status={risk.severity} size="sm" />
                         <span className="text-caption t-muted">{risk.category}</span>
                       </div>
                     </div>
@@ -1004,12 +1006,21 @@ export function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="text-xs font-semibold t-primary">{risk.title}</h4>
-                          <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'info'}>{risk.severity}</Badge>
+                          <StatusPill status={risk.severity} size="sm" />
                         </div>
                         <p className="text-caption t-muted mt-0.5">{risk.description}</p>
                         <div className="flex items-center gap-3 mt-1 text-caption t-muted">
                           <span>Probability: {Math.round(risk.probability * 100)}%</span>
-                          <span>Impact: {risk.impactValue} {risk.impactUnit}</span>
+                          <span className="inline-flex items-center gap-1">
+                            Impact:
+                            <Numeric
+                              value={risk.impactValue}
+                              unit={risk.impactUnit === 'currency' ? 'ZAR' : (risk.impactUnit ?? undefined)}
+                              compact
+                              size="sm"
+                              tone="mute"
+                            />
+                          </span>
                           <Badge variant="outline" size="sm">{risk.category}</Badge>
                         </div>
                       </div>
@@ -1041,9 +1052,7 @@ export function Dashboard() {
                     <p className="text-xs font-medium t-primary truncate">{a.metric}</p>
                     <p className="text-caption t-muted">Deviation: {typeof a.deviation === 'number' ? `${a.deviation > 0 ? '+' : ''}${a.deviation.toFixed(1)}%` : '--'}</p>
                   </div>
-                  <Badge variant={a.severity === 'critical' ? 'danger' : a.severity === 'high' ? 'warning' : 'info'}>
-                    {a.severity}
-                  </Badge>
+                  <StatusPill status={a.severity} size="sm" />
                 </div>
               ))}
             </div>
