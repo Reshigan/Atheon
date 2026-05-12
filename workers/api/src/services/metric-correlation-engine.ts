@@ -26,11 +26,13 @@
  */
 
 import { logError, logInfo } from './logger';
+import { getEffectiveThreshold } from './threshold-autotune';
 
 // ── Configuration ──────────────────────────────────────────────────────
 
 const HISTORY_WINDOW_DAYS = 30;
 const MIN_PAIRED_OBSERVATIONS = 14;
+/** Default; superseded per-tenant by getEffectiveThreshold() at runtime. */
 const MIN_CORRELATION_STRENGTH = 0.7;
 const DEBOUNCE_HOURS = 24;
 /** Bucket history values to this granularity to align series across
@@ -236,6 +238,11 @@ export async function detectMetricCorrelations(
   result.metricsScanned = metrics.length;
   if (metrics.length < 2) return result;
 
+  // Resolve per-tenant correlation threshold (autotune override > default).
+  const minCorrelation = await getEffectiveThreshold(
+    db, tenantId, 'metric_correlation.min_correlation',
+  ).catch(() => MIN_CORRELATION_STRENGTH);
+
   // 2. Pull recent history for each metric — single query, group in JS.
   const ids = metrics.map((m) => m.id);
   const placeholders = ids.map(() => '?').join(',');
@@ -285,7 +292,7 @@ export async function detectMetricCorrelations(
 
       const r = pearson(xs, ys);
       if (r === null) continue;
-      if (Math.abs(r) < MIN_CORRELATION_STRENGTH) continue;
+      if (Math.abs(r) < minCorrelation) continue;
 
       result.correlationsDetected++;
 

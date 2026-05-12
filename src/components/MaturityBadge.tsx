@@ -68,7 +68,7 @@ export function MaturityBadge({ maturity, summary, className }: MaturityBadgePro
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md border font-medium px-1.5 py-0.5 text-[10px]',
+        'inline-flex items-center rounded-md border font-medium px-1.5 py-0.5 text-caption',
         meta.classes,
         className
       )}

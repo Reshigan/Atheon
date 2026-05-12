@@ -66,7 +66,7 @@ export function AnomalyDetectionControls({
           );
         })}
       </div>
-      <div className="flex items-center gap-1 text-[10px] t-muted sm:ml-auto">
+      <div className="flex items-center gap-1 text-caption t-muted sm:ml-auto">
         <AlertCircle size={10} />
         <span>Requires ≥ 30 historical data points per metric</span>
       </div>

@@ -161,8 +161,12 @@ const METRIC_SPECS: MetricSpec[] = [
 async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
   // Order matters — children first
   const tables = [
+    // sub_catalyst_run_items FK to sub_catalyst_runs — must come first.
+    'sub_catalyst_run_items',
+    'run_comments',
     'sub_catalyst_kpi_values',
     'sub_catalyst_kpi_definitions',
+    'sub_catalyst_runs',
     'process_metric_history',
     'process_metrics',
     'signal_impacts',
@@ -177,6 +181,9 @@ async function deleteExisting(db: D1Database, tenantId: string): Promise<void> {
     'billable_line_items',
     'billable_periods',
     'catalyst_actions',
+    'catalyst_insights',
+    'health_score_history',
+    'health_scores',
     'erp_connections',
     'erp_companies',
     'tenant_settings',
@@ -381,7 +388,7 @@ async function seedExternalSignals(
 
 async function seedSubCatalystRunsAndKpiValues(
   db: D1Database, tenantId: string,
-): Promise<{ runIds: string[]; kpiValueCount: number }> {
+): Promise<{ runIds: string[]; kpiValueCount: number; runItemCount: number }> {
   const clusterId = `cluster-${tenantId}`;
 
   // Pull KPI definitions we just inserted so we can link kpi_values to them.
@@ -428,12 +435,36 @@ async function seedSubCatalystRunsAndKpiValues(
 
   const runIds: string[] = [];
   let kpiValueCount = 0;
+  let runItemCount = 0;
+
+  // Demo cap: insert a representative sample per run instead of all
+  // thousands of items the run "claims" matched. The UI's `items.total`
+  // header reads COUNT(*) of run_items, so the run-row's matched/disc/
+  // exceptions are also clamped to the sample to keep totals consistent.
+  // (A production run would have the full set; the demo trades scale for
+  // a working transactions view on every run.)
+  const SAMPLE_MATCHED = 30;
+  const SAMPLE_DISCREPANCIES = 20;
+  const SAMPLE_EXCEPTIONS = 5;
 
   for (let i = 0; i < runs.length; i++) {
     const r = runs[i];
     const runId = `run-${tenantId}-${i}`;
     runIds.push(runId);
     const startedOffset = (runs.length - i) * 6 + 2; // staggered hours
+
+    // Clamp the run-row counts to the sample we'll actually write so the
+    // UI numbers reconcile (items header = sum of buckets = run.matched + …).
+    const sampleMatched = Math.min(r.matched, SAMPLE_MATCHED);
+    const sampleDisc = Math.min(r.discrepancies, SAMPLE_DISCREPANCIES);
+    const sampleExc = Math.min(r.exceptions_raised, SAMPLE_EXCEPTIONS);
+    const sampleTotal = sampleMatched + sampleDisc + sampleExc;
+    // Scale value totals proportionally so impact_value remains realistic.
+    const matchedRatio = r.matched > 0 ? sampleMatched / r.matched : 1;
+    const discRatio = r.discrepancies > 0 ? sampleDisc / r.discrepancies : 1;
+    const scaledSourceValue = r.total_source_value * matchedRatio;
+    const scaledDiscValue = r.total_discrepancy_value * discRatio;
+
     await db.prepare(
       `INSERT INTO sub_catalyst_runs
          (id, tenant_id, cluster_id, sub_catalyst_name, run_number,
@@ -456,20 +487,36 @@ async function seedSubCatalystRunsAndKpiValues(
                ?, ?, ?,
                ?, ?, 'ZAR',
                ?, ?, 0,
-               1, 'open', datetime('now', '-' || ? || ' hours'))`
+               0, 'open', datetime('now', '-' || ? || ' hours'))`
     ).bind(
       runId, tenantId, clusterId, r.sub, i + 1,
       startedOffset, Math.max(1, startedOffset - 1),
-      r.matched + r.discrepancies, r.matched + r.discrepancies, r.status,
-      r.matched, r.discrepancies, r.exceptions_raised, r.avg_confidence,
+      sampleTotal, sampleTotal, r.status,
+      sampleMatched, sampleDisc, sampleExc, r.avg_confidence,
       Math.max(0, r.avg_confidence - 0.1), Math.min(1, r.avg_confidence + 0.05),
       r.reasoning,
-      r.total_source_value, r.total_source_value - r.total_discrepancy_value,
-      r.total_discrepancy_value,
-      r.total_discrepancy_value * 0.2, 0,
-      r.matched + r.discrepancies, r.matched + r.discrepancies,
+      scaledSourceValue, scaledSourceValue - scaledDiscValue,
+      scaledDiscValue,
+      scaledDiscValue * 0.2, 0,
+      sampleTotal, 0,
       startedOffset,
     ).run();
+
+    // Seed transaction-level run items. The CatalystRunDetailPage's items
+    // table reads from sub_catalyst_run_items; without these rows the
+    // table renders "No items found" even though the run header claims
+    // hundreds of matches. Writing a small but realistic sample of each
+    // status (matched / discrepancy / exception) keeps the detail page
+    // useful for demo without inserting tens of thousands of rows.
+    runItemCount += await seedDemoRunItems(db, tenantId, runId, {
+      domain: r.domain,
+      sub: r.sub,
+      matched: sampleMatched,
+      discrepancies: sampleDisc,
+      exceptions: sampleExc,
+      totalSourceValue: scaledSourceValue,
+      totalDiscrepancyValue: scaledDiscValue,
+    });
 
     // Per-KPI values for this run, linked to the KPI definition rows we
     // already seeded. Each KPI value's status is the same red/amber/green
@@ -491,7 +538,120 @@ async function seedSubCatalystRunsAndKpiValues(
       kpiValueCount++;
     }
   }
-  return { runIds, kpiValueCount };
+  return { runIds, kpiValueCount, runItemCount };
+}
+
+/**
+ * Insert per-domain plausible transaction-level run items. Each row gets a
+ * domain-flavoured source_ref (INV-..., PO-..., WO-..., REQ-...), realistic
+ * amount distribution drawn from the run's headline value totals, and a
+ * sensible status mix. Used by the SAP ECC demo so the run detail page
+ * actually shows transactions instead of an empty table.
+ */
+async function seedDemoRunItems(
+  db: D1Database, tenantId: string, runId: string,
+  spec: {
+    domain: string; sub: string;
+    matched: number; discrepancies: number; exceptions: number;
+    totalSourceValue: number; totalDiscrepancyValue: number;
+  },
+): Promise<number> {
+  // Per-domain reference + entity templates. Falls back to a generic
+  // "TX-{n}" if no template matches — preserves usefulness for any new
+  // domain we add later.
+  const TEMPLATES: Record<string, { srcPrefix: string; tgtPrefix: string; srcEntity: string; tgtEntity: string; field: string }> = {
+    procurement:           { srcPrefix: 'PO',  tgtPrefix: 'GR',  srcEntity: 'Purchase Order',  tgtEntity: 'Goods Receipt',  field: 'amount' },
+    finance:               { srcPrefix: 'INV', tgtPrefix: 'PMT', srcEntity: 'AR Invoice',      tgtEntity: 'Bank Payment',   field: 'amount' },
+    'logistics-warehouse': { srcPrefix: 'PCK', tgtPrefix: 'BIN', srcEntity: 'Picking Task',    tgtEntity: 'Bin Location',   field: 'qty' },
+    hr:                    { srcPrefix: 'REQ', tgtPrefix: 'CND', srcEntity: 'Hiring Req',      tgtEntity: 'Candidate',      field: 'days_open' },
+  };
+  const tpl = TEMPLATES[spec.domain] ?? {
+    srcPrefix: 'TX', tgtPrefix: 'REF', srcEntity: spec.sub, tgtEntity: 'Counterparty', field: 'amount',
+  };
+
+  // Per-item value distribution: matched rows split the matched value
+  // evenly with ±15% jitter; discrepancy rows split the discrepancy value
+  // similarly. Demo doesn't need a real long-tail distribution.
+  const matchedAvg = spec.matched > 0 ? (spec.totalSourceValue - spec.totalDiscrepancyValue) / spec.matched : 0;
+  const discAvg = spec.discrepancies > 0 ? spec.totalDiscrepancyValue / spec.discrepancies : 0;
+  // Seeded RNG so demo numbers are stable across reseeds within a single
+  // tenant: derive a pseudo-random from the run id + item number.
+  const jitter = (seed: number) => {
+    const x = Math.sin(seed * 9301 + 49297) * 233280;
+    return (x - Math.floor(x)) * 0.3 - 0.15; // -15% .. +15%
+  };
+
+  let n = 0;
+  let inserted = 0;
+
+  // Matched items
+  for (let i = 0; i < spec.matched; i++) {
+    n++;
+    const amt = Math.round(matchedAvg * (1 + jitter(n)) * 100) / 100;
+    await db.prepare(
+      `INSERT INTO sub_catalyst_run_items
+        (id, run_id, tenant_id, item_number, item_status, category,
+         source_ref, source_entity, source_amount, source_currency,
+         target_ref, target_entity, target_amount, target_currency,
+         match_confidence, matched_on_field, review_status)
+       VALUES (?, ?, ?, ?, 'matched', ?, ?, ?, ?, 'ZAR', ?, ?, ?, 'ZAR', ?, ?, 'pending')`
+    ).bind(
+      `item-${runId}-${n}`, runId, tenantId, n, spec.domain,
+      `${tpl.srcPrefix}-${4500000 + n}`, tpl.srcEntity, amt,
+      `${tpl.tgtPrefix}-${5500000 + n}`, tpl.tgtEntity, amt,
+      0.95 + jitter(n + 100) * 0.1, tpl.field,
+    ).run();
+    inserted++;
+  }
+
+  // Discrepancy items — source ≠ target by some margin
+  for (let i = 0; i < spec.discrepancies; i++) {
+    n++;
+    const src = Math.round(discAvg * (1 + jitter(n)) * 100) / 100;
+    const tgt = Math.round(src * (1 + 0.05 + jitter(n + 50) * 0.15) * 100) / 100;
+    const disc = Math.abs(src - tgt);
+    const pct = src !== 0 ? Math.round((disc / Math.abs(src)) * 10000) / 100 : 0;
+    await db.prepare(
+      `INSERT INTO sub_catalyst_run_items
+        (id, run_id, tenant_id, item_number, item_status, category,
+         source_ref, source_entity, source_amount, source_currency,
+         target_ref, target_entity, target_amount, target_currency,
+         discrepancy_field, discrepancy_source_value, discrepancy_target_value,
+         discrepancy_amount, discrepancy_pct, discrepancy_reason,
+         exception_severity, review_status)
+       VALUES (?, ?, ?, ?, 'discrepancy', ?, ?, ?, ?, 'ZAR', ?, ?, ?, 'ZAR',
+               ?, ?, ?, ?, ?, ?, ?, 'pending')`
+    ).bind(
+      `item-${runId}-${n}`, runId, tenantId, n, spec.domain,
+      `${tpl.srcPrefix}-${4500000 + n}`, tpl.srcEntity, src,
+      `${tpl.tgtPrefix}-${5500000 + n}`, tpl.tgtEntity, tgt,
+      tpl.field, String(src), String(tgt), disc, pct,
+      'Price variance vs source contract',
+      disc > 10000 ? 'high' : disc > 1000 ? 'medium' : 'low',
+    ).run();
+    inserted++;
+  }
+
+  // Exception items — process exception, no target
+  for (let i = 0; i < spec.exceptions; i++) {
+    n++;
+    const amt = Math.round(discAvg * 1.5 * (1 + jitter(n)) * 100) / 100;
+    await db.prepare(
+      `INSERT INTO sub_catalyst_run_items
+        (id, run_id, tenant_id, item_number, item_status, category,
+         source_ref, source_entity, source_amount, source_currency,
+         exception_type, exception_severity, exception_detail, review_status)
+       VALUES (?, ?, ?, ?, 'exception', ?, ?, ?, ?, 'ZAR', ?, ?, ?, 'pending')`
+    ).bind(
+      `item-${runId}-${n}`, runId, tenantId, n, spec.domain,
+      `${tpl.srcPrefix}-${4500000 + n}`, tpl.srcEntity, amt,
+      'missing_counterparty', 'high',
+      'Source record has no corresponding target — requires manual review.',
+    ).run();
+    inserted++;
+  }
+
+  return inserted;
 }
 
 async function seedHealthScoresAndInsights(
@@ -604,8 +764,8 @@ export async function seedSapEccDemo(
   await seedVerifiedAction(db, tenantId);
   notes.push('Seeded 1 verified catalyst_action for billing eligibility');
 
-  const { runIds, kpiValueCount } = await seedSubCatalystRunsAndKpiValues(db, tenantId);
-  notes.push(`Seeded ${runIds.length} sub_catalyst_runs + ${kpiValueCount} sub_catalyst_kpi_values`);
+  const { runIds, kpiValueCount, runItemCount } = await seedSubCatalystRunsAndKpiValues(db, tenantId);
+  notes.push(`Seeded ${runIds.length} sub_catalyst_runs + ${kpiValueCount} sub_catalyst_kpi_values + ${runItemCount} sub_catalyst_run_items`);
 
   const { insightsCount } = await seedHealthScoresAndInsights(db, tenantId, runIds);
   notes.push(`Seeded health_scores + 30-day history + ${insightsCount} catalyst_insights`);

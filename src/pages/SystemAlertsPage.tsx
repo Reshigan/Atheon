@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { LoadingState, EmptyState } from '@/components/ui/state';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import {
@@ -319,19 +320,19 @@ export function SystemAlertsPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Total Rules</p>
+          <p className="text-label">Total Rules</p>
           <p className="text-xl font-bold t-primary">{rules.length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Enabled</p>
+          <p className="text-label">Enabled</p>
           <p className="text-xl font-bold text-emerald-400">{enabledCount}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Silenced</p>
+          <p className="text-label">Silenced</p>
           <p className="text-xl font-bold text-amber-400">{silencedCount}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Triggered</p>
+          <p className="text-label">Triggered</p>
           <p className="text-xl font-bold text-red-400">{firingRules.length}</p>
         </Card>
       </div>
@@ -340,13 +341,14 @@ export function SystemAlertsPage() {
 
       <TabPanel id="rules" activeTab={activeTab}>
         {loading ? (
-          <Card className="p-8 text-center"><Loader2 size={20} className="mx-auto animate-spin t-muted" /></Card>
+          <LoadingState variant="list" count={3} />
         ) : rules.length === 0 ? (
-          <Card className="p-8 text-center">
-            <Bell size={24} className="mx-auto t-muted mb-2" />
-            <p className="text-sm t-muted mb-3">No alert rules yet</p>
-            <Button size="sm" onClick={openCreateModal}><Plus size={14} className="mr-1" /> Create your first rule</Button>
-          </Card>
+          <EmptyState
+            icon={Bell}
+            title="No alert rules yet"
+            description="Get notified when KPIs slip below threshold."
+            action={{ label: 'Create your first rule', onClick: openCreateModal }}
+          />
         ) : (
           <div className="space-y-2">
             {rules.map(r => (
@@ -360,24 +362,24 @@ export function SystemAlertsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium t-primary">{r.name}</p>
-                        <Badge variant={severityColor(r.severity)} className="text-[10px]">{r.severity}</Badge>
-                        {r.silenced && <Badge variant="warning" className="text-[10px]">silenced</Badge>}
-                        {!r.enabled && <Badge variant="default" className="text-[10px]">disabled</Badge>}
+                        <Badge variant={severityColor(r.severity)} className="text-caption">{r.severity}</Badge>
+                        {r.silenced && <Badge variant="warning" className="text-caption">silenced</Badge>}
+                        {!r.enabled && <Badge variant="default" className="text-caption">disabled</Badge>}
                       </div>
                       {r.description && <p className="text-xs t-muted mt-0.5">{r.description}</p>}
-                      <p className="text-[10px] font-mono t-muted mt-1 p-1 rounded bg-[var(--bg-secondary)] inline-block">
+                      <p className="text-caption font-mono t-muted mt-1 p-1 rounded bg-[var(--bg-secondary)] inline-block">
                         on <span className="text-accent">{r.event_type}</span> when {r.condition?.field} {r.condition?.op || r.condition?.operator} {JSON.stringify(r.condition?.value)}
                       </p>
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        <span className="text-[10px] t-muted flex items-center gap-1">Channels:</span>
+                        <span className="text-caption t-muted flex items-center gap-1">Channels:</span>
                         {r.channels.length === 0 ? (
-                          <span className="text-[10px] t-muted">none</span>
+                          <span className="text-caption t-muted">none</span>
                         ) : r.channels.map(ch => (
-                          <span key={ch} className="text-[10px] t-muted flex items-center gap-0.5">{channelIcon(ch)} {ch}</span>
+                          <span key={ch} className="text-caption t-muted flex items-center gap-0.5">{channelIcon(ch)} {ch}</span>
                         ))}
-                        <span className="text-[10px] t-muted">· Triggered {r.triggered_count}x</span>
+                        <span className="text-caption t-muted">· Triggered {r.triggered_count}x</span>
                         {r.silenced && r.silenced_until && (
-                          <span className="text-[10px] t-amber-400">· Silenced until {new Date(r.silenced_until).toLocaleString()}</span>
+                          <span className="text-caption t-amber-400">· Silenced until {new Date(r.silenced_until).toLocaleString()}</span>
                         )}
                       </div>
                     </div>
@@ -428,12 +430,12 @@ export function SystemAlertsPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium t-primary">{r.name}</p>
-                      <Badge variant={severityColor(r.severity)} className="text-[10px]">{r.severity}</Badge>
+                      <Badge variant={severityColor(r.severity)} className="text-caption">{r.severity}</Badge>
                     </div>
                     <p className="text-xs t-muted mt-0.5">
                       {r.description || `Triggered on ${r.event_type}`}
                     </p>
-                    <p className="text-[10px] t-muted mt-1">
+                    <p className="text-caption t-muted mt-1">
                       Last triggered: {r.last_triggered_at ? new Date(r.last_triggered_at).toLocaleString() : '—'} · {r.triggered_count} total fires
                     </p>
                   </div>
@@ -508,7 +510,7 @@ export function SystemAlertsPage() {
                     onChange={(e) => setForm({ ...form, value: e.target.value })}
                   />
                 </div>
-                <p className="text-[10px] t-muted mt-1">Numbers/bools/arrays auto-parsed; strings used as-is.</p>
+                <p className="text-caption t-muted mt-1">Numbers/bools/arrays auto-parsed; strings used as-is.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -642,9 +644,9 @@ export function SystemAlertsPage() {
                 </div>
                 <p className="text-xs t-muted">{testResult.reason}</p>
                 <div className="flex gap-2 mt-2">
-                  <Badge variant={testResult.matched ? 'success' : 'default'} className="text-[10px]">matched: {String(testResult.matched)}</Badge>
-                  <Badge variant={testResult.enabled ? 'success' : 'default'} className="text-[10px]">enabled: {String(testResult.enabled)}</Badge>
-                  <Badge variant={testResult.silenced ? 'warning' : 'default'} className="text-[10px]">silenced: {String(testResult.silenced)}</Badge>
+                  <Badge variant={testResult.matched ? 'success' : 'default'} className="text-caption">matched: {String(testResult.matched)}</Badge>
+                  <Badge variant={testResult.enabled ? 'success' : 'default'} className="text-caption">enabled: {String(testResult.enabled)}</Badge>
+                  <Badge variant={testResult.silenced ? 'warning' : 'default'} className="text-caption">silenced: {String(testResult.silenced)}</Badge>
                 </div>
               </Card>
             )}

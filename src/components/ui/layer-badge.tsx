@@ -26,7 +26,7 @@ export function LayerBadge({ layer, className }: LayerBadgeProps) {
   const config = layerConfig[layer] || { ...defaultConfig, label: layer };
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border',
+      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption font-medium border',
       config.bg, config.color,
       className
     )}>

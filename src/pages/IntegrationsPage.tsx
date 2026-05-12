@@ -747,7 +747,7 @@ export function IntegrationsPage() {
                   />
                 ))}
 
-                <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                <p className="text-caption t-muted flex items-center gap-1">
                   <Shield size={10} /> Credentials are encrypted before storage. You can also configure them later.
                 </p>
               </div>
@@ -829,7 +829,7 @@ export function IntegrationsPage() {
                   />
                 ))}
 
-                <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                <p className="text-caption t-muted flex items-center gap-1">
                   <Shield size={10} /> Leave fields blank to keep existing values. New values are encrypted before storage.
                 </p>
               </div>
@@ -945,15 +945,15 @@ export function IntegrationsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                     <div className="p-3 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <span className="text-[10px] text-gray-400">Records Synced</span>
+                      <span className="text-caption t-muted">Records Synced</span>
                       <p className="text-lg font-bold t-primary">{(conn.recordsSynced || 0).toLocaleString()}</p>
                     </div>
                     <div className="p-3 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <span className="text-[10px] text-gray-400">Sync Frequency</span>
+                      <span className="text-caption t-muted">Sync Frequency</span>
                       <p className="text-lg font-bold t-primary">{conn.syncFrequency}</p>
                     </div>
                     <div className="p-3 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <span className="text-[10px] text-gray-400">Last Sync</span>
+                      <span className="text-caption t-muted">Last Sync</span>
                       <p className="text-sm font-medium text-gray-400">{conn.lastSync ? new Date(conn.lastSync).toLocaleTimeString() : 'Never'}</p>
                     </div>
                   </div>
@@ -1245,7 +1245,7 @@ export function IntegrationsPage() {
                                         {ev.source}{ev.confidence !== undefined ? ` · ${Math.round(ev.confidence * 100)}%` : ''}
                                       </Badge>
                                     </div>
-                                    {ev.basis && <p className="text-[10px] t-muted mt-0.5">{ev.basis}</p>}
+                                    {ev.basis && <p className="text-caption t-muted mt-0.5">{ev.basis}</p>}
                                   </div>
                                   <div className="flex items-center gap-1">
                                     {options ? (
@@ -1335,7 +1335,7 @@ export function IntegrationsPage() {
                                     </div>
                                     <div className="t-muted mt-1">{d.rationale}</div>
                                     <div className="t-muted mt-1 italic">{d.action}</div>
-                                    <div className="text-[10px] t-muted mt-1 opacity-70">Source: {d.source}</div>
+                                    <div className="text-caption t-muted mt-1 opacity-70">Source: {d.source}</div>
                                   </div>
                                 ))}
                               </div>
@@ -1495,8 +1495,8 @@ export function IntegrationsPage() {
                         <p className="text-xs font-mono text-accent mt-0.5">{ep.path}</p>
                         <div className="flex items-center gap-3 mt-2">
                           <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
-                          <span className="text-[10px] text-gray-400">v{ep.version}</span>
-                          <span className="text-[10px] text-gray-400">Rate limit: {ep.rateLimit}/min</span>
+                          <span className="text-caption t-muted">v{ep.version}</span>
+                          <span className="text-caption t-muted">Rate limit: {ep.rateLimit}/min</span>
                           {ep.method === 'GET' && (
                             <Button
                               variant="ghost"

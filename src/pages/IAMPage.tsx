@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
+import { LoadingState } from "@/components/ui/state";
 import { api, ApiError } from "@/lib/api";
 import type { IAMPolicy, SSOConfig, IAMRole, IAMUser } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -233,13 +234,7 @@ export function IAMPage() {
    { id: 'sso', label: 'SSO / Identity', icon: <Key size={14} /> },
  ];
 
- if (loading) {
-   return (
-     <div className="flex items-center justify-center h-96">
-       <Loader2 className="w-8 h-8 text-accent animate-spin" />
-     </div>
-   );
- }
+ if (loading) return <LoadingState variant="cards" count={4} />;
 
  return (
    <div className="space-y-6 animate-fadeIn">
@@ -303,7 +298,7 @@ export function IAMPage() {
                    </div>
                  </div>
                </div>
-               <p className="text-[10px] text-gray-400">Share these credentials securely. The user will be prompted to change their password on first login.</p>
+               <p className="text-caption t-muted">Share these credentials securely. The user will be prompted to change their password on first login.</p>
                <Button variant="primary" size="sm" className="w-full" onClick={() => { setShowInviteUser(false); setInviteResult(null); setInviteForm({ name: '', email: '', role: assignableRoles[0] || 'analyst', sendWelcome: true }); }}>Done</Button>
              </div>
            ) : (
@@ -324,7 +319,7 @@ export function IAMPage() {
                        <option key={r.id} value={r.id}>{r.name}</option>
                      ))}
                    </select>
-                   <p className="text-[10px] text-gray-400 mt-1">
+                   <p className="text-caption t-muted mt-1">
                      {ROLE_PERMISSIONS[inviteForm.role]?.actions.slice(0, 2).join(', ')}
                    </p>
                  </div>
@@ -358,7 +353,7 @@ export function IAMPage() {
              <div><label className="text-xs t-muted block mb-1">Description</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.description} onChange={e => setPolicyForm(p => ({ ...p, description: e.target.value }))} placeholder="Policy description" /></div>
              <div><label className="text-xs t-muted block mb-1">Type</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.type} onChange={e => setPolicyForm(p => ({ ...p, type: e.target.value }))}><option value="rbac">RBAC (Role-Based)</option><option value="abac">ABAC (Attribute-Based)</option></select></div>
            </div>
-           <p className="text-[10px] text-gray-400">Rules can be added after creating the policy.</p>
+           <p className="text-caption t-muted">Rules can be added after creating the policy.</p>
            <div className="flex gap-3 pt-2">
              <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(false)}>Cancel</Button>
              <Button variant="primary" size="sm" onClick={handleCreatePolicy} disabled={!policyForm.name.trim() || creatingPolicy}>
@@ -374,22 +369,22 @@ export function IAMPage() {
        <Card>
          <span className="text-xs t-secondary">Active Users</span>
          <p className="text-2xl font-bold t-primary mt-1">{users.filter(u => u.status === 'active').length}</p>
-         <span className="text-[10px] text-gray-400">{users.filter(u => u.status === 'suspended').length} suspended</span>
+         <span className="text-caption t-muted">{users.filter(u => u.status === 'suspended').length} suspended</span>
        </Card>
        <Card>
          <span className="text-xs t-secondary">User Roles</span>
          <p className="text-2xl font-bold t-primary mt-1">{roles.filter(r => r.userCount > 0).length}</p>
-         <span className="text-[10px] text-gray-400">{roles.length} total defined</span>
+         <span className="text-caption t-muted">{roles.length} total defined</span>
        </Card>
        <Card>
          <span className="text-xs t-secondary">Active Policies</span>
          <p className="text-2xl font-bold t-primary mt-1">{policies.length}</p>
-         <span className="text-[10px] text-gray-400">{policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0)} rules</span>
+         <span className="text-caption t-muted">{policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0)} rules</span>
        </Card>
        <Card>
          <span className="text-xs t-secondary">SSO Providers</span>
          <p className="text-2xl font-bold t-primary mt-1">{ssoConfigs.filter(s => s.enabled).length}</p>
-         <span className="text-[10px] text-gray-400">{ssoConfigs.length} configured</span>
+         <span className="text-caption t-muted">{ssoConfigs.length} configured</span>
        </Card>
      </div>
 
@@ -444,9 +439,9 @@ export function IAMPage() {
                        <p className="text-xs t-muted truncate">{user.email}</p>
                        <div className="flex items-center gap-2 mt-0.5">
                          {user.lastLogin ? (
-                           <span className="text-[10px] text-gray-400">Last login: {new Date(user.lastLogin).toLocaleDateString()}</span>
+                           <span className="text-caption t-muted">Last login: {new Date(user.lastLogin).toLocaleDateString()}</span>
                          ) : (
-                           <span className="text-[10px] text-amber-400">Never logged in</span>
+                           <span className="text-caption text-amber-400">Never logged in</span>
                          )}
                        </div>
                      </div>
@@ -526,7 +521,7 @@ export function IAMPage() {
                    <div className="mt-3 pt-3 border-t border-[var(--border-card)]">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                        <div>
-                         <span className="text-[10px] text-gray-400 uppercase tracking-wider">Page Access</span>
+                         <span className="text-label">Page Access</span>
                          <div className="flex flex-wrap gap-1 mt-1">
                            {ROLE_PERMISSIONS[user.role || 'viewer'].pages.map(p => (
                              <Badge key={p} variant="outline" size="sm">{p}</Badge>
@@ -534,7 +529,7 @@ export function IAMPage() {
                          </div>
                        </div>
                        <div>
-                         <span className="text-[10px] text-gray-400 uppercase tracking-wider">Allowed Actions</span>
+                         <span className="text-label">Allowed Actions</span>
                          <div className="flex flex-wrap gap-1 mt-1">
                            {ROLE_PERMISSIONS[user.role || 'viewer'].actions.map(a => (
                              <Badge key={a} variant="info" size="sm">{a}</Badge>
@@ -581,7 +576,7 @@ export function IAMPage() {
                  {isExpanded && perms && (
                    <div className="mt-4 pt-4 border-t border-[var(--border-card)] space-y-4">
                      <div>
-                       <span className="text-[10px] text-gray-400 uppercase tracking-wider">Page Access</span>
+                       <span className="text-label">Page Access</span>
                        <div className="flex flex-wrap gap-1.5 mt-2">
                          {perms.pages.map(p => (
                            <div key={p} className="flex items-center gap-1 px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
@@ -592,7 +587,7 @@ export function IAMPage() {
                        </div>
                      </div>
                      <div>
-                       <span className="text-[10px] text-gray-400 uppercase tracking-wider">Allowed Actions</span>
+                       <span className="text-label">Allowed Actions</span>
                        <div className="flex flex-wrap gap-1.5 mt-2">
                          {perms.actions.map(a => (
                            <div key={a} className="flex items-center gap-1 px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
@@ -604,7 +599,7 @@ export function IAMPage() {
                      </div>
                      {role.userCount > 0 && (
                        <div>
-                         <span className="text-[10px] text-gray-400 uppercase tracking-wider">Users with this role</span>
+                         <span className="text-label">Users with this role</span>
                          <div className="flex flex-wrap gap-1.5 mt-2">
                            {users.filter(u => u.role === role.id).map(u => (
                              <Badge key={u.id} variant="outline" size="sm">{u.name}</Badge>
@@ -714,19 +709,19 @@ export function IAMPage() {
                </div>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
                  <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                   <span className="text-[10px] text-gray-400">Client ID</span>
+                   <span className="text-caption t-muted">Client ID</span>
                    <p className="text-xs t-secondary font-mono truncate">{sso.clientId}</p>
                  </div>
                  <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                   <span className="text-[10px] text-gray-400">Issuer URL</span>
+                   <span className="text-caption t-muted">Issuer URL</span>
                    <p className="text-xs t-secondary font-mono truncate">{sso.issuerUrl}</p>
                  </div>
                  <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                   <span className="text-[10px] text-gray-400">Auto-Provision</span>
+                   <span className="text-caption t-muted">Auto-Provision</span>
                    <p className="text-xs t-secondary">{sso.autoProvision ? 'Yes' : 'No'}</p>
                  </div>
                  <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                   <span className="text-[10px] text-gray-400">Default Role</span>
+                   <span className="text-caption t-muted">Default Role</span>
                    <p className="text-xs t-secondary">{sso.defaultRole}</p>
                  </div>
                </div>

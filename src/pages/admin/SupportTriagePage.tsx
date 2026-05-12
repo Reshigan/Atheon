@@ -199,7 +199,7 @@ export function SupportTriagePage() {
                       {isAssignedToMe && <Badge variant="success">assigned to you</Badge>}
                     </div>
                     <p className="text-xs t-muted mt-1 line-clamp-2">{t.body}</p>
-                    <div className="text-[10px] t-muted mt-1">
+                    <div className="text-caption t-muted mt-1">
                       Opened {new Date(t.created_at).toLocaleString()}
                     </div>
                   </div>

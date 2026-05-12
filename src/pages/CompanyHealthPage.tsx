@@ -11,12 +11,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { LoadingState, ErrorState } from '@/components/ui/state';
 import { api, ApiError } from '@/lib/api';
 import type { CompanyHealthDetail } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import {
-  Users, BarChart3, Brain, Shield, Loader2,
+  Users, BarChart3, Brain, Shield,
   Activity, Zap, Clock, AlertCircle, Building2, Wifi, RefreshCw,
 } from 'lucide-react';
 
@@ -66,34 +67,16 @@ export function CompanyHealthPage() {
     { id: 'entitlements', label: 'Entitlements', icon: <Shield size={14} /> },
   ];
 
-  if (loading && !data) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
-
+  if (loading && !data) return <LoadingState variant="cards" count={4} />;
   if (error && !data) {
     return (
-      <div className="space-y-4">
-        <Card className="p-6 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium t-primary">Failed to load company health</p>
-            <p className="text-xs t-muted mt-1">{error}</p>
-            <button
-              onClick={handleRefresh}
-              className="mt-3 text-xs px-3 py-1.5 rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
-      </div>
+      <ErrorState
+        title="Couldn't load company health"
+        error={error}
+        onRetry={handleRefresh}
+      />
     );
   }
-
   if (!data) return null;
 
   const activePct = data.users.total > 0 ? Math.round((data.users.active / data.users.total) * 100) : 0;
@@ -130,25 +113,25 @@ export function CompanyHealthPage() {
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Users size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase">Active Users</span>
+            <span className="text-label">Active Users</span>
           </div>
           <p className="text-xl font-bold t-primary">
             {data.users.active}<span className="text-sm t-muted">/{data.users.total}</span>
           </p>
-          <p className="text-[10px] t-muted">{activePct}% of tenant users active</p>
+          <p className="text-caption t-muted">{activePct}% of tenant users active</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Zap size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase">Catalyst Actions</span>
+            <span className="text-label">Catalyst Actions</span>
           </div>
           <p className="text-xl font-bold t-primary">{data.catalysts.actionsLast30d.toLocaleString()}</p>
-          <p className="text-[10px] t-muted">Last 30 days</p>
+          <p className="text-caption t-muted">Last 30 days</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Brain size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase">LLM Tokens</span>
+            <span className="text-label">LLM Tokens</span>
           </div>
           <p className="text-xl font-bold t-primary">
             {data.llm.tokens30d >= 1_000_000
@@ -157,17 +140,17 @@ export function CompanyHealthPage() {
                 ? `${(data.llm.tokens30d / 1_000).toFixed(1)}k`
                 : data.llm.tokens30d.toLocaleString()}
           </p>
-          <p className="text-[10px] t-muted">Last 30 days</p>
+          <p className="text-caption t-muted">Last 30 days</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Wifi size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase">ERP Connections</span>
+            <span className="text-label">ERP Connections</span>
           </div>
           <p className="text-xl font-bold t-primary">
             {data.erp.connectedCount}<span className="text-sm t-muted">/{data.erp.connections}</span>
           </p>
-          <p className="text-[10px] t-muted">Connected / total</p>
+          <p className="text-caption t-muted">Connected / total</p>
         </Card>
       </div>
 
@@ -226,7 +209,7 @@ export function CompanyHealthPage() {
                 {Object.entries(data.users.byRole).map(([role, count]) => (
                   <div key={role} className="flex items-center justify-between">
                     <span className="text-xs t-primary capitalize">{role.replace('_', ' ')}</span>
-                    <Badge variant="default" className="text-[10px]">{count}</Badge>
+                    <Badge variant="default" className="text-caption">{count}</Badge>
                   </div>
                 ))}
               </div>
@@ -266,19 +249,19 @@ export function CompanyHealthPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] t-muted uppercase">Total Tokens</p>
+              <p className="text-label">Total Tokens</p>
               <p className="text-2xl font-bold t-primary">{data.llm.tokens30d.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-[10px] t-muted uppercase flex items-center gap-1">
+              <p className="text-label flex items-center gap-1">
                 Estimated Cost
-                {data.llm.costIsEstimate && <Badge variant="warning" className="text-[9px]">ESTIMATE</Badge>}
+                {data.llm.costIsEstimate && <Badge variant="warning" className="text-caption">ESTIMATE</Badge>}
               </p>
               <p className="text-2xl font-bold t-primary">${data.llm.estCostUsd.toFixed(2)}</p>
             </div>
           </div>
           {data.llm.costIsEstimate && (
-            <p className="text-[10px] t-muted mt-3 flex items-start gap-1">
+            <p className="text-caption t-muted mt-3 flex items-start gap-1">
               <AlertCircle size={10} className="mt-0.5 flex-shrink-0" />
               <span>{data.llm.costNote}</span>
             </p>
@@ -310,9 +293,9 @@ export function CompanyHealthPage() {
                 <span className="text-sm font-medium t-primary">Access</span>
               </div>
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between"><span className="t-muted">SSO</span><Badge variant={data.entitlements.ssoEnabled ? 'success' : 'default'} className="text-[10px]">{data.entitlements.ssoEnabled ? 'Enabled' : 'Disabled'}</Badge></div>
-                <div className="flex justify-between"><span className="t-muted">API Access</span><Badge variant={data.entitlements.apiAccess ? 'success' : 'default'} className="text-[10px]">{data.entitlements.apiAccess ? 'Enabled' : 'Disabled'}</Badge></div>
-                <div className="flex justify-between"><span className="t-muted">Custom Branding</span><Badge variant={data.entitlements.customBranding ? 'success' : 'default'} className="text-[10px]">{data.entitlements.customBranding ? 'Enabled' : 'Disabled'}</Badge></div>
+                <div className="flex justify-between"><span className="t-muted">SSO</span><Badge variant={data.entitlements.ssoEnabled ? 'success' : 'default'} className="text-caption">{data.entitlements.ssoEnabled ? 'Enabled' : 'Disabled'}</Badge></div>
+                <div className="flex justify-between"><span className="t-muted">API Access</span><Badge variant={data.entitlements.apiAccess ? 'success' : 'default'} className="text-caption">{data.entitlements.apiAccess ? 'Enabled' : 'Disabled'}</Badge></div>
+                <div className="flex justify-between"><span className="t-muted">Custom Branding</span><Badge variant={data.entitlements.customBranding ? 'success' : 'default'} className="text-caption">{data.entitlements.customBranding ? 'Enabled' : 'Disabled'}</Badge></div>
               </div>
             </Card>
             <Card className="p-4 sm:col-span-2">
@@ -326,7 +309,7 @@ export function CompanyHealthPage() {
                   <div className="flex flex-wrap gap-1">
                     {data.entitlements.layers.length === 0 && <span className="t-muted">(none)</span>}
                     {data.entitlements.layers.map((l) => (
-                      <Badge key={l} variant="info" className="text-[10px]">{l}</Badge>
+                      <Badge key={l} variant="info" className="text-caption">{l}</Badge>
                     ))}
                   </div>
                 </div>
@@ -335,7 +318,7 @@ export function CompanyHealthPage() {
                   <div className="flex flex-wrap gap-1">
                     {data.entitlements.catalystClusters.length === 0 && <span className="t-muted">(none)</span>}
                     {data.entitlements.catalystClusters.map((l) => (
-                      <Badge key={l} variant="info" className="text-[10px]">{l}</Badge>
+                      <Badge key={l} variant="info" className="text-caption">{l}</Badge>
                     ))}
                   </div>
                 </div>
@@ -344,7 +327,7 @@ export function CompanyHealthPage() {
                   <div className="flex flex-wrap gap-1">
                     {data.entitlements.llmTiers.length === 0 && <span className="t-muted">(none)</span>}
                     {data.entitlements.llmTiers.map((l) => (
-                      <Badge key={l} variant="default" className="text-[10px]">{l}</Badge>
+                      <Badge key={l} variant="default" className="text-caption">{l}</Badge>
                     ))}
                   </div>
                 </div>
@@ -353,7 +336,7 @@ export function CompanyHealthPage() {
                   <div className="flex flex-wrap gap-1">
                     {data.entitlements.autonomyTiers.length === 0 && <span className="t-muted">(none)</span>}
                     {data.entitlements.autonomyTiers.map((l) => (
-                      <Badge key={l} variant="default" className="text-[10px]">{l}</Badge>
+                      <Badge key={l} variant="default" className="text-caption">{l}</Badge>
                     ))}
                   </div>
                 </div>
@@ -362,7 +345,7 @@ export function CompanyHealthPage() {
                     <p className="t-muted mb-1">Features</p>
                     <div className="flex flex-wrap gap-1">
                       {data.entitlements.features.map((l) => (
-                        <Badge key={l} variant="success" className="text-[10px]">{l}</Badge>
+                        <Badge key={l} variant="success" className="text-caption">{l}</Badge>
                       ))}
                     </div>
                   </div>

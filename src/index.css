@@ -151,6 +151,83 @@
   .t-primary { color: var(--text-primary); }
   .t-secondary { color: var(--text-secondary); }
   .t-muted { color: var(--text-muted); }
+
+  /* ============================================================
+     POLISH-2026 — typography + spacing scale
+     ------------------------------------------------------------
+     Replaces the freelance text-[10px] / text-[11px] / mixed
+     gap-* tokens that accumulated across 40+ pages. Density-with-
+     clarity (2026): every element earns its place via a strict
+     hierarchy; we use 4 type levels + 3 stack rhythms + 3 row
+     rhythms so the eye reads top-down without parsing weights.
+     Use these classes by name; do NOT introduce freelance sizes.
+     ============================================================ */
+
+  /* Typography scale (4 levels). Use `.text-display` for the one
+     hero number per screen, `.text-h2` for card titles, `.text-body`
+     for default body, `.text-caption` for sublabels + axis ticks.
+     Reserves the small end (11px) for genuinely tertiary text —
+     anything smaller is illegible at the platform's target DPI. */
+  .text-display { font-size: 32px; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
+  .text-h1      { font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -0.005em; }
+  .text-h2      { font-size: 16px; line-height: 1.35; font-weight: 600; }
+  .text-body    { font-size: 14px; line-height: 1.5;  font-weight: 400; }
+  .text-body-sm { font-size: 13px; line-height: 1.45; font-weight: 400; }
+  .text-caption { font-size: 11px; line-height: 1.4;  font-weight: 500; letter-spacing: 0.01em; }
+  /* `.text-label` is uppercase tracked caption — section headers,
+      column labels, tab labels. Reuses caption sizing. */
+  .text-label   { font-size: 11px; line-height: 1.4;  font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+
+  /* Vertical rhythm: section spacing inside a page. */
+  .stack-tight  > * + * { margin-top: 12px; }
+  .stack        > * + * { margin-top: 16px; }
+  .stack-loose  > * + * { margin-top: 24px; }
+  .stack-page   > * + * { margin-top: 32px; }  /* top-level page sections */
+
+  /* Horizontal rhythm: grid gaps for bento layouts. Below 12px
+     tiles merge; above 24px the layout reads as isolated cards. */
+  .row-tight    { gap: 12px; }
+  .row          { gap: 16px; }
+  .row-loose    { gap: 24px; }
+
+  /* Bento grid utility — auto-fits tiles at the standard column
+     width, then snaps to a 12-col grid when there's room. Pair
+     with `.row` for the 16px default gap. */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .bento-tight { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .bento-wide  { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+  /* Accent discipline — interactive elements only. `.link-accent`
+     for inline "View all" / clickable text; everything decorative
+     stays in t-muted / t-secondary. Hover crossfades to accent
+     so the affordance is felt, not declared. */
+  .link-accent {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .link-accent:hover { color: var(--accent); }
+
+  /* Status pills — replaces ad-hoc colored badges sprinkled across
+     pages. Single source of truth for severity coding. */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 11px; font-weight: 500; line-height: 1.4;
+    border: 1px solid transparent;
+  }
+  .pill-success { background: rgba(16, 185, 129, 0.10); color: #047857; border-color: rgba(16, 185, 129, 0.20); }
+  .pill-warning { background: rgba(245, 158, 11, 0.10); color: #b45309; border-color: rgba(245, 158, 11, 0.20); }
+  .pill-danger  { background: rgba(239, 68, 68, 0.10);  color: #b91c1c; border-color: rgba(239, 68, 68, 0.20); }
+  .pill-muted   { background: var(--bg-secondary); color: var(--text-muted); border-color: var(--border-subtle); }
+  .pill-accent  { background: var(--accent-subtle); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.20); }
+  .atheon-dark .pill-success { color: #6ee7b7; }
+  .atheon-dark .pill-warning { color: #fcd34d; }
+  .atheon-dark .pill-danger  { color: #fca5a5; }
   .text-gradient { background-image: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .bg-theme-primary { background: var(--bg-primary); }
   .bg-theme-secondary { background: var(--bg-secondary); }

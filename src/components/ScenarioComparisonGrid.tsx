@@ -89,7 +89,7 @@ export function ScenarioComparisonGrid({
         <Badge variant="info" size="sm">
           {selected.length} pinned
         </Badge>
-        <span className="text-[10px] t-muted">Baseline health: {baselineHealth}</span>
+        <span className="text-caption t-muted">Baseline health: {baselineHealth}</span>
       </div>
       <div className={`grid ${gridCols} gap-4`}>
         {selected.map(scenario => {
@@ -120,7 +120,7 @@ export function ScenarioComparisonGrid({
                 <X size={14} />
               </button>
               <div className="mb-2 pr-5">
-                <p className="text-[10px] t-muted uppercase tracking-wider">Scenario</p>
+                <p className="text-label">Scenario</p>
                 <h4 className="text-sm font-semibold t-primary truncate">{scenario.title}</h4>
                 <Badge
                   variant={scenario.status === "completed" ? "success" : "warning"}
@@ -132,13 +132,13 @@ export function ScenarioComparisonGrid({
               </div>
               <div className="grid grid-cols-2 gap-2 my-3">
                 <div className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                  <p className="text-[10px] t-muted uppercase tracking-wider">Projected Health</p>
+                  <p className="text-label">Projected Health</p>
                   <p className="text-xl font-bold t-primary mt-0.5">
                     {projected !== null ? projected : "--"}
                   </p>
                 </div>
                 <div className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                  <p className="text-[10px] t-muted uppercase tracking-wider">vs Baseline</p>
+                  <p className="text-label">vs Baseline</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     {delta === null ? (
                       <Minus size={14} className="text-gray-400" />
@@ -166,13 +166,13 @@ export function ScenarioComparisonGrid({
                 </div>
               </div>
               <div className="mb-2">
-                <p className="text-[10px] t-muted uppercase tracking-wider mb-1">Key Assumptions</p>
+                <p className="text-label mb-1">Key Assumptions</p>
                 {assumptions.length === 0 ? (
-                  <p className="text-[11px] t-muted">No assumptions recorded.</p>
+                  <p className="text-caption t-muted">No assumptions recorded.</p>
                 ) : (
                   <ul className="space-y-0.5">
                     {assumptions.map(([k, v]) => (
-                      <li key={k} className="flex items-center justify-between text-[11px]">
+                      <li key={k} className="flex items-center justify-between text-caption">
                         <span className="t-secondary capitalize truncate mr-2">
                           {k.replace(/[_-]/g, " ")}
                         </span>
@@ -184,8 +184,8 @@ export function ScenarioComparisonGrid({
               </div>
               {recommendation && (
                 <div className="pt-2 border-t border-[var(--border-card)]">
-                  <p className="text-[10px] t-muted uppercase tracking-wider mb-1">Analysis</p>
-                  <p className="text-[11px] t-secondary line-clamp-3">{recommendation}</p>
+                  <p className="text-label mb-1">Analysis</p>
+                  <p className="text-caption t-secondary line-clamp-3">{recommendation}</p>
                 </div>
               )}
             </Card>

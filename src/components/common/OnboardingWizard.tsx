@@ -120,7 +120,7 @@ export function OnboardingWizard({ tenantName, onComplete, onDismiss, completedS
           <h3 className="text-sm font-semibold t-primary">
             {tenantName ? `Welcome to ${tenantName}` : 'Get Started with Atheon'}
           </h3>
-          <p className="text-[11px] t-muted mt-0.5">
+          <p className="text-caption t-muted mt-0.5">
             {completedCount}/{steps.length} steps completed
           </p>
         </div>
@@ -168,17 +168,17 @@ export function OnboardingWizard({ tenantName, onComplete, onDismiss, completedS
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-medium t-primary">{step.title}</h4>
               {step.optional && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-secondary)] t-muted">Optional</span>
+                <span className="text-caption px-1.5 py-0.5 rounded bg-[var(--bg-secondary)] t-muted">Optional</span>
               )}
               {step.completed && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500">Done</span>
+                <span className="text-caption px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500">Done</span>
               )}
             </div>
-            <p className="text-[11px] t-muted mt-1">{step.description}</p>
+            <p className="text-caption t-muted mt-1">{step.description}</p>
             {!step.completed && (
               <a
                 href={step.actionUrl}
-                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 text-[11px] font-medium rounded-lg bg-accent text-white hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 text-caption font-medium rounded-lg bg-accent text-white hover:opacity-90 transition-opacity"
               >
                 {step.action}
                 <ChevronRight size={12} />
@@ -193,7 +193,7 @@ export function OnboardingWizard({ tenantName, onComplete, onDismiss, completedS
         <button
           onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
           disabled={currentStep === 0}
-          className="text-[11px] t-muted hover:t-primary disabled:opacity-30 flex items-center gap-1"
+          className="text-caption t-muted hover:t-primary disabled:opacity-30 flex items-center gap-1"
         >
           <ChevronLeft size={12} /> Previous
         </button>
@@ -212,7 +212,7 @@ export function OnboardingWizard({ tenantName, onComplete, onDismiss, completedS
         <button
           onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
           disabled={currentStep === steps.length - 1}
-          className="text-[11px] t-muted hover:t-primary disabled:opacity-30 flex items-center gap-1"
+          className="text-caption t-muted hover:t-primary disabled:opacity-30 flex items-center gap-1"
         >
           Next <ChevronRight size={12} />
         </button>

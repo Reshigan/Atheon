@@ -100,7 +100,7 @@ export function ProvenanceVerifyPanel(): JSX.Element {
           <div className="flex items-center gap-2 mb-1">
             <Lock className="w-5 h-5 text-accent" />
             <h3 className="text-lg font-semibold t-primary">AI Decision Provenance</h3>
-            <Badge variant="info" className="text-[10px] uppercase">Cryptographic</Badge>
+            <Badge variant="info" className="text-label">Cryptographic</Badge>
           </div>
           <p className="text-sm t-muted max-w-2xl">
             Every AI decision the platform makes is appended to a hash-linked, HMAC-signed chain.
@@ -124,17 +124,17 @@ export function ProvenanceVerifyPanel(): JSX.Element {
         <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
             <div>
-              <div className="text-xs uppercase tracking-wider t-muted mb-1">Current Merkle root</div>
+              <div className="text-label mb-1">Current Merkle root</div>
               <div className="font-mono text-xs t-primary break-all" data-testid="provenance-root">
                 {root.root ? root.root.slice(0, 32) + '…' : <span className="t-muted">empty chain</span>}
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wider t-muted mb-1">Sequence</div>
+              <div className="text-label mb-1">Sequence</div>
               <div className="text-xl font-semibold t-primary">{root.seq.toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wider t-muted mb-1">Last appended</div>
+              <div className="text-label mb-1">Last appended</div>
               <div className="text-sm t-primary">
                 {root.created_at ? new Date(root.created_at).toLocaleString() : '—'}
               </div>
@@ -168,7 +168,7 @@ export function ProvenanceVerifyPanel(): JSX.Element {
 
       {/* Recent entries */}
       <div>
-        <div className="text-xs uppercase tracking-wider t-muted mb-2">
+        <div className="text-label mb-2">
           Recent entries ({entries.length})
         </div>
         {entriesLoading ? (
@@ -199,7 +199,7 @@ export function ProvenanceVerifyPanel(): JSX.Element {
                     <tr key={e.id} className="border-t border-[var(--border-card)]">
                       <td className="px-3 py-2 t-primary font-mono">{e.seq}</td>
                       <td className="px-3 py-2">
-                        <Badge variant={t.variant} className="text-[10px]">{t.label}</Badge>
+                        <Badge variant={t.variant} className="text-caption">{t.label}</Badge>
                       </td>
                       <td className="px-3 py-2 t-secondary font-mono">{e.payload_hash.slice(0, 12)}…</td>
                       <td className="px-3 py-2 t-secondary">{e.signed_by_user_id || <span className="t-muted">system</span>}</td>

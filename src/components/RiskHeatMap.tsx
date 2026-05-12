@@ -69,7 +69,7 @@ export function RiskHeatMap({ risks, activeFilter, onCellClick, onClearFilter }:
         <div className="flex items-center gap-2">
           <Grid3x3 size={14} className="text-accent" />
           <h3 className="text-sm font-semibold t-primary">Risk Heat Map</h3>
-          <span className="text-[10px] t-muted">
+          <span className="text-caption t-muted">
             {risks.length} risk{risks.length === 1 ? "" : "s"} across {categories.length} categor
             {categories.length === 1 ? "y" : "ies"}
           </span>
@@ -78,7 +78,7 @@ export function RiskHeatMap({ risks, activeFilter, onCellClick, onClearFilter }:
           <button
             type="button"
             onClick={onClearFilter}
-            className="flex items-center gap-1 text-[11px] text-accent hover:text-accent/80"
+            className="flex items-center gap-1 text-caption text-accent hover:text-accent/80"
             title="Clear filter"
           >
             <X size={11} /> Clear filter ({toTitleCase(activeFilter.category)} /{" "}
@@ -90,13 +90,13 @@ export function RiskHeatMap({ risks, activeFilter, onCellClick, onClearFilter }:
         <table className="w-full border-collapse" role="grid" aria-label="Risk heat map">
           <thead>
             <tr>
-              <th className="text-left text-[10px] t-muted uppercase tracking-wider font-normal px-2 py-1.5">
+              <th className="text-left text-label font-normal px-2 py-1.5">
                 Severity
               </th>
               {categories.map(cat => (
                 <th
                   key={cat}
-                  className="text-left text-[10px] t-muted uppercase tracking-wider font-normal px-2 py-1.5 capitalize"
+                  className="text-left text-label font-normal px-2 py-1.5 capitalize"
                   scope="col"
                 >
                   {toTitleCase(cat)}
@@ -109,7 +109,7 @@ export function RiskHeatMap({ risks, activeFilter, onCellClick, onClearFilter }:
               <tr key={sev}>
                 <th
                   scope="row"
-                  className="text-left text-[11px] font-medium t-secondary px-2 py-1.5"
+                  className="text-left text-caption font-medium t-secondary px-2 py-1.5"
                   style={{ color: SEVERITY_COLOR[sev].base }}
                 >
                   {SEVERITY_COLOR[sev].label}

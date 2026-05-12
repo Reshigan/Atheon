@@ -152,7 +152,7 @@ export function SupportTicketDetailPage() {
               <Badge variant={STATUS_VARIANT[ticket.status] ?? 'default'}>{ticket.status.replace('_', ' ')}</Badge>
               <Badge variant={PRIORITY_VARIANT[ticket.priority] ?? 'default'}>{ticket.priority}</Badge>
               <Badge variant="default">{ticket.category.replace('_', ' ')}</Badge>
-              <span className="text-[10px] t-muted">Opened {new Date(ticket.created_at).toLocaleString()}</span>
+              <span className="text-caption t-muted">Opened {new Date(ticket.created_at).toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ export function SupportTicketDetailPage() {
                   <Badge variant={isMine ? 'info' : 'default'}>
                     {isMine ? 'You' : 'Agent'}
                   </Badge>
-                  <span className="text-[10px] t-muted">{new Date(r.created_at).toLocaleString()}</span>
+                  <span className="text-caption t-muted">{new Date(r.created_at).toLocaleString()}</span>
                 </div>
               </div>
               <p className="text-sm t-primary mt-2 whitespace-pre-wrap">{r.body}</p>
@@ -195,7 +195,7 @@ export function SupportTicketDetailPage() {
                 style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                 data-testid="support-reply-textarea"
               />
-              <span className="text-[10px] t-muted">{replyBody.length} / 10000</span>
+              <span className="text-caption t-muted">{replyBody.length} / 10000</span>
             </label>
             <div className="flex justify-end">
               <Button

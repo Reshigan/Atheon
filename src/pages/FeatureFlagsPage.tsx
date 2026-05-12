@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingState, EmptyState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import type { FeatureFlag, FeatureFlagType, Tenant } from '@/lib/api';
@@ -236,15 +237,15 @@ export function FeatureFlagsPage() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Total Flags</p>
+          <p className="text-label">Total Flags</p>
           <p className="text-xl font-bold t-primary">{flags.length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Active</p>
+          <p className="text-label">Active</p>
           <p className="text-xl font-bold text-emerald-400">{enabledCount}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Inactive</p>
+          <p className="text-label">Inactive</p>
           <p className="text-xl font-bold text-red-400">{flags.length - enabledCount}</p>
         </Card>
       </div>
@@ -262,17 +263,13 @@ export function FeatureFlagsPage() {
 
       {/* Flags list */}
       {loading ? (
-        <Card className="p-10 flex flex-col items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin t-muted" />
-          <p className="text-xs t-muted mt-2">Loading feature flags...</p>
-        </Card>
+        <LoadingState variant="list" count={4} />
       ) : filteredFlags.length === 0 ? (
-        <Card className="p-10 text-center">
-          <Flag className="w-8 h-8 mx-auto mb-2 t-muted opacity-50" />
-          <p className="text-sm t-muted">
-            {searchQuery ? 'No flags match your search' : 'No feature flags yet. Create one to get started.'}
-          </p>
-        </Card>
+        <EmptyState
+          icon={Flag}
+          title={searchQuery ? 'No flags match your search' : 'No feature flags yet'}
+          description={searchQuery ? undefined : 'Create a flag to start rolling out features by tenant, percent, or boolean.'}
+        />
       ) : (
         <div className="space-y-2">
           {filteredFlags.map((f) => {
@@ -298,10 +295,10 @@ export function FeatureFlagsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium t-primary font-mono">{f.name}</p>
-                        <Badge variant={isActive ? 'success' : 'default'} className="text-[10px]">
+                        <Badge variant={isActive ? 'success' : 'default'} className="text-caption">
                           {isActive ? 'active' : 'inactive'}
                         </Badge>
-                        <Badge variant="default" className="text-[10px] flex items-center gap-0.5">
+                        <Badge variant="default" className="text-caption flex items-center gap-0.5">
                           {typeIcon(f.type)} {f.type}
                         </Badge>
                       </div>
@@ -311,15 +308,15 @@ export function FeatureFlagsPage() {
                           <div className="w-24 h-1.5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
                             <div className="h-full rounded-full bg-accent" style={{ width: `${f.rolloutPercent}%` }} />
                           </div>
-                          <span className="text-[10px] t-muted">{f.rolloutPercent}% rollout</span>
+                          <span className="text-caption t-muted">{f.rolloutPercent}% rollout</span>
                         </div>
                       )}
                       {f.type === 'tenant_allowlist' && (
-                        <p className="text-[10px] t-muted mt-2">
+                        <p className="text-caption t-muted mt-2">
                           Allowlist: <span className="t-primary">{f.tenantAllowlist.length}</span> tenant{f.tenantAllowlist.length === 1 ? '' : 's'}
                         </p>
                       )}
-                      <p className="text-[10px] t-muted mt-2">Updated {new Date(f.updatedAt).toLocaleString()}</p>
+                      <p className="text-caption t-muted mt-2">Updated {new Date(f.updatedAt).toLocaleString()}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
@@ -363,7 +360,7 @@ export function FeatureFlagsPage() {
                   onChange={(e) => setForm(p => ({ ...p, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') }))}
                   placeholder="e.g., new_dashboard_ui"
                 />
-                {editingFlag && <p className="text-[10px] t-muted mt-1">Name cannot be changed after creation.</p>}
+                {editingFlag && <p className="text-caption t-muted mt-1">Name cannot be changed after creation.</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Description</label>
@@ -440,7 +437,7 @@ export function FeatureFlagsPage() {
                           }}
                           className="rounded"
                         />
-                        <span className="font-mono text-[10px] t-muted">{t.id}</span>
+                        <span className="font-mono text-caption t-muted">{t.id}</span>
                         <span className="t-primary truncate">{t.name}</span>
                       </label>
                     ))}
@@ -491,7 +488,7 @@ export function FeatureFlagsPage() {
                 ) : Object.entries(evalResult).map(([name, val]) => (
                   <div key={name} className="flex items-center justify-between text-xs">
                     <span className="font-mono t-primary">{name}</span>
-                    <Badge variant={val ? 'success' : 'default'} className="text-[10px]">
+                    <Badge variant={val ? 'success' : 'default'} className="text-caption">
                       {val ? 'true' : 'false'}
                     </Badge>
                   </div>

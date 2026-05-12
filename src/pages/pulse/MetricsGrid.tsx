@@ -81,7 +81,7 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
               {trendIcon(m.trend)}
               <span className="text-xs t-muted">{trendLabel(m.trend)}</span>
               {ca?.label === 'chronic' && (
-                <span className="text-[10px] t-muted ml-auto" title="Run a catalyst to address the underlying issue">
+                <span className="text-caption t-muted ml-auto" title="Run a catalyst to address the underlying issue">
                   → run a catalyst
                 </span>
               )}

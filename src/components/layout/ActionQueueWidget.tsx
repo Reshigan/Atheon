@@ -122,7 +122,7 @@ export function ActionQueueWidget(): JSX.Element | null {
         aria-label={`Action queue — ${total} pending`}
       >
         <CheckSquare size={18} className="t-secondary" />
-        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-caption font-semibold flex items-center justify-center">
           {total > 99 ? '99+' : total}
         </span>
       </button>
@@ -134,7 +134,7 @@ export function ActionQueueWidget(): JSX.Element | null {
         >
           <div className="px-4 py-3 border-b border-[var(--border-card)] flex items-center justify-between">
             <h3 className="text-sm font-semibold t-primary">Action Queue</h3>
-            <span className="text-[10px] t-muted">{total} pending</span>
+            <span className="text-caption t-muted">{total} pending</span>
           </div>
 
           {/* Approvals */}
@@ -152,7 +152,7 @@ export function ActionQueueWidget(): JSX.Element | null {
                   className="w-full text-left px-3 py-2 hover:bg-[var(--bg-secondary)] transition-colors"
                 >
                   <div className="text-xs font-medium t-primary truncate">{a.action}</div>
-                  <div className="text-[10px] t-muted truncate">
+                  <div className="text-caption t-muted truncate">
                     {a.clusterName} · {a.catalystName} · confidence {(a.confidence * 100).toFixed(0)}%
                   </div>
                 </button>
@@ -175,7 +175,7 @@ export function ActionQueueWidget(): JSX.Element | null {
                   className="w-full text-left px-3 py-2 hover:bg-[var(--bg-secondary)] transition-colors"
                 >
                   <div className="text-xs font-medium t-primary truncate">{a.metric}</div>
-                  <div className="text-[10px] t-muted">{a.severity}</div>
+                  <div className="text-caption t-muted">{a.severity}</div>
                 </button>
               ))}
             </Section>
@@ -196,13 +196,13 @@ export function ActionQueueWidget(): JSX.Element | null {
                   className="w-full text-left px-3 py-2 hover:bg-[var(--bg-secondary)] transition-colors"
                 >
                   <div className="text-xs font-medium t-primary truncate">{r.title}</div>
-                  <div className="text-[10px] t-muted">{r.severity}{r.category ? ` · ${r.category}` : ''}</div>
+                  <div className="text-caption t-muted">{r.severity}{r.category ? ` · ${r.category}` : ''}</div>
                 </button>
               ))}
             </Section>
           )}
 
-          <div className="px-3 py-2 border-t border-[var(--border-card)] text-[10px] t-muted text-center">
+          <div className="px-3 py-2 border-t border-[var(--border-card)] text-caption t-muted text-center">
             Auto-refreshes every minute
           </div>
         </div>
@@ -226,11 +226,11 @@ function Section({
         <div className="flex items-center gap-2">
           {icon}
           <span className="text-xs font-medium t-primary">{title}</span>
-          <span className="text-[10px] t-muted">{count}</span>
+          <span className="text-caption t-muted">{count}</span>
         </div>
         <button
           onClick={onJumpAll}
-          className="text-[10px] t-muted hover:t-primary flex items-center gap-1 transition-colors"
+          className="text-caption t-muted hover:t-primary flex items-center gap-1 transition-colors"
         >
           View all <ArrowRight size={10} />
         </button>

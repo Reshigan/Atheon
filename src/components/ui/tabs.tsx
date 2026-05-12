@@ -33,7 +33,7 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
           <span>{tab.label}</span>
           {tab.count !== undefined && (
             <span className={cn(
-              'ml-1 px-1.5 py-0.5 rounded text-[10px]',
+              'ml-1 px-1.5 py-0.5 rounded text-caption',
               activeTab === tab.id ? 'bg-[var(--accent-subtle)] text-accent' : 'bg-[var(--bg-secondary)] t-muted'
             )}>
               {tab.count}

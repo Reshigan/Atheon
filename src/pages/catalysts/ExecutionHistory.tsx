@@ -41,13 +41,13 @@ export function ExecutionHistory({ runs, onViewDetail }: ExecutionHistoryProps) 
               {statusIcon(run.status)}
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium t-primary truncate">{run.sub_catalyst_name}</p>
-                <p className="text-[10px] t-muted">{new Date(run.started_at).toLocaleString()}</p>
+                <p className="text-caption t-muted">{new Date(run.started_at).toLocaleString()}</p>
               </div>
               {run.source_record_count !== undefined && (
                 <div className="text-right">
                   <p className="text-xs t-primary">{run.matched || 0}/{run.source_record_count} matched</p>
                   {(run.discrepancies || 0) > 0 && (
-                    <p className="text-[10px] text-amber-400">{run.discrepancies} issues</p>
+                    <p className="text-caption text-amber-400">{run.discrepancies} issues</p>
                   )}
                 </div>
               )}

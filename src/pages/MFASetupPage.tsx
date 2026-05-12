@@ -12,7 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Portal } from '@/components/ui/portal';
+import { Modal } from '@/components/ui/modal';
 import { Shield, Loader2, RefreshCw, XCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAppStore } from '@/stores/appStore';
@@ -202,7 +202,7 @@ export function MFASetupPage() {
                 </Button>
               </div>
               {isAdminRole && (
-                <p className="text-[11px] text-amber-500 mt-2 flex items-start gap-1.5">
+                <p className="text-caption text-amber-500 mt-2 flex items-start gap-1.5">
                   <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
                   <span>
                     Your role requires MFA. Disabling it may revoke your access once the enforcement grace period expires.
@@ -241,103 +241,108 @@ export function MFASetupPage() {
         Back to <Link to="/settings" className="font-medium" style={{ color: 'var(--accent)' }}>Settings</Link>
       </div>
 
-      {/* Regenerate backup codes modal */}
-      {regenOpen && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-            <div className="rounded-xl p-5 w-full max-w-sm space-y-3" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-modal)' }}>
-              <h3 className="text-sm font-semibold t-primary flex items-center gap-2">
-                <RefreshCw size={14} /> Regenerate recovery codes
-              </h3>
-              <p className="text-xs t-muted">
-                Enter the current 6-digit code from your authenticator. Your existing recovery codes will be
-                <strong> invalidated</strong> immediately and replaced with 8 new ones.
+      {/* Regenerate backup codes — uses canonical Modal primitive. */}
+      <Modal
+        open={regenOpen}
+        onClose={() => { setRegenOpen(false); setRegenCode(''); setRegenError(null); }}
+        size="sm"
+        dismissible={!regenLoading}
+      >
+        <Modal.Header
+          title={<><RefreshCw size={14} className="inline mr-2" />Regenerate recovery codes</>}
+        />
+        <Modal.Body>
+          <p className="text-caption t-muted mb-3">
+            Enter the current 6-digit code from your authenticator. Your existing recovery codes will be
+            <strong> invalidated</strong> immediately and replaced with 8 new ones.
+          </p>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
+            value={regenCode}
+            onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            maxLength={6}
+            aria-label="Six-digit authenticator code"
+            autoFocus
+          />
+          {regenError && <p className="text-caption text-red-400 mt-2">{regenError}</p>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" size="sm" onClick={() => { setRegenOpen(false); setRegenCode(''); setRegenError(null); }}>Cancel</Button>
+          <Button variant="primary" size="sm" onClick={handleRegenerate} disabled={regenLoading || regenCode.length !== 6}>
+            {regenLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : <RefreshCw size={14} className="mr-1" />}
+            Regenerate
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Shown-once recovery codes — wider (lg) so the code grid breathes. */}
+      <Modal
+        open={!!newBackupCodes}
+        onClose={() => { setNewBackupCodes(null); loadStatus(); }}
+        size="lg"
+      >
+        <Modal.Body>
+          {newBackupCodes && (
+            <BackupCodesDisplay
+              codes={newBackupCodes}
+              heading="New recovery codes"
+              subheading="Your previous recovery codes have been invalidated. Save these new codes now."
+              onAcknowledge={() => { setNewBackupCodes(null); loadStatus(); }}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Disable MFA — destructive; the Modal handles ESC/backdrop blocking
+          via dismissible={!disableLoading} while the API call is in flight. */}
+      <Modal
+        open={disableOpen}
+        onClose={() => { setDisableOpen(false); setDisableCode(''); setDisableError(null); }}
+        size="sm"
+        dismissible={!disableLoading}
+      >
+        <Modal.Header
+          title={<><XCircle size={14} className="inline mr-2 text-red-500" />Disable two-factor authentication</>}
+        />
+        <Modal.Body>
+          {isAdminRole && (
+            <div className="flex items-start gap-2 p-2 rounded-lg mb-3" style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.30)' }}>
+              <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-caption text-amber-500">
+                Your role <strong>{user?.role}</strong> requires MFA under the platform policy. Disabling it may lock you
+                out once the enforcement grace period expires.
               </p>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
-                style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
-                value={regenCode}
-                onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="000000"
-                maxLength={6}
-                aria-label="Six-digit authenticator code"
-                autoFocus
-              />
-              {regenError && <p className="text-xs text-red-400">{regenError}</p>}
-              <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => { setRegenOpen(false); setRegenCode(''); setRegenError(null); }}>Cancel</Button>
-                <Button variant="primary" size="sm" onClick={handleRegenerate} disabled={regenLoading || regenCode.length !== 6}>
-                  {regenLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                  Regenerate
-                </Button>
-              </div>
             </div>
-          </div>
-        </Portal>
-      )}
-
-      {/* Shown-once codes after regeneration */}
-      {newBackupCodes && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="rounded-xl p-5 w-full max-w-lg" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-modal)' }}>
-              <BackupCodesDisplay
-                codes={newBackupCodes}
-                heading="New recovery codes"
-                subheading="Your previous recovery codes have been invalidated. Save these new codes now."
-                onAcknowledge={() => { setNewBackupCodes(null); loadStatus(); }}
-              />
-            </div>
-          </div>
-        </Portal>
-      )}
-
-      {/* Disable MFA modal */}
-      {disableOpen && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-            <div className="rounded-xl p-5 w-full max-w-sm space-y-3" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-modal)' }}>
-              <h3 className="text-sm font-semibold t-primary flex items-center gap-2">
-                <XCircle size={14} className="text-red-500" /> Disable two-factor authentication
-              </h3>
-              {isAdminRole && (
-                <div className="flex items-start gap-2 p-2 rounded-lg" style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.30)' }}>
-                  <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-500">
-                    Your role <strong>{user?.role}</strong> requires MFA under the platform policy. Disabling it may lock you
-                    out once the enforcement grace period expires.
-                  </p>
-                </div>
-              )}
-              <p className="text-xs t-muted">Confirm by entering the current 6-digit code from your authenticator.</p>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
-                style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
-                value={disableCode}
-                onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="000000"
-                maxLength={6}
-                aria-label="Six-digit authenticator code"
-                autoFocus
-              />
-              {disableError && <p className="text-xs text-red-400">{disableError}</p>}
-              <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => { setDisableOpen(false); setDisableCode(''); setDisableError(null); }}>Cancel</Button>
-                <Button variant="danger" size="sm" onClick={handleDisable} disabled={disableLoading || disableCode.length !== 6}>
-                  {disableLoading ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
-                  Confirm disable
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Portal>
-      )}
+          )}
+          <p className="text-caption t-muted mb-3">Confirm by entering the current 6-digit code from your authenticator.</p>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
+            value={disableCode}
+            onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            maxLength={6}
+            aria-label="Six-digit authenticator code"
+            autoFocus
+          />
+          {disableError && <p className="text-caption text-red-400 mt-2">{disableError}</p>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" size="sm" onClick={() => { setDisableOpen(false); setDisableCode(''); setDisableError(null); }}>Cancel</Button>
+          <Button variant="danger" size="sm" onClick={handleDisable} disabled={disableLoading || disableCode.length !== 6}>
+            {disableLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : <XCircle size={14} className="mr-1" />}
+            Confirm disable
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

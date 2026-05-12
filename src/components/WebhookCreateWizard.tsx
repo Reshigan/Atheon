@@ -122,9 +122,9 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
           aria-invalid={url !== "" && !validUrl ? true : undefined}
         />
         {url && !validUrl && (
-          <p className="text-[10px] text-red-500">Must be a valid http(s) URL.</p>
+          <p className="text-caption text-red-500">Must be a valid http(s) URL.</p>
         )}
-        <p className="text-[10px] t-muted flex items-center gap-1">
+        <p className="text-caption t-muted flex items-center gap-1">
           <Link2 size={10} /> We'll POST signed JSON payloads here.
         </p>
       </div>
@@ -147,14 +147,14 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
           <div className="flex gap-2">
             <button
               type="button"
-              className="text-[10px] t-muted hover:t-primary"
+              className="text-caption t-muted hover:t-primary"
               onClick={() => setSelectedEvents(new Set(availableEvents))}
             >
               Select all
             </button>
             <button
               type="button"
-              className="text-[10px] t-muted hover:t-primary"
+              className="text-caption t-muted hover:t-primary"
               onClick={() => setSelectedEvents(new Set())}
             >
               Clear
@@ -184,7 +184,7 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
           })}
         </div>
         {selectedEvents.size === 0 && (
-          <p className="text-[10px] text-red-500">Select at least one event type.</p>
+          <p className="text-caption text-red-500">Select at least one event type.</p>
         )}
       </div>
 

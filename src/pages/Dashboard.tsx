@@ -22,6 +22,7 @@ import { chartPalette } from "@/lib/chart-theme";
 import { OnboardingChecklist } from "@/components/common/OnboardingChecklist";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { Link } from "react-router-dom";
+import { Card } from "@/components/ui/card";
 import { KpiGrid } from "./dashboard/KpiCards";
 import { HealthDimensions } from "./dashboard/HealthDimensions";
 import { IntelligencePanel } from "./dashboard/IntelligencePanel";
@@ -54,36 +55,12 @@ const trendIcon = (trend: string) => {
   return <Minus className="w-3.5 h-3.5 text-gray-400" />;
 };
 
-function DashCard({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div
-      className={`rounded-2xl p-5 ${className}`}
-      style={{
-        background: "var(--bg-card-solid)",
-        border: "1px solid var(--border-card)",
-        boxShadow: "0 2px 12px rgba(100, 120, 180, 0.07), 0 0 0 1px rgba(255,255,255,0.5)",
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function TintedCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={`rounded-2xl p-5 ${className}`}
-      style={{
-        background: "linear-gradient(135deg, rgba(74, 107, 90, 0.06), rgba(93, 138, 111, 0.03))",
-        border: "1px solid rgba(74, 107, 90, 0.10)",
-        boxShadow: "0 2px 12px rgba(74, 107, 90, 0.05)",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+// DashCard + TintedCard were local re-implementations of the Card primitive
+// (ui/card.tsx) — having both made Dashboard "feel like a different system"
+// per the 2026-05-12 polish audit. The 30 call sites now use:
+//   <Card>            for the standard tile  (was <DashCard>)
+//   <Card variant="mint">  for the tinted hero  (was <TintedCard>)
+// See docs/UI_POLISH_PRINCIPLES.md §4 for the canonical card pattern.
 
 export function Dashboard() {
   const industry = useAppStore((s) => s.industry);
@@ -282,7 +259,7 @@ export function Dashboard() {
               <option value="30d">30 Days</option>
               <option value="90d">90 Days</option>
             </select>
-            <span className={`text-[10px] t-muted transition-colors duration-500 ${refreshFlash ? 'text-emerald-500' : ''}`}>
+            <span className={`text-caption t-muted transition-colors duration-500 ${refreshFlash ? 'text-emerald-500' : ''}`}>
               Updated: {lastRefreshed.toLocaleTimeString()}
             </span>
             <button
@@ -357,13 +334,13 @@ export function Dashboard() {
       {/* §11.7 Atheon Score + §11.2 Journey Card */}
       <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <DashCard className="lg:col-span-1">
+        <Card className="lg:col-span-1">
           <h3 className="text-sm font-semibold t-primary mb-3 flex items-center gap-1.5">
             <Gauge size={14} className="text-accent" /> Atheon Score
           </h3>
           <AtheonScoreRing />
-        </DashCard>
-        <DashCard className="lg:col-span-2">
+        </Card>
+        <Card className="lg:col-span-2">
           <h3 className="text-sm font-semibold t-primary mb-3 flex items-center gap-1.5">
             <TrendingUp size={14} className="text-accent" /> Your Atheon Journey
           </h3>
@@ -371,16 +348,16 @@ export function Dashboard() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-[10px] t-muted uppercase">Baseline Health</p>
+                  <p className="text-label">Baseline Health</p>
                   <p className="text-lg font-bold t-primary">{baselineComparison.dayZero.healthScore}</p>
-                  <p className="text-[9px] t-muted">{new Date(baselineComparison.dayZero.capturedAt).toLocaleDateString()}</p>
+                  <p className="text-caption t-muted">{new Date(baselineComparison.dayZero.capturedAt).toLocaleDateString()}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-[10px] t-muted uppercase">Current Health</p>
+                  <p className="text-label">Current Health</p>
                   <p className="text-lg font-bold t-primary">{baselineComparison.current?.healthScore ?? '--'}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-[10px] t-muted uppercase">Improvement</p>
+                  <p className="text-label">Improvement</p>
                   <p className={`text-lg font-bold ${baselineComparison.improvement.healthScore >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                     {baselineComparison.improvement.healthScore >= 0 ? '+' : ''}{baselineComparison.improvement.healthScore}
                   </p>
@@ -392,15 +369,15 @@ export function Dashboard() {
             <div className="flex flex-col items-center justify-center py-6 text-center">
               <TrendingUp className="w-8 h-8 t-muted mb-2 opacity-30" />
               <p className="text-xs t-muted">No baseline captured yet.</p>
-              <p className="text-[10px] t-muted">Run your first catalyst to capture a day-zero snapshot.</p>
+              <p className="text-caption t-muted">Run your first catalyst to capture a day-zero snapshot.</p>
             </div>
           )}
-        </DashCard>
+        </Card>
       </div>
 
       {/* Hero: Health Score as central KPI */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <TintedCard className="lg:col-span-1 flex flex-col items-center justify-center py-6">
+        <Card variant="mint" className="lg:col-span-1 flex flex-col items-center justify-center py-6">
           <ScoreRing score={overallScore} size="xl" label="Business Health" />
           <div className="flex items-center gap-2 mt-4">
             {trendIcon(healthTrend)}
@@ -415,19 +392,19 @@ export function Dashboard() {
             <div className="space-y-1.5">
               {dimensions.slice(0, 4).map((dim) => (
                 <div key={dim.key} className="flex items-center gap-2">
-                  <span className="text-[10px] t-secondary w-20 truncate">{dim.name}</span>
+                  <span className="text-caption t-secondary w-20 truncate">{dim.name}</span>
                   <div className="flex-1">
                     <Progress value={dim.score} color={dim.score >= 80 ? 'emerald' : dim.score >= 60 ? 'amber' : 'red'} size="sm" />
                   </div>
-                  <span className="text-[10px] font-bold t-primary w-6 text-right">{dim.score}</span>
+                  <span className="text-caption font-bold t-primary w-6 text-right">{dim.score}</span>
                 </div>
               ))}
-              {dimensions.length === 0 && <p className="text-[9px] t-muted text-center py-2">No dimension data yet</p>}
+              {dimensions.length === 0 && <p className="text-caption t-muted text-center py-2">No dimension data yet</p>}
             </div>
           </div>
-        </TintedCard>
+        </Card>
 
-        <DashCard className="lg:col-span-2">
+        <Card className="lg:col-span-2">
           <h3 className="text-lg font-semibold t-primary mb-4">Business Dimensions</h3>
           {dimensions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -462,7 +439,7 @@ export function Dashboard() {
                     </div>
                     <button
                       onClick={() => handleOpenDimensionTrace(dim.key)}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all"
+                      className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all"
                       title={`Trace ${dim.name}`}
                     >
                       <Eye size={10} />
@@ -472,7 +449,7 @@ export function Dashboard() {
               ))}
             </div>
           )}
-        </DashCard>
+        </Card>
       </div>
 
       {/* TASK-002: Decomposed KPI Grid sub-component */}
@@ -491,137 +468,71 @@ export function Dashboard() {
 
       {/* Status Breakdown Cards (Static — FlipCards removed per UI cleanup) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <DashCard className="h-full">
+        <Card className="h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs t-muted uppercase tracking-wider">Dimensions</span>
+            <span className="text-label">Dimensions</span>
             <Gauge size={14} className="text-accent" />
           </div>
           <p className="text-2xl font-bold t-primary">{dimensions.length}</p>
-          <p className="text-[10px] t-muted mt-1">monitored areas</p>
+          <p className="text-caption t-muted mt-1">monitored areas</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-[10px]">
+              <div key={d.key} className="flex items-center justify-between text-caption">
                 <span className="t-secondary truncate mr-2">{d.name}</span>
                 <span className={`font-medium ${d.score >= 80 ? 'text-emerald-400' : d.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>{d.score}</span>
               </div>
             ))}
           </div>
-        </DashCard>
-        <DashCard className="h-full">
+        </Card>
+        <Card className="h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs t-muted uppercase tracking-wider">Healthy</span>
+            <span className="text-label">Healthy</span>
             <CheckCircle2 size={14} className="text-emerald-400" />
           </div>
           <p className="text-2xl font-bold text-emerald-400">{dimensions.filter(d => d.score >= 80).length}</p>
-          <p className="text-[10px] t-muted mt-1">above threshold</p>
+          <p className="text-caption t-muted mt-1">above threshold</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.filter(d => d.score >= 80).slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-[10px]">
+              <div key={d.key} className="flex items-center justify-between text-caption">
                 <span className="t-secondary truncate mr-2">{d.name}</span>
                 <span className="font-medium text-emerald-400">{d.score}</span>
               </div>
             ))}
           </div>
-        </DashCard>
-        <DashCard className="h-full">
+        </Card>
+        <Card className="h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs t-muted uppercase tracking-wider">At Risk</span>
+            <span className="text-label">At Risk</span>
             <AlertTriangle size={14} className="text-amber-400" />
           </div>
           <p className="text-2xl font-bold text-amber-400">{dimensions.filter(d => d.score >= 60 && d.score < 80).length}</p>
-          <p className="text-[10px] t-muted mt-1">needs attention</p>
+          <p className="text-caption t-muted mt-1">needs attention</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.filter(d => d.score >= 60 && d.score < 80).slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-[10px]">
+              <div key={d.key} className="flex items-center justify-between text-caption">
                 <span className="t-secondary truncate mr-2">{d.name}</span>
                 <span className="font-medium text-amber-400">{d.score}</span>
               </div>
             ))}
           </div>
-        </DashCard>
-        <DashCard className="h-full">
+        </Card>
+        <Card className="h-full">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs t-muted uppercase tracking-wider">Critical</span>
+            <span className="text-label">Critical</span>
             <XCircle size={14} className="text-red-400" />
           </div>
           <p className="text-2xl font-bold text-red-400">{dimensions.filter(d => d.score < 60).length}</p>
-          <p className="text-[10px] t-muted mt-1">requires action</p>
+          <p className="text-caption t-muted mt-1">requires action</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.filter(d => d.score < 60).slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-[10px]">
+              <div key={d.key} className="flex items-center justify-between text-caption">
                 <span className="t-secondary truncate mr-2">{d.name}</span>
                 <span className="font-medium text-red-400">{d.score}</span>
               </div>
             ))}
           </div>
-        </DashCard>
+        </Card>
       </div>
-
-      {/* New Engine Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Strategic Context (Apex Radar) */}
-        <Link to="/apex" className="block">
-          <DashCard className="hover:border-accent/30 transition-all cursor-pointer">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Radar size={16} className="text-accent" />
-                <h4 className="text-sm font-semibold t-primary">Strategic Context</h4>
-              </div>
-              <ChevronRight size={14} className="t-muted" />
-            </div>
-            {radarCtx ? (
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-xl font-bold t-primary">{radarCtx.summary.totalSignals}</p>
-                  <p className="text-[10px] t-muted">Signals</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-red-400">{radarCtx.summary.criticalImpacts}</p>
-                  <p className="text-[10px] t-muted">Critical Impacts</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold">{radarCtx.summary.overallSentiment === 'positive' ? '🟢' : radarCtx.summary.overallSentiment === 'negative' ? '🔴' : '🟡'}</p>
-                  <p className="text-[10px] t-muted capitalize">{radarCtx.summary.overallSentiment}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs t-muted">No external signals tracked yet. Visit Apex → Strategic Context.</p>
-            )}
-          </DashCard>
-        </Link>
-
-        {/* Active Diagnostics (Pulse Diagnostics) */}
-        <Link to="/pulse" className="block">
-          <DashCard className="hover:border-accent/30 transition-all cursor-pointer">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Stethoscope size={16} className="text-purple-400" />
-                <h4 className="text-sm font-semibold t-primary">Active Diagnostics</h4>
-              </div>
-              <ChevronRight size={14} className="t-muted" />
-            </div>
-            {diagSummary ? (
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-xl font-bold t-primary">{diagSummary.totalAnalyses}</p>
-                  <p className="text-[10px] t-muted">Analyses</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-red-400">{diagSummary.criticalFindings}</p>
-                  <p className="text-[10px] t-muted">Critical Findings</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-amber-400">{diagSummary.undiagnosedMetrics}</p>
-                  <p className="text-[10px] t-muted">Undiagnosed</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs t-muted">No diagnostics run yet. Visit Pulse → Diagnostics.</p>
-            )}
-          </DashCard>
-        </Link>
-      </div>
-
 
       {/* v63 — write-back action queue: pending count + value at stake.
           Shipped in Phase 7-2 alongside Pulse / Apex equivalents so the
@@ -632,7 +543,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Strategic Context Card */}
         <Link to="/apex" className="block">
-          <DashCard className="h-full hover:border-accent/30 transition-all cursor-pointer">
+          <Card className="h-full hover:border-accent/30 transition-all cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Radar size={16} className="text-accent" />
@@ -650,7 +561,7 @@ export function Dashboard() {
                   <Badge variant={radarCtx.context?.sentiment === 'negative' ? 'danger' : radarCtx.context?.sentiment === 'positive' ? 'success' : 'warning'} size="sm">
                     {radarCtx.context?.sentiment ?? 'neutral'}
                   </Badge>
-                  <span className="text-[10px] t-muted">market sentiment</span>
+                  <span className="text-caption t-muted">market sentiment</span>
                 </div>
                 {radarCtx.context?.confidence != null && (
                   <Progress value={radarCtx.context.confidence} color={radarCtx.context.confidence >= 70 ? 'emerald' : 'amber'} size="sm" />
@@ -659,12 +570,12 @@ export function Dashboard() {
             ) : (
               <p className="text-xs t-muted">No signals detected yet</p>
             )}
-          </DashCard>
+          </Card>
         </Link>
 
         {/* Active Diagnostics Card */}
         <Link to="/pulse" className="block">
-          <DashCard className="h-full hover:border-accent/30 transition-all cursor-pointer">
+          <Card className="h-full hover:border-accent/30 transition-all cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Stethoscope size={16} className="text-purple-400" />
@@ -696,12 +607,12 @@ export function Dashboard() {
             ) : (
               <p className="text-xs t-muted">No diagnostics yet</p>
             )}
-          </DashCard>
+          </Card>
         </Link>
 
         {/* ROI Card */}
         <Link to="/catalysts" className="block">
-          <DashCard className="h-full hover:border-accent/30 transition-all cursor-pointer">
+          <Card className="h-full hover:border-accent/30 transition-all cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Coins size={16} className="text-emerald-400" />
@@ -719,13 +630,13 @@ export function Dashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-[10px] t-muted">Recovered</p>
+                    <p className="text-caption t-muted">Recovered</p>
                     <p className="text-xs font-medium text-emerald-400">
                       R{((roiData.totalDiscrepancyValueRecovered ?? 0) / 1000000).toFixed(1)}M
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] t-muted">Prevented</p>
+                    <p className="text-caption t-muted">Prevented</p>
                     <p className="text-xs font-medium text-accent">
                       R{((roiData.totalPreventedLosses ?? 0) / 1000000).toFixed(1)}M
                     </p>
@@ -735,22 +646,22 @@ export function Dashboard() {
             ) : (
               <p className="text-xs t-muted">No ROI data yet</p>
             )}
-          </DashCard>
+          </Card>
         </Link>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className="lg:col-span-7 space-y-5">
-          <DashCard>
+          <Card>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
               <p className="text-sm font-semibold t-primary">Metrics Over Time</p>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium" style={{ color: ACCENT }}>
+                <span className="inline-flex items-center gap-1 text-caption font-medium" style={{ color: ACCENT }}>
                   <span className="w-2 h-2 rounded-full" style={{ background: ACCENT }} /> {primaryMetricLabel}
                 </span>
                 {secondaryMetricLabel && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium t-muted">
+                  <span className="inline-flex items-center gap-1 text-caption font-medium t-muted">
                     <span className="w-2 h-2 rounded-full" style={{ background: CHART_LIGHT }} /> {secondaryMetricLabel}
                   </span>
                 )}
@@ -774,14 +685,14 @@ export function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </DashCard>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <DashCard>
+            <Card>
               <p className="text-sm font-semibold t-primary mb-1">Health by Dimension</p>
               <div className="flex flex-wrap items-center gap-3 mb-3">
                 {pieData.map((d) => (
-                  <span key={d.name} className="inline-flex items-center gap-1 text-[10px] font-medium t-muted">
+                  <span key={d.name} className="inline-flex items-center gap-1 text-caption font-medium t-muted">
                     <span className="w-2 h-2 rounded-full" style={{ background: d.fill }} /> {d.name}
                   </span>
                 ))}
@@ -798,9 +709,9 @@ export function Dashboard() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </DashCard>
+            </Card>
 
-            <DashCard>
+            <Card>
               <p className="text-sm font-semibold t-primary mb-1">Risk Distribution</p>
               <div className="h-44 mt-2">
                 <ResponsiveContainer width="100%" height="100%">
@@ -826,16 +737,16 @@ export function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </DashCard>
+            </Card>
           </div>
         </div>
 
         {/* Right sidebar: Quick summaries */}
         <div className="lg:col-span-5 space-y-5">
-          <DashCard>
+          <Card>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold t-primary flex items-center gap-1.5"><Shield size={14} className="text-accent" /> Risk Summary</p>
-              <Link to="/apex" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }}>
+              <Link to="/apex" className="text-caption font-medium flex items-center gap-0.5" style={{ color: ACCENT }}>
                 View all <ChevronRight size={10} />
               </Link>
             </div>
@@ -848,22 +759,22 @@ export function Dashboard() {
                     <AlertTriangle size={12} className={`mt-0.5 flex-shrink-0 ${risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-amber-400' : 'text-gray-400'}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium t-primary truncate">{risk.title}</p>
-                      <p className="text-[10px] t-muted truncate">{risk.description}</p>
+                      <p className="text-caption t-muted truncate">{risk.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'info'} size="sm">{risk.severity}</Badge>
-                        <span className="text-[10px] t-muted">{risk.category}</span>
+                        <span className="text-caption t-muted">{risk.category}</span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </DashCard>
+          </Card>
 
-          <DashCard>
+          <Card>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold t-primary">Process Metrics</p>
-              <Link to="/pulse" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all process metrics">
+              <Link to="/pulse" className="text-caption font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all process metrics">
                 View all <ChevronRight size={10} />
               </Link>
             </div>
@@ -876,28 +787,28 @@ export function Dashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Sparkline data={metric.trend || []} width={40} height={16} color={ACCENT} />
-                    <span className="text-xs font-semibold t-primary w-12 text-right">{metric.value}<span className="text-[10px] t-muted ml-0.5">{metric.unit}</span></span>
+                    <span className="text-xs font-semibold t-primary w-12 text-right">{metric.value}<span className="text-caption t-muted ml-0.5">{metric.unit}</span></span>
                   </div>
                 </div>
               ))}
             </div>
-          </DashCard>
+          </Card>
 
-          <DashCard>
+          <Card>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold t-primary">Catalyst Activity</p>
-              <Link to="/catalysts" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all catalyst activity">
+              <Link to="/catalysts" className="text-caption font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all catalyst activity">
                 View all <ChevronRight size={10} />
               </Link>
             </div>
             <div className="flex items-center gap-4 mb-3">
               <div>
                 <p className="text-2xl font-bold t-primary">{activeCatalysts}</p>
-                <p className="text-[10px] t-muted">active</p>
+                <p className="text-caption t-muted">active</p>
               </div>
               <div>
                 <p className="text-2xl font-bold t-primary">{totalTasks}</p>
-                <p className="text-[10px] t-muted">tasks</p>
+                <p className="text-caption t-muted">tasks</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -905,7 +816,7 @@ export function Dashboard() {
                 <div key={action.id} className="flex items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium t-primary truncate">{action.action}</p>
-                    <p className="text-[10px] t-muted truncate">{action.catalystName}</p>
+                    <p className="text-caption t-muted truncate">{action.catalystName}</p>
                   </div>
                   <Badge variant={action.status === "completed" ? "success" : action.status === "pending" ? "warning" : "info"}>
                     {action.status}
@@ -913,7 +824,7 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-          </DashCard>
+          </Card>
         </div>
       </div>
       </>
@@ -923,8 +834,8 @@ export function Dashboard() {
       {false && (
         <div className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <TintedCard>
-              <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Overall Score</p>
+            <Card variant="mint">
+              <p className="text-label mb-1">Overall Score</p>
               <p className="text-4xl font-bold t-primary">{overallScore}<span className="text-lg t-muted font-normal">/100</span></p>
               <div className="flex items-center gap-1.5 mt-2">
                 {trendIcon(healthTrend)}
@@ -932,21 +843,21 @@ export function Dashboard() {
                   {avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)} pts avg change
                 </span>
               </div>
-            </TintedCard>
-            <DashCard>
-              <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Improving</p>
+            </Card>
+            <Card>
+              <p className="text-label mb-1">Improving</p>
               <p className="text-4xl font-bold text-emerald-500">{upCount}</p>
-              <p className="text-[10px] t-muted mt-1">dimensions trending up</p>
-            </DashCard>
-            <DashCard>
-              <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">Declining</p>
+              <p className="text-caption t-muted mt-1">dimensions trending up</p>
+            </Card>
+            <Card>
+              <p className="text-label mb-1">Declining</p>
               <p className="text-4xl font-bold text-red-500">{downCount}</p>
-              <p className="text-[10px] t-muted mt-1">dimensions trending down</p>
-            </DashCard>
+              <p className="text-caption t-muted mt-1">dimensions trending down</p>
+            </Card>
           </div>
 
           {dimensions.length === 0 ? (
-            <DashCard>
+            <Card>
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <TrendingUp className="w-10 h-10 t-muted mb-3 opacity-30" />
                 <p className="text-sm t-muted">No health data yet.</p>
@@ -958,10 +869,10 @@ export function Dashboard() {
                   Open Catalysts <ArrowRight size={12} />
                 </Link>
               </div>
-            </DashCard>
+            </Card>
           ) : (
             <>
-              <DashCard>
+              <Card>
                 <p className="text-sm font-semibold t-primary mb-4">All Dimensions</p>
                 <div className="space-y-4">
                   {dimensions.map((dim, i) => (
@@ -985,10 +896,10 @@ export function Dashboard() {
                     </div>
                   ))}
                 </div>
-              </DashCard>
+              </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <DashCard>
+                <Card>
                   <p className="text-sm font-semibold t-primary mb-3">Health Score Trend</p>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1007,8 +918,8 @@ export function Dashboard() {
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
-                </DashCard>
-                <DashCard>
+                </Card>
+                <Card>
                   <p className="text-sm font-semibold t-primary mb-3">Month-over-Month Change</p>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1021,7 +932,7 @@ export function Dashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                </DashCard>
+                </Card>
               </div>
             </>
           )}
@@ -1037,26 +948,26 @@ export function Dashboard() {
               const count = risks.filter((r) => r.severity === sev).length;
               const color = sev === 'critical' ? '#ef4444' : sev === 'high' ? '#f59e0b' : sev === 'medium' ? ACCENT : SKY;
               return (
-                <DashCard key={sev}>
-                  <p className="text-[11px] font-medium t-muted uppercase tracking-wider mb-1">{sev}</p>
+                <Card key={sev}>
+                  <p className="text-label mb-1">{sev}</p>
                   <p className="text-4xl font-bold" style={{ color }}>{count}</p>
-                  <p className="text-[10px] t-muted mt-1">{sev} severity risks</p>
-                </DashCard>
+                  <p className="text-caption t-muted mt-1">{sev} severity risks</p>
+                </Card>
               );
             })}
           </div>
 
           {risks.length === 0 ? (
-            <DashCard>
+            <Card>
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <AlertTriangle className="w-10 h-10 t-muted mb-3 opacity-30" />
                 <p className="text-sm t-muted">No risk alerts detected yet.</p>
                 <p className="text-xs t-muted mt-1">Run a catalyst to scan for organisational risks.</p>
               </div>
-            </DashCard>
+            </Card>
           ) : (
             <>
-              <DashCard>
+              <Card>
                 <p className="text-sm font-semibold t-primary mb-3">Risk Distribution</p>
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1079,9 +990,9 @@ export function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </DashCard>
+              </Card>
 
-              <DashCard>
+              <Card>
                 <p className="text-sm font-semibold t-primary mb-3">All Risk Alerts</p>
                 <div className="space-y-3">
                   {risks.map((risk) => (
@@ -1094,8 +1005,8 @@ export function Dashboard() {
                           <h4 className="text-xs font-semibold t-primary">{risk.title}</h4>
                           <Badge variant={risk.severity === 'critical' ? 'danger' : risk.severity === 'high' ? 'warning' : 'info'}>{risk.severity}</Badge>
                         </div>
-                        <p className="text-[10px] t-muted mt-0.5">{risk.description}</p>
-                        <div className="flex items-center gap-3 mt-1 text-[10px] t-muted">
+                        <p className="text-caption t-muted mt-0.5">{risk.description}</p>
+                        <div className="flex items-center gap-3 mt-1 text-caption t-muted">
                           <span>Probability: {Math.round(risk.probability * 100)}%</span>
                           <span>Impact: {risk.impactValue} {risk.impactUnit}</span>
                           <Badge variant="outline" size="sm">{risk.category}</Badge>
@@ -1104,7 +1015,7 @@ export function Dashboard() {
                     </div>
                   ))}
                 </div>
-              </DashCard>
+              </Card>
             </>
           )}
         </div>
@@ -1112,10 +1023,10 @@ export function Dashboard() {
 
       {/* ANOMALIES & CONTROL PLANE HEALTH — Bug #7 fix: render previously discarded data */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <DashCard>
+        <Card>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold t-primary">Recent Anomalies</p>
-            <Link to="/pulse" className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all anomalies">
+            <Link to="/pulse" className="text-caption font-medium flex items-center gap-0.5" style={{ color: ACCENT }} title="View all anomalies">
               View all <ChevronRight size={10} />
             </Link>
           </div>
@@ -1127,7 +1038,7 @@ export function Dashboard() {
                 <div key={a.id} className="flex items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium t-primary truncate">{a.metric}</p>
-                    <p className="text-[10px] t-muted">Deviation: {typeof a.deviation === 'number' ? `${a.deviation > 0 ? '+' : ''}${a.deviation.toFixed(1)}%` : '--'}</p>
+                    <p className="text-caption t-muted">Deviation: {typeof a.deviation === 'number' ? `${a.deviation > 0 ? '+' : ''}${a.deviation.toFixed(1)}%` : '--'}</p>
                   </div>
                   <Badge variant={a.severity === 'critical' ? 'danger' : a.severity === 'high' ? 'warning' : 'info'}>
                     {a.severity}
@@ -1136,9 +1047,9 @@ export function Dashboard() {
               ))}
             </div>
           )}
-        </DashCard>
+        </Card>
 
-        <DashCard>
+        <Card>
           <p className="text-sm font-semibold t-primary mb-3">Control Plane</p>
           {!cpHealth ? (
             <p className="text-xs t-muted">No data available</p>
@@ -1164,7 +1075,7 @@ export function Dashboard() {
               </div>
             </div>
           )}
-        </DashCard>
+        </Card>
       </div>
 
       {/* QUICK LINKS */}
@@ -1182,7 +1093,7 @@ export function Dashboard() {
             style={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", boxShadow: "0 2px 8px rgba(100, 120, 180, 0.06)" }}
           >
             <p className="text-sm font-semibold t-primary">{item.label}</p>
-            <p className="text-[10px] t-muted">{item.desc}</p>
+            <p className="text-caption t-muted">{item.desc}</p>
           </Link>
         ))}
       </div>

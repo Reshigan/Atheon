@@ -32,18 +32,18 @@ export function SubCatalystPanel({ subCatalysts, onRun, onConfigure, onViewAnaly
               </div>
               <Badge variant="default" size="sm">{sc.autonomy_tier}</Badge>
             </div>
-            <div className="flex items-center gap-2 text-[10px] t-muted mb-2">
+            <div className="flex items-center gap-2 text-caption t-muted mb-2">
               {sc.last_run && <span className="flex items-center gap-1"><Clock size={10} /> Last: {new Date(sc.last_run).toLocaleDateString()}</span>}
               {sc.next_run && <span className="flex items-center gap-1"><Clock size={10} /> Next: {new Date(sc.next_run).toLocaleDateString()}</span>}
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => onRun(sc.name)} className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-all">
+              <button onClick={() => onRun(sc.name)} className="flex items-center gap-1 px-2 py-1 rounded-md text-caption font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-all">
                 <Play size={10} /> Run
               </button>
-              <button onClick={() => onViewAnalytics(sc.name)} className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--bg-secondary)] t-muted hover:t-primary transition-all">
+              <button onClick={() => onViewAnalytics(sc.name)} className="flex items-center gap-1 px-2 py-1 rounded-md text-caption font-medium bg-[var(--bg-secondary)] t-muted hover:t-primary transition-all">
                 <BarChart3 size={10} /> Analytics
               </button>
-              <button onClick={() => onConfigure(sc.name)} className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--bg-secondary)] t-muted hover:t-primary transition-all">
+              <button onClick={() => onConfigure(sc.name)} className="flex items-center gap-1 px-2 py-1 rounded-md text-caption font-medium bg-[var(--bg-secondary)] t-muted hover:t-primary transition-all">
                 <Settings size={10} /> Configure
               </button>
             </div>

@@ -12,6 +12,11 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { AuthContext, AppBindings } from '../types';
+import {
+  VANTAX_TENANT_TABLES,
+  cleanupVantaxTenant,
+  materialiseDemoBilling,
+} from '../services/vantax-demo';
 
 const seed = new Hono<AppBindings>();
 seed.use('/*', cors());
@@ -115,40 +120,9 @@ const GL_ACCOUNTS = [
   { code: '5300', name: 'Depreciation', type: 'expense', cls: 'expense', balance: 840000 },
 ];
 
-// Whitelist of allowed table names to prevent SQL injection via interpolation
-const ALLOWED_TABLES = new Set([
-  'sub_catalyst_run_items', 'run_comments', 'sub_catalyst_kpi_values',
-  'sub_catalyst_runs', 'catalyst_run_analytics', 'health_score_history',
-  'health_scores', 'risk_alerts', 'anomalies', 'process_metric_history', 'process_metrics',
-  'process_flows', 'correlation_events', 'agent_deployments', 'catalyst_actions',
-  'executive_briefings', 'scenarios', 'run_insights', 'catalyst_insights',
-  'catalyst_clusters', 'sub_catalyst_kpis', 'sub_catalyst_kpi_definitions',
-  'cross_system_correlations', 'execution_logs',
-  'erp_invoices', 'erp_purchase_orders', 'erp_suppliers', 'erp_customers',
-  'erp_products', 'erp_bank_transactions', 'erp_journal_entries',
-  'erp_gl_accounts', 'erp_employees', 'erp_tax_entries',
-  'erp_connections',
-  // New engine tables
-  'radar_signals', 'radar_signal_impacts', 'radar_strategic_context',
-  'diagnostic_analyses', 'diagnostic_causal_chains', 'diagnostic_fix_tracking',
-  'catalyst_patterns', 'catalyst_effectiveness', 'catalyst_dependencies',
-  'external_signals', 'signal_impacts', 'competitors', 'market_benchmarks', 'regulatory_events',
-  'root_cause_analyses', 'causal_factors', 'diagnostic_prescriptions',
-  'catalyst_effectiveness', 'catalyst_prescriptions',
-  'roi_tracking', 'board_reports',
-  'industry_radar_seeds', 'industry_benchmark_seeds', 'industry_regulatory_seeds',
-  // §11 tables
-  'atheon_score_history', 'baseline_snapshots', 'health_targets',
-  'anonymised_benchmarks', 'resolution_patterns', 'trial_assessments',
-  // Value Assessment Engine tables
-  'assessment_runs', 'assessment_findings', 'assessment_data_quality',
-  'assessment_process_timing', 'assessment_value_summary', 'assessments',
-  // SAP native tables
-  'sap_bkpf', 'sap_bseg', 'sap_bsid', 'sap_bsik', 'sap_febep',
-  'sap_ekko', 'sap_ekpo', 'sap_ekbe', 'sap_mard', 'sap_iseg',
-  'sap_vbak', 'sap_vbap', 'sap_vbrk', 'sap_vbrp',
-  'sap_lfa1', 'sap_lfb1', 'sap_kna1', 'sap_knb1',
-]);
+// Re-export under the old name so consumers inside this file (the seed
+// step that whitelists table names before COUNT(*)) keep working.
+const ALLOWED_TABLES = VANTAX_TENANT_TABLES;
 
 /**
  * POST /api/v1/seed-vantax
@@ -167,28 +141,9 @@ seed.post('/seed-vantax', async (c) => {
     console.log('[VantaX Seeder] Starting seed for tenant:', tenantId);
 
     // STEP 1: Cleanup ALL old data for this tenant
-    // Delete child tables first (FK constraints), then parent tables last
-    const childTables = [...ALLOWED_TABLES].filter(t => t !== 'catalyst_clusters' && t !== 'erp_connections');
-    const parentTables = ['erp_connections', 'catalyst_clusters'];
-    const cleanupTables = [...childTables, ...parentTables];
-
-    let cleanupCount = 0;
-    for (const table of cleanupTables) {
-      try {
-        const result = await c.env.DB.prepare(
-          `DELETE FROM ${table} WHERE tenant_id = ?`
-        ).bind(tenantId).run();
-        cleanupCount += Number((result.meta as Record<string, unknown>)?.changes) || 0;
-      } catch {
-        // Table may not exist yet
-      }
-    }
-    // Also clean up tables that reference catalyst_clusters by cluster_id (no tenant_id column)
-    try {
-      await c.env.DB.prepare(
-        `DELETE FROM catalyst_hitl_config WHERE tenant_id = ?`
-      ).bind(tenantId).run();
-    } catch { /* may not exist */ }
+    // Shared with /reset — full tenant wipe in dependency-safe order.
+    const { count: cleanupCount, tables: cleanupTablesCount } =
+      await cleanupVantaxTenant(c.env.DB, tenantId);
     console.log(`[VantaX Seeder] Cleaned ${cleanupCount} old records`);
 
     // STEP 2: Create SAP S/4HANA Connector in erp_connections
@@ -1971,6 +1926,33 @@ seed.post('/seed-vantax', async (c) => {
 
     console.log('[VantaX Seeder] Seeded value assessment engine demo data');
 
+    // ── STEP: Resolve a subset of RCAs + materialise shared-savings billing
+    // The seed produces all RCAs as `status='active'` with no impact_value
+    // and no verified catalyst_actions — meaning a clean billing query
+    // returns zero. For a believable demo, we post-process two of the RCAs
+    // into the billing-eligible state: resolved within the last 30 days,
+    // impact_value on at least one causal factor, verified catalyst_action
+    // linked via diagnostic_prescriptions.source_finding_id. Then we run
+    // computeBillablePeriod to materialise billable_periods +
+    // billable_line_items so the ROI dashboard / billing page shows
+    // realistic numbers on day one.
+    let billingDemo: {
+      rcasResolved: number;
+      actionsVerified: number;
+      periodId: string | null;
+      lineItems: number;
+      atheonRevenue: number;
+      currency: string;
+      windowStart: string;
+      windowEnd: string;
+    } | null = null;
+    try {
+      billingDemo = await materialiseDemoBilling(c.env.DB, tenantId);
+      console.log('[VantaX Seeder] Billing demo materialised:', billingDemo);
+    } catch (e) {
+      console.error('[VantaX Seeder] Billing demo materialise failed:', e);
+    }
+
     // Summary
     // Products: SAP (18) + PHYSICAL_COUNT (18) = 36; Invoices: SAP (80) + SAP-AR (72) = 152
     const totalErpRecords = SA_SUPPLIERS.length + SA_CUSTOMERS.length + (SA_PRODUCTS.length * 2) + 80 + 72 + 80 + 80 + GL_ACCOUNTS.length + 40;
@@ -1979,7 +1961,7 @@ seed.post('/seed-vantax', async (c) => {
       success: true,
       message: 'VantaX tenant seeded with realistic SAP S/4HANA demo data',
       tenant: { id: tenantId, slug: 'vantax' },
-      cleanup: { tables: cleanupTables.length, recordsRemoved: cleanupCount },
+      cleanup: { tables: cleanupTablesCount, recordsRemoved: cleanupCount },
       seeded: {
         sapConnector: { id: connectionId, name: 'SAP S/4HANA Production', status: 'connected', modules: ['FI', 'CO', 'MM', 'SD', 'PP', 'QM'] },
         erpData: {
@@ -2033,6 +2015,7 @@ seed.post('/seed-vantax', async (c) => {
           roiTracking: 1,
           industrySeeds: industrySeeds.length,
         },
+        billing: billingDemo,
       },
       nextSteps: [
         'Go to Catalysts page and execute any sub-catalyst',
@@ -2050,6 +2033,46 @@ seed.post('/seed-vantax', async (c) => {
   } catch (err) {
     console.error('VantaX seeding failed:', err);
     return c.json({ error: 'Seeding failed', details: (err as Error).message, stack: (err as Error).stack }, 500);
+  }
+});
+
+/**
+ * POST /api/v1/seed-vantax/reset
+ *
+ * Standalone wipe of the VantaX tenant data without reseeding. Lets the
+ * sales team rehearse a clean-slate demo without re-running the full
+ * (multi-second) seed, and gives ops a deterministic "undo" if a demo
+ * run drifts off-script (e.g. a manual catalyst execution that should
+ * not have been recorded).
+ *
+ * Same auth guard as /seed-vantax — restricted to the VantaX tenant via
+ * `getVantaXTenantId`. Returns the number of rows + tables cleaned.
+ *
+ * Re-seed sequence:
+ *   POST /api/v1/seed-vantax/reset
+ *   POST /api/v1/seed-vantax           ← full seed including billing
+ *   POST /api/v1/seed-vantax/seed-findings-demo  ← (optional) findings detectors
+ */
+seed.post('/reset', async (c) => {
+  const tenantId = await getVantaXTenantId(c);
+  if (!tenantId) {
+    return c.json({
+      error: 'Access denied',
+      message: 'This endpoint is restricted to VantaX (Pty) Ltd demo environment',
+    }, 403);
+  }
+  try {
+    const { count, tables } = await cleanupVantaxTenant(c.env.DB, tenantId);
+    console.log(`[VantaX Reset] Cleaned ${count} rows across ${tables} tables for ${tenantId}`);
+    return c.json({
+      success: true,
+      tenant: { id: tenantId, slug: 'vantax' },
+      cleanup: { tables, recordsRemoved: count },
+      message: 'VantaX tenant data cleared. Re-seed with POST /api/v1/seed-vantax.',
+    });
+  } catch (err) {
+    console.error('VantaX reset failed:', err);
+    return c.json({ error: 'reset_failed', details: (err as Error).message }, 500);
   }
 });
 

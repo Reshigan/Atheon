@@ -17,49 +17,15 @@
  * drill-down are explicitly future work.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, AlertCircle, Shield, Activity } from 'lucide-react';
+import { LoadingState, ErrorState } from '@/components/ui/state';
+import { TrendingUp, Shield, Activity, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
-
-interface CalibrationGate {
-  gate: string;
-  total: number;
-  true_positives: number;
-  false_positives: number;
-  true_negatives: number;
-  false_negatives: number;
-  false_positive_rate: number | null;
-  false_negative_rate: number | null;
-  recommendation: 'tighten' | 'loosen' | 'hold';
-}
-
-interface ForecastHorizon {
-  horizon_days: number;
-  graded: number;
-  within_band_rate: number | null;
-  median_abs_error_pct: number | null;
-}
-
-interface ForecastAccuracyResp {
-  lookback_days: number;
-  total_graded: number;
-  within_band_rate: number | null;
-  median_abs_error_pct: number | null;
-  by_horizon: ForecastHorizon[];
-}
-
-interface BillingSummary {
-  periods_count: number;
-  total_realised_savings: number;
-  total_atheon_revenue: number;
-  currency: string;
-}
-
-interface DsarRow { request_type: string; status: string; n: number }
-interface DsarSummary { by_type_and_status: DsarRow[] }
+import type {
+  BillingSummary, ForecastAccuracyResp, CalibrationGate, DsarSummary,
+} from '@/lib/api';
 
 function formatCurrency(value: number, currency: string): string {
   try {
@@ -85,51 +51,49 @@ export default function ROIDashboardPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [b, f, c, d] = await Promise.all([
-          api.get<BillingSummary>('/api/v1/insights-stats/billing-summary'),
-          api.get<ForecastAccuracyResp>('/api/v1/insights-stats/forecast-accuracy'),
-          api.get<{ gates: CalibrationGate[] }>('/api/v1/insights-stats/calibration'),
-          api.get<DsarSummary>('/api/v1/insights-stats/dsar-summary'),
-        ]);
-        if (cancelled) return;
-        setBilling(b);
-        setForecast(f);
-        setCalibration(c);
-        setDsar(d);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  // Stable loader so the error retry button can re-invoke without
+  // racing the cancelled flag below.
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // SDK-only — raw api.get('/path') is banned per UI_POLISH_PRINCIPLES §6.1.
+      // Adding a new endpoint? Add it to api.insightsStats first, then
+      // consume the typed method here.
+      const [b, f, c, d] = await Promise.all([
+        api.insightsStats.billingSummary(),
+        api.insightsStats.forecastAccuracy(),
+        api.insightsStats.calibration(),
+        api.insightsStats.dsarSummary(),
+      ]);
+      setBilling(b);
+      setForecast(f);
+      setCalibration(c);
+      setDsar(d);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load');
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  // Canonical render-state contract (UI_POLISH_PRINCIPLES §6.1):
+  //   1. loading → LoadingState
+  //   2. error + no data → ErrorState with retry
+  //   3. otherwise → real content
   if (loading) {
-    return (
-      <div className="p-6 space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    );
+    return <div className="p-6"><LoadingState variant="cards" count={4} /></div>;
   }
-  if (error) {
+  if (error && !billing) {
     return (
       <div className="p-6">
-        <Card className="p-6 border-red-500">
-          <div className="flex items-center gap-2 text-red-500">
-            <AlertCircle size={18} />
-            <span>Error: {error}</span>
-          </div>
-        </Card>
+        <ErrorState
+          title="Couldn't load ROI dashboard"
+          error={error}
+          onRetry={load}
+        />
       </div>
     );
   }

@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
+import { LoadingState } from "@/components/ui/state";
 
 import { api, ApiError } from "@/lib/api";
-import { cleanLlmText } from "@/lib/utils";
+import { cleanLlmText, formatDuration } from "@/lib/utils";
 import type { Metric, AnomalyItem, ProcessItem, CorrelationItem, PulseSummary, CatalystRunItem, CatalystRunSummary, MetricTraceResponse, HealthDimensionTraceResponse, PulseInsightsResponse, DiagnosticSummaryResponse, DiagnosticAnalysisItem, DiagnosticAnalysisDetail, CostOfInactionResponse } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import { CostOfInactionTicker } from "@/components/ui/cost-of-inaction-ticker";
@@ -26,7 +27,6 @@ import {
 } from "lucide-react";
 import { CSVExportButton } from "@/components/common/CSVExportButton";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { MetricsGrid } from "./pulse/MetricsGrid";
 import { AnomalyList } from "./pulse/AnomalyList";
 // FlipCard removed per UI cleanup spec
@@ -117,8 +117,8 @@ function PulseActionRequired({
               <span className="text-xs font-medium t-primary">{item.label}</span>
               <span className="text-lg font-bold">{item.count}</span>
             </div>
-            <div className="text-[10px] t-muted truncate">{item.subline}</div>
-            <div className="flex items-center gap-1 text-[10px] mt-1.5 opacity-80">
+            <div className="text-caption t-muted truncate">{item.subline}</div>
+            <div className="flex items-center gap-1 text-caption mt-1.5 opacity-80">
               <ArrowRight size={10} /> Jump to {item.tab}
             </div>
           </button>
@@ -669,12 +669,7 @@ export function PulsePage() {
     return (
       <div className="space-y-6 animate-fadeIn">
         {pageHeader}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} variant="card" height={120} />)}
-        </div>
-        <div className="flex items-center justify-center h-48">
-          <Loader2 className="w-8 h-8 text-accent animate-spin" />
-        </div>
+        <LoadingState variant="cards" count={4} />
       </div>
     );
   }
@@ -754,7 +749,7 @@ export function PulsePage() {
               <h3 className="text-sm font-semibold t-primary">Atheon Intelligence — Operational Insights</h3>
               {aiInsights.domain !== 'all' && <Badge variant="info" size="sm">{aiInsights.domain}</Badge>}
             </div>
-            <span className="text-[10px] t-muted">{aiInsights.poweredBy}</span>
+            <span className="text-caption t-muted">{aiInsights.poweredBy}</span>
           </div>
           <p className="text-sm t-secondary mb-3 whitespace-pre-line">{cleanLlmText(aiInsights.insights)}</p>
           {aiInsights.recommendations.length > 0 && (
@@ -775,7 +770,7 @@ export function PulsePage() {
               <p className="text-xs font-medium t-primary mb-1.5">Insight Drivers (Traceability)</p>
               <div className="flex flex-wrap gap-1.5">
                 {aiInsights.drivers.map((driver, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-[10px] t-muted border border-[var(--border-card)]">
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-caption t-muted border border-[var(--border-card)]">
                     <Eye size={8} /> {driver.source}: {driver.metric || driver.description || driver.type}
                   </span>
                 ))}
@@ -810,7 +805,7 @@ export function PulsePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <Card variant="black" className="lg:col-span-1 flex flex-col items-center justify-center">
               {/* Pulse Status Strip (visual differentiation from Apex ring) */}
-              <p className="text-[10px] t-muted uppercase tracking-wider mb-2">Operational Health</p>
+              <p className="text-label mb-2">Operational Health</p>
               <p className="text-3xl font-bold t-primary mb-3">{health.score}<span className="text-sm font-normal t-muted">/100</span></p>
               <div className="w-full h-3 rounded-full overflow-hidden flex" title={`Green: ${summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} | Amber: ${summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} | Red: ${summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length}`}>
                 {(() => {
@@ -827,7 +822,7 @@ export function PulsePage() {
                   );
                 })()}
               </div>
-              <div className="flex items-center justify-between w-full mt-2 text-[10px]">
+              <div className="flex items-center justify-between w-full mt-2 text-caption">
                 <span className="text-emerald-400">{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} green</span>
                 <span className="text-amber-400">{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} amber</span>
                 <span className="text-red-400">{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length} red</span>
@@ -844,11 +839,11 @@ export function PulsePage() {
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] w-full space-y-1.5">
                 {Object.entries(health.dimensions).slice(0, 4).map(([name, dim]) => (
                   <div key={name} className="flex items-center gap-2">
-                    <span className="text-[10px] t-secondary w-24 truncate">{name}</span>
+                    <span className="text-caption t-secondary w-24 truncate">{name}</span>
                     <div className="flex-1">
                       <Progress value={dim.score} color={dim.score >= 80 ? 'emerald' : dim.score >= 60 ? 'amber' : 'red'} size="sm" />
                     </div>
-                    <span className="text-[10px] font-bold t-primary w-6 text-right">{dim.score}</span>
+                    <span className="text-caption font-bold t-primary w-6 text-right">{dim.score}</span>
                   </div>
                 ))}
               </div>
@@ -884,7 +879,7 @@ export function PulsePage() {
                         <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'improving' ? '#10b981' : dim.trend === 'declining' ? '#ef4444' : '#6b7280'} />
                         <button
                           onClick={() => handleOpenDimensionTrace(dim.key)}
-                          className="opacity-0 group-hover:opacity-100 text-[10px] text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all ml-2"
+                          className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all ml-2"
                           title={`Trace ${dim.name}`}
                         >
                           <Eye size={10} />
@@ -901,13 +896,13 @@ export function PulsePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card className="h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs t-muted uppercase tracking-wider">Total Metrics</span>
+                <span className="text-label">Total Metrics</span>
                 <Activity size={14} className="text-accent" />
               </div>
               <p className="text-2xl font-bold t-primary">{summary?.totalMetrics ?? metrics.length}</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.slice(0, 3).map((m, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px]">
+                  <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
                     <span className={`font-medium ${statusColor(m.status)}`}>{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
@@ -916,13 +911,13 @@ export function PulsePage() {
             </Card>
             <Card className="h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs t-muted uppercase tracking-wider">Healthy</span>
+                <span className="text-label">Healthy</span>
                 <CheckCircle2 size={14} className="text-emerald-400" />
               </div>
               <p className="text-2xl font-bold text-emerald-400">{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length}</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'green').slice(0, 3).map((m, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px]">
+                  <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
                     <span className="font-medium text-emerald-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
@@ -931,13 +926,13 @@ export function PulsePage() {
             </Card>
             <Card className="h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs t-muted uppercase tracking-wider">Warning</span>
+                <span className="text-label">Warning</span>
                 <AlertTriangle size={14} className="text-amber-400" />
               </div>
               <p className="text-2xl font-bold text-amber-400">{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length}</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'amber').slice(0, 3).map((m, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px]">
+                  <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
                     <span className="font-medium text-amber-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
@@ -946,13 +941,13 @@ export function PulsePage() {
             </Card>
             <Card className="h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs t-muted uppercase tracking-wider">Critical</span>
+                <span className="text-label">Critical</span>
                 <XCircle size={14} className="text-red-400" />
               </div>
               <p className="text-2xl font-bold text-red-400">{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length}</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'red').slice(0, 3).map((m, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px]">
+                  <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
                     <span className="font-medium text-red-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
@@ -984,7 +979,7 @@ export function PulsePage() {
                   const Icon = insight.icon;
                   return (
                     <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -996,9 +991,9 @@ export function PulsePage() {
                         </div>
                         <p className="text-xs t-muted mt-0.5">{insight.description}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] t-muted">Priority: {insight.priority}</span>
-                          <span className="text-[10px] t-muted">|</span>
-                          <span className="text-[10px] t-muted">{insight.category}</span>
+                          <span className="text-caption t-muted">Priority: {insight.priority}</span>
+                          <span className="text-caption t-muted">|</span>
+                          <span className="text-caption t-muted">{insight.category}</span>
                         </div>
                       </div>
                     </div>
@@ -1079,7 +1074,7 @@ export function PulsePage() {
                   </div>
 
                   <div className="mt-3">
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+                    <div className="flex items-center justify-between text-caption t-muted mb-1">
                       <span>Threshold</span>
                       <span className="text-emerald-500">{metric.thresholds?.green ?? 'N/A'} (green)</span>
                     </div>
@@ -1103,19 +1098,19 @@ export function PulsePage() {
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Current Value</span>
+                            <span className="text-label">Current Value</span>
                             <p className={`text-lg font-bold mt-0.5 ${statusColor(metric.status)}`}>{metric.value} {metric.unit}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Green Threshold</span>
+                            <span className="text-label">Green Threshold</span>
                             <p className="text-lg font-bold text-emerald-400 mt-0.5">{metric.thresholds?.green ?? '\u2014'}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Amber Threshold</span>
+                            <span className="text-label">Amber Threshold</span>
                             <p className="text-lg font-bold text-amber-400 mt-0.5">{metric.thresholds?.amber ?? '\u2014'}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Red Threshold</span>
+                            <span className="text-label">Red Threshold</span>
                             <p className="text-lg font-bold text-red-400 mt-0.5">{metric.thresholds?.red ?? '\u2014'}</p>
                           </div>
                         </div>
@@ -1150,7 +1145,7 @@ export function PulsePage() {
                         )}
 
                         {/* Source & Timing */}
-                        <div className="flex items-center gap-4 text-[10px] t-muted">
+                        <div className="flex items-center gap-4 text-caption t-muted">
                           {metric.sourceSystem && <span>Source: {metric.sourceSystem}</span>}
                           {metric.measuredAt && <span>Last measured: {new Date(metric.measuredAt).toLocaleString()}</span>}
                         </div>
@@ -1271,15 +1266,15 @@ export function PulsePage() {
                       {/* Quick Stats */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                         <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                          <span className="text-[10px] text-gray-400">Expected</span>
+                          <span className="text-caption t-muted">Expected</span>
                           <p className="text-sm font-medium t-secondary">{anom.expectedValue}</p>
                         </div>
                         <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                          <span className="text-[10px] text-gray-400">Actual</span>
+                          <span className="text-caption t-muted">Actual</span>
                           <p className="text-sm font-medium text-red-400">{anom.actualValue}</p>
                         </div>
                         <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                          <span className="text-[10px] text-gray-400">Detected</span>
+                          <span className="text-caption t-muted">Detected</span>
                           <p className="text-sm font-medium t-secondary">{new Date(anom.detectedAt).toLocaleString()}</p>
                         </div>
                       </div>
@@ -1296,19 +1291,19 @@ export function PulsePage() {
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                               <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Deviation</span>
+                                <span className="text-label">Deviation</span>
                                 <p className={`text-lg font-bold mt-0.5 ${deviationPct >= 50 ? 'text-red-400' : deviationPct >= 25 ? 'text-amber-400' : 'text-accent'}`}>+{deviationPct}%</p>
                               </div>
                               <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Severity</span>
+                                <span className="text-label">Severity</span>
                                 <p className={`text-lg font-bold mt-0.5 capitalize ${anom.severity === 'critical' ? 'text-red-400' : anom.severity === 'high' ? 'text-amber-400' : 'text-accent'}`}>{anom.severity}</p>
                               </div>
                               <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Status</span>
+                                <span className="text-label">Status</span>
                                 <p className="text-lg font-bold t-primary mt-0.5 capitalize">{anom.status || 'open'}</p>
                               </div>
                               <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Delta</span>
+                                <span className="text-label">Delta</span>
                                 <p className="text-lg font-bold text-red-400 mt-0.5">{(anom.actualValue - anom.expectedValue).toFixed(1)}</p>
                               </div>
                             </div>
@@ -1350,35 +1345,35 @@ export function PulsePage() {
                             </div>
                             <div className="space-y-2.5">
                               <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>1</div>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>1</div>
                                 <div className="flex-1">
                                   <span className="text-sm t-primary">Investigate root cause: {anom.hypothesis}</span>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] t-muted">Priority: {anom.severity === 'critical' ? 'Immediate' : 'Short-term'}</span>
-                                    <span className="text-[10px] t-muted">|</span>
-                                    <span className="text-[10px] t-muted">Owner: Operations Team</span>
+                                    <span className="text-caption t-muted">Priority: {anom.severity === 'critical' ? 'Immediate' : 'Short-term'}</span>
+                                    <span className="text-caption t-muted">|</span>
+                                    <span className="text-caption t-muted">Owner: Operations Team</span>
                                   </div>
                                 </div>
                               </div>
                               <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>2</div>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>2</div>
                                 <div className="flex-1">
                                   <span className="text-sm t-primary">Verify data quality and check for upstream system changes</span>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] t-muted">Priority: Short-term</span>
-                                    <span className="text-[10px] t-muted">|</span>
-                                    <span className="text-[10px] t-muted">Owner: Data Engineering</span>
+                                    <span className="text-caption t-muted">Priority: Short-term</span>
+                                    <span className="text-caption t-muted">|</span>
+                                    <span className="text-caption t-muted">Owner: Data Engineering</span>
                                   </div>
                                 </div>
                               </div>
                               <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>3</div>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>3</div>
                                 <div className="flex-1">
                                   <span className="text-sm t-primary">{deviationPct >= 50 ? 'Escalate to management and implement corrective action plan' : 'Monitor for recurrence and adjust thresholds if necessary'}</span>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] t-muted">Priority: {deviationPct >= 50 ? 'Immediate' : 'Medium-term'}</span>
-                                    <span className="text-[10px] t-muted">|</span>
-                                    <span className="text-[10px] t-muted">Owner: {deviationPct >= 50 ? 'Management' : 'Operations Team'}</span>
+                                    <span className="text-caption t-muted">Priority: {deviationPct >= 50 ? 'Immediate' : 'Medium-term'}</span>
+                                    <span className="text-caption t-muted">|</span>
+                                    <span className="text-caption t-muted">Owner: {deviationPct >= 50 ? 'Management' : 'Operations Team'}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1391,7 +1386,7 @@ export function PulsePage() {
                               <Badge variant={anom.status === 'resolved' ? 'success' : anom.status === 'investigating' ? 'info' : 'warning'} size="sm">
                                 {anom.status || 'open'}
                               </Badge>
-                              <span className="text-[10px] t-muted">Detected: {new Date(anom.detectedAt).toLocaleString()}</span>
+                              <span className="text-caption t-muted">Detected: {new Date(anom.detectedAt).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -1423,39 +1418,39 @@ export function PulsePage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs t-muted uppercase tracking-wider">Processes</span>
+                    <span className="text-label">Processes</span>
                     <GitBranch size={14} className="text-accent" />
                   </div>
                   <p className="text-2xl font-bold t-primary">{processes.length}</p>
-                  <p className="text-[10px] t-muted mt-1">Mapped & monitored</p>
+                  <p className="text-caption t-muted mt-1">Mapped & monitored</p>
                 </Card>
                 <Card>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs t-muted uppercase tracking-wider">Avg Conformance</span>
+                    <span className="text-label">Avg Conformance</span>
                     <Target size={14} className="text-emerald-400" />
                   </div>
                   <p className={`text-2xl font-bold ${
                     (processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length) >= 80 ? 'text-emerald-400' : 'text-amber-400'
                   }`}>{Math.round(processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length)}%</p>
-                  <p className="text-[10px] t-muted mt-1">Target: 85%+</p>
+                  <p className="text-caption t-muted mt-1">Target: 85%+</p>
                 </Card>
                 <Card>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs t-muted uppercase tracking-wider">Total Variants</span>
+                    <span className="text-label">Total Variants</span>
                     <Workflow size={14} className="text-blue-400" />
                   </div>
                   <p className="text-2xl font-bold t-primary">{processes.reduce((s, p) => s + p.variants, 0)}</p>
-                  <p className="text-[10px] t-muted mt-1">Across all processes</p>
+                  <p className="text-caption t-muted mt-1">Across all processes</p>
                 </Card>
                 <Card>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs t-muted uppercase tracking-wider">Bottlenecks</span>
+                    <span className="text-label">Bottlenecks</span>
                     <AlertTriangle size={14} className="text-red-400" />
                   </div>
                   <p className={`text-2xl font-bold ${processes.reduce((s, p) => s + p.bottlenecks.length, 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                     {processes.reduce((s, p) => s + p.bottlenecks.length, 0)}
                   </p>
-                  <p className="text-[10px] t-muted mt-1">Steps requiring attention</p>
+                  <p className="text-caption t-muted mt-1">Steps requiring attention</p>
                 </Card>
               </div>
             )}
@@ -1481,7 +1476,11 @@ export function PulsePage() {
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
                         <span>{flow.variants} variants</span>
-                        <span>Avg duration: {flow.avgDuration} days</span>
+                        {/* Backend stores avg_duration in seconds. formatDuration
+                            picks the right unit (s/m/h/d/mo) and renders "—"
+                            for unknown / non-finite values rather than the bare
+                            `Infinity` / `undefined` strings the UI used to show. */}
+                        <span>Avg duration: {formatDuration(flow.avgDuration)}</span>
                         <span>{totalSteps} steps</span>
                       </div>
                     </div>
@@ -1502,9 +1501,17 @@ export function PulsePage() {
                           'bg-[var(--bg-secondary)] border-[var(--border-card)]'
                         }`}>
                           <span className="text-sm font-medium t-primary">{step.name}</span>
-                          <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
-                            <span>{step.avgDuration}d avg</span>
-                            <span>{step.throughput}/day</span>
+                          <div className="flex items-center gap-3 mt-1 text-caption t-muted">
+                            {/* Step-level avgDuration / throughput are not always
+                                populated by the backend (process_flows.steps
+                                stores just `{ name, count }` in some paths).
+                                Render only when we actually have a value. */}
+                            {Number.isFinite(step.avgDuration) && step.avgDuration > 0 && (
+                              <span>{formatDuration(step.avgDuration)} avg</span>
+                            )}
+                            {Number.isFinite(step.throughput) && step.throughput > 0 && (
+                              <span>{step.throughput}/day</span>
+                            )}
                           </div>
                           {step.status !== 'healthy' && (
                             <Badge variant={step.status === 'bottleneck' ? 'danger' : 'warning'} size="sm" className="mt-1">
@@ -1538,19 +1545,19 @@ export function PulsePage() {
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Conformance</span>
+                            <span className="text-label">Conformance</span>
                             <p className={`text-lg font-bold mt-0.5 ${flow.conformanceRate >= 85 ? 'text-emerald-400' : flow.conformanceRate >= 70 ? 'text-amber-400' : 'text-red-400'}`}>{flow.conformanceRate}%</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Step Health</span>
+                            <span className="text-label">Step Health</span>
                             <p className={`text-lg font-bold mt-0.5 ${stepHealth >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>{stepHealth}%</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Avg Duration</span>
-                            <p className="text-lg font-bold t-primary mt-0.5">{flow.avgDuration}d</p>
+                            <span className="text-label">Avg Duration</span>
+                            <p className="text-lg font-bold t-primary mt-0.5">{formatDuration(flow.avgDuration)}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Process Variants</span>
+                            <span className="text-label">Process Variants</span>
                             <p className="text-lg font-bold t-primary mt-0.5">{flow.variants}</p>
                           </div>
                         </div>
@@ -1572,8 +1579,12 @@ export function PulsePage() {
                                 }`} />
                                 <span className="text-sm t-primary flex-1">{step.name}</span>
                                 <div className="flex items-center gap-4 text-xs t-muted">
-                                  <span className="flex items-center gap-1"><Clock size={10} /> {step.avgDuration}d</span>
-                                  <span className="flex items-center gap-1"><Zap size={10} /> {step.throughput}/day</span>
+                                  {Number.isFinite(step.avgDuration) && step.avgDuration > 0 ? (
+                                    <span className="flex items-center gap-1"><Clock size={10} /> {formatDuration(step.avgDuration)}</span>
+                                  ) : null}
+                                  {Number.isFinite(step.throughput) && step.throughput > 0 ? (
+                                    <span className="flex items-center gap-1"><Zap size={10} /> {step.throughput}/day</span>
+                                  ) : null}
                                   <Badge
                                     variant={step.status === 'bottleneck' ? 'danger' : step.status === 'degraded' ? 'warning' : 'success'}
                                     size="sm"
@@ -1596,30 +1607,30 @@ export function PulsePage() {
                         <div className="space-y-2.5">
                           {flow.bottlenecks.length > 0 && (
                             <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>1</div>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>1</div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Address bottleneck{flow.bottlenecks.length > 1 ? 's' : ''} at: {flow.bottlenecks.join(', ')}</span>
-                                <p className="text-[10px] t-muted mt-0.5">Consider resource reallocation, automation, or process redesign to reduce cycle time.</p>
+                                <p className="text-caption t-muted mt-0.5">Consider resource reallocation, automation, or process redesign to reduce cycle time.</p>
                               </div>
                             </div>
                           )}
                           {flow.variants > 3 && (
                             <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>{flow.bottlenecks.length > 0 ? '2' : '1'}</div>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>{flow.bottlenecks.length > 0 ? '2' : '1'}</div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Reduce process variants from {flow.variants} to improve standardisation</span>
-                                <p className="text-[10px] t-muted mt-0.5">High variant count suggests inconsistent execution. Review and enforce SOPs.</p>
+                                <p className="text-caption t-muted mt-0.5">High variant count suggests inconsistent execution. Review and enforce SOPs.</p>
                               </div>
                             </div>
                           )}
                           {flow.conformanceRate < 85 && (
                             <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
                                 {(flow.bottlenecks.length > 0 ? 1 : 0) + (flow.variants > 3 ? 1 : 0) + 1}
                               </div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Improve conformance from {flow.conformanceRate}% to target 85%+</span>
-                                <p className="text-[10px] t-muted mt-0.5">Identify top deviation paths and implement controls to guide process execution.</p>
+                                <p className="text-caption t-muted mt-0.5">Identify top deviation paths and implement controls to guide process execution.</p>
                               </div>
                             </div>
                           )}
@@ -1628,7 +1639,7 @@ export function PulsePage() {
                               <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                               <div className="flex-1">
                                 <span className="text-sm t-primary">This process is performing well</span>
-                                <p className="text-[10px] t-muted mt-0.5">No immediate optimisations required. Continue monitoring for drift.</p>
+                                <p className="text-caption t-muted mt-0.5">No immediate optimisations required. Continue monitoring for drift.</p>
                               </div>
                             </div>
                           )}
@@ -1653,39 +1664,39 @@ export function PulsePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <Card>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs t-muted uppercase tracking-wider">Correlations</span>
+                  <span className="text-label">Correlations</span>
                   <Link2 size={14} className="text-accent" />
                 </div>
                 <p className="text-2xl font-bold t-primary">{correlations.length}</p>
-                <p className="text-[10px] t-muted mt-1">Discovered patterns</p>
+                <p className="text-caption t-muted mt-1">Discovered patterns</p>
               </Card>
               <Card>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs t-muted uppercase tracking-wider">Avg Confidence</span>
+                  <span className="text-label">Avg Confidence</span>
                   <Target size={14} className="text-emerald-400" />
                 </div>
                 <p className={`text-2xl font-bold ${
                   (correlations.reduce((s, c) => s + c.confidence, 0) / correlations.length) >= 0.7 ? 'text-emerald-400' : 'text-amber-400'
                 }`}>{Math.round((correlations.reduce((s, c) => s + c.confidence, 0) / correlations.length) * 100)}%</p>
-                <p className="text-[10px] t-muted mt-1">Pattern reliability</p>
+                <p className="text-caption t-muted mt-1">Pattern reliability</p>
               </Card>
               <Card>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs t-muted uppercase tracking-wider">Unique Systems</span>
+                  <span className="text-label">Unique Systems</span>
                   <Workflow size={14} className="text-blue-400" />
                 </div>
                 <p className="text-2xl font-bold t-primary">
                   {new Set([...correlations.map(c => c.sourceSystem), ...correlations.map(c => c.targetSystem)]).size}
                 </p>
-                <p className="text-[10px] t-muted mt-1">Connected sources</p>
+                <p className="text-caption t-muted mt-1">Connected sources</p>
               </Card>
               <Card>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs t-muted uppercase tracking-wider">Avg Lag</span>
+                  <span className="text-label">Avg Lag</span>
                   <Clock size={14} className="text-gray-400" />
                 </div>
                 <p className="text-2xl font-bold t-primary">{Math.round(correlations.reduce((s, c) => s + c.lagDays, 0) / correlations.length)}d</p>
-                <p className="text-[10px] t-muted mt-1">Between events</p>
+                <p className="text-caption t-muted mt-1">Between events</p>
               </Card>
             </div>
           )}
@@ -1722,7 +1733,7 @@ export function PulsePage() {
                       </div>
                       <div className="flex-1 relative">
                         <div className="h-px bg-gradient-to-r from-accent/40 to-blue-500/30" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-card)] text-[10px] text-gray-500">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-card)] text-caption text-gray-500">
                           {event.lagDays}d lag
                         </div>
                       </div>
@@ -1739,11 +1750,11 @@ export function PulsePage() {
                   {/* Quick Info */}
                   <div className="grid grid-cols-2 gap-4 mt-3">
                     <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <span className="text-[10px] text-gray-400">Source Event</span>
+                      <span className="text-caption t-muted">Source Event</span>
                       <p className="text-sm t-secondary">{event.sourceEvent}</p>
                     </div>
                     <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <span className="text-[10px] text-gray-400">Target Impact</span>
+                      <span className="text-caption t-muted">Target Impact</span>
                       <p className="text-sm t-secondary">{event.targetImpact}</p>
                     </div>
                   </div>
@@ -1759,21 +1770,21 @@ export function PulsePage() {
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Confidence</span>
+                            <span className="text-label">Confidence</span>
                             <p className={`text-lg font-bold mt-0.5 ${confidenceColor(event.confidence)}`}>
                               {confidenceLabel(event.confidence)}
                             </p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Time Lag</span>
+                            <span className="text-label">Time Lag</span>
                             <p className="text-lg font-bold t-primary mt-0.5">{event.lagDays} day{event.lagDays !== 1 ? 's' : ''}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Source</span>
+                            <span className="text-label">Source</span>
                             <p className="text-lg font-bold text-accent mt-0.5">{event.sourceSystem}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                            <span className="text-[10px] t-muted uppercase tracking-wider">Target</span>
+                            <span className="text-label">Target</span>
                             <p className="text-lg font-bold text-blue-400 mt-0.5">{event.targetSystem}</p>
                           </div>
                         </div>
@@ -1820,21 +1831,21 @@ export function PulsePage() {
                             <Eye className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <span className="text-sm t-primary">Set up automated alerts on <span className="font-medium">{event.sourceSystem}</span> for early detection</span>
-                              <p className="text-[10px] t-muted mt-0.5">Use the {event.lagDays}-day lag as a predictive window to prepare for downstream impact.</p>
+                              <p className="text-caption t-muted mt-0.5">Use the {event.lagDays}-day lag as a predictive window to prepare for downstream impact.</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <Shield className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <span className="text-sm t-primary">Build contingency plans for <span className="font-medium">{event.targetImpact.toLowerCase()}</span></span>
-                              <p className="text-[10px] t-muted mt-0.5">Pre-position resources and response protocols to mitigate impact when the source event is detected.</p>
+                              <p className="text-caption t-muted mt-0.5">Pre-position resources and response protocols to mitigate impact when the source event is detected.</p>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Footer */}
-                      <div className="flex items-center gap-2 text-[10px] t-muted">
+                      <div className="flex items-center gap-2 text-caption t-muted">
                         <span>Discovered: {event.detectedAt ? new Date(event.detectedAt).toLocaleString() : 'N/A'}</span>
                       </div>
                     </div>
@@ -2082,17 +2093,17 @@ export function PulsePage() {
                             {/* Run Details Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Status</span>
+                                <span className="text-label">Status</span>
                                 <p className={`text-lg font-bold mt-0.5 capitalize ${colorClass.split(' ')[0]}`}>{run.status}</p>
                               </div>
                               <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Confidence</span>
+                                <span className="text-label">Confidence</span>
                                 <p className={`text-lg font-bold mt-0.5 ${run.confidence >= 0.8 ? 'text-emerald-400' : run.confidence >= 0.6 ? 'text-amber-400' : 'text-red-400'}`}>
                                   {(run.confidence * 100).toFixed(0)}%
                                 </p>
                               </div>
                               <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Duration</span>
+                                <span className="text-label">Duration</span>
                                 <p className="text-lg font-bold t-primary mt-0.5">
                                   {run.completedAt
                                     ? `${Math.round((new Date(run.completedAt).getTime() - new Date(run.createdAt).getTime()) / 1000)}s`
@@ -2100,7 +2111,7 @@ export function PulsePage() {
                                 </p>
                               </div>
                               <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                                <span className="text-[10px] t-muted uppercase tracking-wider">Review</span>
+                                <span className="text-label">Review</span>
                                 <p className={`text-lg font-bold mt-0.5 ${run.needsHumanReview ? 'text-amber-400' : 'text-emerald-400'}`}>
                                   {run.needsHumanReview ? 'Required' : 'Auto'}
                                 </p>
@@ -2131,7 +2142,7 @@ export function PulsePage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   {Object.entries(run.inputData).slice(0, 10).map(([key, value]) => (
                                     <div key={key} className="flex items-start gap-2 p-2 rounded bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                      <span className="text-[10px] t-muted uppercase tracking-wider min-w-[80px]">{key}</span>
+                                      <span className="text-label min-w-[80px]">{key}</span>
                                       <span className="text-xs t-secondary break-all">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
                                     </div>
                                   ))}
@@ -2149,7 +2160,7 @@ export function PulsePage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   {Object.entries(run.outputData).slice(0, 10).map(([key, value]) => (
                                     <div key={key} className="flex items-start gap-2 p-2 rounded bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                      <span className="text-[10px] t-muted uppercase tracking-wider min-w-[80px]">{key}</span>
+                                      <span className="text-label min-w-[80px]">{key}</span>
                                       <span className="text-xs t-secondary break-all">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
                                     </div>
                                   ))}
@@ -2213,7 +2224,7 @@ export function PulsePage() {
                             ) : null}
 
                             {/* Footer */}
-                            <div className="flex items-center gap-4 text-[10px] t-muted">
+                            <div className="flex items-center gap-4 text-caption t-muted">
                               <span>Created: {new Date(run.createdAt).toLocaleString()}</span>
                               {run.completedAt && <span>Completed: {new Date(run.completedAt).toLocaleString()}</span>}
                               <span className="font-mono">{run.id.substring(0, 8)}</span>
@@ -2247,12 +2258,12 @@ export function PulsePage() {
             <div className="space-y-4">
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <Card><div className="text-center"><p className="text-2xl font-bold t-primary">{diagSummary.totalAnalyses}</p><p className="text-[10px] t-muted uppercase">Total Analyses</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{diagSummary.pendingAnalyses}</p><p className="text-[10px] t-muted uppercase">Pending</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-emerald-400">{diagSummary.completedAnalyses}</p><p className="text-[10px] t-muted uppercase">Completed</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{diagSummary.undiagnosedMetrics}</p><p className="text-[10px] t-muted uppercase">Undiagnosed</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{diagSummary.criticalFindings}</p><p className="text-[10px] t-muted uppercase">Critical Findings</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-accent">{diagSummary.activeFixes}</p><p className="text-[10px] t-muted uppercase">Active Fixes</p></div></Card>
+                <Card><div className="text-center"><p className="text-2xl font-bold t-primary">{diagSummary.totalAnalyses}</p><p className="text-label">Total Analyses</p></div></Card>
+                <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{diagSummary.pendingAnalyses}</p><p className="text-label">Pending</p></div></Card>
+                <Card><div className="text-center"><p className="text-2xl font-bold text-emerald-400">{diagSummary.completedAnalyses}</p><p className="text-label">Completed</p></div></Card>
+                <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{diagSummary.undiagnosedMetrics}</p><p className="text-label">Undiagnosed</p></div></Card>
+                <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{diagSummary.criticalFindings}</p><p className="text-label">Critical Findings</p></div></Card>
+                <Card><div className="text-center"><p className="text-2xl font-bold text-accent">{diagSummary.activeFixes}</p><p className="text-label">Active Fixes</p></div></Card>
               </div>
 
               {/* Quick Diagnose: Red/Amber metrics */}
@@ -2272,7 +2283,7 @@ export function PulsePage() {
                             <span className="ml-1">Diagnose</span>
                           </Button>
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] t-muted">
+                        <div className="flex items-center gap-2 mt-1 text-caption t-muted">
                           <span>Value: {typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                           <span>· Source: {m.sourceSystem || 'General'}</span>
                         </div>
@@ -2303,7 +2314,7 @@ export function PulsePage() {
                           <Badge variant={analysis.status === 'completed' ? 'success' : analysis.status === 'failed' ? 'danger' : 'warning'} size="sm">{analysis.status}</Badge>
                           <span className="text-sm font-medium t-primary">{analysis.metricName}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] t-muted">
+                        <div className="flex items-center gap-2 text-caption t-muted">
                           <span>{new Date(analysis.createdAt).toLocaleDateString()}</span>
                           <ChevronRight size={12} className={expandedAnalysis === analysis.id ? 'rotate-90 transition-transform' : 'transition-transform'} />
                         </div>
@@ -2315,18 +2326,18 @@ export function PulsePage() {
                             {diagDetail.causalChain.map((link, i) => (
                               <div key={link.id} className="flex items-start gap-3">
                                 <div className="flex flex-col items-center">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${link.level === 0 ? 'bg-red-500/20 text-red-400' : link.causeType === 'root' ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--bg-secondary)] t-muted'}`}>L{link.level}</div>
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold ${link.level === 0 ? 'bg-red-500/20 text-red-400' : link.causeType === 'root' ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--bg-secondary)] t-muted'}`}>L{link.level}</div>
                                   {i < diagDetail.causalChain.length - 1 && <div className="w-px h-4 bg-[var(--border-card)]" />}
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs font-medium t-primary">{link.title}</span>
                                     <Badge variant={link.fixPriority === 'critical' ? 'danger' : link.fixPriority === 'high' ? 'warning' : 'info'} size="sm">{link.fixPriority}</Badge>
-                                    <span className="text-[10px] t-muted">Confidence: {Math.round(link.confidence)}%</span>
+                                    <span className="text-caption t-muted">Confidence: {Math.round(link.confidence)}%</span>
                                   </div>
-                                  <p className="text-[10px] t-secondary mt-0.5">{link.description}</p>
+                                  <p className="text-caption t-secondary mt-0.5">{link.description}</p>
                                   {link.recommendedFix && (
-                                    <div className="flex items-start gap-1 mt-1 text-[10px] text-emerald-400">
+                                    <div className="flex items-start gap-1 mt-1 text-caption text-emerald-400">
                                       <Wrench size={10} className="mt-0.5 flex-shrink-0" />
                                       <span>{link.recommendedFix}</span>
                                     </div>
@@ -2339,7 +2350,7 @@ export function PulsePage() {
                             <div className="mt-3">
                               <p className="text-xs font-medium t-primary mb-1">Fix Tracking</p>
                               {diagDetail.fixes.map(fix => (
-                                <div key={fix.id} className="flex items-center justify-between text-[10px] p-1.5 rounded bg-[var(--bg-secondary)]">
+                                <div key={fix.id} className="flex items-center justify-between text-caption p-1.5 rounded bg-[var(--bg-secondary)]">
                                   <span className="t-primary">{fix.chainTitle}</span>
                                   <Badge variant={fix.status === 'completed' ? 'success' : fix.status === 'in_progress' ? 'info' : 'warning'} size="sm">{fix.status}</Badge>
                                 </div>

@@ -131,7 +131,7 @@ export function TrustPerformancePage(): JSX.Element {
           <div className="flex items-center gap-2">
             <Target className="w-5 h-5 text-accent" />
             <h2 className="text-lg font-semibold t-primary">Calibration</h2>
-            <Badge variant="info" className="text-[10px] uppercase">Predicted vs Actual</Badge>
+            <Badge variant="info" className="text-label">Predicted vs Actual</Badge>
           </div>
           <div className="text-3xl font-semibold t-primary" data-testid="trust-accuracy">
             {accuracyDisplay.toFixed(1)}<span className="text-base t-muted">% accuracy</span>
@@ -141,23 +141,23 @@ export function TrustPerformancePage(): JSX.Element {
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--border-card)]">
             <div>
-              <div className="text-[10px] uppercase tracking-wider t-muted">Predictions</div>
+              <div className="text-label">Predictions</div>
               <div className="text-xl font-semibold t-primary">{(calibration?.totalSimulations ?? 0).toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider t-muted">Outcomes recorded</div>
+              <div className="text-label">Outcomes recorded</div>
               <div className="text-xl font-semibold t-primary">{(calibration?.simulationsWithOutcomes ?? 0).toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider t-muted">Calibrated subs (n≥5)</div>
+              <div className="text-label">Calibrated subs (n≥5)</div>
               <div className="text-xl font-semibold t-primary">{calibration?.calibratedSubCatalysts ?? 0}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider t-muted">Predicted value</div>
+              <div className="text-label">Predicted value</div>
               <div className="text-xl font-semibold t-primary">{formatZAR(calibration?.totalPredictedValueZar ?? 0)}</div>
             </div>
           </div>
-          <Badge variant={accuracyTone} className="text-[10px]">
+          <Badge variant={accuracyTone} className="text-caption">
             {accuracyDisplay >= 80 ? 'Calibrated' : accuracyDisplay >= 60 ? 'Warming up' : 'Cold-start'}
           </Badge>
         </Card>
@@ -167,21 +167,21 @@ export function TrustPerformancePage(): JSX.Element {
           <div className="flex items-center gap-2">
             <Lock className="w-5 h-5 text-accent" />
             <h2 className="text-lg font-semibold t-primary">Provenance</h2>
-            <Badge variant="info" className="text-[10px] uppercase">Merkle + HMAC</Badge>
+            <Badge variant="info" className="text-label">Merkle + HMAC</Badge>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider t-muted mb-1">Current root</div>
+            <div className="text-label mb-1">Current root</div>
             <div className="font-mono text-xs t-primary break-all" data-testid="trust-root">
               {root?.root ? root.root.slice(0, 32) + '…' : <span className="t-muted">empty chain</span>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--border-card)]">
             <div>
-              <div className="text-[10px] uppercase tracking-wider t-muted">Sequence</div>
+              <div className="text-label">Sequence</div>
               <div className="text-xl font-semibold t-primary">{(root?.seq ?? 0).toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider t-muted">Last appended</div>
+              <div className="text-label">Last appended</div>
               <div className="text-sm t-primary">
                 {root?.created_at ? new Date(root.created_at).toLocaleDateString() : '—'}
               </div>
@@ -223,7 +223,7 @@ export function TrustPerformancePage(): JSX.Element {
           <div className="flex items-center gap-2">
             <Network className="w-5 h-5 text-accent" />
             <h2 className="text-lg font-semibold t-primary">Peer benchmarks</h2>
-            <Badge variant="info" className="text-[10px] uppercase">DP ε = 1.0</Badge>
+            <Badge variant="info" className="text-label">DP ε = 1.0</Badge>
           </div>
           <div className="text-3xl font-semibold t-primary">
             {peerActive}<span className="text-base t-muted"> active patterns</span>
@@ -254,7 +254,7 @@ export function TrustPerformancePage(): JSX.Element {
 
       {/* ── Why this matters strip ── */}
       <Card className="p-5">
-        <div className="text-xs uppercase tracking-wider t-muted mb-3">Why this matters</div>
+        <div className="text-label mb-3">Why this matters</div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
             <div className="font-medium t-primary mb-1">Predictions are checked</div>

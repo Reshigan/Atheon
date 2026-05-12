@@ -129,7 +129,7 @@ function RequestIdFooter({ requestId }: { requestId: string }) {
   }, [requestId]);
 
   return (
-    <div className="mt-1 flex items-center gap-1.5 text-[10px] t-muted font-mono">
+    <div className="mt-1 flex items-center gap-1.5 text-caption t-muted font-mono">
       <span className="truncate" title={requestId}>ref: {requestId}</span>
       <button
         type="button"

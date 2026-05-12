@@ -9,6 +9,7 @@ import { FreshnessDot } from "@/components/common/FreshnessIndicator";
 import { CompanySwitcher } from "@/components/CompanySwitcher";
 import { ActionQueueWidget } from "@/components/layout/ActionQueueWidget";
 import { CalibrationChip } from "@/components/layout/CalibrationChip";
+import { PlatformTotalsChip } from "@/components/layout/PlatformTotalsChip";
 
 const PLATFORM_ADMIN_ROLES = ['superadmin', 'support_admin', 'admin'];
 
@@ -206,7 +207,7 @@ export function Header() {
               title="Switch company"
             >
               <Building2 size={12} className="flex-shrink-0 t-muted" />
-              <span className="text-[11px] font-medium t-secondary truncate max-w-[180px]">
+              <span className="text-caption font-medium t-secondary truncate max-w-[180px]">
                 {activeTenantName || user?.tenantName || 'Select Company'}
               </span>
               <ChevronDown size={10} className="flex-shrink-0 t-muted" />
@@ -218,7 +219,7 @@ export function Header() {
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-dropdown)' }}
               >
                 <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border-card)' }}>
-                  <p className="text-[10px] font-medium t-muted uppercase tracking-wider">Switch Company</p>
+                  <p className="text-caption font-medium t-muted uppercase tracking-wider">Switch Company</p>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
                   {/* Pin user's own company at top, then sort rest alphabetically */}
@@ -240,7 +241,7 @@ export function Header() {
                         <Building2 size={13} className={isActive ? 'text-accent flex-shrink-0' : 't-muted flex-shrink-0'} />
                         <div className="flex-1 min-w-0">
                           <p className={`text-[12px] leading-tight truncate ${isActive ? 'font-medium t-primary' : 't-secondary'}`}>{t.name}</p>
-                          <p className="text-[10px] t-muted">{isOwnCompany ? 'Your company' : industryLabel} &middot; {t.plan}</p>
+                          <p className="text-caption t-muted">{isOwnCompany ? 'Your company' : industryLabel} &middot; {t.plan}</p>
                         </div>
                         {isActive && <Check size={12} className="text-accent flex-shrink-0" />}
                       </button>
@@ -263,7 +264,7 @@ export function Header() {
             ) : (
               <Building2 size={12} className="flex-shrink-0 t-muted" />
             )}
-            <span className="text-[11px] font-medium t-secondary truncate max-w-[180px]">
+            <span className="text-caption font-medium t-secondary truncate max-w-[180px]">
               {user.brand?.nameOverride || user.tenantName}
             </span>
           </div>
@@ -277,7 +278,7 @@ export function Header() {
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
-              className="appearance-none rounded-md pl-2.5 pr-6 py-1 text-[11px] t-secondary cursor-pointer focus:outline-none transition-all"
+              className="appearance-none rounded-md pl-2.5 pr-6 py-1 text-caption t-secondary cursor-pointer focus:outline-none transition-all"
               style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
               title="Filter analytics by industry vertical"
             >
@@ -290,7 +291,7 @@ export function Header() {
         ) : displayIndustry && displayIndustry.value !== 'general' ? (
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
             <Factory size={11} className="flex-shrink-0 t-muted" />
-            <span className="text-[11px] font-medium t-secondary">{displayIndustry.label}</span>
+            <span className="text-caption font-medium t-secondary">{displayIndustry.label}</span>
           </div>
         ) : null}
 
@@ -311,6 +312,12 @@ export function Header() {
           <MessageCircle size={15} />
         </button>
 
+        {/* Platform totals chip — lifetime savings + runs at a glance.
+            Hidden when nothing has run yet (cold-start tenant). Pair with
+            CalibrationChip below: this is the "what has Atheon done?"
+            metric; CalibrationChip is the "how well does it do it?" one. */}
+        <PlatformTotalsChip />
+
         {/* Calibration accuracy chip — moat indicator. Hidden when no
             observations exist yet so cold-start tenants don't see "0%". */}
         <CalibrationChip />
@@ -330,7 +337,7 @@ export function Header() {
           >
             <Bell size={15} />
             {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none" style={{ background: 'var(--accent)' }}>
+              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full text-caption font-bold text-white flex items-center justify-center leading-none" style={{ background: 'var(--accent)' }}>
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -346,7 +353,7 @@ export function Header() {
                 {/* TASK-017: notification-categories integrated */}
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[11px] font-medium flex items-center gap-1" style={{ color: 'var(--accent)' }} title="Mark all notifications as read">
+                    <button onClick={markAllRead} className="text-caption font-medium flex items-center gap-1" style={{ color: 'var(--accent)' }} title="Mark all notifications as read">
                       <Check size={11} /> Mark all read
                     </button>
                   )}
@@ -385,8 +392,8 @@ export function Header() {
                         <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${severityColors[n.severity] || 'bg-zinc-400'}`} />
                         <div className="flex-1 min-w-0">
                           <p className={`text-[12px] leading-tight ${!n.read ? 'font-medium t-primary' : 't-secondary'}`}>{n.title}</p>
-                          <p className="text-[11px] t-muted mt-0.5 line-clamp-2">{n.message}</p>
-                          <p className="text-[10px] t-muted mt-0.5">{timeAgo(n.createdAt)}</p>
+                          <p className="text-caption t-muted mt-0.5 line-clamp-2">{n.message}</p>
+                          <p className="text-caption t-muted mt-0.5">{timeAgo(n.createdAt)}</p>
                         </div>
                       </div>
                     </button>
@@ -398,7 +405,7 @@ export function Header() {
                 <div className="px-3.5 py-2" style={{ borderTop: '1px solid var(--border-card)' }}>
                   <button
                     onClick={() => { navigate('/audit'); setShowNotifications(false); }}
-                    className="text-[11px] font-medium"
+                    className="text-caption font-medium"
                     style={{ color: 'var(--accent)' }}
                     title="Open audit log"
                   >
@@ -430,7 +437,7 @@ export function Header() {
 
         <div className="flex items-center gap-1.5 ml-1.5 pl-1.5" style={{ borderLeft: '1px solid var(--border-card)' }}>
           <div
-            className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0"
+            className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center text-caption font-semibold text-white flex-shrink-0"
             style={{ background: 'var(--accent)' }}
           >
             {user?.name?.charAt(0) || 'A'}

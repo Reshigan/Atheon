@@ -91,7 +91,7 @@ export function CatalystSimulatorCard({ clusterId, subCatalystName, initialStats
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-5 h-5 text-accent" />
             <h3 className="text-lg font-semibold t-primary">Catalyst Simulator</h3>
-            <Badge variant={phaseVariant[phase]} className="text-[10px] uppercase">
+            <Badge variant={phaseVariant[phase]} className="text-label">
               {phaseLabel[phase]}
             </Badge>
           </div>
@@ -109,7 +109,7 @@ export function CatalystSimulatorCard({ clusterId, subCatalystName, initialStats
       {/* Latest prediction */}
       {latest && (
         <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
-          <div className="text-xs uppercase tracking-wider t-muted mb-2">Predicted recovery</div>
+          <div className="text-label mb-2">Predicted recovery</div>
           <div className="flex items-baseline gap-3 flex-wrap">
             <span className="text-3xl font-semibold text-accent" data-testid="predicted-value">
               {formatZAR(latest.predicted_value_zar)}
@@ -148,7 +148,7 @@ export function CatalystSimulatorCard({ clusterId, subCatalystName, initialStats
       {/* Calibration history scatter */}
       {history.length > 0 && (
         <div>
-          <div className="text-xs uppercase tracking-wider t-muted mb-2">
+          <div className="text-label mb-2">
             Predicted vs actual ({history.length} of last {history.length})
           </div>
           <div className="rounded-md border border-[var(--border-card)] overflow-hidden">

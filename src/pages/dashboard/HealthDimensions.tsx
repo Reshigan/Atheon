@@ -31,7 +31,7 @@ export function HealthDimensions({ dimensions, onOpenTrace }: HealthDimensionsPr
           >
             <ScoreRing score={dim.score} size="sm" />
             <span className="text-xs font-medium t-primary">{dim.name}</span>
-            <span className={`text-[10px] ${dim.change > 0 ? 'text-emerald-500' : dim.change < 0 ? 'text-red-500' : 't-muted'}`}>
+            <span className={`text-caption ${dim.change > 0 ? 'text-emerald-500' : dim.change < 0 ? 'text-red-500' : 't-muted'}`}>
               {dim.change > 0 ? '+' : ''}{dim.change.toFixed(1)}%
             </span>
             <ChevronRight size={12} className="t-muted opacity-0 group-hover:opacity-100 transition-opacity" />

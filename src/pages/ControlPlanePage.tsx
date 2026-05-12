@@ -422,7 +422,7 @@ export function ControlPlanePage() {
               </div>
             </div>
 
-            <p className="text-[10px] text-gray-400">Configuration updates apply on next heartbeat/restart.</p>
+            <p className="text-caption t-muted">Configuration updates apply on next heartbeat/restart.</p>
 
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => { setShowEditConfig(false); setEditingDeployment(null); }}>Cancel</Button>
@@ -490,10 +490,10 @@ export function ControlPlanePage() {
             <h3 className="text-sm font-semibold t-primary">Platform Health</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div><span className="text-[10px] text-gray-400">Overall Health</span><p className="text-lg font-bold text-emerald-400">{health.overallHealth}%</p></div>
-            <div><span className="text-[10px] text-gray-400">Overall Uptime</span><p className="text-lg font-bold t-primary">{health.overallUptime}%</p></div>
-            <div><span className="text-[10px] text-gray-400">Deployment Status</span><div className="flex gap-2 mt-0.5 flex-wrap">{Object.entries(health.deploymentStatus || {}).map(([s, c]) => <Badge key={s} variant={s === 'running' ? 'success' : s === 'stopped' ? 'danger' : 'default'} size="sm">{s}: {c}</Badge>)}</div></div>
-            <div><span className="text-[10px] text-gray-400">Last Checked</span><p className="text-sm font-bold t-primary">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
+            <div><span className="text-caption t-muted">Overall Health</span><p className="text-lg font-bold text-emerald-400">{health.overallHealth}%</p></div>
+            <div><span className="text-caption t-muted">Overall Uptime</span><p className="text-lg font-bold t-primary">{health.overallUptime}%</p></div>
+            <div><span className="text-caption t-muted">Deployment Status</span><div className="flex gap-2 mt-0.5 flex-wrap">{Object.entries(health.deploymentStatus || {}).map(([s, c]) => <Badge key={s} variant={s === 'running' ? 'success' : s === 'stopped' ? 'danger' : 'default'} size="sm">{s}: {c}</Badge>)}</div></div>
+            <div><span className="text-caption t-muted">Last Checked</span><p className="text-sm font-bold t-primary">{new Date(health.lastChecked).toLocaleTimeString()}</p></div>
           </div>
         </Card>
       )}
@@ -575,23 +575,23 @@ export function ControlPlanePage() {
                 {/* Quick Metrics */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
                   <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                    <span className="text-[10px] text-gray-400">Replicas</span>
+                    <span className="text-caption t-muted">Replicas</span>
                     <p className="text-sm font-bold t-primary">{replicas}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                    <span className="text-[10px] text-gray-400">Uptime</span>
+                    <span className="text-caption t-muted">Uptime</span>
                     <p className="text-sm font-bold text-emerald-400">{dep.uptime.toFixed(1)}%</p>
                   </div>
                   <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                    <span className="text-[10px] text-gray-400">Version</span>
+                    <span className="text-caption t-muted">Version</span>
                     <p className="text-sm font-bold t-primary">{dep.version}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                    <span className="text-[10px] text-gray-400">Tasks</span>
+                    <span className="text-caption t-muted">Tasks</span>
                     <p className="text-sm font-bold t-primary">{dep.tasksExecuted.toLocaleString()}</p>
                   </div>
                   <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                    <span className="text-[10px] text-gray-400">Heartbeat</span>
+                    <span className="text-caption t-muted">Heartbeat</span>
                     <p className="text-sm font-bold t-primary">{dep.lastHeartbeat ? new Date(dep.lastHeartbeat).toLocaleTimeString() : 'N/A'}</p>
                   </div>
                 </div>
@@ -620,7 +620,7 @@ export function ControlPlanePage() {
                         </h4>
                         <div className="space-y-2">
                           <div>
-                            <span className="text-[10px] text-gray-400">Allowed Actions</span>
+                            <span className="text-caption t-muted">Allowed Actions</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {(Array.isArray(cfg.allowedActions) ? cfg.allowedActions : []).map((a: string) => (
                                 <Badge key={a} variant="success" size="sm">{a}</Badge>
@@ -631,7 +631,7 @@ export function ControlPlanePage() {
                             </div>
                           </div>
                           <div>
-                            <span className="text-[10px] text-gray-400">Blocked Actions</span>
+                            <span className="text-caption t-muted">Blocked Actions</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {(Array.isArray(cfg.blockedActions) ? cfg.blockedActions : []).map((a: string) => (
                                 <Badge key={a} variant="danger" size="sm">{a}</Badge>

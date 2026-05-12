@@ -276,7 +276,7 @@ export function SettingsPage() {
  >
  <div>
  <span className="text-sm t-primary">{notif.label}</span>
- <p className="text-[10px] t-muted">{notif.desc}</p>
+ <p className="text-caption t-muted">{notif.desc}</p>
  </div>
  <button
  onClick={() => toggleNotification(index)}
@@ -349,7 +349,7 @@ export function SettingsPage() {
  );
  })}
  </div>
- <p className="text-[10px] t-muted mt-2">
+ <p className="text-caption t-muted mt-2">
  Selected: {accentOptions.find(c => c.key === accentColor)?.label || 'Indigo'}
  </p>
  </div>
@@ -371,7 +371,7 @@ export function SettingsPage() {
      }}
    >
      <AlertTriangle size={14} className={`flex-shrink-0 mt-0.5 ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`} />
-     <p className={`text-[11px] ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`}>
+     <p className={`text-caption ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`}>
        {mfaEnforcementWarning.daysRemaining <= 0
          ? 'MFA is required for your role — enable it now to retain access.'
          : `MFA required for your role — enable within ${mfaEnforcementWarning.daysRemaining} day${mfaEnforcementWarning.daysRemaining === 1 ? '' : 's'} to keep access.`}
@@ -431,13 +431,13 @@ export function SettingsPage() {
            <Copy size={14} />
          </Button>
        </div>
-       <p className="text-[10px] text-amber-500">Save this key now. It will not be shown again after you leave this page.</p>
+       <p className="text-caption text-amber-500">Save this key now. It will not be shown again after you leave this page.</p>
      </>
    ) : apiKeyMeta ? (
      <div className="space-y-2">
        <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
          <span className="font-mono text-xs t-primary">{apiKeyMeta.prefix}••••••••</span>
-         <span className="text-[10px] t-muted ml-auto">Created {new Date(apiKeyMeta.createdAt).toLocaleDateString()}</span>
+         <span className="text-caption t-muted ml-auto">Created {new Date(apiKeyMeta.createdAt).toLocaleDateString()}</span>
        </div>
        <Button variant="secondary" size="sm" onClick={handleGenerateApiKey} disabled={apiKeyLoading} title="Generate a new API key (revokes existing)">
          {apiKeyLoading ? <Loader2 size={14} className="animate-spin" /> : <Key size={14} />} Regenerate Key
@@ -449,7 +449,7 @@ export function SettingsPage() {
      </Button>
    )}
    {apiKeyError && <div className="text-xs p-2 rounded bg-red-500/10 text-red-400">{apiKeyError}</div>}
-   <p className="text-[10px] text-gray-400">Include as <code className="text-accent">X-API-Key</code> header in your requests.</p>
+   <p className="text-caption t-muted">Include as <code className="text-accent">X-API-Key</code> header in your requests.</p>
  </div>
  </Card>
 

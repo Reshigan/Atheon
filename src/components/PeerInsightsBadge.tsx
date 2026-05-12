@@ -68,7 +68,7 @@ export function PeerInsightsBadge({ findingCode, industry = 'general' }: Props):
           and recovered <strong>{pattern.avg_recovery_pct.toFixed(1)}%</strong> of value-at-risk
           (cohort spread: {pattern.p25_recovery_pct.toFixed(0)}%–{pattern.p75_recovery_pct.toFixed(0)}%).
         </div>
-        <div className="t-muted flex items-center gap-1 text-[10px]">
+        <div className="t-muted flex items-center gap-1 text-caption">
           <Lock size={10} />
           <span>
             Differential privacy ε={pattern.epsilon} · Laplace mechanism · refreshed{' '}

@@ -124,19 +124,19 @@ export function DataGovernancePage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">DSAR Exports (30d)</p>
+          <p className="text-label">DSAR Exports (30d)</p>
           <p className="text-xl font-bold t-primary">{data.dsar.exports30d}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Erasures (30d)</p>
+          <p className="text-label">Erasures (30d)</p>
           <p className="text-xl font-bold t-primary">{data.dsar.erasures30d}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Audit Volume (30d)</p>
+          <p className="text-label">Audit Volume (30d)</p>
           <p className="text-xl font-bold t-primary">{data.auditVolume30d.toLocaleString()}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Retention</p>
+          <p className="text-label">Retention</p>
           <p className="text-xl font-bold t-primary">
             {data.retention.retentionDays ? `${data.retention.retentionDays}d` : '—'}
           </p>
@@ -175,7 +175,7 @@ export function DataGovernancePage() {
                   <p className="text-2xl font-bold" style={{ color: encryptionHealthy ? 'var(--accent)' : '#f59e0b' }}>
                     {encryptionPct}%
                   </p>
-                  <Badge variant={encryptionHealthy ? 'success' : 'warning'} className="text-[10px]">
+                  <Badge variant={encryptionHealthy ? 'success' : 'warning'} className="text-caption">
                     {encryptionHealthy ? 'All encrypted' : 'Plaintext present'}
                   </Badge>
                 </div>
@@ -203,7 +203,7 @@ export function DataGovernancePage() {
               <span className="text-xs font-medium t-primary">DSAR Exports</span>
             </div>
             <p className="text-3xl font-bold t-primary">{data.dsar.exports30d}</p>
-            <p className="text-[10px] t-muted mt-1">Completed in the last 30 days</p>
+            <p className="text-caption t-muted mt-1">Completed in the last 30 days</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -211,7 +211,7 @@ export function DataGovernancePage() {
               <span className="text-xs font-medium t-primary">Erasure Events</span>
             </div>
             <p className="text-3xl font-bold t-primary">{data.dsar.erasures30d}</p>
-            <p className="text-[10px] t-muted mt-1">POPIA right-to-be-forgotten fulfillments</p>
+            <p className="text-caption t-muted mt-1">POPIA right-to-be-forgotten fulfillments</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -221,14 +221,14 @@ export function DataGovernancePage() {
             <p className="text-sm font-bold t-primary">
               {data.dsar.lastExportAt ? new Date(data.dsar.lastExportAt).toLocaleDateString() : 'Never'}
             </p>
-            <p className="text-[10px] t-muted mt-1">
+            <p className="text-caption t-muted mt-1">
               {data.dsar.lastExportAt ? new Date(data.dsar.lastExportAt).toLocaleTimeString() : 'No historical record'}
             </p>
           </Card>
         </div>
         <Card className="p-4 mt-3">
           <p className="text-xs t-muted">
-            Counts sourced from <code className="text-[10px] font-mono">audit_log</code> rows with action <code className="text-[10px] font-mono">popia.data_export.completed</code> / <code className="text-[10px] font-mono">popia.erasure.completed</code>. To raise a new DSAR or erasure, use the POPIA controls under Settings.
+            Counts sourced from <code className="text-caption font-mono">audit_log</code> rows with action <code className="text-caption font-mono">popia.data_export.completed</code> / <code className="text-caption font-mono">popia.erasure.completed</code>. To raise a new DSAR or erasure, use the POPIA controls under Settings.
           </p>
         </Card>
       </TabPanel>
@@ -247,7 +247,7 @@ export function DataGovernancePage() {
               </span>
             </div>
           </div>
-          <p className="text-[11px] t-muted mt-3">{data.retention.policy}</p>
+          <p className="text-caption t-muted mt-3">{data.retention.policy}</p>
         </Card>
         <Card className="p-4 mt-3">
           <div className="flex items-center gap-2 mb-3">
@@ -255,7 +255,7 @@ export function DataGovernancePage() {
             <span className="text-sm font-medium t-primary">Audit Log Volume</span>
           </div>
           <p className="text-3xl font-bold t-primary">{data.auditVolume30d.toLocaleString()}</p>
-          <p className="text-[11px] t-muted mt-1">Audit entries recorded for this tenant in the last 30 days.</p>
+          <p className="text-caption t-muted mt-1">Audit entries recorded for this tenant in the last 30 days.</p>
         </Card>
       </TabPanel>
 
@@ -286,15 +286,15 @@ export function DataGovernancePage() {
                   <AlertCircle size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-medium t-primary">{data.encryption.erpPlaintext} connection{data.encryption.erpPlaintext === 1 ? '' : 's'} storing credentials as plaintext</p>
-                    <p className="text-[11px] t-muted mt-1">
-                      Set the platform ENCRYPTION_KEY secret and rotate connections via <code className="font-mono text-[10px]">POST /api/v1/admin/rotate-encryption</code> to encrypt at rest.
+                    <p className="text-caption t-muted mt-1">
+                      Set the platform ENCRYPTION_KEY secret and rotate connections via <code className="font-mono text-caption">POST /api/v1/admin/rotate-encryption</code> to encrypt at rest.
                     </p>
                   </div>
                 </div>
               )}
             </div>
           )}
-          <p className="text-[11px] t-muted mt-3">
+          <p className="text-caption t-muted mt-3">
             Transport encryption (TLS) and D1 encryption at rest are platform-wide defaults handled by Cloudflare and are not tenant-configurable.
           </p>
         </Card>

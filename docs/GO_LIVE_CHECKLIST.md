@@ -1,8 +1,19 @@
 # Atheon Go-Live Checklist
 
-Last updated: 2026-04-27 (assessment overhaul + frontend-findings + demo seeder shipped)
+Last updated: 2026-05-11 (DSAR encryption + audit-log retention + VantaX repeatable demo shipped)
 
 This document tracks the gating items between the current production state and a clean go-live announcement. Items are grouped by tier: **Tier 1 (blockers)** must be resolved before the announcement; **Tier 2 (should-fix)** should be closed within the first week; **Tier 3 (deferred)** are known follow-ups tracked in the backlog.
+
+## 2026-05-11 sweep — code-side blockers cleared
+
+The 2026-05-10 feature-sweep ([docs/FEATURE_SWEEP_2026-05-10.md](FEATURE_SWEEP_2026-05-10.md)) flagged three remaining go-live items. All are now closed in code:
+
+- [x] **DSAR access export encrypted (AES-256-GCM)** — `POST /api/v1/dsar/access` returns an `enc:v1:`-wrapped envelope; the plaintext is never on the wire. A new `POST /api/v1/dsar/access/:requestId/decrypt` returns the plaintext after a fresh auth check, so a stolen encrypted blob is useless without a current admin session. POPIA §3 exposure closed.
+- [x] **DSAR notifications scope fixed + erasure coverage extended** — the access query now filters `WHERE tenant_id = ? AND user_id = ?` (was leaking the whole tenant's notifications). `notifications` added to the erasure pipeline.
+- [x] **Audit log retention purge scheduled** — daily-debounced via a `__system__` marker row in `tenant_settings`; defaults to 365-day retention, override via `AUDIT_LOG_RETENTION_DAYS` env var (clamped to [30, 3650]). Batches of 5,000 per pass, capped at 20 passes/day to bound write-lock pressure.
+- [x] **VantaX repeatable demo** — `POST /api/v1/seed-vantax/reset` wipes the tenant in dependency-safe multi-pass order; the existing `POST /api/v1/seed-vantax` now post-processes two RCAs into the billing-eligible state and calls `computeBillablePeriod` so the ROI dashboard shows live shared-savings revenue on day one. 7 smoke tests cover reset, materialise, and two full reset→reseed cycles.
+
+**Tier-1 operational secrets below (`MS_GRAPH_TENANT_ID`, `JWT_SECRET`, `ENCRYPTION_KEY`) are still outstanding — they're ops tasks the platform team owns, not code changes.**
 
 ## Assessment engine — go-live ready
 

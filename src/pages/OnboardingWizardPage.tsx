@@ -159,7 +159,7 @@ export function OnboardingWizardPage(): JSX.Element {
                     <span className="text-xs t-muted font-mono">Step {i + 1}</span>
                     {isCurrent && <Badge variant="info" size="sm">Current</Badge>}
                     {step.completed && step.completedAt && (
-                      <span className="text-[10px] t-muted">
+                      <span className="text-caption t-muted">
                         Done {new Date(step.completedAt).toLocaleDateString()}
                       </span>
                     )}
@@ -196,7 +196,7 @@ export function OnboardingWizardPage(): JSX.Element {
         })}
       </div>
 
-      <div className="text-[11px] t-muted text-center pt-2">
+      <div className="text-caption t-muted text-center pt-2">
         Need help? File a ticket at <a href="/support-tickets" className="text-accent hover:underline">/support-tickets</a> or
         ping your CS engineer in your shared Slack channel.
       </div>

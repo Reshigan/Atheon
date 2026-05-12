@@ -37,7 +37,7 @@ export function ClusterList({ clusters, selectedCluster, onSelect, onCreate }: C
             <Folder size={16} className="text-accent flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium t-primary truncate">{cluster.name}</p>
-              <p className="text-[10px] t-muted">{cluster.subCatalysts?.length || 0} sub-catalysts</p>
+              <p className="text-caption t-muted">{cluster.subCatalysts?.length || 0} sub-catalysts</p>
             </div>
             <Badge variant={cluster.status === 'active' ? 'success' : 'default'} size="sm">{cluster.status}</Badge>
             <ChevronRight size={14} className="t-muted" />

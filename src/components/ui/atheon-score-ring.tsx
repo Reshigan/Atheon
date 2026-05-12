@@ -26,7 +26,7 @@ function ScoreRingVisual({ score, size = 120 }: { score: number; size?: number }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold t-primary">{score}</span>
-        <span className="text-[9px] t-muted uppercase tracking-wider">Atheon</span>
+        <span className="text-caption t-muted uppercase tracking-wider">Atheon</span>
       </div>
     </div>
   );
@@ -63,7 +63,7 @@ export function AtheonScoreRing({ compact = false }: { compact?: boolean }) {
           <p className="text-xs font-semibold t-primary">{data.score}/100</p>
           <div className="flex items-center gap-1">
             {trend > 0 ? <TrendingUp className="w-3 h-3 text-emerald-500" /> : trend < 0 ? <TrendingDown className="w-3 h-3 text-red-500" /> : <Minus className="w-3 h-3 text-gray-400" />}
-            <span className="text-[10px] t-muted">{trend > 0 ? '+' : ''}{trend}</span>
+            <span className="text-caption t-muted">{trend > 0 ? '+' : ''}{trend}</span>
           </div>
         </div>
       </div>
@@ -77,20 +77,20 @@ export function AtheonScoreRing({ compact = false }: { compact?: boolean }) {
         <div className="flex-1 space-y-1.5">
           {data.components.map((c) => (
             <div key={c.name} className="flex items-center gap-2">
-              <span className="text-[10px] t-muted w-24 truncate">{c.name}</span>
+              <span className="text-caption t-muted w-24 truncate">{c.name}</span>
               <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-secondary)]">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${c.score}%`, background: c.score >= 75 ? '#4A6B5A' : c.score >= 50 ? '#c9a059' : '#ef4444' }}
                 />
               </div>
-              <span className="text-[10px] font-medium t-primary w-8 text-right">{c.score}</span>
+              <span className="text-caption font-medium t-primary w-8 text-right">{c.score}</span>
             </div>
           ))}
         </div>
       </div>
       {data.industryAvg !== null && (
-        <p className="text-[10px] t-muted text-center">
+        <p className="text-caption t-muted text-center">
           Industry avg: {data.industryAvg} | Your score: {data.score > data.industryAvg ? 'above' : data.score < data.industryAvg ? 'below' : 'at'} average
         </p>
       )}

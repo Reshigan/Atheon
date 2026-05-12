@@ -201,6 +201,14 @@ export async function handleScheduled(
   // §11.1 — Trial cleanup (remove expired trials)
   try { await cleanupExpiredTrials(db); } catch (e) { console.error('Trial cleanup failed:', e); }
 
+  // Audit log retention purge — Phase 10-30. SOC2 baseline is 1 year;
+  // unbounded retention is a finding waiting to happen. Daily-debounced
+  // via a marker row in tenant_settings so the every-15-minute cron tick
+  // only runs the DELETE once per UTC day. Retention window is overridable
+  // per env var (AUDIT_LOG_RETENTION_DAYS) for customers under stricter
+  // contracts; defaults to 365.
+  try { await pruneAuditLogIfDue(db, env); } catch (e) { console.error('Audit log retention purge failed:', e); }
+
   // Phase 6.4: Email delivery with retry + fallback
   await processEmailQueue(db, env);
 
@@ -1231,6 +1239,95 @@ async function calculateResolutionPatterns(db: D1Database): Promise<void> {
          VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
       ).bind(crypto.randomUUID(), signature, industry, data.count, avgDays, data.totalValue / data.count, JSON.stringify(fixTypesArr)).run();
     } catch { /* non-fatal */ }
+  }
+}
+
+/**
+ * Audit log retention purge — Phase 10-30.
+ *
+ * Deletes audit_log rows older than the configured retention window. SOC2
+ * baseline is one year; we accept a per-deployment override via
+ * `AUDIT_LOG_RETENTION_DAYS` (clamped to [30, 3650] so a misconfigured env
+ * can't immediately wipe the table or hoard a decade of rows).
+ *
+ * Daily debounce: the every-15-minute cron tick would otherwise re-run the
+ * same DELETE 96 times a day. A marker row in `tenant_settings` (tenant_id
+ * = '__system__', key = 'audit_log_retention.last_run') gates the work to
+ * once per UTC date — first tick of the day runs it, subsequent ticks no-op.
+ *
+ * Safety: the DELETE is bounded by `LIMIT` so a one-off prune on a tenant
+ * that has accumulated millions of rows can't hold the D1 write lock for
+ * long. We loop in batches until either nothing's left or we've hit the
+ * day's batch cap; the rest carries over to the next day.
+ */
+async function pruneAuditLogIfDue(db: D1Database, env: ScheduledEnv): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10); // yyyy-mm-dd UTC
+  const MARKER_KEY = 'audit_log_retention.last_run';
+  const SYSTEM_TENANT = '__system__';
+
+  // Idempotency check — has the prune already run today?
+  try {
+    const prior = await db.prepare(
+      `SELECT value FROM tenant_settings WHERE tenant_id = ? AND key = ? LIMIT 1`
+    ).bind(SYSTEM_TENANT, MARKER_KEY).first<{ value: string }>();
+    if (prior?.value === today) return; // already ran today
+  } catch {
+    // tenant_settings missing on a fresh deploy is fine — fall through and prune
+  }
+
+  const rawDays = Number((env as { AUDIT_LOG_RETENTION_DAYS?: string | number }).AUDIT_LOG_RETENTION_DAYS);
+  const retentionDays = Number.isFinite(rawDays) ? Math.max(30, Math.min(3650, Math.trunc(rawDays))) : 365;
+  const BATCH_SIZE = 5000;       // rows per DELETE
+  const MAX_BATCHES_PER_DAY = 20; // ≤100k rows/day per deployment
+
+  let totalDeleted = 0;
+  let batches = 0;
+  let lastBatchSize = BATCH_SIZE;
+  while (lastBatchSize === BATCH_SIZE && batches < MAX_BATCHES_PER_DAY) {
+    try {
+      const r = await db.prepare(
+        `DELETE FROM audit_log
+          WHERE rowid IN (
+            SELECT rowid FROM audit_log
+             WHERE created_at < datetime('now', ?)
+             LIMIT ?
+          )`
+      ).bind(`-${retentionDays} days`, BATCH_SIZE).run();
+      lastBatchSize = r.meta?.changes ?? 0;
+      totalDeleted += lastBatchSize;
+      batches++;
+    } catch (err) {
+      // First failure stops the loop — better to log + retry tomorrow than
+      // burn the budget on a known-bad query.
+      logError('audit_log.retention.batch_failed', err,
+        { layer: 'compliance', action: 'audit_log.retention' },
+        { batches, totalDeleted });
+      break;
+    }
+  }
+
+  // Mark today done even if we hit MAX_BATCHES_PER_DAY — partial purge is
+  // fine; the next day's run picks up the remainder. Tenant_settings has
+  // a UNIQUE on (tenant_id, key) so this is upsert-safe.
+  try {
+    // tenant_settings: id PK, UNIQUE(tenant_id, key). Synthesize a stable
+    // id from the (tenant, key) tuple so we don't grow an orphan row each
+    // run if the ON CONFLICT path ever misfires.
+    const markerId = `${SYSTEM_TENANT}:${MARKER_KEY}`;
+    await db.prepare(
+      `INSERT INTO tenant_settings (id, tenant_id, key, value, updated_at)
+       VALUES (?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(tenant_id, key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
+    ).bind(markerId, SYSTEM_TENANT, MARKER_KEY, today).run();
+  } catch {
+    // Best-effort; if the marker write fails, tomorrow's tick will re-run
+    // the purge harmlessly (DELETE is idempotent on age window).
+  }
+
+  if (totalDeleted > 0) {
+    logInfo('audit_log.retention.completed',
+      { layer: 'compliance', action: 'audit_log.retention' },
+      { retention_days: retentionDays, rows_deleted: totalDeleted, batches });
   }
 }
 

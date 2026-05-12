@@ -709,7 +709,7 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
           <div className="flex-1">
             <h3 className="font-medium mb-1 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               Canary Promotion
-              <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              <span className="text-label px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                 Not yet implemented
               </span>
             </h3>
@@ -787,7 +787,7 @@ function LogsView({ id, onError }: { id: string; onError: (title: string, err?: 
       <div className="max-h-[600px] overflow-y-auto divide-y" style={{ borderColor: 'var(--border-card)' }}>
         {logs.map((log, i) => (
           <div key={i} className="px-4 py-3 flex items-start gap-3">
-            <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${severityColor(log.severity)}`}>
+            <span className={`text-caption font-medium uppercase px-1.5 py-0.5 rounded ${severityColor(log.severity)}`}>
               {log.severity}
             </span>
             <div className="flex-1 min-w-0">

@@ -64,7 +64,7 @@ export function OnboardingChecklist() {
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <Rocket size={16} className="text-accent flex-shrink-0" />
           <span className="text-sm font-semibold t-primary truncate">Getting Started</span>
-          <span className="text-[10px] t-muted ml-1">{completedCount}/{totalSteps}</span>
+          <span className="text-caption t-muted ml-1">{completedCount}/{totalSteps}</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-24 hidden sm:block">
@@ -100,7 +100,7 @@ export function OnboardingChecklist() {
               </div>
               <div className="min-w-0">
                 <p className={`text-xs font-medium leading-tight ${step.completed ? 't-muted line-through' : 't-primary'}`}>{step.label}</p>
-                <p className="text-[10px] t-muted mt-0.5 leading-snug">{step.description}</p>
+                <p className="text-caption t-muted mt-0.5 leading-snug">{step.description}</p>
               </div>
             </button>
           ))}
