@@ -144,7 +144,7 @@ export function OnboardingWizardPage(): JSX.Element {
             <Card
               key={step.id}
               className={`p-4 transition-colors ${isCurrent ? 'border-accent/40' : ''}`}
-              style={isCurrent ? { background: 'rgba(122, 172, 181, 0.05)' } : undefined}
+              style={isCurrent ? { background: 'rgba(126, 179, 205, 0.05)' } : undefined}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
