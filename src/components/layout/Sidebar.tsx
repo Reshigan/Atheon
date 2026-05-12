@@ -129,10 +129,10 @@ function AtheonSidebarLogo() {
         </linearGradient>
       </defs>
       <rect width="36" height="36" rx="9" fill="url(#sbBg)" />
-      <path d="M18 6L28 29H8L18 6Z" fill="none" stroke="#4A6B5A" strokeWidth="1.5" />
-      <line x1="11" y1="22" x2="25" y2="22" stroke="#4A6B5A" strokeWidth=".8" opacity=".6" />
-      <line x1="13" y1="16.5" x2="23" y2="16.5" stroke="#7AACB5" strokeWidth=".8" opacity=".5" />
-      <circle cx="18" cy="9.5" r="1.8" fill="#c9a059" />
+      <path d="M18 6L28 29H8L18 6Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
+      <line x1="11" y1="22" x2="25" y2="22" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
+      <line x1="13" y1="16.5" x2="23" y2="16.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
+      <circle cx="18" cy="9.5" r="1.8" fill="#CDA37E" />
     </svg>
   );
 }

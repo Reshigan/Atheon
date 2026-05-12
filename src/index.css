@@ -32,16 +32,16 @@
     --text-secondary: #4a5578;
     --text-muted: #8892b0;
     --text-on-accent: #ffffff;
-    --accent: #4A6B5A;
-    --accent-rgb: 74, 107, 90;
-    --accent-hover: #5d8a6f;
-    --accent-glow: rgba(74, 107, 90, 0.18);
-    --accent-subtle: rgba(74, 107, 90, 0.08);
+    --accent: #A3B18A;
+    --accent-rgb: 163, 177, 138;
+    --accent-hover: #8E9C76;
+    --accent-glow: rgba(163, 177, 138, 0.18);
+    --accent-subtle: rgba(163, 177, 138, 0.08);
     --accent-dark: #1a1f36;
-    --sage: #4A6B5A;
-    --sage-b: #5d8a6f;
-    --bronze: #c9a059;
-    --sky: #7AACB5;
+    --sage: #A3B18A;
+    --sage-b: #8E9C76;
+    --bronze: #CDA37E;
+    --sky: #7EB3CD;
     --shadow-xs: 0 1px 2px rgba(100, 120, 180, 0.06);
     --shadow-card: 0 2px 8px rgba(100, 120, 180, 0.08), 0 0 0 1px rgba(255,255,255,0.5);
     --shadow-card-hover: 0 8px 24px rgba(100, 120, 180, 0.12), 0 0 0 1px rgba(255,255,255,0.6);
@@ -79,62 +79,72 @@
     --text-secondary-light: #4a5568;
   }
 
+  /* ──────────────────────────────────────────────────────────────
+   * .atheon-dark — Stitch "Athens Executive Interface" palette
+   * Source: projects/4059809207181456952 (designed 2026-05-12).
+   * Variable names preserved for backwards-compat with ~500 sites
+   * that reference --bg-primary / --bg-card / --accent etc. Only
+   * the *values* are swapped to the new corporate palette.
+   * ────────────────────────────────────────────────────────────── */
   .atheon-dark {
-    --bg-primary: #06090d;
-    --bg-secondary: #0a0f14;
-    --bg-card: rgba(14, 21, 28, 0.85);
-    --bg-card-solid: #0e151c;
-    --bg-card-hover: rgba(18, 26, 34, 0.90);
-    --bg-sidebar: rgba(10, 15, 20, 0.90);
+    --bg-primary: #06090D;
+    --bg-secondary: #0E151C;
+    --bg-card: rgba(26, 31, 38, 0.85);
+    --bg-card-solid: #1A1F26;
+    --bg-card-hover: rgba(39, 42, 47, 0.90);
+    --bg-sidebar: #101418;
     --bg-header: rgba(6, 9, 13, 0.85);
     --bg-input: rgba(14, 21, 28, 0.70);
-    --bg-input-focus: rgba(18, 26, 34, 0.90);
-    --bg-modal: rgba(10, 15, 20, 0.95);
-    --bg-elevated: rgba(14, 21, 28, 0.90);
+    --bg-input-focus: rgba(28, 32, 36, 0.90);
+    --bg-modal: rgba(11, 14, 19, 0.96);
+    --bg-elevated: rgba(28, 32, 36, 0.90);
     /* Chart theme - dark mode overrides */
-    --chart-grid: rgba(74, 107, 90, 0.12);
+    --chart-grid: rgba(255, 255, 255, 0.06);
     --chart-text: var(--text-secondary);
-    --border-primary: rgba(74, 107, 90, 0.20);
-    --border-subtle: rgba(74, 107, 90, 0.10);
-    --border-card: rgba(74, 107, 90, 0.12);
-    --divider: rgba(74, 107, 90, 0.08);
-    --text-primary: #e8e4dc;
-    --text-secondary: #c4bfb4;
-    --text-muted: #586573;
-    --text-on-accent: #06090d;
-    --accent: #5d8a6f;
-    --accent-rgb: 93, 138, 111;
-    --accent-hover: #4A6B5A;
-    --accent-glow: rgba(74, 107, 90, 0.15);
-    --accent-subtle: rgba(74, 107, 90, 0.08);
-    --accent-dark: #e8e4dc;
-    --sage: #4A6B5A;
-    --sage-b: #5d8a6f;
-    --bronze: #c9a059;
-    --sky: #7AACB5;
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(74, 107, 90, 0.08);
-    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(74, 107, 90, 0.12);
+    --border-primary: rgba(255, 255, 255, 0.16);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-card: rgba(255, 255, 255, 0.10);
+    --divider: rgba(255, 255, 255, 0.06);
+    --text-primary: #F8F9F3;
+    --text-secondary: #e0e2e8;
+    --text-muted: rgba(248, 249, 243, 0.50);
+    --text-on-accent: #141F05;
+    --accent: #A3B18A;           /* sage primary */
+    --accent-rgb: 163, 177, 138;
+    --accent-hover: #becda4;
+    --accent-glow: rgba(163, 177, 138, 0.18);
+    --accent-subtle: rgba(163, 177, 138, 0.08);
+    --accent-dark: #F8F9F3;
+    --sage: #A3B18A;
+    --sage-b: #becda4;
+    --bronze: #CDA37E;
+    --sky: #7EB3CD;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(163, 177, 138, 0.12);
     --shadow-dropdown: 0 12px 36px rgba(0, 0, 0, 0.50);
     --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.60);
-    --shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255,255,255,0.02);
-    --placeholder: #586573;
-    --option-bg: #0e151c;
-    --scrollbar-thumb: rgba(74, 107, 90, 0.15);
-    --scrollbar-thumb-hover: rgba(74, 107, 90, 0.25);
-    --toggle-bg: rgba(74, 107, 90, 0.12);
-    --ring-focus: rgba(93, 138, 111, 0.30);
-    --teal: #7AACB5;
-    --teal-light: rgba(122, 172, 181, 0.06);
-    --teal-dark: #5d8a6f;
-    --glass-blur: 20px;
-    --bg-pattern: radial-gradient(ellipse at 20% 20%, rgba(74, 107, 90, 0.04) 0%, transparent 50%),
-                  radial-gradient(ellipse at 80% 80%, rgba(201, 160, 89, 0.02) 0%, transparent 50%);
+    --shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255,255,255,0.03);
+    --placeholder: rgba(248, 249, 243, 0.35);
+    --option-bg: #1A1F26;
+    --scrollbar-thumb: rgba(163, 177, 138, 0.18);
+    --scrollbar-thumb-hover: rgba(163, 177, 138, 0.32);
+    --toggle-bg: rgba(163, 177, 138, 0.12);
+    --ring-focus: rgba(163, 177, 138, 0.32);
+    --teal: #7EB3CD;
+    --teal-light: rgba(126, 179, 205, 0.08);
+    --teal-dark: #5d92ad;
+    --glass-blur: 12px;
+    /* Subtle sage radial — exact lift from Stitch body background */
+    --bg-pattern: radial-gradient(circle at 50% 0%, rgba(163, 177, 138, 0.05) 0%, transparent 70%);
   }
 
   * { border-color: var(--divider); }
 
   body {
-    font-family: "Outfit", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Stitch palette canonicalises on Inter; Outfit retained as fallback
+       for any component still keyed to the prior typography (until that
+       layer is fully migrated). */
+    font-family: "Inter", "Outfit", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     background-image: var(--bg-pattern);
     background-attachment: fixed;
@@ -145,12 +155,54 @@
     transition: background 0.3s ease, color 0.3s ease;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Material Symbols Outlined — used in the Stitch design for inline
+     iconography (we ship lucide-react too; both coexist, and per-page
+     adoption migrates from lucide → material as screens are ported). */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
 }
 
 @layer utilities {
   .t-primary { color: var(--text-primary); }
   .t-secondary { color: var(--text-secondary); }
   .t-muted { color: var(--text-muted); }
+
+  /* `.provenance-link` — dotted-underline pattern from the Stitch design
+     for inline values that trace to source (e.g. "$412.5M" inside the
+     daily briefing). Hover swaps to sage. Use on the value, not the
+     surrounding label. */
+  .provenance-link {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .provenance-link:hover { color: var(--sage); }
+
+  /* `.glass-card` — Stitch's translucent card variant for hero panels
+     (Daily Briefing Narrative, Strategic Context). Slightly more
+     atmospheric than the default solid surface. */
+  .glass-card {
+    background: rgba(26, 31, 38, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
 
   /* ============================================================
      POLISH-2026 — typography + spacing scale

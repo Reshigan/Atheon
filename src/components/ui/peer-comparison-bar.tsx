@@ -46,12 +46,12 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
           style={{
             left: `${toPercent(p25Score)}%`,
             width: `${toPercent(p75Score) - toPercent(p25Score)}%`,
-            background: '#7AACB5',
+            background: '#7EB3CD',
           }}
         />
         {/* Median marker */}
         <div
-          className="absolute top-0 h-full w-0.5 bg-[#7AACB5]"
+          className="absolute top-0 h-full w-0.5 bg-[#7EB3CD]"
           style={{ left: `${toPercent(p50Score)}%` }}
         />
         {/* Own score marker */}
@@ -60,7 +60,7 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
             className="absolute top-[-2px] w-4 h-4 rounded-full border-2 border-white shadow-md"
             style={{
               left: `calc(${toPercent(ownScore)}% - 8px)`,
-              background: percentileRank === 'top_25' ? '#4A6B5A' : percentileRank === 'above_median' ? '#60a5fa' : percentileRank === 'below_median' ? '#c9a059' : '#ef4444',
+              background: percentileRank === 'top_25' ? '#A3B18A' : percentileRank === 'above_median' ? '#60a5fa' : percentileRank === 'below_median' ? '#CDA37E' : '#ef4444',
             }}
           />
         )}

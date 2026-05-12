@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
@@ -130,9 +131,6 @@ function PulseActionRequired({
 
 const statusColor = (s: string) =>
   s === 'green' ? 'text-emerald-400' : s === 'amber' ? 'text-amber-400' : s === 'red' ? 'text-red-400' : 'text-gray-400';
-
-const severityVariant = (s: string): 'danger' | 'warning' | 'info' | 'default' =>
-  s === 'critical' ? 'danger' : s === 'high' ? 'warning' : s === 'medium' ? 'info' : 'default';
 
 const conformanceColor = (rate: number): 'emerald' | 'amber' | 'red' =>
   rate >= 90 ? 'emerald' : rate >= 75 ? 'amber' : 'red';
@@ -1254,7 +1252,7 @@ export function PulsePage() {
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-base font-semibold t-primary">{anom.metric}</h3>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge variant={severityVariant(anom.severity)}>{anom.severity}</Badge>
+                          <StatusPill status={anom.severity} size="sm" />
                           <Badge variant={deviationPct >= 50 ? 'danger' : deviationPct >= 25 ? 'warning' : 'info'}>
                             +{deviationPct}% deviation
                           </Badge>

@@ -28,6 +28,9 @@ workers/api/tsconfig.tsbuildinfo
 .claude/worktrees/
 .claude/projects/
 
+# MCP server config carries credentials — keep local
+.mcp.json
+
 # Playwright outputs — local-only, never commit
 test-results/
 playwright-report/
