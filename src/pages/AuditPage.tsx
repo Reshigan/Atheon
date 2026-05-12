@@ -58,12 +58,19 @@ export function AuditPage() {
  <div className="space-y-6 animate-fadeIn">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
- <div className=" w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
- <Shield className="w-5 h-5 text-accent"/>
+ <div
+  className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
+  style={{
+   background: 'rgba(163, 177, 138, 0.10)',
+   borderColor: 'rgba(163, 177, 138, 0.25)',
+  }}
+  aria-hidden="true"
+ >
+  <Shield className="w-5 h-5" style={{ color: 'var(--accent)' }} />
  </div>
- <div>
- <h1 className="text-2xl font-bold t-primary">Audit & Provenance</h1>
- <p className="text-sm t-muted">Complete governance trail across all Atheon layers, plus the cryptographic AI decision ledger</p>
+ <div className="flex-1 min-w-0">
+  <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Audit</h1>
+  <p className="text-body-sm t-muted mt-0.5">Provenance Ledger &amp; Governance Trail</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
