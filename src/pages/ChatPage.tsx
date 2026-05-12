@@ -205,12 +205,19 @@ export function ChatPage() {
  return (
  <div className="space-y-6 animate-fadeIn">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 flex items-center justify-center">
- <MessageSquare className="w-5 h-5 text-accent"/>
+ <div
+  className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
+  style={{
+   background: 'rgba(163, 177, 138, 0.10)',
+   borderColor: 'rgba(163, 177, 138, 0.25)',
+  }}
+  aria-hidden="true"
+ >
+  <MessageSquare className="w-5 h-5" style={{ color: 'var(--accent)' }} />
  </div>
- <div>
- <h1 className="text-2xl font-bold t-primary">Atheon Chat</h1>
- <p className="text-sm t-muted">Unified conversational interface across all intelligence layers</p>
+ <div className="flex-1 min-w-0">
+  <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Chat</h1>
+  <p className="text-body-sm t-muted mt-0.5">Conversational AI &amp; Intelligence Across Layers</p>
  </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mt-4">
             <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
