@@ -182,6 +182,28 @@
   .t-secondary { color: var(--text-secondary); }
   .t-muted { color: var(--text-muted); }
 
+  /* `.provenance-link` — dotted-underline pattern from the Stitch design
+     for inline values that trace to source (e.g. "$412.5M" inside the
+     daily briefing). Hover swaps to sage. Use on the value, not the
+     surrounding label. */
+  .provenance-link {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .provenance-link:hover { color: var(--sage); }
+
+  /* `.glass-card` — Stitch's translucent card variant for hero panels
+     (Daily Briefing Narrative, Strategic Context). Slightly more
+     atmospheric than the default solid surface. */
+  .glass-card {
+    background: rgba(26, 31, 38, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
   /* ============================================================
      POLISH-2026 — typography + spacing scale
      ------------------------------------------------------------

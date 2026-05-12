@@ -34,6 +34,7 @@ import { HealthTrendChart } from "@/components/HealthTrendChart";
 import { RiskHeatMap } from "@/components/RiskHeatMap";
 import { ScenarioComparisonGrid } from "@/components/ScenarioComparisonGrid";
 import { recommendForRisk, catalystDeployUrl } from "@/lib/catalyst-recommendation";
+import { ExecutiveActionsCallout } from "@/components/apex/ExecutiveActionsCallout";
 
 
 const trendIcon = (trend: string, size = 14) => {
@@ -922,7 +923,8 @@ export function ApexPage() {
  {/* Executive Briefing Tab */}
  {activeTab === 'briefing' && (
  <TabPanel>
- <Card>
+ <ExecutiveActionsCallout risks={risks} onTrace={handleOpenRiskTrace} />
+ <Card className="mt-6">
  <div className="flex items-center gap-2 mb-3">
  <FileText className="w-4 h-4 text-accent" />
   <h3 className="text-lg font-semibold t-primary">Daily Executive Briefing</h3>
