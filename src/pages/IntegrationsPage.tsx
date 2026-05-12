@@ -660,12 +660,19 @@ export function IntegrationsPage() {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center">
-            <Globe className="w-5 h-5 text-teal-400" />
+          <div
+            className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
+            style={{
+              background: 'rgba(126, 179, 205, 0.10)',
+              borderColor: 'rgba(126, 179, 205, 0.25)',
+            }}
+            aria-hidden="true"
+          >
+            <Globe className="w-5 h-5" style={{ color: 'var(--sky)' }} />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold t-primary">Integrations</h1>
-            <p className="text-sm t-muted">Connected systems, adapters, and canonical data schema</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Integrations</h1>
+            <p className="text-body-sm t-muted mt-0.5">Connected Systems, Adapters &amp; Canonical Schema</p>
           </div>
         </div>
         <Button variant="primary" size="sm" onClick={() => { setShowConnect(true); setSelectedAuth(''); setCredentialValues({}); }} title="Connect a new ERP system">

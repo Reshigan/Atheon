@@ -241,15 +241,22 @@ export function IAMPage() {
      {/* Header */}
      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
        <div className="flex items-center gap-3">
-         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-           <ShieldCheck className="w-5 h-5 text-accent" />
+         <div
+           className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
+           style={{
+             background: 'rgba(163, 177, 138, 0.10)',
+             borderColor: 'rgba(163, 177, 138, 0.25)',
+           }}
+           aria-hidden="true"
+         >
+           <ShieldCheck className="w-5 h-5" style={{ color: 'var(--accent)' }} />
          </div>
-         <div>
-           <h1 className="text-2xl font-bold t-primary">Identity & Access Management</h1>
-           <p className="text-sm t-muted">
-             {isSuperAdmin ? 'Manage company admins, users, roles, and policies' :
-              isCompanyAdmin ? 'Manage your company users, roles, and policies' :
-              'View users, roles, and policies'}
+         <div className="flex-1 min-w-0">
+           <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Identity &amp; Access</h1>
+           <p className="text-body-sm t-muted mt-0.5">
+             {isSuperAdmin ? 'Company admins, users, roles, policies' :
+              isCompanyAdmin ? 'Your company users, roles, policies' :
+              'Users, roles, policies'}
            </p>
          </div>
        </div>
