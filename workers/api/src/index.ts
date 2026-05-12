@@ -206,9 +206,16 @@ app.post('/api/v1/license-status/refresh', async (c) => {
 //     return 503 with a hint to call POST /api/v1/admin/migrate.
 //   - Operators recover by calling /admin/migrate (no time bound) or by
 //     setting the migrated flag manually if the schema is known-good.
-const AUTO_MIGRATE_TIMEOUT_MS = 25_000;
-const AUTO_MIGRATE_LEASE_TTL_S = 60;
-const AUTO_MIGRATE_ERROR_TTL_S = 300;
+// 2026-05-12: bumped from 25s → 50s. The v73-orchestration migration on
+// the production tenant took >25s, repeatedly tripping the timeout and
+// trapping operators in a 503 loop because the recovery path (POST
+// /admin/migrate) requires SETUP_SECRET that wasn't to hand. 50s sits
+// inside Cloudflare Workers' CPU budget envelope and gives the cold-cache
+// path enough room. If this keeps timing out, the right move is to split
+// the migration into chunks, not to bump again.
+const AUTO_MIGRATE_TIMEOUT_MS = 50_000;
+const AUTO_MIGRATE_LEASE_TTL_S = 90;
+const AUTO_MIGRATE_ERROR_TTL_S = 60;  // shorter so a failure recovers within a minute
 
 app.use('*', async (c, next) => {
   const path = c.req.path;
