@@ -103,7 +103,7 @@ export function PricingPage(): JSX.Element {
               <Card
                 key={plan.id}
                 className={`p-6 flex flex-col ${isHighlight ? 'border-accent/40' : ''}`}
-                style={isHighlight ? { background: 'rgba(122, 172, 181, 0.05)', boxShadow: '0 4px 24px rgba(122, 172, 181, 0.15)' } : undefined}
+                style={isHighlight ? { background: 'rgba(126, 179, 205, 0.05)', boxShadow: '0 4px 24px rgba(126, 179, 205, 0.15)' } : undefined}
                 data-testid={`plan-${plan.id}`}
               >
                 <div className="flex items-center justify-between mb-3">
