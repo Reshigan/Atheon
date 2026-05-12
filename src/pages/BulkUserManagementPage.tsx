@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { LoadingState, EmptyState } from '@/components/ui/state';
 import { api, ApiError } from '@/lib/api';
 import type { IAMUser } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -243,19 +244,19 @@ export function BulkUserManagementPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Total Users</p>
+          <p className="text-label">Total Users</p>
           <p className="text-xl font-bold t-primary">{users.length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Active</p>
+          <p className="text-label">Active</p>
           <p className="text-xl font-bold text-emerald-400">{activeCount}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Suspended</p>
+          <p className="text-label">Suspended</p>
           <p className="text-xl font-bold text-red-400">{suspendedCount}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Imports</p>
+          <p className="text-label">Imports</p>
           <p className="text-xl font-bold t-primary">{history.length}</p>
         </Card>
       </div>
@@ -318,17 +319,17 @@ export function BulkUserManagementPage() {
           {previewRows.length > 0 && (
             <div className="mt-6 p-4 rounded-lg bg-[var(--bg-secondary)]">
               <p className="text-xs font-medium t-primary mb-2">CSV Preview (first 6 lines)</p>
-              <pre className="text-[10px] t-muted font-mono whitespace-pre-wrap">{previewRows.join('\n')}</pre>
+              <pre className="text-caption t-muted font-mono whitespace-pre-wrap">{previewRows.join('\n')}</pre>
             </div>
           )}
 
           {importResult && (
             <div className="mt-6 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card className="p-3"><p className="text-[10px] t-muted uppercase">Rows</p><p className="text-xl font-bold t-primary">{importResult.total}</p></Card>
-                <Card className="p-3"><p className="text-[10px] t-muted uppercase">{importResult.dryRun ? 'Valid' : 'Created'}</p><p className="text-xl font-bold text-emerald-400">{importResult.created}</p></Card>
-                <Card className="p-3"><p className="text-[10px] t-muted uppercase">Skipped</p><p className="text-xl font-bold text-amber-400">{importResult.skipped.length}</p></Card>
-                <Card className="p-3"><p className="text-[10px] t-muted uppercase">Errors</p><p className="text-xl font-bold text-red-400">{importResult.errors.length}</p></Card>
+                <Card className="p-3"><p className="text-label">Rows</p><p className="text-xl font-bold t-primary">{importResult.total}</p></Card>
+                <Card className="p-3"><p className="text-label">{importResult.dryRun ? 'Valid' : 'Created'}</p><p className="text-xl font-bold text-emerald-400">{importResult.created}</p></Card>
+                <Card className="p-3"><p className="text-label">Skipped</p><p className="text-xl font-bold text-amber-400">{importResult.skipped.length}</p></Card>
+                <Card className="p-3"><p className="text-label">Errors</p><p className="text-xl font-bold text-red-400">{importResult.errors.length}</p></Card>
               </div>
 
               {importResult.createdUsers.length > 0 && (
@@ -339,9 +340,9 @@ export function BulkUserManagementPage() {
                       <div key={`${u.row}-${u.email}`} className="flex items-center justify-between text-xs">
                         <span className="t-primary">{u.name} &middot; {u.email}</span>
                         <div className="flex items-center gap-2">
-                          <Badge variant="default" className="text-[10px]">{u.role}</Badge>
+                          <Badge variant="default" className="text-caption">{u.role}</Badge>
                           {!importResult.dryRun && (
-                            <code className="text-[10px] px-1 rounded bg-[var(--bg-secondary)] t-muted">{u.tempPassword}</code>
+                            <code className="text-caption px-1 rounded bg-[var(--bg-secondary)] t-muted">{u.tempPassword}</code>
                           )}
                         </div>
                       </div>
@@ -415,9 +416,9 @@ export function BulkUserManagementPage() {
           </div>
 
           {loadingUsers ? (
-            <div className="p-8 text-center"><Loader2 size={20} className="mx-auto animate-spin t-muted" /></div>
+            <LoadingState variant="list" count={3} />
           ) : users.length === 0 ? (
-            <div className="p-8 text-center text-sm t-muted">No users in this tenant yet</div>
+            <EmptyState title="No users in this tenant yet" description="Import a CSV above to get started." />
           ) : (
             <div className="space-y-1">
               {users.map((u) => (
@@ -426,9 +427,9 @@ export function BulkUserManagementPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium t-primary">{u.name || '(no name)'}</p>
-                      <Badge variant={userStatusColor(u.status)} className="text-[10px]">{u.status || 'unknown'}</Badge>
+                      <Badge variant={userStatusColor(u.status)} className="text-caption">{u.status || 'unknown'}</Badge>
                     </div>
-                    <p className="text-[10px] t-muted">{u.email} · {u.role || 'viewer'}</p>
+                    <p className="text-caption t-muted">{u.email} · {u.role || 'viewer'}</p>
                   </div>
                 </div>
               ))}
@@ -440,9 +441,9 @@ export function BulkUserManagementPage() {
       {/* HISTORY TAB */}
       <TabPanel id="history" activeTab={activeTab}>
         {loadingHistory ? (
-          <div className="p-8 text-center"><Loader2 size={20} className="mx-auto animate-spin t-muted" /></div>
+          <LoadingState variant="list" count={3} />
         ) : history.length === 0 ? (
-          <Card className="p-8 text-center text-sm t-muted">No imports yet</Card>
+          <EmptyState title="No imports yet" description="Run a CSV import to see history here." />
         ) : (
           <div className="space-y-2">
             {history.map((h) => (
@@ -452,14 +453,14 @@ export function BulkUserManagementPage() {
                     <Play size={16} className="text-accent" />
                     <div>
                       <p className="text-sm font-medium t-primary">Import {h.id.slice(0, 8)}</p>
-                      <p className="text-[10px] t-muted">
+                      <p className="text-caption t-muted">
                         {h.row_count} rows · {h.created_count} created · {h.skipped_count} skipped · {h.error_count} errors
                         {h.imported_by ? ` · by ${h.imported_by}` : ''}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] t-muted">{new Date(h.created_at).toLocaleString()}</span>
+                    <span className="text-caption t-muted">{new Date(h.created_at).toLocaleString()}</span>
                     <Badge variant={outcomeColor(h.outcome)}>{h.outcome}</Badge>
                   </div>
                 </div>

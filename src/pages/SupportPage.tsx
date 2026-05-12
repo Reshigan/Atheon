@@ -186,7 +186,7 @@ export function SupportPage() {
                     </div>
                     <p className="text-xs t-muted mt-1 line-clamp-2">{t.body}</p>
                   </div>
-                  <div className="text-[10px] t-muted whitespace-nowrap">
+                  <div className="text-caption t-muted whitespace-nowrap">
                     {new Date(t.created_at).toLocaleDateString()}
                   </div>
                 </div>
@@ -280,7 +280,7 @@ export function SupportPage() {
                   style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                   data-testid="support-body-textarea"
                 />
-                <span className="text-[10px] t-muted">{form.body.length} / 10000</span>
+                <span className="text-caption t-muted">{form.body.length} / 10000</span>
               </label>
 
               <div className="flex justify-end gap-2 pt-2">

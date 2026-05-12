@@ -185,16 +185,16 @@ export function MindPage() {
                       <div key={tier.id} className="p-4 rounded-lg space-y-2" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}>
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium t-primary">{tier.name}</p>
-                          <span className="text-[10px] font-mono t-muted">{tier.id}</span>
+                          <span className="text-caption font-mono t-muted">{tier.id}</span>
                         </div>
                         <p className="text-xs t-muted">{tier.description}</p>
-                        <div className="flex items-center gap-3 text-[11px] t-secondary pt-2">
+                        <div className="flex items-center gap-3 text-caption t-secondary pt-2">
                           <span className="flex items-center gap-1"><Hash size={10} /> {tier.maxTokens.toLocaleString()} tokens</span>
                           {typeof tier.avgLatency === "number" && (
                             <span className="flex items-center gap-1"><Clock size={10} /> ~{tier.avgLatency}ms</span>
                           )}
                         </div>
-                        <p className="text-[10px] font-mono t-muted pt-1 truncate" title={tier.model}>{tier.model}</p>
+                        <p className="text-caption font-mono t-muted pt-1 truncate" title={tier.model}>{tier.model}</p>
                       </div>
                     ))}
                   </div>
@@ -213,9 +213,9 @@ export function MindPage() {
                       <div key={ad.id} className="flex items-center justify-between p-3 rounded-md" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}>
                         <div>
                           <p className="text-sm font-medium t-primary">{ad.name}</p>
-                          <p className="text-[11px] t-muted">{ad.metrics?.join(", ") || "No metrics listed"}</p>
+                          <p className="text-caption t-muted">{ad.metrics?.join(", ") || "No metrics listed"}</p>
                         </div>
-                        <span className="text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: "var(--bg-card)", color: "var(--accent)" }}>
+                        <span className="text-caption px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: "var(--bg-card)", color: "var(--accent)" }}>
                           <CheckCircle2 size={10} /> {ad.status}
                         </span>
                       </div>
@@ -283,7 +283,7 @@ export function MindPage() {
               <div className="p-4 rounded-md text-sm t-secondary whitespace-pre-wrap" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}>
                 {queryResult.response}
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-[11px] t-muted">
+              <div className="flex flex-wrap items-center gap-3 text-caption t-muted">
                 <span className="flex items-center gap-1"><Cpu size={11} /> {queryResult.model}</span>
                 <span className="flex items-center gap-1"><Clock size={11} /> {queryResult.latencyMs}ms</span>
                 <span className="flex items-center gap-1"><Hash size={11} /> {queryResult.tokensIn + queryResult.tokensOut} tokens</span>
@@ -315,15 +315,15 @@ export function MindPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-                  <p className="text-[10px] t-muted uppercase tracking-wider">Total Queries</p>
+                  <p className="text-label">Total Queries</p>
                   <p className="text-2xl font-semibold t-primary mt-1">{stats.totalQueries.toLocaleString()}</p>
                 </div>
                 <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-                  <p className="text-[10px] t-muted uppercase tracking-wider">Avg Latency</p>
+                  <p className="text-label">Avg Latency</p>
                   <p className="text-2xl font-semibold t-primary mt-1">{stats.avgLatencyMs}ms</p>
                 </div>
                 <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-                  <p className="text-[10px] t-muted uppercase tracking-wider">Total Tokens</p>
+                  <p className="text-label">Total Tokens</p>
                   <p className="text-2xl font-semibold t-primary mt-1">{stats.totalTokens.toLocaleString()}</p>
                 </div>
               </div>
@@ -336,7 +336,7 @@ export function MindPage() {
                       <div key={row.tier} className="flex items-center justify-between p-3 rounded-md" style={{ background: "var(--bg-secondary)" }}>
                         <div>
                           <p className="text-xs font-medium t-primary">{row.tier}</p>
-                          <p className="text-[11px] t-muted">{row.count} queries</p>
+                          <p className="text-caption t-muted">{row.count} queries</p>
                         </div>
                         <span className="text-xs font-mono t-secondary">{Math.round(row.avg_latency)}ms avg</span>
                       </div>

@@ -43,7 +43,7 @@ export function MetricsGrid({ metrics, columns = 4, onMetricClick }: Props) {
           style={{ border: '1px solid var(--border-card)' }}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] t-muted uppercase tracking-wider truncate">{metric.label}</span>
+            <span className="text-label truncate">{metric.label}</span>
             {metric.status && (
               <div className={`w-1.5 h-1.5 rounded-full ${statusDot[metric.status]}`} />
             )}
@@ -52,12 +52,12 @@ export function MetricsGrid({ metrics, columns = 4, onMetricClick }: Props) {
             <span className="text-lg font-bold t-primary">
               {typeof metric.value === 'number' ? metric.value.toLocaleString() : metric.value}
             </span>
-            {metric.unit && <span className="text-[10px] t-muted mb-0.5">{metric.unit}</span>}
+            {metric.unit && <span className="text-caption t-muted mb-0.5">{metric.unit}</span>}
           </div>
           {metric.trend && metric.changePercent !== undefined && (
             <div className={`flex items-center gap-1 mt-1 ${trendConfig[metric.trend].color}`}>
               {trendConfig[metric.trend].icon}
-              <span className="text-[10px]">
+              <span className="text-caption">
                 {metric.changePercent > 0 ? '+' : ''}{metric.changePercent.toFixed(1)}%
               </span>
             </div>

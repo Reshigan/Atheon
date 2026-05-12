@@ -15,11 +15,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { LoadingState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
+import { useAppStore } from '@/stores/appStore';
+import { CompanyHealthPage } from './CompanyHealthPage';
 import { api, ApiError } from '@/lib/api';
 import {
   Activity, Server, Database, AlertTriangle,
-  CheckCircle, XCircle, Clock, RefreshCw, Loader2,
+  CheckCircle, XCircle, Clock, RefreshCw,
   Users, Building2, Zap,
 } from 'lucide-react';
 
@@ -79,6 +82,21 @@ const alertSeverityIcon = (sev?: string) => {
 };
 
 export function PlatformHealthPage() {
+  // Role-conditional surface (May 2026 backlog merge): superadmins see
+  // cross-tenant infrastructure here; non-superadmin admins see their own
+  // tenant's adoption / catalyst usage / LLM usage / entitlements via the
+  // embedded CompanyHealthPage. Both URLs (`/platform-health` and the
+  // redirect from `/company-health`) land here so the sidebar has a single
+  // "Operations Health" entry per UI_POLISH_PRINCIPLES §6.2.
+  const userRole = useAppStore((s) => s.user?.role);
+  if (userRole && userRole !== 'superadmin' && userRole !== 'support_admin') {
+    return <CompanyHealthPage />;
+  }
+
+  return <SuperadminPlatformHealth />;
+}
+
+function SuperadminPlatformHealth() {
   const toast = useToast();
   const { activeTab, setActiveTab } = useTabState('infrastructure');
   const [loading, setLoading] = useState(true);
@@ -161,13 +179,7 @@ export function PlatformHealthPage() {
     { id: 'alerts', label: 'System Alerts', icon: <AlertTriangle size={14} />, count: unacknowledgedAlerts.length },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingState variant="cards" count={4} />;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -201,38 +213,38 @@ export function PlatformHealthPage() {
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Database size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase tracking-wider">DB Status</span>
+            <span className="text-label">DB Status</span>
           </div>
           <p className="text-xl font-bold t-primary capitalize">{infra.dbStatus ?? '—'}</p>
-          <p className="text-[10px] t-muted">Worker: {infra.workerStatus ?? '—'}</p>
+          <p className="text-caption t-muted">Worker: {infra.workerStatus ?? '—'}</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Users size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase tracking-wider">Platform Users</span>
+            <span className="text-label">Platform Users</span>
           </div>
           <p className="text-xl font-bold t-primary">{platformHealth?.users?.total ?? '—'}</p>
-          <p className="text-[10px] t-muted">Across {platformHealth?.tenants?.total ?? tenants.length} tenants</p>
+          <p className="text-caption t-muted">Across {platformHealth?.tenants?.total ?? tenants.length} tenants</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <Zap size={14} className="text-accent" />
-            <span className="text-[10px] t-muted uppercase tracking-wider">API Calls (1h)</span>
+            <span className="text-label">API Calls (1h)</span>
           </div>
           <p className="text-xl font-bold t-primary">
             {typeof infra.totalRequestsLastHour === 'number'
               ? infra.totalRequestsLastHour.toLocaleString()
               : '—'}
           </p>
-          <p className="text-[10px] t-muted">Avg {infra.apiResponseMs ?? '—'} ms</p>
+          <p className="text-caption t-muted">Avg {infra.apiResponseMs ?? '—'} ms</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle size={14} className="text-amber-400" />
-            <span className="text-[10px] t-muted uppercase tracking-wider">Active Alerts</span>
+            <span className="text-label">Active Alerts</span>
           </div>
           <p className="text-xl font-bold t-primary">{unacknowledgedAlerts.length}</p>
-          <p className="text-[10px] t-muted">{criticalAlerts.length} critical</p>
+          <p className="text-caption t-muted">{criticalAlerts.length} critical</p>
         </Card>
       </div>
 
@@ -256,7 +268,7 @@ export function PlatformHealthPage() {
                   typeof infra.apiResponseMs !== 'number' ? 'default' :
                   infra.apiResponseMs < 200 ? 'success' :
                   infra.apiResponseMs < 500 ? 'warning' : 'danger'
-                } className="text-[10px]">
+                } className="text-caption">
                   {typeof infra.apiResponseMs !== 'number' ? 'n/a' :
                    infra.apiResponseMs < 200 ? 'healthy' :
                    infra.apiResponseMs < 500 ? 'degraded' : 'critical'}
@@ -266,7 +278,7 @@ export function PlatformHealthPage() {
                 {infra.apiResponseMs ?? '—'}
                 <span className="text-sm t-muted ml-1">ms</span>
               </p>
-              <p className="text-[10px] t-muted mt-1">Rolling avg, last 60 min</p>
+              <p className="text-caption t-muted mt-1">Rolling avg, last 60 min</p>
             </Card>
 
             <Card className="p-4">
@@ -279,29 +291,29 @@ export function PlatformHealthPage() {
                   ? infra.totalRequestsLastHour.toLocaleString()
                   : '—'}
               </p>
-              <p className="text-[10px] t-muted mt-1">Observed inbound traffic</p>
+              <p className="text-caption t-muted mt-1">Observed inbound traffic</p>
             </Card>
 
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs t-muted">D1 Database</span>
-                <Badge variant={healthStatusColor(infra.dbStatus)} className="text-[10px]">
+                <Badge variant={healthStatusColor(infra.dbStatus)} className="text-caption">
                   {infra.dbStatus ?? 'unknown'}
                 </Badge>
               </div>
               <p className="text-2xl font-bold t-primary capitalize">{infra.dbStatus ?? '—'}</p>
-              <p className="text-[10px] t-muted mt-1">SELECT 1 probe</p>
+              <p className="text-caption t-muted mt-1">SELECT 1 probe</p>
             </Card>
 
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs t-muted">Worker</span>
-                <Badge variant={healthStatusColor(infra.workerStatus)} className="text-[10px]">
+                <Badge variant={healthStatusColor(infra.workerStatus)} className="text-caption">
                   {infra.workerStatus ?? 'unknown'}
                 </Badge>
               </div>
               <p className="text-2xl font-bold t-primary capitalize">{infra.workerStatus ?? '—'}</p>
-              <p className="text-[10px] t-muted mt-1">Cloudflare Worker runtime</p>
+              <p className="text-caption t-muted mt-1">Cloudflare Worker runtime</p>
             </Card>
 
             <Card className="p-4">
@@ -310,7 +322,7 @@ export function PlatformHealthPage() {
                 <Building2 size={14} className="text-accent" />
               </div>
               <p className="text-2xl font-bold t-primary">{platformHealth.tenants?.total ?? '—'}</p>
-              <p className="text-[10px] t-muted mt-1">Non-deleted tenants</p>
+              <p className="text-caption t-muted mt-1">Non-deleted tenants</p>
             </Card>
 
             <Card className="p-4">
@@ -319,7 +331,7 @@ export function PlatformHealthPage() {
                 <Users size={14} className="text-accent" />
               </div>
               <p className="text-2xl font-bold t-primary">{platformHealth.users?.total ?? '—'}</p>
-              <p className="text-[10px] t-muted mt-1">All tenants combined</p>
+              <p className="text-caption t-muted mt-1">All tenants combined</p>
             </Card>
           </div>
         )}
@@ -330,7 +342,7 @@ export function PlatformHealthPage() {
           <Card className="p-8 text-center">
             <Building2 size={24} className="mx-auto t-muted mb-2" />
             <p className="text-sm t-muted">No tenants visible.</p>
-            <p className="text-[10px] t-muted mt-1">
+            <p className="text-caption t-muted mt-1">
               Requires support_admin or superadmin role.
             </p>
           </Card>
@@ -344,7 +356,7 @@ export function PlatformHealthPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium t-primary">{t.name}</p>
-                    <p className="text-[10px] t-muted">
+                    <p className="text-caption t-muted">
                       {t.slug ? `${t.slug} · ` : ''}
                       {t.region ?? 'no region'}
                       {t.plan ? ` · ${t.plan}` : ''}
@@ -372,7 +384,7 @@ export function PlatformHealthPage() {
             <Card className="p-8 text-center">
               <CheckCircle size={24} className="mx-auto text-emerald-400 mb-2" />
               <p className="text-sm t-muted">No active alerts</p>
-              <p className="text-[10px] t-muted mt-1">
+              <p className="text-caption t-muted mt-1">
                 Alerts are published to KV (alerts:{'<tenant>'}) by background jobs.
               </p>
             </Card>
@@ -384,14 +396,14 @@ export function PlatformHealthPage() {
                   <p className="text-sm font-medium t-primary">{a.title ?? 'Alert'}</p>
                   <Badge
                     variant={a.severity === 'critical' ? 'danger' : a.severity === 'warning' ? 'warning' : 'info'}
-                    className="text-[10px]"
+                    className="text-caption"
                   >
                     {a.severity ?? 'info'}
                   </Badge>
-                  {a.acknowledged && <Badge variant="default" className="text-[10px]">acknowledged</Badge>}
+                  {a.acknowledged && <Badge variant="default" className="text-caption">acknowledged</Badge>}
                 </div>
                 {a.message && <p className="text-xs t-muted mt-0.5">{a.message}</p>}
-                <p className="text-[10px] t-muted mt-1 flex items-center gap-1">
+                <p className="text-caption t-muted mt-1 flex items-center gap-1">
                   <Clock size={10} />
                   {(() => {
                     const ts = a.createdAt || a.created_at;

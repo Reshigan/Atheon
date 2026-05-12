@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { GraphEntity, GraphRelationship, GraphQueryResult } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { LoadingState } from "@/components/ui/state";
 import {
   Database,
   Plus,
@@ -174,13 +175,7 @@ export function MemoryPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--accent)" }} />
-      </div>
-    );
-  }
+  if (loading) return <LoadingState variant="cards" count={4} />;
 
   return (
     <div className="space-y-6">
@@ -514,7 +509,7 @@ export function MemoryPage() {
               )}
 
               <div>
-                <p className="text-[11px] t-muted uppercase tracking-wider mb-2">
+                <p className="text-label mb-2">
                   Direct matches ({searchResult.directMatches?.length || 0})
                 </p>
                 {searchResult.directMatches && searchResult.directMatches.length > 0 ? (
@@ -526,7 +521,7 @@ export function MemoryPage() {
                         style={{ background: "var(--bg-secondary)" }}
                       >
                         <span className="text-xs t-primary">{e.name}</span>
-                        <span className="text-[10px] t-muted">{e.type}</span>
+                        <span className="text-caption t-muted">{e.type}</span>
                       </div>
                     ))}
                   </div>
@@ -537,7 +532,7 @@ export function MemoryPage() {
 
               {searchResult.relatedEntities && searchResult.relatedEntities.length > 0 && (
                 <div>
-                  <p className="text-[11px] t-muted uppercase tracking-wider mb-2">
+                  <p className="text-label mb-2">
                     Related ({searchResult.relatedEntities.length})
                   </p>
                   <div className="space-y-1.5">
@@ -548,7 +543,7 @@ export function MemoryPage() {
                         style={{ background: "var(--bg-secondary)" }}
                       >
                         <span className="text-xs t-primary">{e.name}</span>
-                        <span className="text-[10px] t-muted">{e.type}</span>
+                        <span className="text-caption t-muted">{e.type}</span>
                       </div>
                     ))}
                   </div>

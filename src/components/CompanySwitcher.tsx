@@ -52,7 +52,7 @@ export function CompanySwitcher() {
         ) : (
           <Globe2 size={12} className="flex-shrink-0 t-muted" />
         )}
-        <span className="text-[11px] font-medium t-secondary truncate max-w-[180px]">{label}</span>
+        <span className="text-caption font-medium t-secondary truncate max-w-[180px]">{label}</span>
         <ChevronDown size={10} className="flex-shrink-0 t-muted" />
       </button>
 
@@ -63,7 +63,7 @@ export function CompanySwitcher() {
           role="listbox"
         >
           <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border-card)' }}>
-            <p className="text-[10px] font-medium t-muted uppercase tracking-wider">Scope To Company</p>
+            <p className="text-caption font-medium t-muted uppercase tracking-wider">Scope To Company</p>
           </div>
           <div className="max-h-72 overflow-y-auto">
             <button
@@ -81,7 +81,7 @@ export function CompanySwitcher() {
                 <p className={`text-[12px] leading-tight truncate ${selectedCompanyId === null ? 'font-medium t-primary' : 't-secondary'}`}>
                   All Companies
                 </p>
-                <p className="text-[10px] t-muted">Consolidated across all companies</p>
+                <p className="text-caption t-muted">Consolidated across all companies</p>
               </div>
               {selectedCompanyId === null && <Check size={12} className="text-accent flex-shrink-0" />}
             </button>
@@ -106,7 +106,7 @@ export function CompanySwitcher() {
                     <p className={`text-[12px] leading-tight truncate ${isActive ? 'font-medium t-primary' : 't-secondary'}`}>
                       {codePart}{co.name}
                     </p>
-                    <p className="text-[10px] t-muted truncate">
+                    <p className="text-caption t-muted truncate">
                       {co.is_primary ? 'Primary' : co.source_system}
                       {co.currency ? ` · ${co.currency}` : ''}
                       {co.country ? ` · ${co.country}` : ''}

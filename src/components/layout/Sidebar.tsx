@@ -1,19 +1,49 @@
+import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { Link, useLocation } from "react-router-dom";
-import { X } from "lucide-react";
+import {
+  X,
+  // Differentiators for what would otherwise be duplicate Atheon icons.
+  // Picked for semantic fit, not just availability — keep this comment
+  // in sync if any reassignment happens.
+  Bell as IconSystemAlerts,           // System Alerts (was IconApex)
+  ServerCog as IconPlatformHealth,    // Platform Health (was IconPulse)
+  LifeBuoy as IconSupportConsole,     // Support Console (was IconChat)
+  Ticket as IconSupportTickets,       // Support Tickets (was IconChat)
+  Inbox as IconSupportTriage,         // Support Triage (was IconChat)
+  UserCog as IconCustomRoles,         // Custom Roles (was IconIAM)
+  UserCheck as IconImpersonate,       // Impersonate (was IconClients)
+  Users as IconBulkUsers,             // Bulk Users (was IconClients)
+  Flag as IconFeatureFlags,           // Feature Flags (was IconBolt)
+  ClipboardCheck as IconCompliance,   // Compliance (was IconAudit)
+  BadgeCheck as IconTrust,            // Trust (was IconAudit)
+  ClipboardList as IconAssessments,   // Assessments (was IconBarChart)
+  FileText as IconExecBriefing,       // Exec Briefing (was IconBarChart)
+  DollarSign as IconRevenue,          // Revenue (was IconBarChart)
+  PlugZap as IconIntegrationHealth,   // Integration Health (was IconConnectivity)
+} from "lucide-react";
 import {
   IconDashboard, IconApex, IconPulse, IconCatalysts, IconMind, IconMemory,
   IconChat, IconClients, IconIAM, IconControlPlane,
-  IconERPAdapters, IconConnectivity, IconAudit, IconSettings,
-  IconNetwork, IconBarChart, IconBolt, IconShield,
+  IconERPAdapters, IconConnectivity, IconSettings,
+  IconNetwork, IconBolt,
 } from "@/components/icons/AtheonIcons";
 import type { UserRole } from "@/types";
+
+// Sidebar accepts both the Atheon icon component shape (size: number)
+// and lucide-react's LucideIcon shape (size: string | number). Their
+// prop surfaces don't unify cleanly in TypeScript because Lucide widens
+// `size` and ships propTypes for it. The call site below only passes
+// the two props both shapes accept (`size`, `className`); `ComponentType<any>`
+// is the lowest-friction expression of "any icon component that takes
+// size + className", and propTypes-related variance no longer fights us.
+type NavIcon = ComponentType<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 type NavItem = {
   path: string;
   label: string;
-  icon: typeof IconDashboard;
+  icon: NavIcon;
   section: string;
   sublabel?: string;
   roles?: UserRole[];
@@ -45,16 +75,20 @@ const navItems: NavItem[] = [
   { path: '/catalysts', label: 'Catalysts', icon: IconCatalysts, section: 'intelligence', sublabel: 'Autonomous Execution', roles: OPERATOR_ROLES },
   { path: '/chat', label: 'Chat', icon: IconChat, section: 'intelligence', sublabel: 'Conversational AI', roles: STANDARD_ROLES },
   { path: '/mind', label: 'Mind', icon: IconMind, section: 'intelligence', sublabel: 'AI Configuration', roles: PLATFORM_ADMIN_ROLES },
-  // UX-14: Data — knowledge graph
-  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'data', sublabel: 'Knowledge Graph', roles: MANAGER_ROLES },
+  // Memory grouped under intelligence (was a solo 'data' section) so the
+  // AI surfaces — Chat / Mind / Memory — sit next to each other in the
+  // sidebar rather than having Memory as a single-item section.
+  { path: '/memory', label: 'Memory', icon: IconMemory, section: 'intelligence', sublabel: 'Knowledge Graph', roles: MANAGER_ROLES },
   // UX-14: Administration — IAM, Settings, Integrations, Audit, Clients
   { path: '/iam', label: 'IAM', icon: IconIAM, section: 'administration', sublabel: 'Users & Roles', roles: PLATFORM_ADMIN_ROLES },
   { path: '/tenants', label: 'Clients', icon: IconClients, section: 'administration', sublabel: 'Tenant Management', roles: SUPERADMIN_ROLES },
   { path: '/integrations', label: 'Integrations', icon: IconERPAdapters, section: 'administration', sublabel: 'Systems & Data Schema', roles: PLATFORM_ADMIN_ROLES },
   { path: '/webhooks', label: 'Webhooks', icon: IconBolt, section: 'administration', sublabel: 'Event Subscriptions', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/audit', label: 'Audit', icon: IconAudit, section: 'administration', sublabel: 'Governance', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/compliance', label: 'Compliance', icon: IconAudit, section: 'administration', sublabel: 'SOC 2 evidence pack', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/trust', label: 'Trust', icon: IconAudit, section: 'intelligence', sublabel: 'Calibration · Provenance · Peers', roles: STANDARD_ROLES },
+  // /audit retired 2026-05-12 — folded into /compliance as the "Audit Log" tab.
+  // /data-governance retired 2026-05-12 — folded into /compliance as "Governance" tab.
+  // Single Compliance entry below covers SOC 2 evidence + audit log + DSAR/retention.
+  { path: '/compliance', label: 'Compliance', icon: IconCompliance, section: 'administration', sublabel: 'Evidence · Audit · Governance', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/trust', label: 'Trust', icon: IconTrust, section: 'intelligence', sublabel: 'Calibration · Provenance · Peers', roles: STANDARD_ROLES },
   // Platform Ops — backend prefix middleware controls who can use the routes.
   // Sidebar role gating must match. Control Plane + Connectivity are open to
   // PLATFORM_ADMIN_ROLES (superadmin + support_admin + admin) per
@@ -62,25 +96,26 @@ const navItems: NavItem[] = [
   // remain superadmin-only because their handlers explicitly enforce that.
   { path: '/control-plane', label: 'Control Plane', icon: IconControlPlane, section: 'platform-ops', sublabel: 'Agent Management', roles: PLATFORM_ADMIN_ROLES },
   { path: '/deployments', label: 'Deployments', icon: IconNetwork, section: 'platform-ops', sublabel: 'Hybrid & On-Premise', roles: SUPERADMIN_ROLES },
-  { path: '/assessments', label: 'Assessments', icon: IconBarChart, section: 'platform-ops', sublabel: 'Pre-Sale Analysis', roles: SUPERADMIN_ROLES },
+  { path: '/assessments', label: 'Assessments', icon: IconAssessments, section: 'platform-ops', sublabel: 'Pre-Sale Analysis', roles: SUPERADMIN_ROLES },
   { path: '/connectivity', label: 'Connectivity', icon: IconConnectivity, section: 'platform-ops', sublabel: 'Protocols', roles: PLATFORM_ADMIN_ROLES },
   // /executive retired: ExecutiveMobilePage consolidated into responsive ApexPage.
-  { path: '/executive-summary', label: 'Exec Briefing', icon: IconBarChart, section: 'intelligence', sublabel: 'One-Page Summary', roles: EXECUTIVE_ROLES },
-  // Admin Tooling (ADMIN-001 to ADMIN-012)
-  { path: '/platform-health', label: 'Platform Health', icon: IconPulse, section: 'admin-tooling', sublabel: 'Infrastructure Status', roles: SUPERADMIN_ROLES },
-  { path: '/support', label: 'Support Console', icon: IconChat, section: 'admin-tooling', sublabel: 'Tenant Support', roles: SUPPORT_ROLES },
-  { path: '/company-health', label: 'Company Health', icon: IconBarChart, section: 'admin-tooling', sublabel: 'Org Utilization', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/impersonate', label: 'Impersonate', icon: IconClients, section: 'admin-tooling', sublabel: 'View as User', roles: SUPPORT_ROLES },
-  { path: '/bulk-users', label: 'Bulk Users', icon: IconClients, section: 'admin-tooling', sublabel: 'Import & Manage', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/custom-roles', label: 'Custom Roles', icon: IconIAM, section: 'admin-tooling', sublabel: 'Role Builder', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/revenue', label: 'Revenue', icon: IconBarChart, section: 'admin-tooling', sublabel: 'MRR & Usage', roles: SUPERADMIN_ROLES },
-  { path: '/feature-flags', label: 'Feature Flags', icon: IconBolt, section: 'admin-tooling', sublabel: 'Flag Management', roles: SUPERADMIN_ROLES },
-  { path: '/data-governance', label: 'Data Governance', icon: IconShield, section: 'admin-tooling', sublabel: 'Retention & DSAR', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/integration-health', label: 'Integration Health', icon: IconConnectivity, section: 'admin-tooling', sublabel: 'Sync Monitoring', roles: PLATFORM_ADMIN_ROLES },
-  { path: '/system-alerts', label: 'System Alerts', icon: IconApex, section: 'admin-tooling', sublabel: 'Alert Rules', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/executive-summary', label: 'Exec Briefing', icon: IconExecBriefing, section: 'intelligence', sublabel: 'One-Page Summary', roles: EXECUTIVE_ROLES },
+  // Admin Tooling (ADMIN-001 to ADMIN-012).
+  // /platform-health is now role-conditional inside the component: superadmin
+  // sees infra/tenants/alerts; admin sees their own tenant's adoption / catalyst
+  // usage / LLM / entitlements (formerly /company-health, retired 2026-05-12).
+  { path: '/platform-health', label: 'Operations Health', icon: IconPlatformHealth, section: 'admin-tooling', sublabel: 'Infrastructure & adoption', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/support', label: 'Support Console', icon: IconSupportConsole, section: 'admin-tooling', sublabel: 'Tenant Support', roles: SUPPORT_ROLES },
+  { path: '/impersonate', label: 'Impersonate', icon: IconImpersonate, section: 'admin-tooling', sublabel: 'View as User', roles: SUPPORT_ROLES },
+  { path: '/bulk-users', label: 'Bulk Users', icon: IconBulkUsers, section: 'admin-tooling', sublabel: 'Import & Manage', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/custom-roles', label: 'Custom Roles', icon: IconCustomRoles, section: 'admin-tooling', sublabel: 'Role Builder', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/revenue', label: 'Revenue', icon: IconRevenue, section: 'admin-tooling', sublabel: 'MRR & Usage', roles: SUPERADMIN_ROLES },
+  { path: '/feature-flags', label: 'Feature Flags', icon: IconFeatureFlags, section: 'admin-tooling', sublabel: 'Flag Management', roles: SUPERADMIN_ROLES },
+  { path: '/integration-health', label: 'Integration Health', icon: IconIntegrationHealth, section: 'admin-tooling', sublabel: 'Sync Monitoring', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/system-alerts', label: 'System Alerts', icon: IconSystemAlerts, section: 'admin-tooling', sublabel: 'Alert Rules', roles: PLATFORM_ADMIN_ROLES },
   // v48: Support ticket system — everyone can file tickets; admins get Triage.
-  { path: '/support-tickets', label: 'Support', icon: IconChat, section: 'administration', sublabel: 'File & track tickets' },
-  { path: '/support-triage', label: 'Support Triage', icon: IconChat, section: 'admin-tooling', sublabel: 'Tenant Ticket Queue', roles: PLATFORM_ADMIN_ROLES },
+  { path: '/support-tickets', label: 'Support', icon: IconSupportTickets, section: 'administration', sublabel: 'File & track tickets' },
+  { path: '/support-triage', label: 'Support Triage', icon: IconSupportTriage, section: 'admin-tooling', sublabel: 'Tenant Ticket Queue', roles: PLATFORM_ADMIN_ROLES },
 ];
 
 /** Atheon logo mark — geometric triangle with sage/sky/bronze palette */
@@ -152,7 +187,11 @@ export function Sidebar() {
                 {showDivider && <div className="w-5 h-px my-1" style={{ background: 'var(--border-card)' }} />}
                 <Link
                   to={item.path}
-                  title={item.label}
+                  // Native browser tooltip — fallback for users with no-hover
+                  // input (touch, keyboard focus): "Apex · Executive Intelligence".
+                  // The richer custom tooltip below renders on pointer hover only.
+                  title={item.sublabel ? `${item.label} · ${item.sublabel}` : item.label}
+                  aria-label={item.sublabel ? `${item.label}: ${item.sublabel}` : item.label}
                   className={cn(
                     'w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150 group relative',
                     isActive
@@ -162,11 +201,22 @@ export function Sidebar() {
                   style={isActive ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
                 >
                   <Icon size={17} className={cn(isActive ? 'text-accent' : 't-muted group-hover:t-secondary')} />
+                  {/* Hover tooltip: label + sublabel so the user can identify
+                      what each icon is without clicking. Two-line layout when
+                      a sublabel exists; single-line when it doesn't. */}
                   <div
-                    className="absolute left-full ml-2.5 px-2.5 py-1 text-[11px] font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-dropdown)' }}
+                    role="tooltip"
+                    className="absolute left-full ml-2.5 px-2.5 py-1.5 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50"
+                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-dropdown)', maxWidth: '14rem' }}
                   >
-                    {item.label}
+                    <div className="text-caption font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
+                      {item.label}
+                    </div>
+                    {item.sublabel && (
+                      <div className="text-caption leading-tight mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        {item.sublabel}
+                      </div>
+                    )}
                   </div>
                 </Link>
               </div>
@@ -205,7 +255,7 @@ export function Sidebar() {
             <AtheonSidebarLogo />
             <div>
               <h1 className="text-sm font-semibold t-primary tracking-tight">Atheon</h1>
-              <p className="text-[10px] t-muted tracking-wide uppercase">Enterprise Intelligence</p>
+              <p className="text-caption t-muted tracking-wide uppercase">Enterprise Intelligence</p>
             </div>
           </div>
           <button onClick={closeMobile} className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all" title="Close navigation menu" aria-label="Close navigation menu">
@@ -227,7 +277,7 @@ export function Sidebar() {
               return (
                 <div key={item.path}>
                   {showSectionHeader && (
-                    <span className="block px-2.5 mt-4 mb-1 text-[10px] font-medium t-muted uppercase tracking-widest first:mt-0">
+                    <span className="block px-2.5 mt-4 mb-1 text-caption font-medium t-muted uppercase tracking-widest first:mt-0">
                       {sectionLabels[item.section]}
                     </span>
                   )}
@@ -247,7 +297,7 @@ export function Sidebar() {
                     <div className="min-w-0">
                       <span className={isActive ? 'font-medium' : ''}>{item.label}</span>
                       {item.sublabel && (
-                        <span className="block text-[10px] t-muted truncate">{item.sublabel}</span>
+                        <span className="block text-caption t-muted truncate">{item.sublabel}</span>
                       )}
                     </div>
                   </Link>

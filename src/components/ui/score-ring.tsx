@@ -61,7 +61,7 @@ export function ScoreRing({ score, maxScore = 100, size = 'lg', label, sublabel,
         </div>
       </div>
       {label && <span className="mt-1.5 text-xs font-medium t-secondary">{label}</span>}
-      {sublabel && <span className="text-[10px] t-muted">{sublabel}</span>}
+      {sublabel && <span className="text-caption t-muted">{sublabel}</span>}
     </div>
   );
 }

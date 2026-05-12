@@ -82,7 +82,7 @@ export function OnboardingPanel({ connectionId }: { connectionId: string }): JSX
               <div className="flex items-center gap-2">
                 <span className={s.complete ? 't-muted line-through' : 't-primary font-medium'}>{s.title}</span>
                 {!s.complete && (
-                  <Link to={s.action_path} className="text-accent hover:underline text-[10px]">
+                  <Link to={s.action_path} className="text-accent hover:underline text-caption">
                     Start
                   </Link>
                 )}

@@ -125,7 +125,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                 </Badge>
               </div>
               {item.field && (
-                <p className="text-[10px] t-muted mt-1">Field: {item.field} | Diff: {item.difference || 'N/A'}</p>
+                <p className="text-caption t-muted mt-1">Field: {item.field} | Diff: {item.difference || 'N/A'}</p>
               )}
             </div>
           ))}
@@ -147,7 +147,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                   {a.severity}
                 </Badge>
               </div>
-              <p className="text-[10px] t-muted mt-1">Deviation: {a.deviation.toFixed(1)}%</p>
+              <p className="text-caption t-muted mt-1">Deviation: {a.deviation.toFixed(1)}%</p>
             </div>
           ))}
         </div>

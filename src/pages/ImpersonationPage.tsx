@@ -19,8 +19,9 @@ import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/stores/appStore';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError, setTenantOverride } from '@/lib/api';
+import { LoadingState, ErrorState } from '@/components/ui/state';
 import {
-  Eye, Search, Clock, AlertTriangle, Loader2,
+  Eye, Search, Clock, Loader2, AlertTriangle,
   User, LogOut,
 } from 'lucide-react';
 
@@ -192,21 +193,14 @@ export function ImpersonationPage() {
     return targetLevel < callerLevel && u.id !== currentUser?.id;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
-
+  if (loading) return <LoadingState variant="cards" count={4} />;
   if (error && users.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 gap-3">
-        <AlertTriangle className="w-8 h-8 text-red-400" />
-        <p className="text-sm t-primary">{error}</p>
-        <button onClick={() => loadUsers()} className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors">Retry</button>
-      </div>
+      <ErrorState
+        title="Couldn't load users"
+        error={error}
+        onRetry={() => loadUsers()}
+      />
     );
   }
 
@@ -221,7 +215,7 @@ export function ImpersonationPage() {
               <p className="text-sm font-medium text-amber-400">
                 Viewing as {activeSession.userName} ({activeSession.userRole})
               </p>
-              <p className="text-[10px] t-muted">
+              <p className="text-caption t-muted">
                 {activeSession.userEmail} · Expires {new Date(activeSession.expiresAt).toLocaleTimeString()}
               </p>
             </div>
@@ -284,9 +278,9 @@ export function ImpersonationPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium t-primary">{u.name}</p>
-                        <Badge variant={roleColor(u.role)} className="text-[10px]">{u.role}</Badge>
+                        <Badge variant={roleColor(u.role)} className="text-caption">{u.role}</Badge>
                       </div>
-                      <p className="text-[10px] t-muted">{u.email}</p>
+                      <p className="text-caption t-muted">{u.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

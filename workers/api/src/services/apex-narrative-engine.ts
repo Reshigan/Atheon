@@ -33,9 +33,11 @@ import { logError, logInfo } from './logger';
 import { forecastMetric, type ForecastPoint } from './kpi-forecasting';
 import { recordOutcome, type GateName } from './inference-calibration';
 import { recordEmittedForecasts } from './forecast-accuracy-tracker';
+import { getEffectiveThreshold } from './threshold-autotune';
 
 const NARRATIVE_DEBOUNCE_HOURS = 20; // ~once per day, with slack
 const RCA_LOOKBACK_DAYS = 7;
+/** Default; superseded per-tenant by getEffectiveThreshold() at runtime. */
 const MIN_RECOVERY_SAMPLES = 3;
 const MAX_RISKS_IN_BRIEFING = 5;
 
@@ -380,6 +382,7 @@ function inferDirection(m: MetricWithThresholds): 'higher_better' | 'lower_bette
 
 async function markResolved(
   db: D1Database, tenantId: string, rcaId: string, metricName: string,
+  recoverySamples: number,
 ): Promise<boolean> {
   try {
     await db.prepare(
@@ -394,7 +397,7 @@ async function markResolved(
       ).bind(
         crypto.randomUUID(), tenantId,
         `RCA closed — ${metricName} recovered`,
-        `${metricName} held at a recovered status across the last ${MIN_RECOVERY_SAMPLES} samples; the active root cause analysis has been resolved.`,
+        `${metricName} held at a recovered status across the last ${recoverySamples} samples; the active root cause analysis has been resolved.`,
         JSON.stringify({ rcaId, metricName }),
       ).run();
     } catch { /* notifications are best-effort */ }
@@ -416,13 +419,19 @@ export async function closeRecoveredRcas(
   result.rcasScanned = rcas.length;
   if (rcas.length === 0) return result;
 
+  // Resolve per-tenant recovery sample requirement (autotune > default).
+  const minRecoverySamplesRaw = await getEffectiveThreshold(
+    db, tenantId, 'rca_closure.min_recovery_samples',
+  ).catch(() => MIN_RECOVERY_SAMPLES);
+  const minRecoverySamples = Math.max(2, Math.round(minRecoverySamplesRaw));
+
   for (const rca of rcas) {
     const metric = await loadMetricWithThresholds(db, tenantId, rca.metric_id);
     if (!metric) continue;
     if (metric.status === 'red') continue; // still degraded — keep RCA open
 
-    const history = await loadRecentMetricHistory(db, tenantId, rca.metric_id, MIN_RECOVERY_SAMPLES);
-    if (history.length < MIN_RECOVERY_SAMPLES) {
+    const history = await loadRecentMetricHistory(db, tenantId, rca.metric_id, minRecoverySamples);
+    if (history.length < minRecoverySamples) {
       result.rcasSkippedInsufficientHistory++;
       continue;
     }
@@ -439,7 +448,7 @@ export async function closeRecoveredRcas(
       continue;
     }
 
-    const ok = await markResolved(db, tenantId, rca.id, rca.metric_name);
+    const ok = await markResolved(db, tenantId, rca.id, rca.metric_name, minRecoverySamples);
     if (ok) {
       result.rcasResolved++;
       // Phase 10-15: every L1 driver of a recovered RCA is a true_positive

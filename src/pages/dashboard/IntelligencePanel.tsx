@@ -23,7 +23,7 @@ export function IntelligencePanel({ data }: IntelligencePanelProps) {
           <Lightbulb size={16} className="text-purple-400" />
           <h3 className="text-sm font-semibold t-primary">Atheon Intelligence</h3>
         </div>
-        <span className="text-[10px] t-muted">{data.poweredBy}</span>
+        <span className="text-caption t-muted">{data.poweredBy}</span>
       </div>
       <p className="text-sm t-secondary mb-3 whitespace-pre-line">{cleanLlmText(data.summary)}</p>
       {data.keyMetrics.length > 0 && (
@@ -32,11 +32,11 @@ export function IntelligencePanel({ data }: IntelligencePanelProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {data.keyMetrics.map((m, i) => (
               <div key={i} className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                <p className="text-[10px] t-muted">{m.name}</p>
+                <p className="text-caption t-muted">{m.name}</p>
                 <p className="text-sm font-bold t-primary">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</p>
                 <div className="flex items-center gap-1">
                   {trendIcon(m.trend)}
-                  <span className="text-[10px] t-muted">{m.status === 'red' ? 'Critical' : m.status === 'amber' ? 'Warning' : 'Healthy'}</span>
+                  <span className="text-caption t-muted">{m.status === 'red' ? 'Critical' : m.status === 'amber' ? 'Warning' : 'Healthy'}</span>
                 </div>
               </div>
             ))}

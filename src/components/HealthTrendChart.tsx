@@ -99,7 +99,7 @@ export function HealthTrendChart({ companyId, initialHistory = null }: HealthTre
         </div>
         <div className="flex items-center gap-2">
           {dimensionKeys.length > 0 && (
-            <label className="flex items-center gap-1.5 text-[11px] t-muted cursor-pointer select-none">
+            <label className="flex items-center gap-1.5 text-caption t-muted cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showDimensions}
@@ -119,7 +119,7 @@ export function HealthTrendChart({ companyId, initialHistory = null }: HealthTre
                 key={r}
                 type="button"
                 onClick={() => setRange(r)}
-                className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                className={`px-2.5 py-1 text-caption font-medium transition-colors ${
                   range === r
                     ? "bg-accent text-white"
                     : "bg-[var(--bg-secondary)] t-muted hover:t-primary"

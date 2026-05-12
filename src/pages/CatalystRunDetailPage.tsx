@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
+import { LoadingState } from "@/components/ui/state";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +61,8 @@ function triggerDownload(content: string, filename: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
-// Confirm dialog (portal-free, simple modal).
+// Confirm dialog — uses the canonical Modal primitive so this page no
+// longer reinvents overlay / ESC / scroll-lock / aria-modal mechanics.
 function ConfirmDialog({
   open, title, message, confirmLabel = 'Confirm', confirmVariant = 'primary',
   onConfirm, onCancel, busy,
@@ -73,28 +76,30 @@ function ConfirmDialog({
   onCancel: () => void;
   busy?: boolean;
 }) {
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onCancel}>
-      <div onClick={(e) => e.stopPropagation()} className="max-w-md w-full">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold t-primary mb-2">{title}</h3>
-        <p className="text-sm t-muted mb-6">{message}</p>
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
-          <Button
-            variant={confirmVariant === 'danger' ? 'ghost' : 'primary'}
-            className={confirmVariant === 'danger' ? 'text-red-400 hover:bg-red-400/10' : undefined}
-            onClick={onConfirm}
-            disabled={busy}
-          >
-            {busy ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
-            {confirmLabel}
-          </Button>
-        </div>
-        </Card>
-      </div>
-    </div>
+    <Modal open={open} onClose={onCancel} size="sm" dismissible={!busy}>
+      <Modal.Header
+        title={title}
+        // Inline X is suppressed while the mutation is in flight via the
+        // Modal's `dismissible` prop above; no need to disable here too.
+        onClose={onCancel}
+      />
+      <Modal.Body>
+        <p className="text-body-sm t-muted">{message}</p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
+        <Button
+          variant={confirmVariant === 'danger' ? 'ghost' : 'primary'}
+          className={confirmVariant === 'danger' ? 'text-red-400 hover:bg-red-400/10' : undefined}
+          onClick={onConfirm}
+          disabled={busy}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+          {confirmLabel}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 
@@ -386,16 +391,7 @@ export function CatalystRunDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm t-muted">Loading run details...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState variant="cards" count={4} />;
 
   if (!run) {
     return (
@@ -407,7 +403,7 @@ export function CatalystRunDetailPage() {
             {loadError?.message || "The catalyst run you're looking for doesn't exist or you don't have access to it."}
           </p>
           {loadError?.requestId && (
-            <p className="text-[11px] t-muted font-mono mb-4">Request ID: {loadError.requestId}</p>
+            <p className="text-caption t-muted font-mono mb-4">Request ID: {loadError.requestId}</p>
           )}
           <div className="flex gap-2 justify-center">
             <Button variant="ghost" onClick={loadRun}>Retry</Button>
@@ -481,7 +477,7 @@ export function CatalystRunDetailPage() {
                 <CheckCircle2 size={20} className="text-emerald-400" />
               </div>
               <div>
-                <p className="text-xs t-muted uppercase tracking-wider">Matched Records</p>
+                <p className="text-label">Matched Records</p>
                 <p className="text-2xl font-bold t-primary">{run.matched?.toLocaleString() || '0'}</p>
               </div>
             </div>
@@ -493,7 +489,7 @@ export function CatalystRunDetailPage() {
                 <AlertCircle size={20} className="text-amber-400" />
               </div>
               <div>
-                <p className="text-xs t-muted uppercase tracking-wider">Discrepancies</p>
+                <p className="text-label">Discrepancies</p>
                 <p className="text-2xl font-bold t-primary">{run.discrepancies?.toLocaleString() || '0'}</p>
               </div>
             </div>
@@ -505,7 +501,7 @@ export function CatalystRunDetailPage() {
                 <XCircle size={20} className="text-red-400" />
               </div>
               <div>
-                <p className="text-xs t-muted uppercase tracking-wider">Exceptions</p>
+                <p className="text-label">Exceptions</p>
                 <p className="text-2xl font-bold t-primary">{run.exceptions?.toLocaleString() || '0'}</p>
               </div>
             </div>
@@ -517,7 +513,7 @@ export function CatalystRunDetailPage() {
                 <Database size={20} className="text-blue-400" />
               </div>
               <div>
-                <p className="text-xs t-muted uppercase tracking-wider">Total Value</p>
+                <p className="text-label">Total Value</p>
                 <p className="text-2xl font-bold t-primary">
                   {run.totalValue ? `R ${(run.totalValue / 1000000).toFixed(2)}M` : 'N/A'}
                 </p>
@@ -563,7 +559,7 @@ export function CatalystRunDetailPage() {
             <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-accent/5 border border-accent/20">
               <span className="text-xs t-primary">{selectedItemIds.size} selected</span>
               {pendingSelectedCount < selectedItemIds.size && (
-                <span className="text-[10px] t-muted">
+                <span className="text-caption t-muted">
                   ({pendingSelectedCount} pending, {selectedItemIds.size - pendingSelectedCount} already reviewed)
                 </span>
               )}
@@ -733,7 +729,7 @@ export function CatalystRunDetailPage() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-[10px] t-muted">{item.reviewed_by ? `by ${item.reviewed_by}` : '-'}</span>
+                            <span className="text-caption t-muted">{item.reviewed_by ? `by ${item.reviewed_by}` : '-'}</span>
                           )}
                         </td>
                       </tr>
@@ -781,7 +777,7 @@ export function CatalystRunDetailPage() {
                     <span className="text-sm font-medium t-primary">{c.user_name || c.user_id}</span>
                     <span className="text-xs t-muted">{new Date(c.created_at).toLocaleString()}</span>
                     {c.item_id && (
-                      <Badge variant="info" className="text-[10px]">on item</Badge>
+                      <Badge variant="info" className="text-caption">on item</Badge>
                     )}
                     {canDeleteComment(c) && (
                       <button

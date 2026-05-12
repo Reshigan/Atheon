@@ -175,11 +175,11 @@ export function AssessmentFindingsPanel({
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <div className="text-xs t-muted uppercase tracking-wider">Findings</div>
+              <div className="text-label">Findings</div>
               <div className="text-2xl font-semibold t-primary">{findings.length}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs t-muted uppercase tracking-wider">Value at risk</div>
+              <div className="text-label">Value at risk</div>
               <div className="text-2xl font-semibold text-accent" data-testid="findings-total-value">
                 {formatZAR(totalValue)}
               </div>
@@ -300,26 +300,26 @@ export function AssessmentFindingsPanel({
                   <div className={`w-1 self-stretch rounded-full ${SEVERITY_BAR_COLOR[f.severity]}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <Badge variant={SEVERITY_VARIANT[f.severity]} className="text-[10px] uppercase tracking-wider">
+                      <Badge variant={SEVERITY_VARIANT[f.severity]} className="text-label">
                         {SEVERITY_LABEL[f.severity]}
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] t-muted">
+                      <Badge variant="outline" className="text-caption t-muted">
                         {f.category.replace(/_/g, ' ')}
                       </Badge>
                       {f.company_name && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-caption">
                           <Building2 size={10} className="inline mr-1" />
                           {f.company_name}
                         </Badge>
                       )}
-                      <span className="text-[10px] t-muted ml-auto">{f.code}</span>
+                      <span className="text-caption t-muted ml-auto">{f.code}</span>
                     </div>
                     <div className="font-medium t-primary text-sm">{f.title}</div>
                   </div>
                   <div className="text-right whitespace-nowrap">
                     {f.value_at_risk_zar > 0 ? (
                       <>
-                        <div className="text-[10px] t-muted uppercase tracking-wider">Value at risk</div>
+                        <div className="text-label">Value at risk</div>
                         <div className="text-base font-semibold text-accent">
                           {formatZAR(f.value_at_risk_zar)}
                         </div>
@@ -339,7 +339,7 @@ export function AssessmentFindingsPanel({
                     {/* Methodology */}
                     {f.value_components.length > 0 && (
                       <div>
-                        <div className="text-xs uppercase tracking-wider t-muted mb-2">Methodology</div>
+                        <div className="text-label mb-2">Methodology</div>
                         <div className="space-y-1">
                           {f.value_components.map((c, i) => (
                             <div key={i} className="flex items-start gap-3 text-xs">
@@ -359,7 +359,7 @@ export function AssessmentFindingsPanel({
                     {/* Sample records */}
                     {f.sample_records.length > 0 && (
                       <div>
-                        <div className="text-xs uppercase tracking-wider t-muted mb-2">
+                        <div className="text-label mb-2">
                           Sample records ({f.sample_records.length} of {f.affected_count.toLocaleString()})
                         </div>
                         <div className="rounded-md border border-[var(--border-card)] overflow-hidden">
@@ -396,7 +396,7 @@ export function AssessmentFindingsPanel({
                     {/* Currency breakdown if multi-currency */}
                     {Object.keys(f.currency_breakdown).length > 1 && (
                       <div>
-                        <div className="text-xs uppercase tracking-wider t-muted mb-2">Currency exposure</div>
+                        <div className="text-label mb-2">Currency exposure</div>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(f.currency_breakdown).map(([cur, amt]) => (
                             <Badge key={cur} variant="outline" className="text-xs">
@@ -426,7 +426,7 @@ export function AssessmentFindingsPanel({
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] t-muted">
+                        <span className="text-caption t-muted">
                           Evidence: <strong className="t-primary">{f.evidence_quality}</strong>
                         </span>
                         {onDeployCatalyst && (

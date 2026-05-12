@@ -74,6 +74,118 @@ stats.get('/billing-summary', async (c) => {
   }
 });
 
+/**
+ * GET /api/v1/insights-stats/platform-totals
+ *
+ * Cross-feature rollup for the header chip + ROI dashboard. Pulls a single
+ * row of totals from the tenant's full operating history so the operator
+ * sees one number per thing-that-matters across every catalyst, every run,
+ * every action — not just the latest period.
+ *
+ * Returns lifetime aggregates by default; pass `?lookback_days=N` to scope
+ * to a window. All counts are best-effort: failures on individual tables
+ * fall back to 0 rather than breaking the chip.
+ */
+stats.get('/platform-totals', async (c) => {
+  const tid = tenant(c);
+  if (!tid) return c.json({ error: 'tenant_id required' }, 400);
+  const daysParam = c.req.query('lookback_days');
+  const lookbackDays = daysParam ? Math.max(1, Math.min(3650, parseInt(daysParam, 10) || 365)) : null;
+  const sinceClause = lookbackDays
+    ? ` AND created_at > datetime('now', '-${lookbackDays} days')`
+    : '';
+
+  // Helper: best-effort single-row aggregate. Returns null on any failure
+  // so callers fall back to 0 rather than 500-ing the whole rollup.
+  async function safeOne<T extends Record<string, unknown>>(sql: string): Promise<T | null> {
+    try {
+      return await c.env.DB.prepare(sql).bind(tid).first<T>();
+    } catch { return null; }
+  }
+
+  const [runs, items, actions, savings, anomalies, risksRow] = await Promise.all([
+    safeOne<{ n: number; matched: number; disc: number; exc: number }>(
+      `SELECT COUNT(*) as n,
+              COALESCE(SUM(matched), 0) as matched,
+              COALESCE(SUM(discrepancies), 0) as disc,
+              COALESCE(SUM(exceptions_raised), 0) as exc
+         FROM sub_catalyst_runs WHERE tenant_id = ?${sinceClause}`,
+    ),
+    safeOne<{ n: number; matched: number; disc: number; exc: number; total_value: number; disc_value: number }>(
+      `SELECT COUNT(*) as n,
+              SUM(CASE WHEN item_status = 'matched' THEN 1 ELSE 0 END) as matched,
+              SUM(CASE WHEN item_status = 'discrepancy' THEN 1 ELSE 0 END) as disc,
+              SUM(CASE WHEN item_status = 'exception' THEN 1 ELSE 0 END) as exc,
+              COALESCE(SUM(source_amount), 0) as total_value,
+              COALESCE(SUM(discrepancy_amount), 0) as disc_value
+         FROM sub_catalyst_run_items WHERE tenant_id = ?${sinceClause}`,
+    ),
+    safeOne<{ verified: number; pending: number; total: number }>(
+      `SELECT
+         SUM(CASE WHEN verification_status = 'verified' THEN 1 ELSE 0 END) as verified,
+         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+         COUNT(*) as total
+       FROM catalyst_actions WHERE tenant_id = ?${sinceClause}`,
+    ),
+    safeOne<{ realised: number; atheon: number; currency: string }>(
+      `SELECT
+         COALESCE(SUM(total_realised_savings), 0) as realised,
+         COALESCE(SUM(atheon_revenue), 0) as atheon,
+         COALESCE(MAX(currency), 'ZAR') as currency
+       FROM billable_periods WHERE tenant_id = ?`,
+    ),
+    safeOne<{ open: number; total: number }>(
+      `SELECT SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+              COUNT(*) as total
+         FROM anomalies WHERE tenant_id = ?${sinceClause}`,
+    ),
+    safeOne<{ critical: number; high: number; total: number }>(
+      `SELECT
+         SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical,
+         SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high,
+         COUNT(*) as total
+       FROM risk_alerts WHERE tenant_id = ?${sinceClause}`,
+    ),
+  ]);
+
+  return c.json({
+    lookback_days: lookbackDays,
+    runs: {
+      total: runs?.n ?? 0,
+      matched: runs?.matched ?? 0,
+      discrepancies: runs?.disc ?? 0,
+      exceptions: runs?.exc ?? 0,
+    },
+    items: {
+      total: items?.n ?? 0,
+      matched: items?.matched ?? 0,
+      discrepancies: items?.disc ?? 0,
+      exceptions: items?.exc ?? 0,
+      processed_value: items?.total_value ?? 0,
+      discrepancy_value: items?.disc_value ?? 0,
+    },
+    actions: {
+      total: actions?.total ?? 0,
+      verified: actions?.verified ?? 0,
+      pending: actions?.pending ?? 0,
+    },
+    risks: {
+      total: risksRow?.total ?? 0,
+      critical: risksRow?.critical ?? 0,
+      high: risksRow?.high ?? 0,
+    },
+    anomalies: {
+      total: anomalies?.total ?? 0,
+      open: anomalies?.open ?? 0,
+    },
+    savings: {
+      total_realised: savings?.realised ?? 0,
+      atheon_revenue: savings?.atheon ?? 0,
+      currency: savings?.currency ?? 'ZAR',
+    },
+  });
+});
+
 stats.get('/dsar-summary', async (c) => {
   const tid = tenant(c);
   if (!tid) return c.json({ error: 'tenant_id required' }, 400);

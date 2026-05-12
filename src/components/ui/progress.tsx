@@ -29,7 +29,7 @@ export function Progress({ value, max = 100, color = 'blue', size = 'md', showLa
   return (
     <div className={cn('w-full', className)}>
       {showLabel && (
-        <div className="flex justify-between text-[10px] t-muted mb-1">
+        <div className="flex justify-between text-caption t-muted mb-1">
           <span>{value}</span>
           <span>{max}</span>
         </div>

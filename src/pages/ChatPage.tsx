@@ -214,15 +214,15 @@ export function ChatPage() {
  </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mt-4">
             <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-              <p className="text-[10px] t-muted uppercase tracking-wider mb-1">Organizational Level</p>
+              <p className="text-label mb-1">Organizational Level</p>
               <p className="text-sm t-primary font-medium">Interaction / User Interface</p>
             </div>
             <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-              <p className="text-[10px] t-muted uppercase tracking-wider mb-1">Focus</p>
+              <p className="text-label mb-1">Focus</p>
               <p className="text-sm t-primary font-medium">Unified Conversational UI</p>
             </div>
             <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-              <p className="text-[10px] t-muted uppercase tracking-wider mb-1">Integrates</p>
+              <p className="text-label mb-1">Integrates</p>
               <p className="text-sm t-primary font-medium">Mind (AI) + Memory (Context)</p>
             </div>
           </div>
@@ -243,7 +243,7 @@ export function ChatPage() {
         {tierOptions.map(tier => (
           <button key={tier.id} onClick={() => { setSelectedTier(tier.id); setShowTierMenu(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-accent/10 transition-colors ${selectedTier === tier.id ? 'bg-accent/5 text-accent' : 't-secondary'}`}>
             <div className="font-medium">{tier.label}</div>
-            <div className="text-[10px] text-gray-400">{tier.desc}</div>
+            <div className="text-caption t-muted">{tier.desc}</div>
           </button>
         ))}
       </div>
@@ -259,7 +259,7 @@ export function ChatPage() {
  <div className="flex items-start justify-between gap-2">
  <div className="flex-1 min-w-0">
  <h3 className="text-sm font-medium t-primary truncate">{thread.title}</h3>
- <span className="text-[10px] text-gray-400">{thread.messages.length} messages</span>
+ <span className="text-caption t-muted">{thread.messages.length} messages</span>
  </div>
  {threads.length > 1 && (
    <button
@@ -320,7 +320,7 @@ export function ChatPage() {
  )}
 
  {msg.layer && <LayerBadge layer={msg.layer} className="mt-2" />}
-  {msg.tier && <span className="text-[10px] text-gray-500 mt-1 block">Model: {tierOptions.find(t => t.id === msg.tier)?.label || msg.tier}</span>}
+  {msg.tier && <span className="text-caption text-gray-500 mt-1 block">Model: {tierOptions.find(t => t.id === msg.tier)?.label || msg.tier}</span>}
   </div>
  {msg.role === 'user' && (
  <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
@@ -351,7 +351,7 @@ export function ChatPage() {
 
  {/* Suggested Queries */}
  <div className="mb-3">
- <span className="text-[10px] text-gray-400 uppercase tracking-wider mb-2 block">Suggested</span>
+ <span className="text-label mb-2 block">Suggested</span>
  <div className="flex flex-wrap gap-2">
  {suggestedQueries.map((q, i) => (
  <button

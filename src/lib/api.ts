@@ -1241,6 +1241,29 @@ export const api = {
   },
 
   // ── ROI Tracking (Spec §2.4 — 3 endpoints) ─────────────────────────
+  // ── Insights stats (Phase 10-23) ───────────────────────────
+  // Backend route: /api/v1/insights-stats/*. Single source of truth for
+  // the ROI dashboard's four cards + the header's PlatformTotalsChip.
+  // Page code calls api.insightsStats.<method>() — no raw api.get() here.
+  insightsStats: {
+    billingSummary: () =>
+      request<BillingSummary>('/api/v1/insights-stats/billing-summary'),
+    forecastAccuracy: (lookbackDays?: number) =>
+      request<ForecastAccuracyResp>(
+        `/api/v1/insights-stats/forecast-accuracy${qs({ lookback_days: lookbackDays?.toString() })}`,
+      ),
+    calibration: (lookbackDays?: number) =>
+      request<{ lookback_days: number; gates: CalibrationGate[] }>(
+        `/api/v1/insights-stats/calibration${qs({ lookback_days: lookbackDays?.toString() })}`,
+      ),
+    dsarSummary: () =>
+      request<DsarSummary>('/api/v1/insights-stats/dsar-summary'),
+    platformTotals: (lookbackDays?: number) =>
+      request<PlatformTotals>(
+        `/api/v1/insights-stats/platform-totals${qs({ lookback_days: lookbackDays?.toString() })}`,
+      ),
+  },
+
   roi: {
     summary: () =>
       request<ROISummary>('/api/roi'),
@@ -3574,6 +3597,60 @@ export interface CatalystDependency {
   cascadeRiskScore: number;
   evidence: Record<string, unknown>;
   lastConfirmed: string | null;
+}
+
+// ─── Insights stats types (Phase 10-23) ────────────────────
+// Shared between the ROI dashboard cards and the header
+// PlatformTotalsChip. Backend route: workers/api/src/routes/insights-stats.ts.
+
+export interface BillingSummary {
+  periods_count: number;
+  total_realised_savings: number;
+  total_atheon_revenue: number;
+  currency: string;
+}
+
+export interface ForecastHorizon {
+  horizon_days: number;
+  graded: number;
+  within_band_rate: number | null;
+  median_abs_error_pct: number | null;
+}
+
+export interface ForecastAccuracyResp {
+  lookback_days: number;
+  total_graded: number;
+  within_band_rate: number | null;
+  median_abs_error_pct: number | null;
+  by_horizon: ForecastHorizon[];
+}
+
+export interface CalibrationGate {
+  gate: string;
+  total: number;
+  true_positives: number;
+  false_positives: number;
+  true_negatives: number;
+  false_negatives: number;
+  false_positive_rate: number | null;
+  false_negative_rate: number | null;
+  recommendation: 'tighten' | 'loosen' | 'hold';
+}
+
+export interface DsarRow { request_type: string; status: string; n: number }
+export interface DsarSummary { by_type_and_status: DsarRow[] }
+
+export interface PlatformTotals {
+  lookback_days: number | null;
+  runs: { total: number; matched: number; discrepancies: number; exceptions: number };
+  items: {
+    total: number; matched: number; discrepancies: number; exceptions: number;
+    processed_value: number; discrepancy_value: number;
+  };
+  actions: { total: number; verified: number; pending: number };
+  risks: { total: number; critical: number; high: number };
+  anomalies: { total: number; open: number };
+  savings: { total_realised: number; atheon_revenue: number; currency: string };
 }
 
 // §4.4 ROI & Board Report Types

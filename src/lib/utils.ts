@@ -72,3 +72,58 @@ export function formatJsonAsText(obj: Record<string, unknown>): string {
 
   return parts.join('\n\n');
 }
+
+/**
+ * Format a duration into a human-readable string.
+ *
+ * Accepts seconds (default) or milliseconds, and chooses a sensible unit:
+ *   < 60s        → "45s"
+ *   < 60m        → "12m"
+ *   < 24h        → "3h 15m"
+ *   < 30 days    → "4d 6h"
+ *   ≥ 30 days    → "2mo"
+ *
+ * Returns "—" for null / undefined / NaN / non-finite values. This prevents
+ * the platform from rendering bare `Infinity`, `NaN`, or `undefined` as
+ * user-visible text — which is what was happening on Process Mining (the
+ * backend stores `avg_duration` in seconds but the UI labeled it "days",
+ * and several callers reached into step objects whose duration field was
+ * never populated → `undefined` rendered as text).
+ */
+export function formatDuration(
+  value: number | null | undefined,
+  unit: 'seconds' | 'milliseconds' = 'seconds',
+): string {
+  if (value == null || !Number.isFinite(value) || value < 0) return '—';
+  const seconds = unit === 'milliseconds' ? value / 1000 : value;
+  if (seconds < 1) return '< 1s';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  const remMins = minutes % 60;
+  if (hours < 24) return remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
+
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  if (days < 30) return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+
+  const months = Math.floor(days / 30);
+  return `${months}mo`;
+}
+
+/**
+ * Safely divide; returns 0 (or `fallback`) when the divisor is 0 / undefined
+ * / NaN, so callers don't ship `Infinity` or `NaN` into the UI.
+ */
+export function safeDivide(
+  num: number | null | undefined,
+  den: number | null | undefined,
+  fallback = 0,
+): number {
+  if (num == null || den == null || !Number.isFinite(num) || !Number.isFinite(den) || den === 0) return fallback;
+  const r = num / den;
+  return Number.isFinite(r) ? r : fallback;
+}

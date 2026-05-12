@@ -90,7 +90,7 @@ export function WebhookDeliveriesTable({ webhookId, pollIntervalMs = 30_000, lim
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold t-primary">Recent deliveries</h3>
-          <p className="text-[10px] t-muted">
+          <p className="text-caption t-muted">
             Last {limit} attempts{pollIntervalMs ? ` — auto-refreshes every ${Math.round(pollIntervalMs / 1000)}s` : ''}
           </p>
         </div>

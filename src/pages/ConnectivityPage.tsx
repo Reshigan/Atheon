@@ -169,7 +169,7 @@ export function ConnectivityPage() {
           <div key={card.label} className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
             <div className="flex items-center gap-2 mb-2">
               <card.icon size={14} className="t-muted" />
-              <span className="text-[10px] t-muted uppercase tracking-wider">{card.label}</span>
+              <span className="text-label">{card.label}</span>
             </div>
             <p className="text-xl font-bold t-primary">{card.value}</p>
           </div>
@@ -194,7 +194,7 @@ export function ConnectivityPage() {
                 <div className="flex items-center gap-2">
                   {cb && cb.state !== 'CLOSED' && (
                     <span
-                      className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border font-medium ${
+                      className={`inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded border font-medium ${
                         cb.state === 'OPEN'
                           ? 'bg-red-500/10 text-red-500 border-red-500/20'
                           : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
@@ -218,17 +218,17 @@ export function ConnectivityPage() {
 
               <div className="mt-3 grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-[10px] t-muted uppercase">Last Sync</p>
+                  <p className="text-label">Last Sync</p>
                   <p className="text-xs t-secondary flex items-center gap-1">
                     <Clock size={10} /> {conn.lastSync ? new Date(conn.lastSync).toLocaleString() : "Never"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] t-muted uppercase">Schedule</p>
+                  <p className="text-label">Schedule</p>
                   <p className="text-xs t-secondary">{conn.syncFrequency || "Manual"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] t-muted uppercase">Records Synced</p>
+                  <p className="text-label">Records Synced</p>
                   <p className="text-xs t-secondary">
                     {(conn.recordsSynced ?? 0).toLocaleString()}
                     {multicompany && <span className="t-muted"> across {companies.length} companies</span>}

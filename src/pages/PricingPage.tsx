@@ -83,7 +83,7 @@ export function PricingPage(): JSX.Element {
               }`}
               data-testid={`cycle-${c}`}
             >
-              {c}{c === 'annual' && <span className="ml-1.5 text-[10px] opacity-80">(save ~20%)</span>}
+              {c}{c === 'annual' && <span className="ml-1.5 text-caption opacity-80">(save ~20%)</span>}
             </button>
           ))}
         </div>

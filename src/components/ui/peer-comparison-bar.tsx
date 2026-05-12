@@ -37,7 +37,7 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium t-primary capitalize">{dimension}</span>
-        <span className={`text-[10px] font-medium ${rankColor}`}>{rankLabel}</span>
+        <span className={`text-caption font-medium ${rankColor}`}>{rankLabel}</span>
       </div>
       <div className="relative h-3 rounded-full bg-[var(--bg-secondary)]">
         {/* IQR range bar (P25-P75) */}
@@ -65,7 +65,7 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
           />
         )}
       </div>
-      <div className="flex items-center justify-between text-[9px] t-muted">
+      <div className="flex items-center justify-between text-caption t-muted">
         <span>P25: {p25Score}</span>
         <span>P50: {p50Score}</span>
         <span>P75: {p75Score}</span>
@@ -73,7 +73,7 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
       </div>
       {rec && (
         <div className="flex items-center justify-between gap-2 mt-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
-          <div className="text-[11px] t-secondary">
+          <div className="text-caption t-secondary">
             You're <span className="font-semibold t-primary">{gap} pts</span> behind peer median.
             Deploy <span className="font-medium t-primary">{rec.catalyst}</span> → <span className="font-medium t-primary">{rec.subCatalyst}</span> to close the gap.
           </div>

@@ -176,7 +176,7 @@ export function TrialPage() {
                 {loading ? 'Starting...' : 'Start Free Assessment'}
               </button>
 
-              <p className="text-[10px] text-gray-500 text-center">
+              <p className="text-caption text-gray-500 text-center">
                 Your data is encrypted and automatically deleted after 7 days. No payment information required.
               </p>
             </div>
@@ -227,7 +227,7 @@ export function TrialPage() {
                 {['Ingesting data', 'Running health check', 'Identifying risks', 'Calculating ROI potential', 'Generating report'].map((label, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center ${i < 2 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>
-                      {i < 2 ? <CheckCircle2 size={12} /> : <span className="text-[10px]">{i + 1}</span>}
+                      {i < 2 ? <CheckCircle2 size={12} /> : <span className="text-caption">{i + 1}</span>}
                     </div>
                     <span className={i < 2 ? 'text-white' : 'text-gray-500'}>{label}</span>
                   </div>
@@ -333,7 +333,7 @@ export function TrialPage() {
                   Start Your Full Atheon Journey
                 </a>
               </div>
-              <p className="text-[10px] text-gray-500">This trial data will be automatically deleted in 7 days.</p>
+              <p className="text-caption text-gray-500">This trial data will be automatically deleted in 7 days.</p>
             </div>
           </div>
         )}

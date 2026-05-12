@@ -175,19 +175,19 @@ export function SupportConsolePage() {
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Total Tenants</p>
+          <p className="text-label">Total Tenants</p>
           <p className="text-xl font-bold t-primary">{tenants.length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Active</p>
+          <p className="text-label">Active</p>
           <p className="text-xl font-bold t-primary">{tenants.filter(t => t.status === 'active').length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Suspended</p>
+          <p className="text-label">Suspended</p>
           <p className="text-xl font-bold text-amber-400">{tenants.filter(t => t.status === 'suspended').length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Recent Events</p>
+          <p className="text-label">Recent Events</p>
           <p className="text-xl font-bold t-primary">{activities.length}</p>
         </Card>
       </div>
@@ -218,7 +218,7 @@ export function SupportConsolePage() {
                       <Building2 size={16} className="text-accent" />
                       <div>
                         <p className="text-sm font-medium t-primary">{t.name}</p>
-                        <p className="text-[10px] t-muted">{t.slug} · {t.industry || 'general'} · {t.plan}</p>
+                        <p className="text-caption t-muted">{t.slug} · {t.industry || 'general'} · {t.plan}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export function SupportConsolePage() {
           <MessageSquare size={24} className="mx-auto t-muted" />
           <p className="text-sm font-medium t-primary">Support tickets — not yet implemented</p>
           <p className="text-xs t-muted">
-            There is no backend endpoint for support tickets yet. Once <code className="font-mono text-[10px]">/api/v1/support/tickets</code> exists, this tab will list open/escalated tickets. For now, use the audit Activity tab for a live cross-tenant event stream.
+            There is no backend endpoint for support tickets yet. Once <code className="font-mono text-caption">/api/v1/support/tickets</code> exists, this tab will list open/escalated tickets. For now, use the audit Activity tab for a live cross-tenant event stream.
           </p>
         </Card>
       </TabPanel>
@@ -256,14 +256,14 @@ export function SupportConsolePage() {
             {selectedTenant && (
               <button
                 onClick={() => setSelectedTenant(null)}
-                className="text-[10px] t-muted hover:t-primary"
+                className="text-caption t-muted hover:t-primary"
               >
                 Clear filter
               </button>
             )}
             <button
               onClick={() => loadActivity(selectedTenant?.id)}
-              className="flex items-center gap-1 text-[10px] t-muted hover:t-primary"
+              className="flex items-center gap-1 text-caption t-muted hover:t-primary"
               disabled={activityLoading}
               aria-label="Refresh activity"
             >
@@ -291,7 +291,7 @@ export function SupportConsolePage() {
                     <span className="font-medium">{a.action}</span>
                     {a.resource && <span className="t-muted"> · {a.resource}</span>}
                   </p>
-                  <p className="text-[10px] t-muted">
+                  <p className="text-caption t-muted">
                     <span className="font-mono">{a.layer}</span>
                     <span> · </span>
                     <span className={outcomeColor(a.outcome)}>{a.outcome}</span>
@@ -318,7 +318,7 @@ export function SupportConsolePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium t-primary">{qa.title}</p>
-                  <p className="text-[10px] t-muted">{qa.desc}</p>
+                  <p className="text-caption t-muted">{qa.desc}</p>
                 </div>
                 <ArrowRight size={14} className="t-muted flex-shrink-0 mt-1" />
               </div>
@@ -337,7 +337,7 @@ export function SupportConsolePage() {
             </div>
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-2">
-                <div><span className="t-muted text-xs">ID:</span><p className="font-mono text-[11px] t-primary break-all">{selectedTenant.id}</p></div>
+                <div><span className="t-muted text-xs">ID:</span><p className="font-mono text-caption t-primary break-all">{selectedTenant.id}</p></div>
                 <div><span className="t-muted text-xs">Slug:</span><p className="t-primary">{selectedTenant.slug}</p></div>
                 <div><span className="t-muted text-xs">Industry:</span><p className="t-primary">{selectedTenant.industry || 'general'}</p></div>
                 <div><span className="t-muted text-xs">Plan:</span><Badge variant="info">{selectedTenant.plan}</Badge></div>

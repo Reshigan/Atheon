@@ -202,12 +202,18 @@ export async function exportSubjectData(
         [request.tenantId, subject.user_id])
     : [];
 
+  // Subject-scoped: previously this query returned ALL tenant notifications
+  // which over-disclosed other users' notifications in the access export.
+  // Phase 10-20 invariant: a DSAR access response contains ONLY the subject's
+  // own data. Notifications without a user_id (tenant-wide system messages)
+  // are intentionally excluded — they are not "about" any subject.
   const notifications = subject.user_id
     ? await safeAll(db,
         `SELECT id, type, title, message, severity, read, created_at
-           FROM notifications WHERE tenant_id = ?
+           FROM notifications
+          WHERE tenant_id = ? AND user_id = ?
           ORDER BY created_at DESC LIMIT 200`,
-        [request.tenantId])
+        [request.tenantId, subject.user_id])
     : [];
 
   const onboarding_progress = subject.user_id
@@ -292,6 +298,13 @@ const ERASERS: TableEraser[] = [
     table: 'onboarding_progress', action: 'delete',
     exec: (db, t, u) => runChange(db,
       `DELETE FROM onboarding_progress WHERE tenant_id = ? AND user_id = ?`, [t, u]),
+  },
+  {
+    // Subject-targeted notifications: safe to DELETE because they carry no
+    // load-bearing referential integrity (no FK from billable_periods etc.).
+    table: 'notifications', action: 'delete',
+    exec: (db, t, u) => runChange(db,
+      `DELETE FROM notifications WHERE tenant_id = ? AND user_id = ?`, [t, u]),
   },
   // ANONYMISE — keep history, scrub identity
   {

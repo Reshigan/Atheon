@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingState, EmptyState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import { api, ApiError } from '@/lib/api';
@@ -250,30 +251,28 @@ export function CustomRoleBuilderPage() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Custom Roles</p>
+          <p className="text-label">Custom Roles</p>
           <p className="text-xl font-bold t-primary">{roles.length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Assigned Users</p>
+          <p className="text-label">Assigned Users</p>
           <p className="text-xl font-bold t-primary">{roles.reduce((sum, r) => sum + r.userCount, 0)}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Permission Surface</p>
+          <p className="text-label">Permission Surface</p>
           <p className="text-xl font-bold t-primary">{allPermissions.length}</p>
         </Card>
       </div>
 
       {/* Roles list */}
       {loading ? (
-        <Card className="p-10 flex flex-col items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin t-muted" />
-          <p className="text-xs t-muted mt-2">Loading custom roles...</p>
-        </Card>
+        <LoadingState variant="list" count={3} />
       ) : roles.length === 0 ? (
-        <Card className="p-10 text-center">
-          <Shield className="w-8 h-8 mx-auto mb-2 t-muted opacity-50" />
-          <p className="text-sm t-muted">No custom roles yet. Create one to get started.</p>
-        </Card>
+        <EmptyState
+          icon={Shield}
+          title="No custom roles yet"
+          description="Create a role to grant a tailored permission surface to users."
+        />
       ) : (
         <div className="space-y-2">
           {roles.map((role) => (
@@ -287,27 +286,27 @@ export function CustomRoleBuilderPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium t-primary">{role.name}</p>
                       {role.inheritsFrom && (
-                        <Badge variant="info" className="text-[10px]">inherits {role.inheritsFrom}</Badge>
+                        <Badge variant="info" className="text-caption">inherits {role.inheritsFrom}</Badge>
                       )}
-                      <Badge variant="default" className="text-[10px]">
+                      <Badge variant="default" className="text-caption">
                         {role.permissions.length + role.inheritedPermissions.length} perms
                       </Badge>
                     </div>
                     {role.description && <p className="text-xs t-muted mt-0.5">{role.description}</p>}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {role.inheritedPermissions.slice(0, 3).map(p => (
-                        <Badge key={`inh-${p}`} variant="info" className="text-[10px]">{p}</Badge>
+                        <Badge key={`inh-${p}`} variant="info" className="text-caption">{p}</Badge>
                       ))}
                       {role.permissions.slice(0, 5).map(p => (
-                        <Badge key={p} variant="default" className="text-[10px]">{p}</Badge>
+                        <Badge key={p} variant="default" className="text-caption">{p}</Badge>
                       ))}
                       {(role.permissions.length + role.inheritedPermissions.length) > 8 && (
-                        <Badge variant="default" className="text-[10px]">
+                        <Badge variant="default" className="text-caption">
                           +{(role.permissions.length + role.inheritedPermissions.length) - 8} more
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[10px] t-muted mt-2 flex items-center gap-3">
+                    <p className="text-caption t-muted mt-2 flex items-center gap-3">
                       <span className="flex items-center gap-1"><Users size={10} /> {role.userCount} user{role.userCount === 1 ? '' : 's'}</span>
                       <span>Created {new Date(role.createdAt).toLocaleDateString()}</span>
                     </p>
@@ -383,7 +382,7 @@ export function CustomRoleBuilderPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-medium t-primary">Permissions</label>
-                  <span className="text-[10px] t-muted">
+                  <span className="text-caption t-muted">
                     {form.permissions.length + inheritedPerms.size} selected
                     {inheritedPerms.size > 0 && <span> (incl. {inheritedPerms.size} inherited)</span>}
                   </span>
@@ -399,7 +398,7 @@ export function CustomRoleBuilderPage() {
                           {togglable.length > 0 && (
                             <button
                               type="button"
-                              className="text-[10px] text-accent hover:underline"
+                              className="text-caption text-accent hover:underline"
                               onClick={() => toggleGroup(perms)}
                             >
                               {allChecked ? 'deselect all' : 'select all'}
@@ -427,7 +426,7 @@ export function CustomRoleBuilderPage() {
                                   className="rounded"
                                 />
                                 <span className={`font-mono ${inherited ? 'text-accent' : 't-primary'}`}>{p}</span>
-                                {inherited && <span className="text-[9px] t-muted">(inherited)</span>}
+                                {inherited && <span className="text-caption t-muted">(inherited)</span>}
                               </label>
                             );
                           })}

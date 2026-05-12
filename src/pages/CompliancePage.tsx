@@ -15,13 +15,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
+import { LoadingState, EmptyState } from "@/components/ui/state";
 import {
   ShieldCheck, KeyRound, ClipboardList, AlertTriangle, UserMinus,
-  Lock, FileArchive, Loader2, Download, RefreshCw,
+  Lock, FileArchive, Download, RefreshCw, FileText, Database,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
 import { useToast } from "@/components/ui/toast";
+import { AuditPage } from "./AuditPage";
+import { DataGovernancePage } from "./DataGovernancePage";
 
 type EvidencePack = Awaited<ReturnType<typeof api.compliance.evidencePack>>;
 
@@ -34,13 +38,55 @@ function StatChip({ label, value, tone }: { label: string; value: string | numbe
   };
   return (
     <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-      <div className="text-[10px] uppercase tracking-wider t-muted mb-1">{label}</div>
+      <div className="text-label mb-1">{label}</div>
       <div className={`text-xl font-semibold ${colors[tone || 'neutral']}`}>{value}</div>
     </div>
   );
 }
 
+/**
+ * /compliance — the canonical compliance + governance + audit surface.
+ *
+ * Three tabs (May 2026 merge — see UI_POLISH_PRINCIPLES §6.2):
+ *   - Evidence:  SOC 2 evidence pack roll-up (this file's original content)
+ *   - Audit Log: line-item audit_log table (was /audit, retired)
+ *   - Governance: DSAR / retention / encryption controls (was /data-governance, retired)
+ *
+ * Each tab embeds its original page component verbatim. The pages keep
+ * their own state + data-fetch lifecycle; we just unify the URL / sidebar
+ * surface so operators have one entry point for "all things compliance".
+ */
 export function CompliancePage(): JSX.Element {
+  const { activeTab, setActiveTab } = useTabState('evidence');
+
+  const tabs = [
+    { id: 'evidence', label: 'Evidence Pack', icon: <ShieldCheck size={14} /> },
+    { id: 'audit', label: 'Audit Log', icon: <FileText size={14} /> },
+    { id: 'governance', label: 'Governance', icon: <Database size={14} /> },
+  ];
+
+  return (
+    <div data-testid="compliance-page">
+      <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+      <TabPanel id="evidence" activeTab={activeTab}>
+        <ComplianceEvidence />
+      </TabPanel>
+      <TabPanel id="audit" activeTab={activeTab}>
+        <AuditPage />
+      </TabPanel>
+      <TabPanel id="governance" activeTab={activeTab}>
+        <DataGovernancePage />
+      </TabPanel>
+    </div>
+  );
+}
+
+/**
+ * Evidence pack roll-up — the original CompliancePage content. Extracted as
+ * a sub-component so the parent CompliancePage can compose it with the
+ * Audit Log and Governance tabs without rewriting state management here.
+ */
+function ComplianceEvidence(): JSX.Element {
   const toast = useToast();
   const activeTenantId = useAppStore(s => s.activeTenantId);
   const [pack, setPack] = useState<EvidencePack | null>(null);
@@ -78,22 +124,14 @@ export function CompliancePage(): JSX.Element {
     URL.revokeObjectURL(url);
   }
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center gap-3 t-muted">
-        <Loader2 className="w-5 h-5 animate-spin" /> Loading evidence pack…
-      </div>
-    );
-  }
-
+  if (loading) return <LoadingState variant="cards" count={4} />;
   if (!pack) {
     return (
-      <div className="p-8">
-        <Card className="p-6 text-center">
-          <ShieldCheck className="w-10 h-10 t-muted mx-auto mb-3 opacity-30" />
-          <p className="text-sm t-muted">No evidence pack available.</p>
-        </Card>
-      </div>
+      <EmptyState
+        icon={ShieldCheck}
+        title="No evidence pack available"
+        description="The compliance evidence pack will appear here once your tenant has activity."
+      />
     );
   }
 
@@ -249,13 +287,13 @@ export function CompliancePage(): JSX.Element {
           />
           <StatChip label="Provenance chain length" value={pack.auditRetention.provenanceChainLength.toLocaleString()} />
         </div>
-        <div className="text-[11px] t-muted mt-3">
+        <div className="text-caption t-muted mt-3">
           The provenance chain is a separate immutable record (Merkle + HMAC) of every AI decision —
           auditable independently of the audit log.
         </div>
       </Card>
 
-      <div className="text-[11px] t-muted text-center pt-2">
+      <div className="text-caption t-muted text-center pt-2">
         This report is read-only over existing tables. SOC 2 controls not surfaced here (change
         management, vulnerability management, DR) live in the runbook + GitHub Actions history.
       </div>

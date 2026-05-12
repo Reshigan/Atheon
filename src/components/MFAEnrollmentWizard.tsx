@@ -128,11 +128,11 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
     <div className="space-y-5">
       {/* Step indicator */}
       {step !== 'done' && (
-        <div className="flex items-center gap-2 text-[10px] t-muted" aria-label="Enrollment progress">
+        <div className="flex items-center gap-2 text-caption t-muted" aria-label="Enrollment progress">
           {stepsForProgress.map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors ${i <= progressIndex ? 'text-white' : ''}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-semibold transition-colors ${i <= progressIndex ? 'text-white' : ''}`}
                 style={{
                   background: i <= progressIndex ? 'var(--accent)' : 'var(--bg-secondary)',
                   color: i <= progressIndex ? '#fff' : 'var(--text-muted)',
@@ -238,7 +238,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
                   <ExternalLink size={12} /> Open in authenticator app
                 </a>
               )}
-              <p className="text-[10px] t-muted">Algorithm: TOTP · Digits: 6 · Period: 30s</p>
+              <p className="text-caption t-muted">Algorithm: TOTP · Digits: 6 · Period: 30s</p>
             </div>
           </div>
 

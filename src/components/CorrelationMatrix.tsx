@@ -128,7 +128,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
           <Link2 className="w-4 h-4 text-accent" />
           Correlation Matrix
         </h4>
-        <div className="flex items-center gap-3 text-[10px] t-muted">
+        <div className="flex items-center gap-3 text-caption t-muted">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 rounded" style={{ background: "rgba(16, 185, 129, 0.85)" }} />
             Positive
@@ -144,13 +144,13 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
       </div>
 
       {truncated && (
-        <p className="text-[10px] t-muted">
+        <p className="text-caption t-muted">
           Showing top {metrics.length} of {totalMetrics} metrics (by total correlation strength).
         </p>
       )}
 
       <div className="overflow-auto max-w-full rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)]">
-        <table className="text-[11px] border-collapse">
+        <table className="text-caption border-collapse">
           <thead>
             <tr>
               <th className="sticky left-0 top-0 z-20 bg-[var(--bg-secondary)] p-2 text-left font-medium t-muted border-b border-r border-[var(--border-card)]">
@@ -261,7 +261,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
             <p className="text-xs font-medium t-primary">
               {hovered.rowMetric} ↔ {hovered.colMetric}
             </p>
-            <p className="text-[11px] t-muted mt-0.5">
+            <p className="text-caption t-muted mt-0.5">
               {hovered.signed >= 0 ? "Positive" : "Negative"} correlation · strength{" "}
               <span
                 className={`font-medium ${
@@ -275,12 +275,12 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
                 : ""}
             </p>
             {hovered.item.description ? (
-              <p className="text-[11px] t-secondary mt-1">{hovered.item.description}</p>
+              <p className="text-caption t-secondary mt-1">{hovered.item.description}</p>
             ) : null}
           </div>
         </div>
       ) : (
-        <p className="text-[10px] t-muted italic">
+        <p className="text-caption t-muted italic">
           Hover a cell to see pair details.
         </p>
       )}

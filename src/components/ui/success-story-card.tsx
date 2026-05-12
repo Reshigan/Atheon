@@ -20,18 +20,18 @@ export function SuccessStoryCard({ story }: { story: SuccessStory }) {
           <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
           <h4 className="text-xs font-semibold t-primary">{signature}</h4>
         </div>
-        <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
+        <span className="text-caption px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
           {story.resolutionCount} resolved
         </span>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-2">
-        <div className="flex items-center gap-1.5 text-[10px] t-secondary">
+        <div className="flex items-center gap-1.5 text-caption t-secondary">
           <Clock size={10} className="t-muted" />
           <span>Avg {story.avgResolutionDays} days to resolve</span>
         </div>
         {story.avgValueRecovered > 0 && (
-          <div className="flex items-center gap-1.5 text-[10px] t-secondary">
+          <div className="flex items-center gap-1.5 text-caption t-secondary">
             <Coins size={10} className="text-emerald-400" />
             <span>Avg {formatCurrency(story.avgValueRecovered)} recovered</span>
           </div>
@@ -42,7 +42,7 @@ export function SuccessStoryCard({ story }: { story: SuccessStory }) {
         <div className="flex items-center gap-1 flex-wrap">
           <Tag size={10} className="t-muted flex-shrink-0" />
           {story.commonFixTypes.slice(0, 3).map((fix, i) => (
-            <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-secondary)] t-muted">
+            <span key={i} className="text-caption px-1.5 py-0.5 rounded bg-[var(--bg-secondary)] t-muted">
               {fix}
             </span>
           ))}

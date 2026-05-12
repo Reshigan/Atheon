@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,9 +23,6 @@ import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
 import { SubCatalystOpsPanel } from "@/components/SubCatalystOpsPanel";
 import { CSVExportButton } from "@/components/common/CSVExportButton";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
-import { ClusterList } from "./catalysts/ClusterList";
-import { SubCatalystPanel } from "./catalysts/SubCatalystPanel";
-import { ExecutionHistory } from "./catalysts/ExecutionHistory";
 
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-accent' },
@@ -975,13 +973,7 @@ export function CatalystsPage() {
   ...(isAdmin ? [{ id: 'governance', label: 'Governance', icon: <Shield size={14} /> }] : []),
  ];
 
- if (loading) {
- return (
- <div className="flex items-center justify-center h-96">
- <Loader2 className="w-8 h-8 text-accent animate-spin" />
- </div>
- );
- }
+ if (loading) return <LoadingState variant="cards" count={6} />;
 
  const renderActionCard = (action: ActionItem, showExceptionHighlight = false) => {
  const isException = action.status === 'exception';
@@ -1048,7 +1040,7 @@ export function CatalystsPage() {
  <div className="grid grid-cols-2 gap-2">
  {Object.entries(inputData).filter(([k]) => k !== 'manual' && k !== 'file_preview').map(([key, val]) => (
  <div key={key}>
- <span className="text-[10px] text-gray-500">{key.replace(/_/g, ' ')}</span>
+ <span className="text-caption text-gray-500">{key.replace(/_/g, ' ')}</span>
  <p className="text-xs t-secondary">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</p>
  </div>
  ))}
@@ -1188,40 +1180,13 @@ export function CatalystsPage() {
 
  {activeTab === 'clusters' && (
  <TabPanel>
- {/* TASK-002: Decomposed sub-components for cluster overview */}
- <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
- <ClusterList
- clusters={clusters}
- selectedCluster={null}
- onSelect={(id) => {
- const cluster = clusters.find(c => c.id === id);
- if (cluster?.subCatalysts?.[0]) {
- setOpsPanel({ clusterId: id, clusterName: cluster.name, subName: cluster.subCatalysts[0].name });
- }
- }}
- onCreate={() => setShowManualExec(true)}
- />
- {clusters.length > 0 && clusters[0].subCatalysts && (
- <SubCatalystPanel
- subCatalysts={clusters.flatMap(c => (c.subCatalysts || []).map(sc => ({ name: sc.name, status: sc.enabled ? 'active' : 'inactive', autonomy_tier: c.autonomyTier || 'read-only' })))}
- onRun={(name) => {
- const cluster = clusters.find(c => c.subCatalysts?.some(sc => sc.name === name));
- if (cluster) setOpsPanel({ clusterId: cluster.id, clusterName: cluster.name, subName: name });
- }}
- onConfigure={(name) => {
- const cluster = clusters.find(c => c.subCatalysts?.some(sc => sc.name === name));
- const sub = cluster?.subCatalysts?.find(sc => sc.name === name);
- if (cluster && sub) openDataSourceConfig(cluster.id, sub);
- }}
- onViewAnalytics={() => setActiveTab('run-analytics')}
- />
- )}
- <ExecutionHistory
- runs={executionLogs.slice(0, 10).map(log => ({ id: log.id, sub_catalyst_name: log.stepName || 'Unknown', status: log.status, started_at: log.createdAt }))}
- onViewDetail={() => setActiveTab('execution-logs')}
- />
- </div>
-
+ {/* Cluster cards — the canonical entry point for running / configuring
+     sub-catalysts. The TASK-002 3-up grid (ClusterList / SubCatalystPanel
+     / ExecutionHistory) that used to live above duplicated everything on
+     these cards, so we removed it per user request 2026-05-12. The
+     decomposed sub-components are kept in /pages/catalysts/* for future
+     use (e.g. a dedicated /pages/catalysts/list page) — they aren't
+     deleted, just unrendered here. */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {clusters.map((cluster) => {
  const tier = tierConfig[cluster.autonomyTier as AutonomyTier] || tierConfig['read-only'];
@@ -1253,25 +1218,25 @@ export function CatalystsPage() {
 
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] text-gray-400">Trust Score</span>
+ <span className="text-caption t-muted">Trust Score</span>
  <p className="text-sm font-bold t-primary">{Number(cluster.trustScore).toFixed(1)}%</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] text-gray-400">Agents</span>
+ <span className="text-caption t-muted">Agents</span>
  <p className="text-sm font-bold t-primary">{cluster.agentCount}</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] text-gray-400">Completed</span>
+ <span className="text-caption t-muted">Completed</span>
  <p className="text-sm font-bold t-primary">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] text-gray-400">Success Rate</span>
+ <span className="text-caption t-muted">Success Rate</span>
  <p className="text-sm font-bold text-emerald-400">{Number(cluster.successRate).toFixed(1)}%</p>
  </div>
  </div>
 
  <div className="mt-3">
- <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+ <div className="flex items-center justify-between text-caption t-muted mb-1">
  <span>Trust Score</span>
  <span>{Number(cluster.trustScore).toFixed(1)}%</span>
  </div>
@@ -1305,12 +1270,12 @@ export function CatalystsPage() {
  )}
  </div>
  {/* Row 2: Description (optional) */}
- {sub.description && <p className="text-[10px] t-secondary truncate pl-4">{sub.description}</p>}
+ {sub.description && <p className="text-caption t-secondary truncate pl-4">{sub.description}</p>}
  {/* Row 3: Status badges — data sources, schedule, last execution */}
  {(getSubDataSources(sub).length > 0 || (sub.schedule && sub.schedule.frequency !== 'manual') || sub.last_execution) && (
  <div className="flex items-center gap-1.5 flex-wrap pl-4">
  {getSubDataSources(sub).map((ds, dsIdx) => (
- <span key={dsIdx} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium ${
+ <span key={dsIdx} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium ${
  ds.type === 'erp' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
  ds.type === 'email' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
  ds.type === 'cloud_storage' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
@@ -1325,7 +1290,7 @@ export function CatalystsPage() {
  </span>
  ))}
  {sub.schedule && sub.schedule.frequency !== 'manual' && (
- <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" title={sub.schedule.next_run ? `Next run: ${new Date(sub.schedule.next_run).toLocaleString()}` : ''}>
+ <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" title={sub.schedule.next_run ? `Next run: ${new Date(sub.schedule.next_run).toLocaleString()}` : ''}>
  <Calendar size={8} />
  {sub.schedule.frequency === 'daily' ? 'Daily' : sub.schedule.frequency === 'weekly' ? 'Weekly' : 'Monthly'}
  {sub.schedule.time_of_day ? ` ${sub.schedule.time_of_day}` : ''}
@@ -1334,7 +1299,7 @@ export function CatalystsPage() {
  {sub.last_execution && (
  <button
  onClick={(e) => { e.stopPropagation(); setExecResult(sub.last_execution as ExecutionResult); setShowExecResult(true); }}
- className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium ${
+ className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium ${
    sub.last_execution.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
    sub.last_execution.status === 'partial' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
    'bg-red-500/10 text-red-400 border border-red-500/20'
@@ -1465,7 +1430,7 @@ export function CatalystsPage() {
  <span className="text-sm font-medium t-primary truncate">{log.stepName}</span>
  </div>
  {log.durationMs !== null && log.durationMs > 0 && (
- <span className="text-[10px] text-gray-400 flex-shrink-0">{log.durationMs}ms</span>
+ <span className="text-caption t-muted flex-shrink-0">{log.durationMs}ms</span>
  )}
  </div>
  <p className="text-xs t-muted mt-1">{log.detail}</p>
@@ -1532,7 +1497,7 @@ export function CatalystsPage() {
   </div>
   <p className="text-xs text-red-500/80">{exDetail}</p>
   {exSummary && (
-  <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2 text-[10px]">
+  <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2 text-caption">
   {([
     ['Source', exSummary.total_records_source],
     ['Target', exSummary.total_records_target],
@@ -1553,7 +1518,7 @@ export function CatalystsPage() {
   <summary className="text-xs t-secondary cursor-pointer hover:text-accent">View sample discrepancies ({exSamples.length})</summary>
   <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
   {exSamples.map((d, i) => (
-    <div key={i} className="text-[10px] p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+    <div key={i} className="text-caption p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
       <span className="font-medium t-primary">{d.field || 'field'}</span>: source=<span className="text-emerald-600">{typeof d.source_value === 'number' ? Number(d.source_value).toFixed(2) : String(d.source_value || '—')}</span> vs target=<span className="text-red-500">{typeof d.target_value === 'number' ? Number(d.target_value).toFixed(2) : String(d.target_value || '—')}</span>
     </div>
   ))}
@@ -1636,7 +1601,7 @@ export function CatalystsPage() {
 
    {clusterLevelConfig && (
    <div className="p-3 rounded-lg bg-accent/5 border border-accent/20 mb-3">
-     <p className="text-[10px] t-muted uppercase tracking-wider mb-2">Cluster Default Assignments</p>
+     <p className="text-label mb-2">Cluster Default Assignments</p>
      <div className="grid grid-cols-3 gap-3 text-xs">
        <div>
          <span className="text-emerald-400 font-medium">Validators:</span>
@@ -1656,7 +1621,7 @@ export function CatalystsPage() {
 
    {cluster.subCatalysts && cluster.subCatalysts.length > 0 && (
    <div className="space-y-2">
-     <p className="text-[10px] t-muted uppercase tracking-wider">Sub-Catalyst Overrides</p>
+     <p className="text-label">Sub-Catalyst Overrides</p>
      {cluster.subCatalysts.map((sub: SubCatalyst) => {
        const subConfig = clusterConfigs.find(c => c.subCatalystName === sub.name);
        return (
@@ -1727,13 +1692,13 @@ export function CatalystsPage() {
 
  {!analyticsLoading && runAggregate && (
  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Total Runs</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalRuns}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Items Processed</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalItems}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Completed</p><p className="text-xl font-bold text-emerald-400 mt-1">{runAggregate.totalCompleted}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Exceptions</p><p className="text-xl font-bold text-red-400 mt-1">{runAggregate.totalExceptions}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Escalated</p><p className="text-xl font-bold text-amber-400 mt-1">{runAggregate.totalEscalated}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Avg Confidence</p><p className="text-xl font-bold text-blue-400 mt-1">{(runAggregate.avgConfidence * 100).toFixed(0)}%</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-[10px] t-muted uppercase tracking-wider">Automation Rate</p><p className="text-xl font-bold text-accent mt-1">{(runAggregate.automationRate * 100).toFixed(0)}%</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Total Runs</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalRuns}</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Items Processed</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalItems}</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Completed</p><p className="text-xl font-bold text-emerald-400 mt-1">{runAggregate.totalCompleted}</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Exceptions</p><p className="text-xl font-bold text-red-400 mt-1">{runAggregate.totalExceptions}</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Escalated</p><p className="text-xl font-bold text-amber-400 mt-1">{runAggregate.totalEscalated}</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Avg Confidence</p><p className="text-xl font-bold text-blue-400 mt-1">{(runAggregate.avgConfidence * 100).toFixed(0)}%</p></div></Card>
+   <Card variant="black"><div className="text-center"><p className="text-label">Automation Rate</p><p className="text-xl font-bold text-accent mt-1">{(runAggregate.automationRate * 100).toFixed(0)}%</p></div></Card>
  </div>
  )}
 
@@ -1767,27 +1732,27 @@ export function CatalystsPage() {
 
    <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-3">
      <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-       <span className="text-[9px] t-muted">Total</span>
+       <span className="text-caption t-muted">Total</span>
        <p className="text-sm font-bold t-primary">{run.summary.total}</p>
      </div>
      <div className="text-center p-2 rounded bg-emerald-500/5 border border-emerald-500/20">
-       <span className="text-[9px] text-emerald-400">Completed</span>
+       <span className="text-caption text-emerald-400">Completed</span>
        <p className="text-sm font-bold text-emerald-400">{run.summary.completed}</p>
      </div>
      <div className="text-center p-2 rounded bg-red-500/5 border border-red-500/20">
-       <span className="text-[9px] text-red-400">Exceptions</span>
+       <span className="text-caption text-red-400">Exceptions</span>
        <p className="text-sm font-bold text-red-400">{run.summary.exceptions}</p>
      </div>
      <div className="text-center p-2 rounded bg-amber-500/5 border border-amber-500/20">
-       <span className="text-[9px] text-amber-400">Escalated</span>
+       <span className="text-caption text-amber-400">Escalated</span>
        <p className="text-sm font-bold text-amber-400">{run.summary.escalated}</p>
      </div>
      <div className="text-center p-2 rounded bg-blue-500/5 border border-blue-500/20">
-       <span className="text-[9px] text-blue-400">Pending</span>
+       <span className="text-caption text-blue-400">Pending</span>
        <p className="text-sm font-bold text-blue-400">{run.summary.pending}</p>
      </div>
      <div className="text-center p-2 rounded bg-accent/5 border border-accent/20">
-       <span className="text-[9px] text-accent">Auto-Approved</span>
+       <span className="text-caption text-accent">Auto-Approved</span>
        <p className="text-sm font-bold text-accent">{run.summary.autoApproved}</p>
      </div>
    </div>
@@ -1808,7 +1773,7 @@ export function CatalystsPage() {
            );
          })}
        </div>
-       <div className="flex justify-between mt-2 text-[10px] t-muted">
+       <div className="flex justify-between mt-2 text-caption t-muted">
          <span>Avg: <span className="font-medium t-primary">{(run.confidence.avg * 100).toFixed(0)}%</span></span>
          <span>Min: <span className="font-medium t-primary">{(run.confidence.min * 100).toFixed(0)}%</span></span>
          <span>Max: <span className="font-medium t-primary">{(run.confidence.max * 100).toFixed(0)}%</span></span>
@@ -1850,7 +1815,7 @@ export function CatalystsPage() {
        )}
        {runDetailActions[run.runId] && runDetailActions[run.runId].length > 0 && (
          <div className="space-y-1 max-h-[300px] overflow-y-auto">
-           <div className="grid grid-cols-12 gap-2 text-[9px] t-muted uppercase tracking-wider font-semibold pb-1 border-b border-[var(--border-card)] sticky top-0 bg-[var(--bg-secondary)]">
+           <div className="grid grid-cols-12 gap-2 text-caption t-muted uppercase tracking-wider font-semibold pb-1 border-b border-[var(--border-card)] sticky top-0 bg-[var(--bg-secondary)]">
              <span className="col-span-4">Action</span>
              <span className="col-span-2">Status</span>
              <span className="col-span-2 text-right">Confidence</span>
@@ -1866,8 +1831,8 @@ export function CatalystsPage() {
                <span className={`col-span-2 text-xs font-medium text-right ${item.confidence >= 0.8 ? 'text-emerald-400' : item.confidence >= 0.6 ? 'text-amber-400' : 'text-red-400'}`}>
                  {(item.confidence * 100).toFixed(0)}%
                </span>
-               <span className="col-span-2 text-[10px] t-muted truncate">{item.assignedTo || '—'}</span>
-               <span className="col-span-2 text-[10px] t-muted text-right">{item.processingTimeMs ? `${(item.processingTimeMs / 1000).toFixed(1)}s` : '—'}</span>
+               <span className="col-span-2 text-caption t-muted truncate">{item.assignedTo || '—'}</span>
+               <span className="col-span-2 text-caption t-muted text-right">{item.processingTimeMs ? `${(item.processingTimeMs / 1000).toFixed(1)}s` : '—'}</span>
              </div>
            ))}
          </div>
@@ -1946,12 +1911,12 @@ export function CatalystsPage() {
  <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-xs t-secondary">Total Actions</span>
  <p className="text-lg font-bold text-accent">{governance?.totalActions ?? 0}</p>
- <p className="text-[10px] text-gray-400">All catalyst executions</p>
+ <p className="text-caption t-muted">All catalyst executions</p>
  </div>
  <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-xs t-secondary">Pending Approvals</span>
  <p className="text-lg font-bold text-accent">{governance?.pendingApprovals ?? 0}</p>
- <p className="text-[10px] text-gray-400">Awaiting human review</p>
+ <p className="text-caption t-muted">Awaiting human review</p>
  </div>
  <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-xs t-secondary">Approved / Rejected</span>
@@ -1960,7 +1925,7 @@ export function CatalystsPage() {
  {' / '}
  <span className="text-red-500">{governance?.rejected ?? 0}</span>
  </p>
- <p className="text-[10px] text-gray-400">Human override decisions</p>
+ <p className="text-caption t-muted">Human override decisions</p>
  </div>
  </div>
  </Card>
@@ -1982,7 +1947,7 @@ export function CatalystsPage() {
  <Bot size={16} className="text-accent" />
  <div>
  <p className="text-sm font-medium t-primary">{quickRunSubName}</p>
- <p className="text-[10px] t-secondary">{quickRunClusterName}</p>
+ <p className="text-caption t-secondary">{quickRunClusterName}</p>
  </div>
  </div>
  </div>
@@ -2018,7 +1983,7 @@ export function CatalystsPage() {
  <button onClick={(e) => { e.stopPropagation(); setQuickRunFile(null); }} className="text-gray-500 hover:text-red-400"><X size={12} /></button>
  </div>
  ) : (
- <div><Upload size={16} className="mx-auto text-gray-500 mb-1" /><p className="text-[10px] t-muted">CSV, Excel, or PDF</p></div>
+ <div><Upload size={16} className="mx-auto text-gray-500 mb-1" /><p className="text-caption t-muted">CSV, Excel, or PDF</p></div>
  )}
  <input ref={quickRunFileRef} type="file" className="hidden" accept=".csv,.xlsx,.xls,.pdf,.json,.txt" onChange={e => setQuickRunFile(e.target.files?.[0] || null)} />
  </div>
@@ -2106,8 +2071,8 @@ export function CatalystsPage() {
  <DsIcon size={16} className={dsColor} />
  <div className="min-w-0">
  <span className={`text-xs font-medium ${dsColor}`}>{dsLabel}</span>
- {src.type === 'erp' && !!src.config.module && <span className="text-[10px] t-muted block">{String(src.config.module)}</span>}
- {src.type === 'custom_system' && !!src.config.endpoint_url && <span className="text-[10px] t-muted block truncate">{String(src.config.endpoint_url)}</span>}
+ {src.type === 'erp' && !!src.config.module && <span className="text-caption t-muted block">{String(src.config.module)}</span>}
+ {src.type === 'custom_system' && !!src.config.endpoint_url && <span className="text-caption t-muted block truncate">{String(src.config.endpoint_url)}</span>}
  </div>
  </div>
  <div className="flex items-center gap-1 flex-shrink-0">
@@ -2129,7 +2094,7 @@ export function CatalystsPage() {
  <div className="text-center py-6 border border-dashed border-[var(--border-card)] rounded-lg">
  <Database size={24} className="mx-auto text-gray-400 mb-2" />
  <p className="text-xs t-muted">No data sources configured yet.</p>
- <p className="text-[10px] t-muted mt-1">Click &quot;Add Data Source&quot; to connect one.</p>
+ <p className="text-caption t-muted mt-1">Click &quot;Add Data Source&quot; to connect one.</p>
  </div>
  )}
 
@@ -2175,7 +2140,7 @@ export function CatalystsPage() {
  }`}
  >
  <Icon size={16} className={selected ? opt.selectedText : 'text-gray-400'} />
- <span className={`text-[10px] font-medium ${selected ? opt.selectedText : 't-secondary'}`}>{opt.label}</span>
+ <span className={`text-caption font-medium ${selected ? opt.selectedText : 't-secondary'}`}>{opt.label}</span>
  </button>
  );
  })}
@@ -2211,7 +2176,7 @@ export function CatalystsPage() {
  )}
  </select>
  {erpConnections.length > 0 && (
- <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
+ <p className="text-caption text-emerald-400 mt-1 flex items-center gap-1">
  <CheckCircle size={10} /> Pre-filled from your connected ERP adapter
  </p>
  )}
@@ -2336,7 +2301,7 @@ export function CatalystsPage() {
  placeholder="e.g. 25"
  />
  </div>
- <p className="text-[10px] t-secondary">
+ <p className="text-caption t-secondary">
  Manual file upload — users will upload files directly through the platform.
  </p>
  </>
@@ -2401,7 +2366,7 @@ export function CatalystsPage() {
  <option value="proprietary">Proprietary</option>
  </select>
  </div>
- <p className="text-[10px] t-secondary flex items-center gap-1">
+ <p className="text-caption t-secondary flex items-center gap-1">
  <Cog size={10} /> For in-house or customized systems not covered by standard adapters.
  </p>
  </>
@@ -2483,7 +2448,7 @@ export function CatalystsPage() {
      }`}
    >
      <span className={`text-xs font-medium ${schedFrequency === opt.value ? 'text-indigo-400' : 't-secondary'}`}>{opt.label}</span>
-     <span className="text-[9px] t-muted">{opt.desc}</span>
+     <span className="text-caption t-muted">{opt.desc}</span>
    </button>
  ))}
  </div>
@@ -2535,7 +2500,7 @@ export function CatalystsPage() {
    value={schedTimeOfDay}
    onChange={e => setSchedTimeOfDay(e.target.value)}
  />
- <p className="text-[9px] t-muted mt-1">All times are in UTC. Your local time may differ.</p>
+ <p className="text-caption t-muted mt-1">All times are in UTC. Your local time may differ.</p>
  </div>
  )}
 
@@ -2548,10 +2513,10 @@ export function CatalystsPage() {
    {schedExisting.time_of_day ? ` at ${schedExisting.time_of_day} UTC` : ''}
  </p>
  {schedExisting.last_run && (
-   <p className="text-[10px] t-muted">Last run: {new Date(schedExisting.last_run).toLocaleString()}</p>
+   <p className="text-caption t-muted">Last run: {new Date(schedExisting.last_run).toLocaleString()}</p>
  )}
  {schedExisting.next_run && (
-   <p className="text-[10px] t-muted">Next run: {new Date(schedExisting.next_run).toLocaleString()}</p>
+   <p className="text-caption t-muted">Next run: {new Date(schedExisting.next_run).toLocaleString()}</p>
  )}
  </div>
  )}
@@ -2601,7 +2566,7 @@ export function CatalystsPage() {
  {/* Data Sources Summary */}
  <div className="flex items-center gap-2 mb-4">
  {fmDataSources.map((ds, i) => (
- <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="font-bold text-accent">#{i}</span>
  {ds.type === 'erp' && <><Database size={10} className="text-blue-400" /> ERP</>}
  {ds.type === 'email' && <><Mail size={10} className="text-purple-400" /> Email</>}
@@ -2618,18 +2583,18 @@ export function CatalystsPage() {
  {fmSuggesting ? <Loader2 size={14} className="animate-spin mr-1" /> : <Sparkles size={14} className="mr-1" />}
  Smart Suggest Mappings
  </Button>
- {fmDataSources.length < 2 && <span className="text-[10px] text-amber-400 ml-2">Need at least 2 data sources</span>}
+ {fmDataSources.length < 2 && <span className="text-caption text-amber-400 ml-2">Need at least 2 data sources</span>}
  </div>
 
  {/* Existing Mappings */}
  {fmMappings.length > 0 ? (
  <div className="space-y-2 mb-4">
- <div className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 text-[10px] font-semibold t-secondary px-2">
+ <div className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 text-caption font-semibold t-secondary px-2">
  <span>Src</span><span>Source Field</span><span></span><span>Target Field</span><span>Match Type</span><span>Conf.</span><span></span>
  </div>
  {fmMappings.map((fm, i) => (
  <div key={fm.id || i} className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 items-center p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] font-bold text-accent">#{fm.source_index}</span>
+ <span className="text-caption font-bold text-accent">#{fm.source_index}</span>
  <input
    className="bg-transparent border border-[var(--border-card)] rounded px-2 py-1 text-xs t-primary"
    value={fm.source_field}
@@ -2642,7 +2607,7 @@ export function CatalystsPage() {
    onChange={e => setFmMappings(prev => prev.map((m, j) => j === i ? { ...m, target_field: e.target.value } : m))}
  />
  <select
-   className="bg-transparent border border-[var(--border-card)] rounded px-1 py-1 text-[10px] t-primary"
+   className="bg-transparent border border-[var(--border-card)] rounded px-1 py-1 text-caption t-primary"
    value={fm.match_type}
    onChange={e => setFmMappings(prev => prev.map((m, j) => j === i ? { ...m, match_type: e.target.value as FieldMapping['match_type'] } : m))}
  >
@@ -2652,7 +2617,7 @@ export function CatalystsPage() {
    <option value="numeric_tolerance">Numeric ±</option>
    <option value="date_range">Date Range</option>
  </select>
- <span className={`text-[10px] font-medium text-center ${fm.confidence >= 0.8 ? 'text-emerald-400' : fm.confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'}`}>
+ <span className={`text-caption font-medium text-center ${fm.confidence >= 0.8 ? 'text-emerald-400' : fm.confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'}`}>
    {(fm.confidence * 100).toFixed(0)}%
  </span>
  <button onClick={() => handleRemoveMapping(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/10 transition-colors">
@@ -2665,7 +2630,7 @@ export function CatalystsPage() {
  <div className="p-6 text-center bg-[var(--bg-secondary)] rounded-lg border border-dashed border-[var(--border-card)] mb-4">
  <Link2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
  <p className="text-xs t-secondary">No field mappings configured</p>
- <p className="text-[10px] t-muted mt-1">Click &quot;Smart Suggest&quot; to auto-detect matching fields</p>
+ <p className="text-caption t-muted mt-1">Click &quot;Smart Suggest&quot; to auto-detect matching fields</p>
  </div>
  )}
 
@@ -2727,7 +2692,7 @@ export function CatalystsPage() {
          else setHitlValidators(prev => prev.filter(id => id !== u.id));
        }} />
        <span className="text-xs t-primary">{u.name}</span>
-       <span className="text-[10px] t-muted ml-auto">{u.email}</span>
+       <span className="text-caption t-muted ml-auto">{u.email}</span>
      </label>
    ))}
  </div>
@@ -2744,7 +2709,7 @@ export function CatalystsPage() {
          else setHitlExceptionHandlers(prev => prev.filter(id => id !== u.id));
        }} />
        <span className="text-xs t-primary">{u.name}</span>
-       <span className="text-[10px] t-muted ml-auto">{u.email}</span>
+       <span className="text-caption t-muted ml-auto">{u.email}</span>
      </label>
    ))}
  </div>
@@ -2761,7 +2726,7 @@ export function CatalystsPage() {
          else setHitlEscalation(prev => prev.filter(id => id !== u.id));
        }} />
        <span className="text-xs t-primary">{u.name}</span>
-       <span className="text-[10px] t-muted ml-auto">{u.email}</span>
+       <span className="text-caption t-muted ml-auto">{u.email}</span>
      </label>
    ))}
  </div>
@@ -2830,7 +2795,7 @@ export function CatalystsPage() {
      <div className={`mt-0.5 ${execMode === opt.mode ? 'text-orange-400' : 'text-gray-400'}`}>{opt.icon}</div>
      <div>
        <p className={`text-sm font-medium ${execMode === opt.mode ? 'text-orange-400' : 't-primary'}`}>{opt.label}</p>
-       <p className="text-[10px] t-muted">{opt.desc}</p>
+       <p className="text-caption t-muted">{opt.desc}</p>
      </div>
    </button>
  ))}
@@ -2886,27 +2851,27 @@ export function CatalystsPage() {
  {/* Summary Grid */}
  <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] text-gray-400 block">Source Records</span>
+ <span className="text-caption t-muted block">Source Records</span>
  <p className="text-lg font-bold t-primary">{execResult.summary.total_records_source}</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-[10px] text-gray-400 block">Target Records</span>
+ <span className="text-caption t-muted block">Target Records</span>
  <p className="text-lg font-bold t-primary">{execResult.summary.total_records_target}</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
- <span className="text-[10px] text-emerald-400 block">Matched</span>
+ <span className="text-caption text-emerald-400 block">Matched</span>
  <p className="text-lg font-bold text-emerald-400">{execResult.summary.matched}</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
- <span className="text-[10px] text-amber-400 block">Unmatched (Src)</span>
+ <span className="text-caption text-amber-400 block">Unmatched (Src)</span>
  <p className="text-lg font-bold text-amber-400">{execResult.summary.unmatched_source}</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
- <span className="text-[10px] text-amber-400 block">Unmatched (Tgt)</span>
+ <span className="text-caption text-amber-400 block">Unmatched (Tgt)</span>
  <p className="text-lg font-bold text-amber-400">{execResult.summary.unmatched_target}</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-red-500/5 border border-red-500/20">
- <span className="text-[10px] text-red-400 block">Discrepancies</span>
+ <span className="text-caption text-red-400 block">Discrepancies</span>
  <p className="text-lg font-bold text-red-400">{execResult.summary.discrepancies}</p>
  </div>
  </div>
@@ -2933,9 +2898,9 @@ export function CatalystsPage() {
  <div key={i} className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs">
  <div className="flex items-center justify-between">
  <span className="font-medium t-primary">{d.field}</span>
- {d.difference && <span className="text-red-400 text-[10px]">{d.difference}</span>}
+ {d.difference && <span className="text-red-400 text-caption">{d.difference}</span>}
  </div>
- <div className="flex gap-4 mt-1 text-[10px]">
+ <div className="flex gap-4 mt-1 text-caption">
    <span className="t-secondary">Source: <span className="t-primary">{typeof d.source_value === 'number' ? Number(d.source_value).toFixed(2) : String(d.source_value ?? 'null')}</span></span>
  <span className="t-secondary">Target: <span className="t-primary">{typeof d.target_value === 'number' ? Number(d.target_value).toFixed(2) : String(d.target_value ?? 'null')}</span></span>
  </div>
@@ -2969,10 +2934,10 @@ export function CatalystsPage() {
     <div className="space-y-4">
      {/* Summary Cards — reduced from 7 to 4 per UI cleanup */}
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{intellOverview.summary.activePatterns}</p><p className="text-[10px] t-muted uppercase">Active Patterns</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{intellOverview.summary.criticalPatterns}</p><p className="text-[10px] t-muted uppercase">Critical</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold t-primary">R{(intellOverview.summary.totalValueProcessed / 1000).toFixed(0)}k</p><p className="text-[10px] t-muted uppercase">Value Processed</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-purple-400">{intellOverview.summary.avgRoi > 0 ? '+' : ''}{Math.round(intellOverview.summary.avgRoi)}%</p><p className="text-[10px] t-muted uppercase">Avg ROI</p></div></Card>
+      <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{intellOverview.summary.activePatterns}</p><p className="text-label">Active Patterns</p></div></Card>
+      <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{intellOverview.summary.criticalPatterns}</p><p className="text-label">Critical</p></div></Card>
+      <Card><div className="text-center"><p className="text-2xl font-bold t-primary">R{(intellOverview.summary.totalValueProcessed / 1000).toFixed(0)}k</p><p className="text-label">Value Processed</p></div></Card>
+      <Card><div className="text-center"><p className="text-2xl font-bold text-purple-400">{intellOverview.summary.avgRoi > 0 ? '+' : ''}{Math.round(intellOverview.summary.avgRoi)}%</p><p className="text-label">Avg ROI</p></div></Card>
      </div>
 
      {/* ROI Card */}
@@ -2986,19 +2951,19 @@ export function CatalystsPage() {
        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
          <p className="text-lg font-bold text-emerald-400">R{(roiData.totalDiscrepancyValueRecovered / 1000).toFixed(0)}k</p>
-         <p className="text-[10px] t-muted">Recovered</p>
+         <p className="text-caption t-muted">Recovered</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
          <p className="text-lg font-bold text-blue-400">R{(roiData.totalPreventedLosses / 1000).toFixed(0)}k</p>
-         <p className="text-[10px] t-muted">Prevented</p>
+         <p className="text-caption t-muted">Prevented</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
          <p className="text-lg font-bold text-purple-400">{roiData.totalPersonHoursSaved}h</p>
-         <p className="text-[10px] t-muted">Hours Saved</p>
+         <p className="text-caption t-muted">Hours Saved</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
          <p className="text-lg font-bold t-primary">R{(roiData.platformCost / 1000).toFixed(0)}k</p>
-         <p className="text-[10px] t-muted">Platform Cost</p>
+         <p className="text-caption t-muted">Platform Cost</p>
         </div>
        </div>
 
@@ -3023,7 +2988,7 @@ export function CatalystsPage() {
            </div>
           ))}
          </div>
-         <p className="text-[10px] t-muted mt-2">
+         <p className="text-caption t-muted mt-2">
           Attribution split by input value share across canonical ERP records ({roiData.breakdown.byConnection.length} sources).
          </p>
         </div>
@@ -3037,22 +3002,22 @@ export function CatalystsPage() {
          <p className="text-xs font-semibold t-muted mb-2">Identified opportunity → realisation pipeline</p>
          <div className="grid grid-cols-3 gap-2">
           <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
-           <p className="text-[10px] t-muted">Automated by Atheon</p>
+           <p className="text-caption t-muted">Automated by Atheon</p>
            <p className="text-base font-bold text-emerald-400">R{(roiData.breakdown.byActionState.automated_value_zar / 1000).toFixed(0)}k</p>
-           <p className="text-[10px] t-muted">{roiData.breakdown.byActionState.automated_count} actions completed</p>
+           <p className="text-caption t-muted">{roiData.breakdown.byActionState.automated_count} actions completed</p>
           </div>
           <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
-           <p className="text-[10px] t-muted">Pending approval</p>
+           <p className="text-caption t-muted">Pending approval</p>
            <p className="text-base font-bold text-amber-400">R{(roiData.breakdown.byActionState.pending_value_zar / 1000).toFixed(0)}k</p>
-           <p className="text-[10px] t-muted">{roiData.breakdown.byActionState.pending_count} awaiting</p>
+           <p className="text-caption t-muted">{roiData.breakdown.byActionState.pending_count} awaiting</p>
           </div>
           <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-           <p className="text-[10px] t-muted">Open opportunity</p>
+           <p className="text-caption t-muted">Open opportunity</p>
            <p className="text-base font-bold t-primary">R{(roiData.breakdown.byActionState.open_value_zar / 1000).toFixed(0)}k</p>
-           <p className="text-[10px] t-muted">no automation yet</p>
+           <p className="text-caption t-muted">no automation yet</p>
           </div>
          </div>
-         <p className="text-[10px] t-muted mt-2">
+         <p className="text-caption t-muted mt-2">
           Of R{((roiData.totalDiscrepancyValueIdentified || 0) / 1000).toFixed(0)}k identified, the split shows where each rand sits in the realisation pipeline.
          </p>
         </div>
@@ -3075,11 +3040,11 @@ export function CatalystsPage() {
            </div>
            <div className="flex items-center gap-2">
             <Badge variant={rx.status === 'completed' ? 'success' : rx.status === 'in_progress' ? 'info' : rx.status === 'rejected' ? 'danger' : 'warning'} size="sm">{rx.status}</Badge>
-            <span className="text-[10px] t-muted">{rx.effort} effort</span>
+            <span className="text-caption t-muted">{rx.effort} effort</span>
            </div>
           </div>
-          <p className="text-[10px] t-secondary mt-1">{rx.description}</p>
-          {rx.expectedImpact && <p className="text-[10px] text-emerald-400 mt-1">Expected: {rx.expectedImpact}</p>}
+          <p className="text-caption t-secondary mt-1">{rx.description}</p>
+          {rx.expectedImpact && <p className="text-caption text-emerald-400 mt-1">Expected: {rx.expectedImpact}</p>}
          </Card>
         ))}
        </div>
@@ -3106,7 +3071,7 @@ export function CatalystsPage() {
             <span className="text-sm font-medium t-primary">{pattern.title}</span>
             <Badge variant="default" size="sm">{pattern.patternType.replace('_', ' ')}</Badge>
            </div>
-           <div className="flex items-center gap-2 text-[10px] t-muted">
+           <div className="flex items-center gap-2 text-caption t-muted">
             <span>Freq: {pattern.frequency}x</span>
             <Badge variant={pattern.status === 'active' ? 'warning' : pattern.status === 'resolved' ? 'success' : 'info'} size="sm">{pattern.status}</Badge>
            </div>
@@ -3114,7 +3079,7 @@ export function CatalystsPage() {
           {expandedPattern === pattern.id && (
            <div className="mt-3 pt-3 border-t border-[var(--border-card)]">
             <p className="text-xs t-secondary mb-2">{pattern.description}</p>
-            <div className="flex flex-wrap gap-2 text-[10px] t-muted mb-2">
+            <div className="flex flex-wrap gap-2 text-caption t-muted mb-2">
              <span>First seen: {new Date(pattern.firstSeen).toLocaleDateString()}</span>
              <span>Last seen: {new Date(pattern.lastSeen).toLocaleDateString()}</span>
             </div>
@@ -3125,10 +3090,10 @@ export function CatalystsPage() {
             )}
             {pattern.recommendedActions.length > 0 && (
              <div>
-              <p className="text-[10px] font-medium t-primary mb-1">Recommended Actions</p>
+              <p className="text-caption font-medium t-primary mb-1">Recommended Actions</p>
               <ul className="space-y-0.5">
                {pattern.recommendedActions.map((a, i) => (
-                <li key={i} className="text-[10px] t-muted flex items-start gap-1"><Target size={8} className="mt-0.5 text-accent flex-shrink-0" />{a}</li>
+                <li key={i} className="text-caption t-muted flex items-start gap-1"><Target size={8} className="mt-0.5 text-accent flex-shrink-0" />{a}</li>
                ))}
               </ul>
              </div>
@@ -3191,9 +3156,9 @@ export function CatalystsPage() {
           <div className="flex items-center gap-2 mt-1">
            <Badge variant="info" size="sm">{dep.dependencyType.replace('_', ' ')}</Badge>
            <Progress value={dep.strength} color={dep.strength >= 70 ? 'emerald' : dep.strength >= 40 ? 'amber' : 'red'} className="flex-1 h-1.5" />
-           <span className="text-[10px] t-muted">{Math.round(dep.strength)}%</span>
+           <span className="text-caption t-muted">{Math.round(dep.strength)}%</span>
           </div>
-          {dep.description && <p className="text-[10px] t-muted mt-1">{dep.description}</p>}
+          {dep.description && <p className="text-caption t-muted mt-1">{dep.description}</p>}
          </Card>
         ))}
        </div>
@@ -3223,7 +3188,7 @@ export function CatalystsPage() {
      <div className="flex items-center justify-between">
       <div>
        <h3 className="text-sm font-semibold t-primary">Industry: {successStories.industry}</h3>
-       <p className="text-[10px] t-muted">{successStories.total} resolution pattern{successStories.total !== 1 ? 's' : ''} from peers</p>
+       <p className="text-caption t-muted">{successStories.total} resolution pattern{successStories.total !== 1 ? 's' : ''} from peers</p>
       </div>
       <Button variant="secondary" size="sm" onClick={loadSuccessStories}><RefreshCw size={12} /> Refresh</Button>
      </div>

@@ -53,13 +53,13 @@ export function UsageBar({ used, budget, showLabel = true, size = 'md', classNam
     return (
       <div className={cn('flex flex-col gap-0.5', className)}>
         {showLabel && (
-          <div className="flex items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center justify-between gap-2 text-caption">
             <span className="text-gray-400">{formatTokens(used)} tokens</span>
             <span className="text-emerald-400 font-medium">Unlimited</span>
           </div>
         )}
         {!showLabel && (
-          <span className="text-[11px] text-emerald-400 font-medium">Unlimited</span>
+          <span className="text-caption text-emerald-400 font-medium">Unlimited</span>
         )}
       </div>
     );
@@ -71,7 +71,7 @@ export function UsageBar({ used, budget, showLabel = true, size = 'md', classNam
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       {showLabel && (
-        <div className="flex items-center justify-between gap-2 text-[11px]">
+        <div className="flex items-center justify-between gap-2 text-caption">
           <span className="text-gray-400">
             {formatTokens(used)} / {formatTokens(budget)}
           </span>

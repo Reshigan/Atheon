@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Portal } from "@/components/ui/portal";
+import { LoadingState, EmptyState } from "@/components/ui/state";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import type { Webhook } from "@/lib/api";
@@ -140,25 +141,14 @@ export function WebhooksPage() {
       )}
 
       {loading ? (
-        <Card>
-          <div className="flex items-center justify-center py-10 t-muted">
-            <Loader2 size={16} className="animate-spin mr-2" /> Loading webhooks…
-          </div>
-        </Card>
+        <LoadingState variant="list" count={3} />
       ) : webhooks.length === 0 ? (
-        <Card>
-          <div className="text-center py-10 space-y-3">
-            <WebhookIcon className="w-10 h-10 t-muted mx-auto" />
-            <h3 className="text-sm font-semibold t-primary">No webhooks yet</h3>
-            <p className="text-xs t-muted max-w-sm mx-auto">
-              Create a webhook to receive signed event callbacks from Atheon. You'll see
-              the signing secret only once after creation — have your secret manager ready.
-            </p>
-            <Button variant="primary" size="md" onClick={() => setShowCreate(true)}>
-              <Plus size={14} /> Create your first webhook
-            </Button>
-          </div>
-        </Card>
+        <EmptyState
+          icon={WebhookIcon}
+          title="No webhooks yet"
+          description="Create a webhook to receive signed event callbacks from Atheon. You'll see the signing secret only once after creation — have your secret manager ready."
+          action={{ label: 'Create your first webhook', onClick: () => setShowCreate(true) }}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-3">
           {webhooks.map((w) => {
@@ -187,7 +177,7 @@ export function WebhooksPage() {
                         <Badge variant="outline" size="sm">+{w.event_types.length - 6} more</Badge>
                       )}
                     </div>
-                    <p className="text-[10px] t-muted">
+                    <p className="text-caption t-muted">
                       Created {new Date(w.created_at).toLocaleDateString()}
                       {w.last_delivery_at ? ` · Last delivery ${new Date(w.last_delivery_at).toLocaleString()}` : ''}
                     </p>
@@ -346,17 +336,17 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
           <OverviewField label="Description" value={webhook.description} />
         )}
         <div>
-          <label className="text-[10px] font-medium t-muted">Signing secret</label>
+          <label className="text-caption font-medium t-muted">Signing secret</label>
           <div
             className="mt-1 p-2 rounded-lg text-xs font-mono flex items-center justify-between gap-2"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
           >
             <span className="t-muted tracking-widest">{webhook.secret || '***'}</span>
-            <span className="text-[10px] t-muted italic">shown once at creation · rotate by revoking + recreating</span>
+            <span className="text-caption t-muted italic">shown once at creation · rotate by revoking + recreating</span>
           </div>
         </div>
         <div>
-          <label className="text-[10px] font-medium t-muted">Event types</label>
+          <label className="text-caption font-medium t-muted">Event types</label>
           <div className="flex flex-wrap gap-1 mt-1">
             {webhook.event_types.map((ev) => (
               <Badge key={ev} variant="info" size="sm">
@@ -389,7 +379,7 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
 function OverviewField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="space-y-1">
-      <label className="text-[10px] font-medium t-muted">{label}</label>
+      <label className="text-caption font-medium t-muted">{label}</label>
       <div className={`text-xs t-primary break-all ${mono ? 'font-mono' : ''}`}>{value}</div>
     </div>
   );
@@ -439,7 +429,7 @@ function ReceiverDocsSection() {
           <Code size={14} className="text-accent" />
           <div>
             <h3 className="text-sm font-semibold t-primary">Receiver-side verification docs</h3>
-            <p className="text-[10px] t-muted">How to validate `X-Atheon-Signature` on your server</p>
+            <p className="text-caption t-muted">How to validate `X-Atheon-Signature` on your server</p>
           </div>
         </div>
         {open ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
@@ -484,11 +474,11 @@ function CodeBlock({ title, snippet }: { title: string; snippet: string }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium t-secondary uppercase tracking-wide">{title}</span>
+        <span className="text-caption font-medium t-secondary uppercase tracking-wide">{title}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="text-[10px] t-muted hover:t-primary inline-flex items-center gap-1"
+          className="text-caption t-muted hover:t-primary inline-flex items-center gap-1"
           aria-label={`Copy ${title} snippet`}
         >
           {copied ? <CheckCircle2 size={10} className="text-emerald-500" /> : <Copy size={10} />}
@@ -496,7 +486,7 @@ function CodeBlock({ title, snippet }: { title: string; snippet: string }) {
         </button>
       </div>
       <pre
-        className="p-3 rounded-lg text-[11px] overflow-x-auto font-mono"
+        className="p-3 rounded-lg text-caption overflow-x-auto font-mono"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
       >
         <code>{snippet}</code>

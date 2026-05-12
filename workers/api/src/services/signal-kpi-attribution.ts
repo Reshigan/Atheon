@@ -37,8 +37,10 @@ import {
   classifyImpactDirection as classifyImpactDirectionByDirection,
   resolveKpiDirection,
 } from './kpi-classification';
+import { getEffectiveThreshold } from './threshold-autotune';
 
 const MIN_PAIRED_OBSERVATIONS = 10;
+/** Defaults; superseded per-tenant by getEffectiveThreshold() at runtime. */
 const MIN_CORRELATION = 0.6;
 const MIN_SIGNAL_DELTA_PCT = 5;
 const LAG_DAYS_MAX = 7;
@@ -145,8 +147,18 @@ function pctChange(series: DailyPoint[]): number {
   return ((last - first) / Math.abs(first)) * 100;
 }
 
+export interface AttributionThresholds {
+  minCorrelation?: number;
+  minSignalDeltaPct?: number;
+}
+
 /** Run the lag sweep and pick the best correlation. */
-export function decideAttribution(input: AttributionInput): AttributionDecision | null {
+export function decideAttribution(
+  input: AttributionInput,
+  thresholds: AttributionThresholds = {},
+): AttributionDecision | null {
+  const minCorrelation = thresholds.minCorrelation ?? MIN_CORRELATION;
+  const minSignalDeltaPct = thresholds.minSignalDeltaPct ?? MIN_SIGNAL_DELTA_PCT;
   let best: AttributionDecision | null = null;
   for (let lag = 0; lag <= LAG_DAYS_MAX; lag++) {
     const { xs, ys } = alignWithLag(input.signalSeries, input.metricSeries, lag);
@@ -164,8 +176,8 @@ export function decideAttribution(input: AttributionInput): AttributionDecision 
     }
   }
   if (!best) return null;
-  if (Math.abs(best.correlation) < MIN_CORRELATION) return null;
-  if (Math.abs(best.signalDeltaPct) < MIN_SIGNAL_DELTA_PCT) return null;
+  if (Math.abs(best.correlation) < minCorrelation) return null;
+  if (Math.abs(best.signalDeltaPct) < minSignalDeltaPct) return null;
   return best;
 }
 
@@ -291,6 +303,14 @@ export async function attributeSignalsToKpis(
   result.metricsScanned = metrics.length;
   if (metrics.length === 0) return result;
 
+  // Resolve per-tenant gates (autotune override > default) — see Phase 10-16.
+  const [minCorrelation, minSignalDeltaPct] = await Promise.all([
+    getEffectiveThreshold(db, tenantId, 'signal_attribution.min_correlation')
+      .catch(() => MIN_CORRELATION),
+    getEffectiveThreshold(db, tenantId, 'signal_attribution.min_signal_delta_pct')
+      .catch(() => MIN_SIGNAL_DELTA_PCT),
+  ]);
+
   const ids = metrics.map((m) => m.id);
   const placeholders = ids.map(() => '?').join(',');
   let rawHistory: Array<{ metric_id: string; value: number; recorded_at: string }> = [];
@@ -328,7 +348,10 @@ export async function attributeSignalsToKpis(
       if (!metricSeries) continue;
       result.pairsEvaluated++;
 
-      const decision = decideAttribution({ signal, metric, signalSeries, metricSeries });
+      const decision = decideAttribution(
+        { signal, metric, signalSeries, metricSeries },
+        { minCorrelation, minSignalDeltaPct },
+      );
       if (!decision) continue;
       result.attributionsDetected++;
 

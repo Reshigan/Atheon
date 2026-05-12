@@ -45,7 +45,7 @@ export function CostOfInactionTicker({ compact = false, data: externalData }: { 
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
         <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
         <span className="text-xs font-mono font-bold text-red-400">{formatCurrency(displayCost)}</span>
-        <span className="text-[9px] t-muted">cost of inaction</span>
+        <span className="text-caption t-muted">cost of inaction</span>
       </div>
     );
   }
@@ -61,30 +61,30 @@ export function CostOfInactionTicker({ compact = false, data: externalData }: { 
         <p className="text-3xl font-mono font-bold text-red-400 tabular-nums">
           {formatCurrency(displayCost)}
         </p>
-        <p className="text-[10px] t-muted mt-1">Accrued cost from unresolved issues</p>
+        <p className="text-caption t-muted mt-1">Accrued cost from unresolved issues</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
           <p className="text-sm font-bold t-primary">{formatCurrency(data.dailyCost)}</p>
-          <p className="text-[9px] t-muted">Daily</p>
+          <p className="text-caption t-muted">Daily</p>
         </div>
         <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
           <Clock size={10} className="inline mr-1 t-muted" />
           <span className="text-sm font-bold t-primary">{data.avgDaysOpen}d</span>
-          <p className="text-[9px] t-muted">Avg Open</p>
+          <p className="text-caption t-muted">Avg Open</p>
         </div>
         <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
           <TrendingUp size={10} className="inline mr-1 text-red-400" />
           <span className="text-sm font-bold text-red-400">{formatCurrency(data.projectedMonthlyCost)}</span>
-          <p className="text-[9px] t-muted">30-Day Proj.</p>
+          <p className="text-caption t-muted">30-Day Proj.</p>
         </div>
       </div>
 
       {data.rcaBreakdown.length > 0 && (
         <div className="mt-3 space-y-1">
           {data.rcaBreakdown.slice(0, 3).map((rca) => (
-            <div key={rca.rcaId} className="flex items-center justify-between text-[10px]">
+            <div key={rca.rcaId} className="flex items-center justify-between text-caption">
               <span className="t-secondary truncate max-w-[60%]">{rca.metricName}</span>
               <div className="flex items-center gap-2">
                 <span className={`px-1.5 py-0.5 rounded text-[8px] font-medium ${rca.severity === 'red' ? 'bg-red-500/20 text-red-400' : rca.severity === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-500/20 t-muted'}`}>

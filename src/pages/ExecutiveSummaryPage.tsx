@@ -142,22 +142,22 @@ export function ExecutiveSummaryPage() {
       {/* Top row: Atheon Score + Health Score + Journey */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-5 flex flex-col items-center justify-center">
-          <p className="text-[10px] t-muted uppercase tracking-wider mb-2">Atheon Score</p>
+          <p className="text-label mb-2">Atheon Score</p>
           <ScoreRing score={data.atheonScore} size="lg" />
-          <p className="text-[11px] t-muted mt-3">Composite across 5 pillars</p>
+          <p className="text-caption t-muted mt-3">Composite across 5 pillars</p>
         </Card>
         <Card className="p-5 flex flex-col items-center justify-center">
-          <p className="text-[10px] t-muted uppercase tracking-wider mb-2">Health Score</p>
+          <p className="text-label mb-2">Health Score</p>
           <ScoreRing score={data.healthScore} size="lg" />
           {trendValues.length > 1 && (
             <div className="mt-3 w-full">
               <Sparkline data={trendValues} width={120} height={28} />
-              <p className="text-[10px] t-muted text-center mt-1">Last {trendValues.length} points</p>
+              <p className="text-caption t-muted text-center mt-1">Last {trendValues.length} points</p>
             </div>
           )}
         </Card>
         <Card className="p-5">
-          <p className="text-[10px] t-muted uppercase tracking-wider mb-2">Journey</p>
+          <p className="text-label mb-2">Journey</p>
           {data.journey?.baselineHealthScore !== null ? (
             <>
               <div className="flex items-baseline gap-2">
@@ -168,7 +168,7 @@ export function ExecutiveSummaryPage() {
               </div>
               <p className="text-xs t-muted mt-1">vs baseline of {data.journey.baselineHealthScore}</p>
               {data.journey.baselineDate && (
-                <p className="text-[10px] t-muted mt-1">
+                <p className="text-caption t-muted mt-1">
                   Day zero: {new Date(data.journey.baselineDate).toLocaleDateString()}
                 </p>
               )}
@@ -185,26 +185,26 @@ export function ExecutiveSummaryPage() {
       {/* Financial + Diagnostic KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4">
-          <p className="text-[10px] t-muted uppercase">Value Recovered</p>
+          <p className="text-label">Value Recovered</p>
           <p className="text-xl font-bold t-primary">{formatCurrency(data.roi?.recovered || 0)}</p>
-          <p className="text-[10px] t-muted mt-1">
+          <p className="text-caption t-muted mt-1">
             {data.roi?.multiple ? `${data.roi.multiple.toFixed(1)}× ROI` : 'Awaiting first catalyst'}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-[10px] t-muted uppercase">Active RCAs</p>
+          <p className="text-label">Active RCAs</p>
           <p className="text-xl font-bold t-primary">{data.diagnostics?.activeRcas ?? 0}</p>
-          <p className="text-[10px] t-muted mt-1">Root-cause investigations</p>
+          <p className="text-caption t-muted mt-1">Root-cause investigations</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[10px] t-muted uppercase">Pending Rx</p>
+          <p className="text-label">Pending Rx</p>
           <p className="text-xl font-bold t-primary">{data.diagnostics?.pendingPrescriptions ?? 0}</p>
-          <p className="text-[10px] t-muted mt-1">Prescriptions awaiting action</p>
+          <p className="text-caption t-muted mt-1">Prescriptions awaiting action</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[10px] t-muted uppercase">Signals (7d)</p>
+          <p className="text-label">Signals (7d)</p>
           <p className="text-xl font-bold t-primary">{data.signals?.newThisWeek ?? 0}</p>
-          <p className="text-[10px] t-muted mt-1">External radar signals</p>
+          <p className="text-caption t-muted mt-1">External radar signals</p>
         </Card>
       </div>
 
@@ -213,7 +213,7 @@ export function ExecutiveSummaryPage() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold t-primary">Health Dimensions</h3>
-            <button onClick={() => navigate('/apex')} className="text-[11px] text-accent hover:underline inline-flex items-center gap-1">
+            <button onClick={() => navigate('/apex')} className="text-caption text-accent hover:underline inline-flex items-center gap-1">
               Full breakdown <ArrowRight size={11} />
             </button>
           </div>
@@ -224,7 +224,7 @@ export function ExecutiveSummaryPage() {
                 onClick={() => navigate('/apex')}
                 className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] transition-colors"
               >
-                <p className="text-[10px] t-muted uppercase tracking-wider">{key.replace(/[-_]/g, ' ')}</p>
+                <p className="text-label">{key.replace(/[-_]/g, ' ')}</p>
                 <div className="flex items-baseline gap-1 mt-1">
                   <span className="text-lg font-bold t-primary">{dim.score}</span>
                   {dim.trend === 'improving' || dim.trend === 'up' ? <TrendingUp size={12} className="text-emerald-400" />
@@ -241,7 +241,7 @@ export function ExecutiveSummaryPage() {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold t-primary">Top Risks</h3>
-          <button onClick={() => navigate('/apex')} className="text-[11px] text-accent hover:underline inline-flex items-center gap-1">
+          <button onClick={() => navigate('/apex')} className="text-caption text-accent hover:underline inline-flex items-center gap-1">
             All risks <ArrowRight size={11} />
           </button>
         </div>
@@ -256,10 +256,10 @@ export function ExecutiveSummaryPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium t-primary truncate">{risk.title}</p>
-                    <Badge variant={severityColor(risk.severity)} className="text-[10px]">{risk.severity}</Badge>
+                    <Badge variant={severityColor(risk.severity)} className="text-caption">{risk.severity}</Badge>
                   </div>
                   {!!risk.impactValue && (
-                    <p className="text-[10px] t-muted mt-0.5">Est. impact {formatCurrency(risk.impactValue)}</p>
+                    <p className="text-caption t-muted mt-0.5">Est. impact {formatCurrency(risk.impactValue)}</p>
                   )}
                 </div>
               </div>
@@ -281,15 +281,15 @@ export function ExecutiveSummaryPage() {
                 <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)]">
                   <div className="flex items-center justify-between">
                     <p className="text-sm t-primary">{t.targetName}</p>
-                    <Badge variant={targetStatusColor(t.status)} className="text-[10px]">{t.status}</Badge>
+                    <Badge variant={targetStatusColor(t.status)} className="text-caption">{t.status}</Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-primary)] overflow-hidden">
                       <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[10px] t-muted tabular-nums">{t.currentValue} / {t.targetValue}</span>
+                    <span className="text-caption t-muted tabular-nums">{t.currentValue} / {t.targetValue}</span>
                   </div>
-                  <p className="text-[10px] t-muted mt-0.5">{t.targetType}</p>
+                  <p className="text-caption t-muted mt-0.5">{t.targetType}</p>
                 </div>
               );
             })}
@@ -309,7 +309,7 @@ export function ExecutiveSummaryPage() {
             </p>
             <button
               onClick={() => navigate('/apex')}
-              className="mt-2 inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-caption text-accent hover:underline"
             >
               <FileText size={11} /> Open board report generator
             </button>

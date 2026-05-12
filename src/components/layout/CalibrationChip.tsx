@@ -50,7 +50,7 @@ export function CalibrationChip(): JSX.Element | null {
   return (
     <button
       onClick={() => navigate('/trust')}
-      className={`hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border transition-all hover:scale-[1.02] ${tone}`}
+      className={`hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md text-caption font-medium border transition-all hover:scale-[1.02] ${tone}`}
       title={`Tenant-wide calibration: ${accuracy.toFixed(1)}% across ${observations} observed outcomes — click for the Trust page`}
       data-testid="calibration-chip"
     >

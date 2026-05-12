@@ -98,7 +98,7 @@ export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, c
                 <X size={14} />
               </button>
               <div className="mb-2">
-                <p className="text-[10px] t-muted uppercase tracking-wider">Dimension</p>
+                <p className="text-label">Dimension</p>
                 <h4 className="text-base font-semibold t-primary capitalize">{dim}</h4>
               </div>
               {isLoading ? (
@@ -107,20 +107,20 @@ export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, c
                 <>
                   <div className="flex items-end justify-between mb-3">
                     <div>
-                      <p className="text-[10px] t-muted uppercase tracking-wider">Current</p>
+                      <p className="text-label">Current</p>
                       <p className="text-3xl font-bold" style={{ color: tone }}>
                         {result.score ?? "--"}
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         {trendIcon(result.trend)}
-                        <span className={`text-[11px] ${(result.delta ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        <span className={`text-caption ${(result.delta ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                           {(result.delta ?? 0) > 0 ? "+" : ""}
                           {result.delta ?? 0}
                         </span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] t-muted uppercase tracking-wider">Target</p>
+                      <p className="text-label">Target</p>
                       <p className="text-sm font-medium t-primary">80</p>
                     </div>
                   </div>
@@ -131,20 +131,20 @@ export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, c
                   />
                   {sparklinePoints.length >= 2 && (
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="text-[10px] t-muted">Recent trend</span>
+                      <span className="text-caption t-muted">Recent trend</span>
                       <Sparkline data={sparklinePoints} width={100} height={24} color={tone} />
                     </div>
                   )}
                   <div className="mt-3 pt-3 border-t border-[var(--border-card)]">
-                    <p className="text-[10px] t-muted uppercase tracking-wider mb-1.5">
+                    <p className="text-label mb-1.5">
                       Top Risks ({dimensionRisks.length})
                     </p>
                     {dimensionRisks.length === 0 ? (
-                      <p className="text-[11px] t-muted">No risks tagged to this dimension.</p>
+                      <p className="text-caption t-muted">No risks tagged to this dimension.</p>
                     ) : (
                       <ul className="space-y-1">
                         {dimensionRisks.map(r => (
-                          <li key={r.id} className="flex items-start gap-1.5 text-[11px]">
+                          <li key={r.id} className="flex items-start gap-1.5 text-caption">
                             <AlertTriangle
                               size={10}
                               className={

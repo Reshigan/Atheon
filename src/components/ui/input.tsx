@@ -26,7 +26,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: error ? '1px solid rgb(239, 68, 68)' : '1px solid var(--border-card)' }}
           {...props}
         />
-        {error && <p className="text-[10px] text-red-500">{error}</p>}
+        {error && <p className="text-caption text-red-500">{error}</p>}
       </div>
     );
   }

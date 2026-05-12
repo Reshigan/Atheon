@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { LayerBadge } from "@/components/ui/layer-badge";
 import { api, ApiError } from "@/lib/api";
 import type { AuditEntry } from "@/lib/api";
-import { Shield, CheckCircle, XCircle, Clock, Filter, Loader2, Download, FileText } from "lucide-react";
+import { Shield, CheckCircle, XCircle, Clock, Filter, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/state";
 import { useToast } from "@/components/ui/toast";
 import { ProvenanceVerifyPanel } from "@/components/ProvenanceVerifyPanel";
 
@@ -51,13 +52,7 @@ export function AuditPage() {
 
  const activeFilterCount = [filterLayer, filterOutcome, dateFrom, dateTo].filter(Boolean).length;
 
- if (loading) {
- return (
- <div className="flex items-center justify-center h-96">
- <Loader2 className="w-8 h-8 text-accent animate-spin" />
- </div>
- );
- }
+ if (loading) return <LoadingState variant="cards" count={4} />;
 
  return (
  <div className="space-y-6 animate-fadeIn">
@@ -197,7 +192,7 @@ export function AuditPage() {
  <Card>
  <span className="text-xs t-secondary">{activeFilterCount > 0 ? 'Filtered Events' : 'Total Events'}</span>
  <p className="text-2xl font-bold t-primary mt-1">{filteredEntries.length}</p>
- {activeFilterCount > 0 && <span className="text-[10px] text-gray-400">of {entries.length} total</span>}
+ {activeFilterCount > 0 && <span className="text-caption t-muted">of {entries.length} total</span>}
  </Card>
  <Card>
  <span className="text-xs t-secondary">Success</span>

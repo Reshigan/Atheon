@@ -47,7 +47,7 @@ export function CSVExportButton({ endpoint, filename, label = 'Export CSV', size
   };
 
   const sizeClasses = size === 'sm'
-    ? 'px-2.5 py-1 text-[11px] gap-1'
+    ? 'px-2.5 py-1 text-caption gap-1'
     : 'px-3 py-1.5 text-xs gap-1.5';
 
   return (

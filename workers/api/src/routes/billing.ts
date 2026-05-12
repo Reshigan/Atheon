@@ -1,12 +1,102 @@
 /**
  * SPEC-009: Billing & Subscription Management (Stripe integration)
  * Handles subscription lifecycle, checkout, portal, webhooks, and usage metering.
+ *
+ * Phase 10-19: shared-savings billing endpoints (`/period`, `/periods`).
+ * These compute the *Atheon revenue* for a date range from resolved RCAs +
+ * verified catalyst actions + causal factor impact_value. They are the
+ * dollar-audit-defensible artefact for the shared-savings invoice — every
+ * line item carries the originating rca_id and verified action ids so a
+ * customer dispute can be traced back to the underlying ERP record.
  */
 import { Hono } from 'hono';
 import type { AppBindings, AuthContext } from '../types';
 import { getValidatedJsonBody } from '../middleware/validation';
+import { requireRole } from '../middleware/tenant';
+import { computeBillablePeriod } from '../services/billing-engine';
+import { logError } from '../services/logger';
 
 const billing = new Hono<AppBindings>();
+
+// ─── Phase 10-19: Shared-savings billing ──────────────────────
+// ISO yyyy-mm-dd validator. Rejects time/zone components so we never
+// straddle a timezone boundary on the inclusive/exclusive period math.
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function validatePeriodRange(from: unknown, to: unknown): { from: string; to: string } | string {
+  if (typeof from !== 'string' || !ISO_DATE.test(from)) return 'invalid_from';
+  if (typeof to !== 'string' || !ISO_DATE.test(to)) return 'invalid_to';
+  if (from >= to) return 'from_must_precede_to';
+  return { from, to };
+}
+
+// GET /api/billing/period?from=YYYY-MM-DD&to=YYYY-MM-DD
+// Read-only preview of the next invoice; never persists.
+billing.get('/period',
+  requireRole('admin', 'support_admin', 'superadmin', 'system_admin'),
+  async (c) => {
+    const auth = c.get('auth') as AuthContext;
+    const range = validatePeriodRange(c.req.query('from'), c.req.query('to'));
+    if (typeof range === 'string') return c.json({ error: range }, 400);
+    try {
+      const { period } = await computeBillablePeriod(c.env.DB, auth.tenantId, {
+        periodStart: range.from, periodEnd: range.to, persist: false,
+      });
+      return c.json({ period });
+    } catch (err) {
+      logError('billing.period_preview_failed', err, { tenantId: auth.tenantId }, range);
+      return c.json({ error: 'compute_failed' }, 500);
+    }
+  });
+
+// POST /api/billing/period — compute and persist the period (idempotent
+// on (tenant_id, period_start, period_end); re-runs UPDATE the row).
+billing.post('/period',
+  requireRole('admin', 'support_admin', 'superadmin', 'system_admin'),
+  async (c) => {
+    const auth = c.get('auth') as AuthContext;
+    let body: { from?: unknown; to?: unknown } = {};
+    try { body = await c.req.json(); } catch { /* allow empty body */ }
+    const range = validatePeriodRange(body.from, body.to);
+    if (typeof range === 'string') return c.json({ error: range }, 400);
+    try {
+      const result = await computeBillablePeriod(c.env.DB, auth.tenantId, {
+        periodStart: range.from, periodEnd: range.to, persist: true,
+      });
+      return c.json({
+        period: result.period,
+        persisted: result.persisted,
+        period_id: result.periodId,
+        line_items_inserted: result.lineItemsInserted,
+      });
+    } catch (err) {
+      logError('billing.period_persist_failed', err, { tenantId: auth.tenantId }, range);
+      return c.json({ error: 'compute_failed' }, 500);
+    }
+  });
+
+// GET /api/billing/periods — historical billable periods for the tenant.
+billing.get('/periods',
+  requireRole('admin', 'support_admin', 'superadmin', 'system_admin'),
+  async (c) => {
+    const auth = c.get('auth') as AuthContext;
+    const limitRaw = Number(c.req.query('limit') ?? '50');
+    const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(200, Math.trunc(limitRaw))) : 50;
+    try {
+      const r = await c.env.DB.prepare(
+        `SELECT id, period_start, period_end, total_realised_savings, atheon_share_pct,
+                atheon_revenue, currency, status, generated_at, invoiced_at, paid_at
+           FROM billable_periods
+          WHERE tenant_id = ?
+          ORDER BY period_end DESC, generated_at DESC
+          LIMIT ?`
+      ).bind(auth.tenantId, limit).all();
+      return c.json({ periods: r.results ?? [] });
+    } catch (err) {
+      logError('billing.periods_list_failed', err, { tenantId: auth.tenantId }, {});
+      return c.json({ error: 'list_failed' }, 500);
+    }
+  });
 
 // ─── Plan Definitions ───────────────────────────────────────
 const PLANS = [

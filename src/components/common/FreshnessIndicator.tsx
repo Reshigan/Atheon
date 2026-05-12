@@ -42,7 +42,7 @@ export function FreshnessDot() {
     <div className="relative" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
       <div className="flex items-center gap-1 px-1.5 py-1 rounded-md cursor-default" title={`Data freshness: ${data.globalStatus}`}>
         <div className={`w-2 h-2 rounded-full ${statusDot[data.globalStatus]} animate-pulse`} />
-        <span className="text-[10px] t-muted hidden sm:inline">
+        <span className="text-caption t-muted hidden sm:inline">
           {data.globalStatus === 'fresh' ? 'Fresh' : data.globalStatus === 'stale' ? 'Stale' : '—'}
         </span>
       </div>
@@ -54,11 +54,11 @@ export function FreshnessDot() {
         >
           <div className="flex items-center gap-1.5 mb-2">
             <Clock size={12} className="t-muted" />
-            <span className="text-[10px] font-medium t-primary uppercase tracking-wider">Data Freshness</span>
+            <span className="text-caption font-medium t-primary uppercase tracking-wider">Data Freshness</span>
           </div>
           <div className="space-y-1.5">
             {data.sections.map((s) => (
-              <div key={s.section} className="flex items-center justify-between text-[11px]">
+              <div key={s.section} className="flex items-center justify-between text-caption">
                 <span className="t-secondary truncate flex-1">{s.section}</span>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <div className={`w-1.5 h-1.5 rounded-full ${statusDot[s.status]}`} />
@@ -89,7 +89,7 @@ export function SectionFreshness({ section }: { section: string }) {
   if (!sectionData) return null;
 
   return (
-    <div className="inline-flex items-center gap-1 text-[10px] t-muted" title={`Last updated: ${sectionData.lastUpdated || 'Never'}`}>
+    <div className="inline-flex items-center gap-1 text-caption t-muted" title={`Last updated: ${sectionData.lastUpdated || 'Never'}`}>
       <div className={`w-1.5 h-1.5 rounded-full ${statusDot[sectionData.status]}`} />
       <span>{ageLabel(sectionData.ageMinutes)}</span>
       <button onClick={load} className="p-0.5 rounded hover:bg-[var(--bg-secondary)] transition-all" title="Refresh freshness">

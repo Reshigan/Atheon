@@ -14,9 +14,10 @@ import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { api, ApiError } from '@/lib/api';
 import type { IntegrationHealthConnection } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { LoadingState, ErrorState } from '@/components/ui/state';
 import {
   Wifi, CheckCircle, XCircle, AlertTriangle, Clock,
-  RefreshCw, Loader2, Zap, AlertCircle, Activity,
+  RefreshCw, Zap, Activity,
 } from 'lucide-react';
 
 function statusVariant(status: string): 'success' | 'warning' | 'danger' | 'default' {
@@ -104,29 +105,15 @@ export function IntegrationHealthPage() {
     { id: 'freshness', label: 'Data Freshness', icon: <Clock size={14} /> },
   ];
 
-  if (loading && connections.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
+  if (loading && connections.length === 0) return <LoadingState variant="list" count={3} />;
 
   if (error && connections.length === 0) {
     return (
-      <Card className="p-6 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
-        <div className="flex-1">
-          <p className="text-sm font-medium t-primary">Failed to load integration health</p>
-          <p className="text-xs t-muted mt-1">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="mt-3 text-xs px-3 py-1.5 rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary"
-          >
-            Retry
-          </button>
-        </div>
-      </Card>
+      <ErrorState
+        title="Couldn't load integration health"
+        error={error}
+        onRetry={handleRefresh}
+      />
     );
   }
 
@@ -156,19 +143,19 @@ export function IntegrationHealthPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Connections</p>
+          <p className="text-label">Connections</p>
           <p className="text-xl font-bold t-primary">{summary.total}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Healthy</p>
+          <p className="text-label">Healthy</p>
           <p className="text-xl font-bold text-emerald-400">{summary.healthy}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Errored</p>
+          <p className="text-label">Errored</p>
           <p className="text-xl font-bold text-red-400">{summary.errored}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-[10px] t-muted uppercase">Records Synced</p>
+          <p className="text-label">Records Synced</p>
           <p className="text-xl font-bold t-primary">
             {summary.records >= 1000 ? `${(summary.records / 1000).toFixed(1)}k` : summary.records.toLocaleString()}
           </p>
@@ -194,14 +181,14 @@ export function IntegrationHealthPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-medium t-primary truncate">{c.name}</p>
-                          {c.adapter_name && <Badge variant="default" className="text-[10px]">{c.adapter_name}</Badge>}
-                          <Badge variant={statusVariant(c.status)} className="text-[10px]">{c.status}</Badge>
-                          <Badge variant={circuitVariant(c.circuitState)} className="text-[10px]">
+                          {c.adapter_name && <Badge variant="default" className="text-caption">{c.adapter_name}</Badge>}
+                          <Badge variant={statusVariant(c.status)} className="text-caption">{c.status}</Badge>
+                          <Badge variant={circuitVariant(c.circuitState)} className="text-caption">
                             <Zap size={9} className="inline mr-0.5" />
                             {c.circuitState}
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 text-[10px]">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 text-caption">
                           <div>
                             <span className="t-muted">Last Sync</span>
                             <p className="t-primary">{c.lastSync ? new Date(c.lastSync).toLocaleString() : 'Never'}</p>
@@ -243,20 +230,20 @@ export function IntegrationHealthPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium t-primary">{c.name}</p>
-                            {c.adapter_name && <Badge variant="default" className="text-[10px]">{c.adapter_name}</Badge>}
+                            {c.adapter_name && <Badge variant="default" className="text-caption">{c.adapter_name}</Badge>}
                           </div>
                           <p className="text-xs t-muted mt-0.5">
                             {c.errorsLast30d} error{c.errorsLast30d === 1 ? '' : 's'} in the last 30 days
                             {c.circuitState !== 'CLOSED' && ` · Circuit breaker: ${c.circuitState} (${c.circuitFailures} failures)`}
                           </p>
                           {c.lastSync && (
-                            <p className="text-[10px] t-muted mt-1 flex items-center gap-1">
+                            <p className="text-caption t-muted mt-1 flex items-center gap-1">
                               <Clock size={10} /> Last sync: {new Date(c.lastSync).toLocaleString()}
                             </p>
                           )}
                         </div>
                       </div>
-                      <Badge variant="danger" className="text-[10px]">{c.errorsLast30d} errors</Badge>
+                      <Badge variant="danger" className="text-caption">{c.errorsLast30d} errors</Badge>
                     </div>
                   </Card>
                 ))}
@@ -274,7 +261,7 @@ export function IntegrationHealthPage() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium t-primary">{c.name}</span>
-                        {c.adapter_name && <Badge variant="default" className="text-[10px]">{c.adapter_name}</Badge>}
+                        {c.adapter_name && <Badge variant="default" className="text-caption">{c.adapter_name}</Badge>}
                       </div>
                       <span className="text-xs font-medium" style={{ color: freshnessColor(c.freshness) }}>
                         {freshnessLabel(c)}
@@ -286,7 +273,7 @@ export function IntegrationHealthPage() {
                         style={{ width: `${pct}%`, background: freshnessColor(c.freshness) }}
                       />
                     </div>
-                    <p className="text-[10px] t-muted mt-1">
+                    <p className="text-caption t-muted mt-1">
                       fresh ≤ 1h · stale ≤ 24h · cold &gt; 24h
                     </p>
                   </Card>

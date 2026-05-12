@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
+import { LoadingState } from "@/components/ui/state";
 import { MaturityBadge } from "@/components/MaturityBadge";
 import { ImplementationDot } from "@/components/ImplementationDot";
 import { api } from "@/lib/api";
@@ -408,13 +409,7 @@ export function TenantsPage() {
  { id: 'infrastructure', label: 'Infrastructure', icon: <Server size={14} /> },
  ];
 
- if (loading) {
- return (
- <div className="flex items-center justify-center h-96">
- <Loader2 className="w-8 h-8 text-accent animate-spin" />
- </div>
- );
- }
+ if (loading) return <LoadingState variant="cards" count={4} />;
 
  return (
  <div className="space-y-6 animate-fadeIn">
@@ -527,23 +522,23 @@ export function TenantsPage() {
  {/* Quick Stats */}
  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Layers</span>
+ <span className="text-caption t-muted">Layers</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.layers.length}/5</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Catalysts</span>
+ <span className="text-caption t-muted">Catalysts</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.catalystClusters.length}</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Max Agents</span>
+ <span className="text-caption t-muted">Max Agents</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.maxAgents}</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Max Users</span>
+ <span className="text-caption t-muted">Max Users</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.maxUsers}</p>
  </div>
  <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Region</span>
+ <span className="text-caption t-muted">Region</span>
  <p className="text-sm font-bold t-primary">{tenant.region}</p>
  </div>
  </div>
@@ -563,7 +558,7 @@ export function TenantsPage() {
  </div>
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
  <div>
- <span className="text-[10px] text-gray-400">Autonomy Tiers</span>
+ <span className="text-caption t-muted">Autonomy Tiers</span>
  <div className="flex gap-1 mt-1">
  {tenant.entitlements.autonomyTiers.map(t => (
  <Badge key={t} variant="info" size="sm">{t}</Badge>
@@ -571,7 +566,7 @@ export function TenantsPage() {
  </div>
  </div>
  <div>
- <span className="text-[10px] text-gray-400">LLM Tiers</span>
+ <span className="text-caption t-muted">LLM Tiers</span>
  <div className="flex gap-1 mt-1">
  {tenant.entitlements.llmTiers.map(t => (
  <Badge key={t} variant="info" size="sm">{t}</Badge>
@@ -579,7 +574,7 @@ export function TenantsPage() {
  </div>
  </div>
  <div>
- <span className="text-[10px] text-gray-400">Flags</span>
+ <span className="text-caption t-muted">Flags</span>
  <div className="flex gap-2 mt-1 text-xs">
  <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-400' : 'text-gray-400'}>
  {tenant.entitlements.ssoEnabled ? <IconCheck size={10} /> : <IconCross size={10} />} SSO
@@ -602,15 +597,15 @@ export function TenantsPage() {
  </h4>
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
  <div className="p-3 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Deployment</span>
+ <span className="text-caption t-muted">Deployment</span>
  <p className="text-sm font-medium t-primary">{tenant.deploymentModel}</p>
  </div>
  <div className="p-3 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Plan</span>
+ <span className="text-caption t-muted">Plan</span>
  <p className="text-sm font-medium t-primary">{tenant.plan}</p>
  </div>
  <div className="p-3 rounded bg-[var(--bg-secondary)]">
- <span className="text-[10px] text-gray-400">Region</span>
+ <span className="text-caption t-muted">Region</span>
  <p className="text-sm font-medium t-primary">{tenant.region}</p>
  </div>
  </div>
@@ -740,7 +735,7 @@ export function TenantsPage() {
  <div>
  <p className="text-sm font-medium t-primary">{u.name}</p>
  <p className="text-xs t-muted">{u.email}</p>
- {u.lastLogin && <p className="text-[10px] text-gray-400 mt-0.5">Last login: {new Date(u.lastLogin).toLocaleDateString()}</p>}
+ {u.lastLogin && <p className="text-caption t-muted mt-0.5">Last login: {new Date(u.lastLogin).toLocaleDateString()}</p>}
  </div>
  <div className="flex items-center gap-2">
  <Badge variant={u.status === 'active' ? 'success' : 'default'} size="sm">{u.status}</Badge>
@@ -767,7 +762,7 @@ export function TenantsPage() {
  await api.iam.resendWelcome(u.id, showManageUsers || undefined);
  setActionError(null);
  } catch (err) { console.error('Failed to send password reset', err); setActionError('Failed to send password reset'); }
- }} title="Send password reset email to this user" className="!px-2 !py-1 text-[10px]">Reset Pwd</Button>
+ }} title="Send password reset email to this user" className="!px-2 !py-1 text-caption">Reset Pwd</Button>
  </div>
  </div>
  ))}
@@ -898,7 +893,7 @@ export function TenantsPage() {
  key={tier}
  type="button"
  onClick={() => setMaturityFilter(prev => ({ ...prev, [tier]: !prev[tier] }))}
- className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${
+ className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-caption font-medium transition-colors ${
  active
  ? 'border-accent/40 bg-accent/10 text-accent'
  : 'border-[var(--border-card)] t-muted hover:border-accent/30'
@@ -982,7 +977,7 @@ export function TenantsPage() {
  {sub.implementation && <ImplementationDot implementation={sub.implementation} />}
  <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 'text-gray-400'}`}>{sub.name}</span>
  </div>
- <p className="text-[10px] t-muted truncate">{sub.description}</p>
+ <p className="text-caption t-muted truncate">{sub.description}</p>
  </div>
  </div>
  ))}
@@ -1106,7 +1101,7 @@ export function TenantsPage() {
  </button>
  <div>
  <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 'text-gray-400 line-through'}`}>{sub.name}</span>
- <p className="text-[10px] t-muted">{sub.description}</p>
+ <p className="text-caption t-muted">{sub.description}</p>
  {sub.data_source && (
  <div className="flex items-center gap-1 mt-1">
  <Badge variant="info" size="sm">
@@ -1540,23 +1535,23 @@ export function TenantsPage() {
  <div className="grid grid-cols-3 gap-3">
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.clusters}</p>
- <p className="text-[10px] t-muted">Clusters</p>
+ <p className="text-caption t-muted">Clusters</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.subCatalysts}</p>
- <p className="text-[10px] t-muted">Sub-Catalysts</p>
+ <p className="text-caption t-muted">Sub-Catalysts</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.positiveRuns.count + reseedResult.negativeRuns.count}</p>
- <p className="text-[10px] t-muted">Runs</p>
+ <p className="text-caption t-muted">Runs</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.metrics + reseedResult.risks}</p>
- <p className="text-[10px] t-muted">Metrics & Risks</p>
+ <p className="text-caption t-muted">Metrics & Risks</p>
  </div>
  <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.healthScore}</p>
- <p className="text-[10px] t-muted">Health Score</p>
+ <p className="text-caption t-muted">Health Score</p>
  </div>
  </div>
  <Button variant="primary" size="sm" onClick={() => setShowReseedConfirm(false)} title="Close">Done</Button>
