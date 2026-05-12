@@ -12,12 +12,19 @@
  *   - 'compact' — single card, count + value + "Review" CTA
  *   - 'operational' — full table with approve/reject inline
  *   - 'executive' — high-value subset with rationale
+ *
+ * Phase 1 / WORLD_CLASS §A.2: columns where every visible row carries no
+ * value are NOT rendered. The table reduces to the columns that actually
+ * answer a question. Status, Value, Mode pill, Created — each gated.
+ * Status renders via the canonical <StatusPill> primitive; values via
+ * <Numeric> for tabular-nums alignment.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StatusPill, type StatusKind } from '@/components/ui/status-pill';
+import { Numeric } from '@/components/ui/numeric';
 import { api, ApiError } from '@/lib/api';
 import { CheckCircle, XCircle, Loader2, Inbox, Zap } from 'lucide-react';
 
@@ -34,14 +41,37 @@ interface ActionQueuePanelProps {
   allowApprove?: boolean;
 }
 
-function ZAR(amount: number): string {
-  if (!amount) return 'R 0';
-  if (amount >= 1_000_000) return `R ${(amount / 1_000_000).toFixed(1)}m`;
-  if (amount >= 1_000) return `R ${(amount / 1_000).toFixed(0)}k`;
-  return `R ${amount.toFixed(0)}`;
+/** Concise relative time — "2h ago" / "3d ago" / "just now". Falls back to
+ *  the locale date string for anything > 60 days. */
+function relTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return '—';
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 60) return `${Math.floor(s / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
-export function ActionQueuePanel({ variant, title, limit, allowApprove = false }: ActionQueuePanelProps): JSX.Element {
+/** Map the backend's action status string to a StatusKind from the
+ *  canonical pill vocabulary. Unknown strings render as neutral. */
+function statusToKind(s: string | null | undefined): StatusKind {
+  if (!s) return 'pending';
+  if (s === 'pending_approval') return 'pending';
+  if (s === 'in_progress') return 'in_progress';
+  if (s === 'completed') return 'completed';
+  if (s === 'verified') return 'verified';
+  if (s === 'failed') return 'failed';
+  if (s === 'rejected') return 'rejected';
+  if (s === 'deferred') return 'deferred';
+  return 'info';
+}
+
+export function ActionQueuePanel({
+  variant, title, limit, allowApprove = false,
+}: ActionQueuePanelProps): JSX.Element {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [actions, setActions] = useState<ActionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +83,10 @@ export function ActionQueuePanel({ variant, title, limit, allowApprove = false }
     try {
       const [s, a] = await Promise.all([
         api.erp.actionsSummary(),
-        api.erp.listAllActions({ status: variant === 'executive' ? 'pending_approval' : undefined, limit: limit || 25 }),
+        api.erp.listAllActions({
+          status: variant === 'executive' ? 'pending_approval' : undefined,
+          limit: limit || 25,
+        }),
       ]);
       setSummary(s.summary);
       setActions(a.actions);
@@ -88,7 +121,23 @@ export function ActionQueuePanel({ variant, title, limit, allowApprove = false }
     finally { setPendingId(null); }
   }, [load]);
 
+  // Column visibility — every column is gated on "at least one row has data".
+  // Empty columns waste the operator's eye. This is the heart of the §A.2 fix.
+  const columns = useMemo(() => {
+    const hasValue = actions.some(a => Number.isFinite(a.value_zar) && (a.value_zar as number) > 0);
+    const hasMode = actions.some(a => {
+      const out = a.output as { mode?: 'live' | 'stub' | 'preview' } | null;
+      return !!out?.mode;
+    });
+    return { hasValue, hasMode };
+  }, [actions]);
+
+  // ────────────────────────────────────────────────────────────
+  // Compact variant — single card with one number; gated on summary.
+  // ────────────────────────────────────────────────────────────
   if (variant === 'compact') {
+    const pending = summary?.pending_approval_count ?? 0;
+    const valueAtStake = summary?.pending_approval_value_zar ?? 0;
     return (
       <Card>
         <div className="flex items-center gap-3">
@@ -96,14 +145,16 @@ export function ActionQueuePanel({ variant, title, limit, allowApprove = false }
             <Inbox size={18} className="text-amber-400" />
           </div>
           <div className="flex-1">
-            <p className="text-xs t-muted">Actions awaiting approval</p>
+            <p className="text-caption t-muted">Actions awaiting approval</p>
             {loading ? (
-              <div className="text-base t-muted"><Loader2 size={14} className="animate-spin inline" /></div>
+              <span className="t-muted"><Loader2 size={14} className="animate-spin inline" /></span>
             ) : (
-              <p className="text-2xl font-bold t-primary">{summary?.pending_approval_count ?? 0}</p>
+              <Numeric value={pending} size="xl" tone={pending > 0 ? 'negative' : 'mute'} />
             )}
-            {!loading && summary && summary.pending_approval_value_zar > 0 && (
-              <p className="text-xs t-muted">{ZAR(summary.pending_approval_value_zar)} value at stake</p>
+            {!loading && valueAtStake > 0 && (
+              <p className="text-caption t-muted">
+                <Numeric value={valueAtStake} unit="ZAR" compact size="sm" tone="mute" /> at stake
+              </p>
             )}
           </div>
         </div>
@@ -111,16 +162,22 @@ export function ActionQueuePanel({ variant, title, limit, allowApprove = false }
     );
   }
 
+  // ────────────────────────────────────────────────────────────
+  // Operational / executive variant — table with conditional columns.
+  // ────────────────────────────────────────────────────────────
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-semibold t-primary flex items-center gap-2">
+          <h3 className="text-h2 t-primary flex items-center gap-2">
             <Zap size={14} /> {title || (variant === 'executive' ? 'Pending high-value actions' : 'Action Queue')}
           </h3>
           {!loading && summary && (
-            <p className="text-xs t-muted">
-              {summary.pending_approval_count} pending · {summary.completed_count} completed · {ZAR(summary.completed_value_zar)} acted on
+            <p className="text-caption t-muted">
+              {summary.pending_approval_count} pending · {summary.completed_count} completed
+              {summary.completed_value_zar > 0 && (
+                <> · <Numeric value={summary.completed_value_zar} unit="ZAR" compact size="sm" tone="mute" /> acted on</>
+              )}
             </p>
           )}
         </div>
@@ -130,74 +187,90 @@ export function ActionQueuePanel({ variant, title, limit, allowApprove = false }
       </div>
 
       {error && (
-        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">{error}</div>
+        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-caption">{error}</div>
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">
+        <div className="flex items-center gap-2 text-body-sm t-muted py-4 justify-center">
           <Loader2 size={14} className="animate-spin" /> Loading…
         </div>
       ) : actions.length === 0 ? (
-        <div className="text-xs t-muted py-4 text-center">No actions to review.</div>
+        <div className="text-body-sm t-muted py-4 text-center">No actions to review.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-body-sm">
             <thead>
               <tr className="border-b border-[var(--border-card)] text-left t-muted">
-                <th className="py-1 pr-3 font-medium">Catalyst</th>
-                <th className="py-1 pr-3 font-medium">Action</th>
-                <th className="py-1 pr-3 font-medium">Value</th>
-                <th className="py-1 pr-3 font-medium">Status</th>
-                <th className="py-1 pr-3 font-medium">Created</th>
-                {allowApprove && <th className="py-1 pr-3 font-medium">Actions</th>}
+                <th className="py-1 pr-3 font-medium text-label">Catalyst</th>
+                <th className="py-1 pr-3 font-medium text-label">Action</th>
+                {columns.hasValue && (
+                  <th className="py-1 pr-3 font-medium text-label text-right">Value</th>
+                )}
+                <th className="py-1 pr-3 font-medium text-label">Status</th>
+                <th className="py-1 pr-3 font-medium text-label">Created</th>
+                {allowApprove && (
+                  <th className="py-1 pr-3 font-medium text-label">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {actions.map((a) => (
-                <tr key={a.id} className="border-b border-[var(--border-card)]/50">
-                  <td className="py-1 pr-3 t-primary">{a.catalyst_name}</td>
-                  <td className="py-1 pr-3 font-mono t-muted">{a.action_type}</td>
-                  <td className="py-1 pr-3 t-primary">{ZAR(a.value_zar || 0)}</td>
-                  <td className="py-1 pr-3">
-                    <Badge variant={
-                      a.status === 'completed' ? 'success'
-                      : a.status === 'pending_approval' ? 'warning'
-                      : a.status === 'rejected' || a.status === 'failed' ? 'danger'
-                      : 'default'
-                    } size="sm">{a.status}</Badge>
-                    {(() => {
-                      // v64 — surface execution mode (live vs stub) so the
-                      // customer never confuses "completed (stub)" with a
-                      // real ERP write. mode lives on a.output.mode for
-                      // dispatcher-routed adapters.
-                      const out = a.output as { mode?: 'live' | 'stub' | 'preview' } | null;
-                      if (!out?.mode) return null;
-                      const variant = out.mode === 'live' ? 'success' : out.mode === 'stub' ? 'warning' : 'info';
-                      return <Badge variant={variant} size="sm" className="ml-1">{out.mode}</Badge>;
-                    })()}
-                  </td>
-                  <td className="py-1 pr-3 t-muted">{a.created_at ? new Date(a.created_at).toLocaleString() : ''}</td>
-                  {allowApprove && (
-                    <td className="py-1 pr-3">
-                      {a.status === 'pending_approval' ? (
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm"
-                            onClick={() => void handleApprove(a)} disabled={pendingId === a.id}
-                            title="Approve and execute">
-                            {pendingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Approve
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300"
-                            onClick={() => void handleReject(a)} disabled={pendingId === a.id}>
-                            <XCircle size={12} /> Reject
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="opacity-50">—</span>
-                      )}
+              {actions.map((a) => {
+                const out = a.output as { mode?: 'live' | 'stub' | 'preview' } | null;
+                return (
+                  <tr key={a.id} className="border-b border-[var(--border-card)]/50">
+                    <td className="py-1.5 pr-3 t-primary">{a.catalyst_name}</td>
+                    <td className="py-1.5 pr-3 font-mono t-muted">{a.action_type}</td>
+                    {columns.hasValue && (
+                      <td className="py-1.5 pr-3 text-right">
+                        <Numeric
+                          value={Number.isFinite(a.value_zar) && (a.value_zar as number) > 0 ? (a.value_zar as number) : null}
+                          unit="ZAR"
+                          compact
+                          size="sm"
+                        />
+                      </td>
+                    )}
+                    <td className="py-1.5 pr-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <StatusPill status={statusToKind(a.status)} size="sm" />
+                        {/* v64 — execution mode (live vs stub) only renders when
+                            present. Stops "completed" + bare row when mode is unset. */}
+                        {columns.hasMode && out?.mode && (
+                          <StatusPill
+                            status={out.mode === 'live' ? 'verified' : out.mode === 'stub' ? 'pending' : 'info'}
+                            label={out.mode}
+                            size="sm"
+                            density="outline"
+                            noGlyph
+                          />
+                        )}
+                      </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="py-1.5 pr-3 t-muted tabular-nums" title={a.created_at ?? ''}>
+                      {relTime(a.created_at)}
+                    </td>
+                    {allowApprove && (
+                      <td className="py-1.5 pr-3">
+                        {a.status === 'pending_approval' ? (
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm"
+                              onClick={() => void handleApprove(a)} disabled={pendingId === a.id}
+                              title="Approve and execute">
+                              {pendingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Approve
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300"
+                              onClick={() => void handleReject(a)} disabled={pendingId === a.id}>
+                              <XCircle size={12} /> Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="opacity-40" aria-label="No action available">—</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

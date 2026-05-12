@@ -1234,12 +1234,34 @@ seed.post('/seed-vantax', async (c) => {
       { clusterId: supplyChainClusterId, catalystName: 'Demand Forecasting', action: 'Generated Q3 demand forecast — 12% volume increase projected', status: 'completed', confidence: 0.74, reasoning: 'Seasonal patterns and order pipeline analysis suggest Q3 uptick. Load shedding impact factored in as 8% production constraint.' },
       { clusterId: financeClusterId, catalystName: 'AP Invoice Validation', action: 'Processing R1.2M in pending invoice approvals', status: 'in_progress', confidence: 0.85, reasoning: 'Batch of 12 invoices from 3 major suppliers awaiting 3-way match verification.' },
     ];
+    // Per-action created_at / completed_at offsets so that the Process
+    // Mining sweep (services/scheduled.ts refreshProcessMining) computes
+    // a non-zero avg_duration. Per WORLD_CLASS §A.3: the demo must
+    // demonstrate process mining, which means the elapsed-time math
+    // needs real numbers. Catalyst-specific durations: AP invoice
+    // validation is fast (~25 min); GR/IR reconciliation is slow (~5h).
+    const durationMinutesByCatalyst: Record<string, number> = {
+      'GR/IR Reconciliation': 300,           // 5 hours — multi-pass matching
+      'AP Invoice Validation': 25,            // fast — rules-based
+      'Bank Reconciliation': 110,             // 2h — wait on EFT lookups
+      'Inventory Reconciliation': 240,        // 4h — warehouse traversal
+      'Sales Order Matching': 95,             // ~1.5h
+      'Demand Forecasting': 480,              // 8h — long ML batch
+    };
     for (const ca of catalystActionsData) {
+      const elapsedMin = durationMinutesByCatalyst[ca.catalystName] ?? 60;
+      // Staggered start times across the last 7 days so the trend curves
+      // on Pulse have texture. Each row gets its own offset; jitter ±20%.
+      const startHoursAgo = Math.round((Math.random() * 168) + 1);
+      const completedAt = (ca.status === 'completed' || ca.status === 'verified')
+        ? `datetime('now', '-${startHoursAgo} hours', '+${elapsedMin} minutes')`
+        : `NULL`;
       await c.env.DB.prepare(
-        `INSERT INTO catalyst_actions (id, tenant_id, cluster_id, catalyst_name, action, status, confidence, reasoning, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, ca.clusterId, ca.catalystName, ca.action, ca.status, ca.confidence, ca.reasoning, now).run();
+        `INSERT INTO catalyst_actions (id, tenant_id, cluster_id, catalyst_name, action, status, confidence, reasoning, created_at, completed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-${startHoursAgo} hours'), ${completedAt})`
+      ).bind(crypto.randomUUID(), tenantId, ca.clusterId, ca.catalystName, ca.action, ca.status, ca.confidence, ca.reasoning).run();
     }
-    console.log(`[VantaX Seeder] Seeded ${catalystActionsData.length} catalyst actions`);
+    console.log(`[VantaX Seeder] Seeded ${catalystActionsData.length} catalyst actions (with elapsed-time data)`);
 
     // STEP 12h: Agent Deployments (Control Plane)
     const agentDeployments = [
