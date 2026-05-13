@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
@@ -414,15 +415,12 @@ export function TenantsPage() {
  return (
  <div className="space-y-6 animate-fadeIn">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
- <div className="flex items-center gap-3">
- <div className=" w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
- <Building2 className="w-5 h-5 text-accent"/>
- </div>
- <div>
- <h1 className="text-2xl font-bold t-primary">Client Access Layer</h1>
- <p className="text-sm t-muted">Multi-tenant management — SaaS, On-Premise, Hybrid</p>
- </div>
- </div>
+ <HeroHeader
+  icon={Building2}
+  title="Tenants"
+  subtitle="Multi-tenant management — SaaS, On-Premise, Hybrid"
+  accent="sage"
+ />
  <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)} title="Create a new tenant (client) and initial configuration"><Plus size={14} /> Onboard Tenant</Button>
  </div>
 

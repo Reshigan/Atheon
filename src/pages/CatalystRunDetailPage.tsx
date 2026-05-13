@@ -4,6 +4,7 @@ import { Modal } from "@/components/ui/modal";
 import { LoadingState } from "@/components/ui/state";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import type { SubCatalystRunItem, SubCatalystRunItemsResponse, RunComment } from "@/lib/api";
@@ -416,11 +417,6 @@ export function CatalystRunDetailPage() {
     );
   }
 
-  const StatusIcon = run.status === 'success' ? CheckCircle2
-    : run.status === 'failed' ? XCircle
-    : run.status === 'partial' ? AlertCircle
-    : Clock;
-
   const allFilteredSelected = filteredItems.length > 0 && filteredItems.every((it) => selectedItemIds.has(it.id));
   const pendingSelectedCount = Array.from(selectedItemIds).filter((id) =>
     (items?.items ?? []).find((it) => it.id === id)?.review_status === 'pending'
@@ -442,13 +438,10 @@ export function CatalystRunDetailPage() {
               </button>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold t-primary">Catalyst Run</h1>
-                  <Badge variant={run.status === 'success' ? 'success' : run.status === 'failed' ? 'danger' : 'warning'}>
-                    <StatusIcon size={12} className="mr-1" />
-                    {run.status}
-                  </Badge>
+                  <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Catalyst Run</h1>
+                  <StatusPill status={run.status === 'success' ? 'completed' : run.status} size="sm" />
                 </div>
-                <p className="text-sm t-muted mt-1">{run.subCatalystName} • {run.clusterName}</p>
+                <p className="text-body-sm t-muted mt-0.5">{run.subCatalystName} • {run.clusterName}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">

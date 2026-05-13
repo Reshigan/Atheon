@@ -103,7 +103,7 @@ export function OnboardingWizardPage(): JSX.Element {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Rocket className="w-5 h-5 text-accent" />
-          <h1 className="text-2xl font-bold t-primary">Welcome to Atheon</h1>
+          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Welcome to Atheon</h1>
         </div>
         <p className="text-sm t-muted">
           A short guided setup. Each step is a real first-week milestone — the same checklist your

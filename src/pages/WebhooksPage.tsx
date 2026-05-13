@@ -20,6 +20,7 @@ import {
   CheckCircle, Clock, AlertTriangle, ShieldCheck, Code, Copy, CheckCircle2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Portal } from "@/components/ui/portal";
@@ -115,20 +116,12 @@ export function WebhooksPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--accent-subtle)' }}
-          >
-            <WebhookIcon className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold t-primary">Webhooks</h1>
-            <p className="text-sm t-muted">
-              Subscribe external systems to Atheon events with HMAC-signed delivery.
-            </p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={WebhookIcon}
+          title="Webhooks"
+          subtitle="HMAC-signed event subscriptions for external systems"
+          accent="sky"
+        />
         <Button variant="primary" size="md" onClick={() => setShowCreate(true)}>
           <Plus size={14} /> New webhook
         </Button>

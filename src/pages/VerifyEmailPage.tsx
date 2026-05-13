@@ -86,7 +86,7 @@ export function VerifyEmailPage() {
           {state === 'expired' && <Mail className="w-12 h-12 text-amber-500" />}
         </div>
 
-        <h1 className="text-2xl font-semibold t-primary">
+        <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">
           {state === 'loading' && 'Verifying your email...'}
           {state === 'success' && 'Email Verified'}
           {state === 'already_verified' && 'Already Verified'}

@@ -4,6 +4,8 @@ import { api, ApiError } from '@/lib/api';
 import type { Assessment, AssessmentResults, CatalystScore, ERPConnection, ValueAssessmentFinding, DataQualityRecord, ProcessTimingRecord, ValueSummaryRecord } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { AssessmentFindingsPanel } from '@/components/AssessmentFindingsPanel';
+import { HeroHeader } from '@/components/ui/hero-header';
+import { ClipboardList } from 'lucide-react';
 import { catalystDeployUrl } from '@/lib/catalyst-recommendation';
 
 type View = 'list' | 'new' | 'running' | 'results';
@@ -75,11 +77,13 @@ export function AssessmentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Assessments</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Pre-sale analysis &amp; business case generation</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <HeroHeader
+          icon={ClipboardList}
+          title="Assessments"
+          subtitle="Pre-Sale Discovery & Business Case Generation"
+          accent="sage"
+        />
         <div className="flex gap-2">
           {view !== 'list' && (
             <button
