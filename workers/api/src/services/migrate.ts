@@ -1076,23 +1076,57 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
   // over the 50s migrate budget once tables + indexes are also accounted
   // for — so making the happy path one round-trip is the difference
   // between completing within budget and timing out.
+  // Step 1: read the current column-set for every table we want to heal.
+  // PRAGMA table_info doesn't accept bound parameters, so we interpolate
+  // the table name (safe — every name comes from the literal selfHealColumns
+  // array above, never user input). One round-trip via db.batch fetches
+  // all schemas at once.
+  const healTables = Array.from(new Set(selfHealColumns.map((c) => c.table)));
+  const existingCols = new Map<string, Set<string>>();
   try {
-    await db.batch(
-      selfHealColumns.map((col) =>
-        db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`),
-      ),
+    const schemaRows = await db.batch<{ name: string }>(
+      healTables.map((t) => db.prepare(`SELECT name FROM pragma_table_info('${t}')`)),
     );
-    result.columnsHealed += selfHealColumns.length;
-  } catch {
-    // Some columns already exist (re-run path). Drop to serial so each
-    // ALTER is tried independently; existing-column errors are silently
-    // swallowed and new heals get added.
-    for (const col of selfHealColumns) {
-      try {
-        await db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`).run();
-        result.columnsHealed++;
-      } catch {
-        // Column already exists — expected, skip silently
+    for (let i = 0; i < healTables.length; i++) {
+      const cols = new Set<string>();
+      for (const row of schemaRows[i]?.results ?? []) cols.add(row.name);
+      existingCols.set(healTables[i], cols);
+    }
+  } catch (err) {
+    // If pragma fails we'll fall through to the unfiltered batch + serial
+    // fallback path, which is still correct (just slower in the worst case).
+    result.errors.push(`Heal-schema probe failed: ${(err as Error).message}`);
+  }
+
+  // Step 2: only ALTER columns that aren't already present. Most production
+  // runs (and every fresh-DB CI run) will have a full filtered list. On a
+  // post-partial-migration recovery the filter trims the previously-applied
+  // entries so the batch doesn't fail on "duplicate column name".
+  const missingCols = selfHealColumns.filter(
+    (col) => !existingCols.get(col.table)?.has(col.column),
+  );
+
+  if (missingCols.length === 0) {
+    // Nothing to heal — common on schema-marker-present re-runs.
+  } else {
+    try {
+      await db.batch(
+        missingCols.map((col) =>
+          db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`),
+        ),
+      );
+      result.columnsHealed += missingCols.length;
+    } catch {
+      // Final fallback: serial loop with per-statement try/catch. Reached
+      // only if the schema probe missed something — rare, and bounded by
+      // the now-shorter `missingCols` list rather than the full 172 ALTERs.
+      for (const col of missingCols) {
+        try {
+          await db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`).run();
+          result.columnsHealed++;
+        } catch {
+          // Column already exists — expected, skip silently
+        }
       }
     }
   }
