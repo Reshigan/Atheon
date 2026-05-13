@@ -16,6 +16,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { useAppStore } from '@/stores/appStore';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError, setTenantOverride } from '@/lib/api';
@@ -227,15 +228,12 @@ export function ImpersonationPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-          <Eye className="w-5 h-5 text-accent" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold t-primary">User Impersonation</h1>
-          <p className="text-xs t-muted">View the platform as any user for debugging & support</p>
-        </div>
-      </div>
+      <HeroHeader
+        icon={Eye}
+        title="User Impersonation"
+        subtitle="View the platform as any user for debugging & support"
+        accent="amber"
+      />
 
       {/* Warning */}
       <Card className="p-4 border-amber-500/20 bg-amber-500/5">

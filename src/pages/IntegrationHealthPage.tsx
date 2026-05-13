@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { api, ApiError } from '@/lib/api';
 import type { IntegrationHealthConnection } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -122,15 +123,12 @@ export function IntegrationHealthPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Wifi className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold t-primary">Integration Health</h1>
-            <p className="text-xs t-muted">Per-connection sync status, circuit breakers, and data freshness</p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={Wifi}
+          title="Integration Health"
+          subtitle="Per-connection sync status, circuit breakers & data freshness"
+          accent="sky"
+        />
         <button
           onClick={handleRefresh}
           disabled={refreshing}

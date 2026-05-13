@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { LoadingState, EmptyState } from '@/components/ui/state';
 import { api, ApiError } from '@/lib/api';
@@ -232,15 +233,12 @@ export function BulkUserManagementPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-          <Users className="w-5 h-5 text-accent" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold t-primary">Bulk User Management</h1>
-          <p className="text-xs t-muted">Import users via CSV and apply bulk actions across your tenant</p>
-        </div>
-      </div>
+      <HeroHeader
+        icon={Users}
+        title="Bulk User Management"
+        subtitle="Import users via CSV and apply bulk actions across your tenant"
+        accent="sage"
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
