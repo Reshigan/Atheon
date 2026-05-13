@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusPill } from '@/components/ui/status-pill';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { LoadingState, EmptyState } from '@/components/ui/state';
@@ -299,15 +300,12 @@ export function SystemAlertsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold t-primary">System Alerts</h1>
-            <p className="text-xs t-muted">Alert rules, channels, silence, and synthetic tests</p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={Bell}
+          title="System Alerts"
+          subtitle="Alert rules, channels, silence & synthetic tests"
+          accent="amber"
+        />
         <Button size="sm" onClick={openCreateModal}>
           <Plus size={14} className="mr-1" /> New Rule
         </Button>

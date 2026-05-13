@@ -22,6 +22,7 @@ import { useAppStore } from '@/stores/appStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusPill } from '@/components/ui/status-pill';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { ScoreRing } from '@/components/ui/score-ring';
 import { Sparkline } from '@/components/ui/sparkline';
 import type { ExecutiveSummaryResponse } from '@/lib/api';
@@ -116,17 +117,12 @@ export function ExecutiveSummaryPage() {
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold t-primary">Executive Summary</h1>
-            <p className="text-xs t-muted">
-              One-page briefing for {user?.name?.split(' ')[0] || 'executives'} — aggregated from Apex, ROI, diagnostics, and signals.
-            </p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={Crown}
+          title="Executive Summary"
+          subtitle={`One-page briefing for ${user?.name?.split(' ')[0] || 'executives'} — aggregated from Apex, ROI, diagnostics & signals`}
+          accent="sage"
+        />
         <button
           onClick={() => load(true)}
           disabled={refreshing}
