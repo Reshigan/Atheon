@@ -20,6 +20,7 @@
 import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusPill } from '@/components/ui/status-pill';
 import { Button } from '@/components/ui/button';
 import {
   AlertCircle, AlertTriangle, ChevronDown, ChevronRight,
@@ -56,13 +57,6 @@ const SEVERITY_LABEL: Record<AssessmentFindingSeverity, string> = {
   high: 'High',
   medium: 'Medium',
   low: 'Low',
-};
-
-const SEVERITY_VARIANT: Record<AssessmentFindingSeverity, 'danger' | 'warning' | 'info' | 'success'> = {
-  critical: 'danger',
-  high: 'danger',
-  medium: 'warning',
-  low: 'info',
 };
 
 const SEVERITY_BAR_COLOR: Record<AssessmentFindingSeverity, string> = {
@@ -300,9 +294,7 @@ export function AssessmentFindingsPanel({
                   <div className={`w-1 self-stretch rounded-full ${SEVERITY_BAR_COLOR[f.severity]}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <Badge variant={SEVERITY_VARIANT[f.severity]} className="text-label">
-                        {SEVERITY_LABEL[f.severity]}
-                      </Badge>
+                      <StatusPill status={f.severity} size="sm" />
                       <Badge variant="outline" className="text-caption t-muted">
                         {f.category.replace(/_/g, ' ')}
                       </Badge>

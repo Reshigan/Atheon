@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Lightbulb, AlertTriangle, ArrowRight } from "lucide-react";
 import { cleanLlmText } from "@/lib/utils";
 import { DashCard } from "./DashCard";
@@ -51,7 +51,7 @@ export function IntelligencePanel({ data }: IntelligencePanelProps) {
               <div key={i} className="flex items-center gap-2 text-xs">
                 <AlertTriangle size={10} className={r.severity === 'critical' ? 'text-red-400' : r.severity === 'high' ? 'text-amber-400' : 'text-gray-400'} />
                 <span className="t-primary font-medium">{r.title}</span>
-                <Badge variant={r.severity === 'critical' ? 'danger' : r.severity === 'high' ? 'warning' : 'default'} size="sm">{r.severity}</Badge>
+                <StatusPill status={r.severity} size="sm" />
               </div>
             ))}
           </div>

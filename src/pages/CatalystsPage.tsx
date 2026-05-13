@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry, FieldMapping, ExecutionConfig, ExecutionResult, HitlConfigListItem, IAMUser, RunAnalytics, RunAnalyticsAggregate, CatalystIntelligenceOverview, ROITrackingResponse, CatalystPrescriptionItem, SuccessStoriesResponse } from "@/lib/api";
 import { SuccessStoryCard } from "@/components/ui/success-story-card";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { StatusPill } from "@/components/ui/status-pill";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
@@ -1495,7 +1496,7 @@ export function CatalystsPage() {
   <Badge variant="danger" size="sm">{exType.replace(/_/g, ' ')}</Badge>
   )}
   {exSeverity && (
-  <Badge variant={exSeverity === 'high' ? 'danger' : exSeverity === 'medium' ? 'warning' : 'outline'} size="sm">{exSeverity} severity</Badge>
+  <StatusPill status={exSeverity} size="sm" />
   )}
   </div>
   <p className="text-xs text-red-500/80">{exDetail}</p>
@@ -3070,7 +3071,7 @@ export function CatalystsPage() {
          <Card key={pattern.id} hover onClick={() => setExpandedPattern(expandedPattern === pattern.id ? null : pattern.id)}>
           <div className="flex items-center justify-between">
            <div className="flex items-center gap-2">
-            <Badge variant={pattern.severity === 'critical' ? 'danger' : pattern.severity === 'high' ? 'warning' : 'info'} size="sm">{pattern.severity}</Badge>
+            <StatusPill status={pattern.severity} size="sm" />
             <span className="text-sm font-medium t-primary">{pattern.title}</span>
             <Badge variant="default" size="sm">{pattern.patternType.replace('_', ' ')}</Badge>
            </div>

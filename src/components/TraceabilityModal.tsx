@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
 import { Portal } from "@/components/ui/portal";
 import { X, ChevronRight, Link2, AlertTriangle, BarChart3, TrendingUp, TrendingDown, Minus, FileText, ChevronDown, ChevronUp, Crown } from "lucide-react";
@@ -71,11 +72,13 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
       );
     } else if (type === 'risk') {
       const r = data as RiskTraceResponse;
-      const severityColor = r.riskAlert.severity === 'critical' ? 'danger' : r.riskAlert.severity === 'high' ? 'warning' : 'info';
+      const sevTint = r.riskAlert.severity === 'critical' ? 'text-red-400'
+        : r.riskAlert.severity === 'high' ? 'text-amber-400'
+        : 'text-blue-400';
       return (
         <div className="flex items-center gap-2">
-          <AlertTriangle size={16} className={`text-${severityColor === 'danger' ? 'red' : severityColor === 'warning' ? 'amber' : 'blue'}-400`} />
-          <Badge variant={severityColor} className="text-xs">{r.riskAlert.severity}</Badge>
+          <AlertTriangle size={16} className={sevTint} />
+          <StatusPill status={r.riskAlert.severity} size="sm" />
           <span className="text-xs t-muted">{r.riskAlert.category}</span>
         </div>
       );
@@ -120,9 +123,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
             <div key={i} className="p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
               <div className="flex items-center justify-between">
                 <span className="text-xs t-primary font-medium">Item #{item.itemNumber}</span>
-                <Badge variant={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'info'} className="text-xs">
-                  {item.status}
-                </Badge>
+                <StatusPill status={item.status} size="sm" />
               </div>
               {item.field && (
                 <p className="text-caption t-muted mt-1">Field: {item.field} | Diff: {item.difference || 'N/A'}</p>
@@ -143,9 +144,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
             <div key={i} className="p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
               <div className="flex items-center justify-between">
                 <span className="text-xs t-primary font-medium">Anomaly #{i + 1}</span>
-                <Badge variant={a.severity === 'high' ? 'danger' : a.severity === 'medium' ? 'warning' : 'info'} className="text-xs">
-                  {a.severity}
-                </Badge>
+                <StatusPill status={a.severity} size="sm" />
               </div>
               <p className="text-caption t-muted mt-1">Deviation: {a.deviation.toFixed(1)}%</p>
             </div>
