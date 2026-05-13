@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -34,9 +34,7 @@ export function AnomalyList({ anomalies }: AnomalyListProps) {
               <p className="text-sm font-medium t-primary">{a.metric}</p>
               <p className="text-xs t-secondary mt-0.5">{a.hypothesis || `Anomaly detected in ${a.metric}`}</p>
             </div>
-            <Badge variant={a.severity === 'high' ? 'danger' : a.severity === 'medium' ? 'warning' : 'default'} size="sm">
-              {a.severity}
-            </Badge>
+            <StatusPill status={a.severity} size="sm" />
             {rec && (
               <Button
                 variant="primary"

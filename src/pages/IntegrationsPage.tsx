@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { StatusPill } from "@/components/ui/status-pill";
 import { api, ApiError } from "@/lib/api";
 import type { ERPAdapter, ERPConnection, CanonicalEndpoint, CircuitBreakerState } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -1326,7 +1327,7 @@ export function IntegrationsPage() {
                                   }`}>
                                     <div className="flex items-center justify-between gap-2">
                                       <span className="font-medium t-primary">{d.field}</span>
-                                      <Badge variant={d.severity === 'critical' ? 'danger' : 'warning'} size="sm">{d.severity}</Badge>
+                                      <StatusPill status={d.severity} size="sm" />
                                     </div>
                                     <div className="t-muted mt-0.5">
                                       You: <span className="font-mono t-primary">{String(d.customer_value)}</span> · Vendor: <span className="font-mono t-primary">{String(d.recommended_value)}</span>
