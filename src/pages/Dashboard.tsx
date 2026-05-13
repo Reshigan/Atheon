@@ -245,7 +245,7 @@ export function Dashboard() {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <h1 className="text-3xl sm:text-4xl font-bold t-primary">{getGreeting(user?.name)}</h1>
+            <h1 className="text-headline-xl sm:text-display font-bold t-primary tracking-tight leading-tight">{getGreeting(user?.name)}</h1>
             <SectionFreshness section="Health" />
           </div>
           <div className="flex items-center gap-2">
