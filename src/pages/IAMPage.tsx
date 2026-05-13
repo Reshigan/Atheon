@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/state";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { api, ApiError } from "@/lib/api";
 import type { IAMPolicy, SSOConfig, IAMRole, IAMUser } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -240,26 +241,16 @@ export function IAMPage() {
    <div className="space-y-6 animate-fadeIn">
      {/* Header */}
      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-       <div className="flex items-center gap-3">
-         <div
-           className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-           style={{
-             background: 'rgba(163, 177, 138, 0.10)',
-             borderColor: 'rgba(163, 177, 138, 0.25)',
-           }}
-           aria-hidden="true"
-         >
-           <ShieldCheck className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-         </div>
-         <div className="flex-1 min-w-0">
-           <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Identity &amp; Access</h1>
-           <p className="text-body-sm t-muted mt-0.5">
-             {isSuperAdmin ? 'Company admins, users, roles, policies' :
-              isCompanyAdmin ? 'Your company users, roles, policies' :
-              'Users, roles, policies'}
-           </p>
-         </div>
-       </div>
+       <HeroHeader
+         icon={ShieldCheck}
+         title="Identity & Access"
+         subtitle={
+           isSuperAdmin ? 'Company admins, users, roles, policies' :
+           isCompanyAdmin ? 'Your company users, roles, policies' :
+           'Users, roles, policies'
+         }
+         accent="sage"
+       />
        {isAdmin && (
          <div className="flex gap-2">
            <Button variant="primary" size="sm" onClick={() => { setInviteResult(null); setInviteForm({ name: '', email: '', role: assignableRoles[0] || 'analyst', sendWelcome: true }); setShowInviteUser(true); }} title="Invite a new user">

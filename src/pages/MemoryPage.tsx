@@ -3,6 +3,7 @@ import { api, ApiError } from "@/lib/api";
 import type { GraphEntity, GraphRelationship, GraphQueryResult } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { LoadingState } from "@/components/ui/state";
+import { HeroHeader } from "@/components/ui/hero-header";
 import {
   Database,
   Plus,
@@ -179,22 +180,12 @@ export function MemoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-          style={{
-            background: 'rgba(126, 179, 205, 0.10)',
-            borderColor: 'rgba(126, 179, 205, 0.25)',
-          }}
-          aria-hidden="true"
-        >
-          <Database className="w-5 h-5" style={{ color: 'var(--sky)' }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Memory</h1>
-          <p className="text-body-sm t-muted mt-0.5">Knowledge Graph &amp; Semantic Retrieval</p>
-        </div>
-      </div>
+      <HeroHeader
+        icon={Database}
+        title="Memory"
+        subtitle="Knowledge Graph & Semantic Retrieval"
+        accent="sky"
+      />
 
       {loadError && !loading && (
         <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/20">

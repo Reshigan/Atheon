@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/state";
 import { useToast } from "@/components/ui/toast";
 import { ProvenanceVerifyPanel } from "@/components/ProvenanceVerifyPanel";
+import { HeroHeader } from "@/components/ui/hero-header";
 
 export function AuditPage() {
  const toast = useToast();
@@ -57,22 +58,12 @@ export function AuditPage() {
  return (
  <div className="space-y-6 animate-fadeIn">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
- <div className="flex items-center gap-3">
- <div
-  className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-  style={{
-   background: 'rgba(163, 177, 138, 0.10)',
-   borderColor: 'rgba(163, 177, 138, 0.25)',
-  }}
-  aria-hidden="true"
- >
-  <Shield className="w-5 h-5" style={{ color: 'var(--accent)' }} />
- </div>
- <div className="flex-1 min-w-0">
-  <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Audit</h1>
-  <p className="text-body-sm t-muted mt-0.5">Provenance Ledger &amp; Governance Trail</p>
- </div>
- </div>
+ <HeroHeader
+  icon={Shield}
+  title="Audit"
+  subtitle="Provenance Ledger & Governance Trail"
+  accent="sage"
+ />
  <div className="flex items-center gap-2">
  <Button
  variant="secondary"

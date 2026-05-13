@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { api, ApiError } from "@/lib/api";
 import type { ERPAdapter, ERPConnection, CanonicalEndpoint, CircuitBreakerState } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -659,22 +660,12 @@ export function IntegrationsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-            style={{
-              background: 'rgba(126, 179, 205, 0.10)',
-              borderColor: 'rgba(126, 179, 205, 0.25)',
-            }}
-            aria-hidden="true"
-          >
-            <Globe className="w-5 h-5" style={{ color: 'var(--sky)' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Integrations</h1>
-            <p className="text-body-sm t-muted mt-0.5">Connected Systems, Adapters &amp; Canonical Schema</p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={Globe}
+          title="Integrations"
+          subtitle="Connected Systems, Adapters & Canonical Schema"
+          accent="sky"
+        />
         <Button variant="primary" size="sm" onClick={() => { setShowConnect(true); setSelectedAuth(''); setCredentialValues({}); }} title="Connect a new ERP system">
           <Plus size={14} /> Connect System
         </Button>

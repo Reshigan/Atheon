@@ -11,6 +11,7 @@ import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry, FieldMapping, ExecutionConfig, ExecutionResult, HitlConfigListItem, IAMUser, RunAnalytics, RunAnalyticsAggregate, CatalystIntelligenceOverview, ROITrackingResponse, CatalystPrescriptionItem, SuccessStoriesResponse } from "@/lib/api";
 import { SuccessStoryCard } from "@/components/ui/success-story-card";
+import { HeroHeader } from "@/components/ui/hero-header";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
@@ -1075,23 +1076,13 @@ export function CatalystsPage() {
  <div className="space-y-6 animate-fadeIn">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="space-y-4 flex-1">
- <div className="flex items-center gap-3">
-  <div
-   className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-   style={{
-    background: 'rgba(205, 163, 126, 0.10)',
-    borderColor: 'rgba(205, 163, 126, 0.25)',
-   }}
-   aria-hidden="true"
-  >
-   <Zap className="w-5 h-5" style={{ color: 'var(--bronze)' }} />
-  </div>
-  <div className="flex-1 min-w-0">
-   <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Catalysts</h1>
-   <p className="text-body-sm t-muted mt-0.5">Autonomous Execution &amp; Catalyst Orchestration</p>
-  </div>
-  <SectionFreshness section="Catalyst Runs" />
- </div>
+ <HeroHeader
+  icon={Zap}
+  title="Catalysts"
+  subtitle="Autonomous Execution & Catalyst Orchestration"
+  accent="bronze"
+  trailing={<SectionFreshness section="Catalyst Runs" />}
+ />
   <div className="flex items-center gap-2 flex-shrink-0">
  <CSVExportButton endpoint="/api/catalyst-intelligence/patterns" filename="catalyst-patterns.csv" label="Export Patterns" />
  <CSVExportButton endpoint="/api/roi" filename="roi-tracking.csv" label="Export ROI" />
