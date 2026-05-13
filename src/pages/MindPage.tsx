@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { MindModels, MindStats, MindQueryResult } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { HeroHeader } from "@/components/ui/hero-header";
 import {
   Brain,
   Settings2,
@@ -138,10 +139,12 @@ export function MindPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Brain size={20} style={{ color: "var(--accent)" }} />
-        <h1 className="text-lg font-semibold t-primary">Mind - AI Model Governance</h1>
-      </div>
+      <HeroHeader
+        icon={Brain}
+        title="Mind"
+        subtitle="AI Model Governance & Configuration"
+        accent="sky"
+      />
 
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--bg-secondary)" }}>

@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { LoadingState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
@@ -184,20 +185,19 @@ function SuperadminPlatformHealth() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold t-primary">Platform Health</h1>
-            <p className="text-xs t-muted">
+        <HeroHeader
+          icon={Activity}
+          title="Platform Health"
+          subtitle={
+            <>
               Real-time infrastructure & tenant monitoring
               {platformHealth?.timestamp && (
                 <> · updated {new Date(platformHealth.timestamp).toLocaleTimeString()}</>
               )}
-            </p>
-          </div>
-        </div>
+            </>
+          }
+          accent="sky"
+        />
         <button
           onClick={handleRefresh}
           disabled={refreshing}

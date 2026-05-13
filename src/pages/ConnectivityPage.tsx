@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { ERPConnection, CircuitBreakerState, ERPCompany } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { HeroHeader } from "@/components/ui/hero-header";
 import {
   Plug, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Clock, Loader2,
   Play, Wifi, ShieldAlert, ShieldCheck, Building2,
@@ -145,10 +146,12 @@ export function ConnectivityPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Plug size={20} style={{ color: "var(--accent)" }} />
-          <h1 className="text-lg font-semibold t-primary">Connectivity — Integration Health</h1>
-        </div>
+        <HeroHeader
+          icon={Plug}
+          title="Connectivity"
+          subtitle="Live Protocols & Integration Health"
+          accent="sky"
+        />
         {multicompany && (
           <div className="flex items-center gap-1.5 text-xs t-muted px-2.5 py-1 rounded-md"
                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
