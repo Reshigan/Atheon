@@ -83,6 +83,7 @@ const SECTIONS: NavSection[] = [
     children: [
       { path: '/integrations',        label: 'Integrations',        symbol: 'hub',            roles: PLATFORM_ADMIN_ROLES },
       { path: '/webhooks',            label: 'Webhooks',            symbol: 'webhook',        roles: PLATFORM_ADMIN_ROLES },
+      { path: '/action-layer',        label: 'Operator Queue',      symbol: 'inbox',          roles: PLATFORM_ADMIN_ROLES },
       { path: '/connectivity',        label: 'Connectivity',        symbol: 'lan',            roles: PLATFORM_ADMIN_ROLES },
       { path: '/integration-health',  label: 'Integration Health',  symbol: 'cable',          roles: PLATFORM_ADMIN_ROLES },
       { path: '/compliance',          label: 'Compliance',          symbol: 'verified_user',  roles: PLATFORM_ADMIN_ROLES },
