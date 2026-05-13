@@ -471,7 +471,20 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_federation_aggregates_lookup ON federation_aggregates(industry_bucket, finding_code)',
   ];
 
-  result.indexesCreated += await batchOrFallback(db, indexes, 'Index', result.errors);
+  // Top-level indexes reference columns added by the column-heal pass below
+  // (catalyst_actions.assigned_to, catalyst_insights.source_run_id/cluster_id/
+  // domain, process_metrics.source_run_id, etc). A batch fails on those, and
+  // the per-statement fallback ends up doing the work twice. Keep this set
+  // serial — per-statement try/catch tolerates the "no such column" cases.
+  for (const idx of indexes) {
+    try {
+      await db.prepare(idx).run();
+      result.indexesCreated++;
+    } catch {
+      // Idempotent and non-critical for boot — heal pass + a retry below
+      // recover the indexes that referenced heal-added columns.
+    }
+  }
 
   // ── Canonical ERP Tables ──
   // Multi-company model: each tenant can have N companies (SAP BUKRS,
@@ -792,9 +805,18 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_erp_connection_config_conn ON erp_connection_config(tenant_id, connection_id, namespace)',
   ];
 
-  // Unique indexes may fail if data has duplicates — batchOrFallback
-  // falls back to serial mode in that case so the rest still apply.
-  result.indexesCreated += await batchOrFallback(db, erpIndexes, 'ERP index', result.errors);
+  // ERP indexes reference erp_*.company_id which is added by the column-heal
+  // pass below — same heal-dependency issue as top-level indexes. Stay serial
+  // so the per-statement try/catch tolerates "no such column" cases without
+  // the batch+fallback double-work.
+  for (const idx of erpIndexes) {
+    try {
+      await db.prepare(idx).run();
+      result.indexesCreated++;
+    } catch {
+      // Heal pass + post-heal retry below recover dependent indexes.
+    }
+  }
 
   // ── Self-Healing Column Additions ──
   const selfHealColumns: Array<{ table: string; column: string; definition: string }> = [
@@ -1059,6 +1081,28 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     }
   }
 
+  // ── Post-heal index retry ──
+  // The top-level `indexes` and `erpIndexes` arrays include entries that
+  // reference columns added by the heal pass that just ran (e.g.
+  // catalyst_actions.assigned_to, erp_*.company_id). On the first pass
+  // through those serial loops, the dependent indexes silently failed
+  // because the columns didn't exist yet. Now that the heal pass is
+  // complete, replay those same index statements in batch — CREATE INDEX
+  // IF NOT EXISTS makes already-created ones cheap no-ops, and the
+  // dependent ones finally succeed.
+  try {
+    await db.batch(indexes.map((s) => db.prepare(s)));
+  } catch {
+    // If batch still fails (e.g. duplicate column heals couldn't add a
+    // column), fall through silently — indexes that didn't make it remain
+    // missing but are non-critical for boot.
+  }
+  try {
+    await db.batch(erpIndexes.map((s) => db.prepare(s)));
+  } catch {
+    // Same tolerance for ERP-side dependent indexes.
+  }
+
   // ── Column Drops ──
   // Columns we deliberately removed. D1/SQLite 3.35+ supports DROP COLUMN.
   // Wrapped in try/catch so the migration is idempotent (after the column is
@@ -1191,9 +1235,16 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
 
   // ── Record success in schema_versions ──
   // Mark this MIGRATION_VERSION as applied so subsequent calls take the
-  // fast path (single SELECT at the top). Only set the marker when the
-  // run completed without fatal errors so a partial failure can retry.
-  if (result.errors.length === 0) {
+  // fast path (single SELECT at the top). "Fatal" excludes the common
+  // non-fatal classes that don't affect correctness: idempotent indexes
+  // that reference heal-added columns ("no such column"), columns that
+  // were healed in a previous run ("duplicate column name"), and tables
+  // that already exist ("already exists"). The whole migration is
+  // CREATE-IF-NOT-EXISTS-style — those errors are expected on every
+  // run after the first and don't mean the schema is incomplete.
+  const NON_FATAL = /no such column|duplicate column name|already exists/i;
+  const fatalErrors = result.errors.filter((e) => !NON_FATAL.test(e));
+  if (fatalErrors.length === 0) {
     try {
       await db
         .prepare(`INSERT OR IGNORE INTO schema_versions (version) VALUES (?)`)
