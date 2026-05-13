@@ -471,19 +471,17 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_federation_aggregates_lookup ON federation_aggregates(industry_bucket, finding_code)',
   ];
 
-  // Top-level indexes reference columns added by the column-heal pass below
-  // (catalyst_actions.assigned_to, catalyst_insights.source_run_id/cluster_id/
-  // domain, process_metrics.source_run_id, etc). A batch fails on those, and
-  // the per-statement fallback ends up doing the work twice. Keep this set
-  // serial — per-statement try/catch tolerates the "no such column" cases.
-  for (const idx of indexes) {
-    try {
-      await db.prepare(idx).run();
-      result.indexesCreated++;
-    } catch {
-      // Idempotent and non-critical for boot — heal pass + a retry below
-      // recover the indexes that referenced heal-added columns.
-    }
+  // Top-level indexes — try as a single batch first. Production D1 latency
+  // makes 120+ serial round-trips impossibly slow (~24s alone). A few of
+  // these reference columns added by the column-heal pass below; the batch
+  // fails fast in that case (single round-trip, no fallback) and the
+  // post-heal retry later in this function recreates them once the columns
+  // exist. CREATE INDEX IF NOT EXISTS makes the retry cheap.
+  try {
+    await db.batch(indexes.map((s) => db.prepare(s)));
+    result.indexesCreated += indexes.length;
+  } catch {
+    // Heal-dependent indexes will succeed on the post-heal retry below.
   }
 
   // ── Canonical ERP Tables ──
@@ -805,17 +803,14 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_erp_connection_config_conn ON erp_connection_config(tenant_id, connection_id, namespace)',
   ];
 
-  // ERP indexes reference erp_*.company_id which is added by the column-heal
-  // pass below — same heal-dependency issue as top-level indexes. Stay serial
-  // so the per-statement try/catch tolerates "no such column" cases without
-  // the batch+fallback double-work.
-  for (const idx of erpIndexes) {
-    try {
-      await db.prepare(idx).run();
-      result.indexesCreated++;
-    } catch {
-      // Heal pass + post-heal retry below recover dependent indexes.
-    }
+  // ERP indexes — same batch-first-fail-fast pattern as top-level indexes.
+  // erp_*.company_id and erp_*.connection_id come from the heal pass; this
+  // first batch fails fast, post-heal retry below succeeds.
+  try {
+    await db.batch(erpIndexes.map((s) => db.prepare(s)));
+    result.indexesCreated += erpIndexes.length;
+  } catch {
+    // Heal-dependent indexes will succeed on the post-heal retry below.
   }
 
   // ── Self-Healing Column Additions ──
@@ -1072,12 +1067,33 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'erp_bank_transactions',column: 'connection_id', definition: 'TEXT' },
   ];
 
-  for (const col of selfHealColumns) {
-    try {
-      await db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`).run();
-      result.columnsHealed++;
-    } catch {
-      // Column already exists — expected, skip silently
+  // Column-heal — try the whole list as a single batch first. On a fresh
+  // DB (the common case for the production first-run we're trying to
+  // unstick) all 170+ ALTERs succeed in one round-trip. On re-runs many
+  // throw "duplicate column name" — the batch fails and we fall back to
+  // serial with per-statement try/catch (the original behaviour). 170+
+  // serial round-trips at production D1 latency is ~34s — comfortably
+  // over the 50s migrate budget once tables + indexes are also accounted
+  // for — so making the happy path one round-trip is the difference
+  // between completing within budget and timing out.
+  try {
+    await db.batch(
+      selfHealColumns.map((col) =>
+        db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`),
+      ),
+    );
+    result.columnsHealed += selfHealColumns.length;
+  } catch {
+    // Some columns already exist (re-run path). Drop to serial so each
+    // ALTER is tried independently; existing-column errors are silently
+    // swallowed and new heals get added.
+    for (const col of selfHealColumns) {
+      try {
+        await db.prepare(`ALTER TABLE ${col.table} ADD COLUMN ${col.column} ${col.definition}`).run();
+        result.columnsHealed++;
+      } catch {
+        // Column already exists — expected, skip silently
+      }
     }
   }
 
