@@ -39,6 +39,7 @@ const TenantsPage = lazy(() => import("@/pages/TenantsPage").then(m => ({ defaul
 const IAMPage = lazy(() => import("@/pages/IAMPage").then(m => ({ default: m.IAMPage })));
 const ControlPlanePage = lazy(() => import("@/pages/ControlPlanePage").then(m => ({ default: m.ControlPlanePage })));
 const IntegrationsPage = lazy(() => import("@/pages/IntegrationsPage").then(m => ({ default: m.IntegrationsPage })));
+const ActionLayerPage = lazy(() => import("@/pages/ActionLayerPage").then(m => ({ default: m.ActionLayerPage })));
 const DeploymentsPage = lazy(() => import("@/pages/DeploymentsPage").then(m => ({ default: m.DeploymentsPage })));
 const AssessmentsPage = lazy(() => import("@/pages/AssessmentsPage").then(m => ({ default: m.AssessmentsPage })));
 const TenantManagementPage = lazy(() => import("@/pages/TenantManagementPage").then(m => ({ default: m.TenantManagementPage })));
@@ -166,6 +167,7 @@ export default function App() {
                 aligning frontend so support_admin can configure agents and catalysts. */}
             <Route path="/control-plane" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ControlPlanePage /></ProtectedRoute>} />
             <Route path="/integrations" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IntegrationsPage /></ProtectedRoute>} />
+            <Route path="/action-layer" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><ActionLayerPage /></ProtectedRoute>} />
             <Route path="/canonical-api" element={<Navigate to="/integrations" replace />} />
             <Route path="/erp-adapters" element={<Navigate to="/integrations" replace />} />
             <Route path="/deployments" element={<ProtectedRoute allowedRoles={SUPERADMIN_ROLES}><DeploymentsPage /></ProtectedRoute>} />
