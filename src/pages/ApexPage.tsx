@@ -10,6 +10,7 @@ import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/state";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
+import { HeroHeader } from "@/components/ui/hero-header";
 
 import { api } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
@@ -547,23 +548,13 @@ export function ApexPage() {
  ];
 
   const pageHeader = (
-    <div className="flex items-center gap-3">
-      <div
-        className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-        style={{
-          background: 'rgba(163, 177, 138, 0.10)',
-          borderColor: 'rgba(163, 177, 138, 0.25)',
-        }}
-        aria-hidden="true"
-      >
-        <Crown className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Apex</h1>
-        <p className="text-body-sm t-muted mt-0.5">Executive Intelligence &amp; Strategic Context</p>
-      </div>
-      <SectionFreshness section="Health" />
-    </div>
+    <HeroHeader
+      icon={Crown}
+      title="Apex"
+      subtitle="Executive Intelligence & Strategic Context"
+      accent="sage"
+      trailing={<SectionFreshness section="Health" />}
+    />
   );
 
   if (loading) {

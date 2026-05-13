@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { LoadingState, ErrorState } from '@/components/ui/state';
 import { TrendingUp, Shield, Activity, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -100,22 +101,12 @@ export default function ROIDashboardPage(): JSX.Element {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-          style={{
-            background: 'rgba(163, 177, 138, 0.10)',
-            borderColor: 'rgba(163, 177, 138, 0.25)',
-          }}
-          aria-hidden="true"
-        >
-          <TrendingUp className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">ROI Dashboard</h1>
-          <p className="text-body-sm t-muted mt-0.5">Financial Proof &amp; Inference Calibration</p>
-        </div>
-      </div>
+      <HeroHeader
+        icon={TrendingUp}
+        title="ROI Dashboard"
+        subtitle="Financial Proof & Inference Calibration"
+        accent="sage"
+      />
 
       {/* Billing summary */}
       <Card className="p-6">

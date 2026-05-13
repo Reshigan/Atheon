@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
@@ -656,23 +657,13 @@ export function PulsePage() {
   ];
 
   const pageHeader = (
-    <div className="flex items-center gap-3">
-      <div
-        className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-        style={{
-          background: 'rgba(126, 179, 205, 0.10)',
-          borderColor: 'rgba(126, 179, 205, 0.25)',
-        }}
-        aria-hidden="true"
-      >
-        <Activity className="w-5 h-5" style={{ color: 'var(--sky)' }} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Pulse</h1>
-        <p className="text-body-sm t-muted mt-0.5">Process Intelligence &amp; Anomaly Detection</p>
-      </div>
-      <SectionFreshness section="Diagnostics" />
-    </div>
+    <HeroHeader
+      icon={Activity}
+      title="Pulse"
+      subtitle="Process Intelligence & Anomaly Detection"
+      accent="sky"
+      trailing={<SectionFreshness section="Diagnostics" />}
+    />
   );
 
   if (loading) {

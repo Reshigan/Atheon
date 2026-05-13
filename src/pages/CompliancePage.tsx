@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState, EmptyState } from "@/components/ui/state";
+import { HeroHeader } from "@/components/ui/hero-header";
 import {
   ShieldCheck, KeyRound, ClipboardList, AlertTriangle, UserMinus,
   Lock, FileArchive, Download, RefreshCw, FileText, Database,
@@ -145,24 +146,12 @@ function ComplianceEvidence(): JSX.Element {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" data-testid="compliance-page">
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-            style={{
-              background: 'rgba(163, 177, 138, 0.10)',
-              borderColor: 'rgba(163, 177, 138, 0.25)',
-            }}
-            aria-hidden="true"
-          >
-            <ShieldCheck className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Compliance</h1>
-            <p className="text-body-sm t-muted mt-0.5 max-w-3xl">
-              SOC 2 Evidence Pack &middot; Generated {new Date(pack.generatedAt).toLocaleString()}
-            </p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={ShieldCheck}
+          title="Compliance"
+          subtitle={`SOC 2 Evidence Pack · Generated ${new Date(pack.generatedAt).toLocaleString()}`}
+          accent="sage"
+        />
         <div className="flex items-center gap-2">
           <Button onClick={() => { setRefreshing(true); load(); }} variant="ghost" size="sm" disabled={refreshing}>
             <RefreshCw size={14} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
