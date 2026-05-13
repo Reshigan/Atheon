@@ -229,39 +229,47 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
-      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center items-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #06090d 0%, #0a0f14 50%, #0e151c 100%)' }}>
-        <div className="absolute inset-0 opacity-40" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(163, 177, 138, 0.12), transparent 70%)' }} />
-        <div className="relative z-10 text-center max-w-sm">
-          <div className="mb-8 flex justify-center">
-            <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #06090d, #0e151c)', boxShadow: '0 12px 40px rgba(163, 177, 138, 0.25), 0 0 0 1px rgba(163, 177, 138, 0.15)' }}>
-              <div className="absolute inset-0 rounded-2xl" style={{ background: 'radial-gradient(ellipse at 50% 30%, rgba(163, 177, 138, 0.10) 0%, transparent 60%)' }} />
-              <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
-                <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
-                <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
-                <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
-                <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
-              </svg>
-            </div>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10"
+      style={{
+        background: 'var(--bg-primary)',
+        backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(163, 177, 138, 0.06) 0%, transparent 70%)',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <div className="w-full max-w-md">
+        {/* Centered brand header — lifted from the Stitch Login screen.
+            Replaces the previous 2-column brand-panel-left + form-right
+            layout with a single centred stack that matches the design 1:1. */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative"
+            style={{
+              background: 'linear-gradient(135deg, #06090d, #0e151c)',
+              boxShadow: '0 8px 32px rgba(163, 177, 138, 0.25), 0 0 0 1px rgba(163, 177, 138, 0.15)',
+            }}
+            aria-hidden="true"
+          >
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+              <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
+              <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
+              <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
+              <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
+            </svg>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tighter mb-3" style={{ color: '#F8F9F3', fontFamily: 'Instrument Serif, serif' }}>Atheon</h1>
-          <p className="text-sm mb-2" style={{ color: '#e0e2e8' }}>Enterprise Intelligence Platform</p>
-          <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: 'rgba(248, 249, 243, 0.5)' }}>AI-powered executive intelligence, autonomous process monitoring, and intelligent execution across your entire enterprise.</p>
-          <div className="mt-10 space-y-2.5 text-left max-w-xs mx-auto">
-            {['Real-time executive health scoring', 'Autonomous catalyst execution', 'Multi-tenant SaaS architecture', 'Universal ERP integration layer'].map((f) => (
-              <div key={f} className="flex items-center gap-2.5 text-xs" style={{ color: 'rgba(248, 249, 243, 0.5)' }}><div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#A3B18A' }} />{f}</div>
-            ))}
-          </div>
+          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Atheon AI</h1>
+          <p className="text-caption t-muted uppercase tracking-widest mt-1">Enterprise Intelligence &amp; Provenance</p>
         </div>
-      </div>
-      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
-        <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-8 flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #06090d, #0e151c)', boxShadow: '0 4px 16px rgba(163, 177, 138, 0.25)' }}>
-              <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5"/><line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6"/><circle cx="16" cy="9" r="1.5" fill="#CDA37E"/></svg>
-            </div>
-            <div><h1 className="text-xl font-extrabold tracking-tighter t-primary" style={{ fontFamily: 'Instrument Serif, serif' }}>Atheon</h1><p className="text-caption t-muted font-medium tracking-wide uppercase">Enterprise Intelligence</p></div>
-          </div>
+
+        {/* Form card — single column, all sub-states render below the header */}
+        <div
+          className="w-full rounded-2xl p-6 sm:p-7"
+          style={{
+            background: 'var(--bg-card-solid)',
+            border: '1px solid var(--border-card)',
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>
           {error && <div className="mb-4 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">{error}</div>}
