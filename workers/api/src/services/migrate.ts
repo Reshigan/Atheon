@@ -91,6 +91,39 @@ export interface MigrationResult {
  * @param db - D1Database binding
  * @returns MigrationResult with stats
  */
+/**
+ * Batch helper: tries `db.batch([prepare(s)...])` first (one D1 round-trip),
+ * falls back to per-statement serial if the batch fails (lets a single bad
+ * statement surface its own error message). Returns the number of statements
+ * the *caller* should credit to its tablesCreated / indexesCreated counter.
+ * Errors are appended to `errors`.
+ */
+async function batchOrFallback(
+  db: D1Database,
+  statements: string[],
+  label: string,
+  errors: string[],
+): Promise<number> {
+  if (statements.length === 0) return 0;
+  try {
+    await db.batch(statements.map((s) => db.prepare(s)));
+    return statements.length;
+  } catch (err) {
+    // One-bad-apple: fall back to serial so the rest still run.
+    errors.push(`${label} batch failed, falling back to serial: ${(err as Error).message}`);
+    let ok = 0;
+    for (const stmt of statements) {
+      try {
+        await db.prepare(stmt).run();
+        ok++;
+      } catch (err2) {
+        errors.push(`${label}: ${(err2 as Error).message}`);
+      }
+    }
+    return ok;
+  }
+}
+
 export async function runMigrations(db: D1Database): Promise<MigrationResult> {
   const t0 = Date.now();
   const result: MigrationResult = {
@@ -101,6 +134,30 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     durationMs: 0,
     errors: [],
   };
+
+  // ── Version-marker fast path ────────────────────────────────────────
+  // Once a given MIGRATION_VERSION has completed successfully it's marked
+  // in schema_versions. Subsequent calls short-circuit with a single SELECT
+  // instead of replaying all 500+ CREATE / ALTER statements. This is what
+  // unsticks the auto-migration loop on production: the first successful
+  // run sets the marker, every subsequent worker boot is <50ms.
+  try {
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS schema_versions (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+    ).run();
+    const existing = await db
+      .prepare(`SELECT version FROM schema_versions WHERE version = ?`)
+      .bind(MIGRATION_VERSION)
+      .first<{ version: string }>();
+    if (existing) {
+      result.durationMs = Date.now() - t0;
+      return result;  // Migration already applied; nothing to do.
+    }
+  } catch (err) {
+    // First-ever boot (no schema_versions table) gets here on the SELECT;
+    // safe to ignore and fall through to the full migration.
+    result.errors.push(`Schema-version check skipped: ${(err as Error).message}`);
+  }
 
   // ── Core Tables ──
   const coreTableSQL = `
@@ -218,15 +275,8 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS billing_checkouts (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), plan_id TEXT NOT NULL, billing_cycle TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', stripe_session_id TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
   `;
 
-  const coreStatements = coreTableSQL.split(';').filter(s => s.trim().length > 0);
-  for (const stmt of coreStatements) {
-    try {
-      await db.prepare(stmt.trim()).run();
-      result.tablesCreated++;
-    } catch (err) {
-      result.errors.push(`Core table: ${(err as Error).message}`);
-    }
-  }
+  const coreStatements = coreTableSQL.split(';').map((s) => s.trim()).filter((s) => s.length > 0);
+  result.tablesCreated += await batchOrFallback(db, coreStatements, 'Core table', result.errors);
 
   // ── Indexes ──
   const indexes = [
@@ -421,14 +471,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_federation_aggregates_lookup ON federation_aggregates(industry_bucket, finding_code)',
   ];
 
-  for (const idx of indexes) {
-    try {
-      await db.prepare(idx).run();
-      result.indexesCreated++;
-    } catch (err) {
-      result.errors.push(`Index: ${(err as Error).message}`);
-    }
-  }
+  result.indexesCreated += await batchOrFallback(db, indexes, 'Index', result.errors);
 
   // ── Canonical ERP Tables ──
   // Multi-company model: each tenant can have N companies (SAP BUKRS,
@@ -489,14 +532,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     `CREATE TABLE IF NOT EXISTS sap_iseg (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), IBLNR TEXT NOT NULL, GJAHR TEXT NOT NULL, ZEESSION TEXT NOT NULL, MATNR TEXT NOT NULL, WERKS TEXT, LGORT TEXT, MENGE REAL DEFAULT 0, MEINS TEXT DEFAULT 'EA', BUCHM REAL DEFAULT 0, XNULL TEXT, XDIFF TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   ];
 
-  for (const tbl of sapTables) {
-    try {
-      await db.prepare(tbl).run();
-      result.tablesCreated++;
-    } catch (err) {
-      result.errors.push(`SAP table: ${(err as Error).message}`);
-    }
-  }
+  result.tablesCreated += await batchOrFallback(db, sapTables, 'SAP table', result.errors);
 
   // ── SAP Table Indexes ──
   const sapIndexes = [
@@ -535,14 +571,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_sap_iseg_mat ON sap_iseg(tenant_id, MATNR)',
   ];
 
-  for (const idx of sapIndexes) {
-    try {
-      await db.prepare(idx).run();
-      result.indexesCreated++;
-    } catch (err) {
-      result.errors.push(`SAP index: ${(err as Error).message}`);
-    }
-  }
+  result.indexesCreated += await batchOrFallback(db, sapIndexes, 'SAP index', result.errors);
 
   // ── Odoo Native Tables (Odoo 17/18 field names) ──
   const odooTables = [
@@ -570,10 +599,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     `CREATE TABLE IF NOT EXISTS odoo_account_payment (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT, payment_type TEXT DEFAULT 'inbound', partner_type TEXT, partner_id TEXT, partner_name TEXT, amount REAL DEFAULT 0, currency_id TEXT DEFAULT 'ZAR', date TEXT, ref TEXT, journal_id TEXT, payment_method_id TEXT, state TEXT DEFAULT 'draft', reconciled_invoice_ids TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   ];
 
-  for (const tbl of odooTables) {
-    try { await db.prepare(tbl).run(); result.tablesCreated++; }
-    catch (err) { result.errors.push(`Odoo table: ${(err as Error).message}`); }
-  }
+  result.tablesCreated += await batchOrFallback(db, odooTables, 'Odoo table', result.errors);
 
   const odooIndexes = [
     'CREATE INDEX IF NOT EXISTS idx_odoo_move_tenant ON odoo_account_move(tenant_id)',
@@ -592,10 +618,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_odoo_payment_tenant ON odoo_account_payment(tenant_id)',
   ];
 
-  for (const idx of odooIndexes) {
-    try { await db.prepare(idx).run(); result.indexesCreated++; }
-    catch (err) { result.errors.push(`Odoo index: ${(err as Error).message}`); }
-  }
+  result.indexesCreated += await batchOrFallback(db, odooIndexes, 'Odoo index', result.errors);
 
   // ── Sage Native Tables (Sage 50/200/300 field names) ──
   const sageTables = [
@@ -619,10 +642,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     `CREATE TABLE IF NOT EXISTS sage_goods_received (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), GRNNumber TEXT NOT NULL, OrderNumber TEXT, SupplierName TEXT, ReceivedDate TEXT, ProductCode TEXT, Description TEXT, QuantityOrdered REAL DEFAULT 0, QuantityReceived REAL DEFAULT 0, UnitCost REAL DEFAULT 0, TotalCost REAL DEFAULT 0, Status TEXT DEFAULT 'Complete', created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   ];
 
-  for (const tbl of sageTables) {
-    try { await db.prepare(tbl).run(); result.tablesCreated++; }
-    catch (err) { result.errors.push(`Sage table: ${(err as Error).message}`); }
-  }
+  result.tablesCreated += await batchOrFallback(db, sageTables, 'Sage table', result.errors);
 
   const sageIndexes = [
     'CREATE INDEX IF NOT EXISTS idx_sage_customer_tenant ON sage_customer(tenant_id)',
@@ -636,10 +656,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_sage_grn_tenant ON sage_goods_received(tenant_id)',
   ];
 
-  for (const idx of sageIndexes) {
-    try { await db.prepare(idx).run(); result.indexesCreated++; }
-    catch (err) { result.errors.push(`Sage index: ${(err as Error).message}`); }
-  }
+  result.indexesCreated += await batchOrFallback(db, sageIndexes, 'Sage index', result.errors);
 
   // ── Xero Native Tables (Xero API field names) ──
   const xeroTables = [
@@ -661,10 +678,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     `CREATE TABLE IF NOT EXISTS xero_purchase_order (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), PurchaseOrderID TEXT, PurchaseOrderNumber TEXT NOT NULL, ContactID TEXT, ContactName TEXT, Date TEXT, DeliveryDate TEXT, Reference TEXT, Status TEXT DEFAULT 'DRAFT', SubTotal REAL DEFAULT 0, TotalTax REAL DEFAULT 0, Total REAL DEFAULT 0, CurrencyCode TEXT DEFAULT 'ZAR', SentToContact INTEGER DEFAULT 0, DeliveryAddress TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   ];
 
-  for (const tbl of xeroTables) {
-    try { await db.prepare(tbl).run(); result.tablesCreated++; }
-    catch (err) { result.errors.push(`Xero table: ${(err as Error).message}`); }
-  }
+  result.tablesCreated += await batchOrFallback(db, xeroTables, 'Xero table', result.errors);
 
   const xeroIndexes = [
     'CREATE INDEX IF NOT EXISTS idx_xero_invoice_tenant ON xero_invoice(tenant_id)',
@@ -678,10 +692,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_xero_po_tenant ON xero_purchase_order(tenant_id)',
   ];
 
-  for (const idx of xeroIndexes) {
-    try { await db.prepare(idx).run(); result.indexesCreated++; }
-    catch (err) { result.errors.push(`Xero index: ${(err as Error).message}`); }
-  }
+  result.indexesCreated += await batchOrFallback(db, xeroIndexes, 'Xero index', result.errors);
 
   // ── QuickBooks Native Tables (QuickBooks Online API field names) ──
   const qbTables = [
@@ -709,10 +720,7 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     `CREATE TABLE IF NOT EXISTS qb_deposit (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), TxnDate TEXT, DepositToAccountRef_name TEXT, DepositToAccountRef_value TEXT, TotalAmt REAL DEFAULT 0, CurrencyRef TEXT DEFAULT 'ZAR', PrivateNote TEXT, CashBack_Amount REAL DEFAULT 0, Lines TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   ];
 
-  for (const tbl of qbTables) {
-    try { await db.prepare(tbl).run(); result.tablesCreated++; }
-    catch (err) { result.errors.push(`QB table: ${(err as Error).message}`); }
-  }
+  result.tablesCreated += await batchOrFallback(db, qbTables, 'QB table', result.errors);
 
   const qbIndexes = [
     'CREATE INDEX IF NOT EXISTS idx_qb_invoice_tenant ON qb_invoice(tenant_id)',
@@ -728,19 +736,9 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_qb_deposit_tenant ON qb_deposit(tenant_id)',
   ];
 
-  for (const idx of qbIndexes) {
-    try { await db.prepare(idx).run(); result.indexesCreated++; }
-    catch (err) { result.errors.push(`QB index: ${(err as Error).message}`); }
-  }
+  result.indexesCreated += await batchOrFallback(db, qbIndexes, 'QB index', result.errors);
 
-  for (const tbl of erpTables) {
-    try {
-      await db.prepare(tbl).run();
-      result.tablesCreated++;
-    } catch (err) {
-      result.errors.push(`ERP table: ${(err as Error).message}`);
-    }
-  }
+  result.tablesCreated += await batchOrFallback(db, erpTables, 'ERP table', result.errors);
 
   // ── ERP Indexes ──
   const erpIndexes = [
@@ -794,15 +792,9 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_erp_connection_config_conn ON erp_connection_config(tenant_id, connection_id, namespace)',
   ];
 
-  for (const idx of erpIndexes) {
-    try {
-      await db.prepare(idx).run();
-      result.indexesCreated++;
-    } catch (err) {
-      // Unique indexes may fail if data has duplicates — non-fatal
-      result.errors.push(`ERP index: ${(err as Error).message}`);
-    }
-  }
+  // Unique indexes may fail if data has duplicates — batchOrFallback
+  // falls back to serial mode in that case so the rest still apply.
+  result.indexesCreated += await batchOrFallback(db, erpIndexes, 'ERP index', result.errors);
 
   // ── Self-Healing Column Additions ──
   const selfHealColumns: Array<{ table: string; column: string; definition: string }> = [
@@ -1195,6 +1187,23 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     }
   } catch (err) {
     result.errors.push(`Seed ERP adapters: ${(err as Error).message}`);
+  }
+
+  // ── Record success in schema_versions ──
+  // Mark this MIGRATION_VERSION as applied so subsequent calls take the
+  // fast path (single SELECT at the top). Only set the marker when the
+  // run completed without fatal errors so a partial failure can retry.
+  if (result.errors.length === 0) {
+    try {
+      await db
+        .prepare(`INSERT OR IGNORE INTO schema_versions (version) VALUES (?)`)
+        .bind(MIGRATION_VERSION)
+        .run();
+    } catch (err) {
+      // If we can't write the marker, the migration still succeeded —
+      // the next request will replay it (cost: one slow boot).
+      result.errors.push(`Schema-version write: ${(err as Error).message}`);
+    }
   }
 
   result.durationMs = Date.now() - t0;
