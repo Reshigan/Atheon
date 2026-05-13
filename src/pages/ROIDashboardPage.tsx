@@ -108,62 +108,62 @@ export default function ROIDashboardPage(): JSX.Element {
         accent="sage"
       />
 
-      {/* Billing summary */}
+      {/* Billing summary — Stitch financial-proof tile pattern */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp size={18} />
-          <h2 className="text-lg font-semibold">Shared-savings billing</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp size={18} style={{ color: 'var(--accent)' }} />
+          <h2 className="text-headline-md font-semibold t-primary">Shared-savings billing</h2>
         </div>
         {billing ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <div className="text-xs text-muted-foreground">Periods invoiced</div>
-              <div className="text-2xl font-semibold">{billing.periods_count}</div>
+            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+              <div className="text-caption uppercase tracking-wider t-muted">Periods invoiced</div>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{billing.periods_count}</p>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Total realised savings</div>
-              <div className="text-2xl font-semibold">
+            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+              <div className="text-caption uppercase tracking-wider t-muted">Total realised savings</div>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
                 {formatCurrency(billing.total_realised_savings, billing.currency)}
-              </div>
+              </p>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Atheon share</div>
-              <div className="text-2xl font-semibold">
+            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+              <div className="text-caption uppercase tracking-wider t-muted">Atheon share</div>
+              <p className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono mt-1">
                 {formatCurrency(billing.total_atheon_revenue, billing.currency)}
-              </div>
+              </p>
             </div>
           </div>
-        ) : <div className="text-sm text-muted-foreground">No billing data yet.</div>}
+        ) : <div className="text-sm t-muted">No billing data yet.</div>}
       </Card>
 
       {/* Forecast accuracy */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Activity size={18} />
-          <h2 className="text-lg font-semibold">Forecast accuracy (last {forecast?.lookback_days ?? 90} days)</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <Activity size={18} style={{ color: 'var(--sky)' }} />
+          <h2 className="text-headline-md font-semibold t-primary">Forecast accuracy <span className="text-body-sm font-normal t-muted">(last {forecast?.lookback_days ?? 90} days)</span></h2>
         </div>
         {forecast && forecast.total_graded > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <div className="text-xs text-muted-foreground">Graded forecasts</div>
-                <div className="text-2xl font-semibold">{forecast.total_graded}</div>
+              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
+                <div className="text-caption uppercase tracking-wider t-muted">Graded forecasts</div>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{forecast.total_graded}</p>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Within band</div>
-                <div className="text-2xl font-semibold">
+              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+                <div className="text-caption uppercase tracking-wider t-muted">Within band</div>
+                <p className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono mt-1">
                   {forecast.within_band_rate != null
                     ? `${(forecast.within_band_rate * 100).toFixed(1)}%`
                     : '—'}
-                </div>
+                </p>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Median |error| %</div>
-                <div className="text-2xl font-semibold">
+              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+                <div className="text-caption uppercase tracking-wider t-muted">Median |error| %</div>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
                   {forecast.median_abs_error_pct != null
                     ? `${forecast.median_abs_error_pct.toFixed(2)}%`
                     : '—'}
-                </div>
+                </p>
               </div>
             </div>
             <table className="w-full text-sm">
