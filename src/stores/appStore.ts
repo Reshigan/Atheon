@@ -87,9 +87,14 @@ interface AppState {
   setSelectedCompanyId: (id: string | null) => void;
 }
 
-const systemPrefersDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+// Default to light mode for first-time visitors — the Stitch design system
+// is calibrated for the light surface set first. Users who explicitly toggle
+// to dark via Settings keep that choice (localStorage wins). System
+// `prefers-color-scheme: dark` is intentionally NOT respected on first visit
+// so the corporate-client landing surface looks consistent regardless of the
+// viewer's OS preference.
 const savedTheme = (typeof window !== 'undefined' ? localStorage.getItem('atheon-theme') : null) as Theme | null;
-const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+const initialTheme = savedTheme || 'light';
 // Migrate legacy accent values
 const rawAccent = typeof window !== 'undefined' ? localStorage.getItem('atheon-accent') : null;
 const legacyMap: Record<string, AccentColor> = { amber: 'indigo', teal: 'indigo', sky: 'blue', cyan: 'blue' };
