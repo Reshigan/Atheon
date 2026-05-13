@@ -87,14 +87,15 @@ interface AppState {
   setSelectedCompanyId: (id: string | null) => void;
 }
 
-// Default to light mode for first-time visitors — the Stitch design system
-// is calibrated for the light surface set first. Users who explicitly toggle
-// to dark via Settings keep that choice (localStorage wins). System
-// `prefers-color-scheme: dark` is intentionally NOT respected on first visit
-// so the corporate-client landing surface looks consistent regardless of the
-// viewer's OS preference.
+// Default to dark mode for first-time visitors — the Stitch "Athens Executive
+// Interface" design system is dark-first (sage on #06090D abyss), so dark
+// produces the highest-fidelity match for un-authed visitors.
+// Users who explicitly toggle to light via Settings keep that choice
+// (localStorage wins). Phase I previously made light the default; this
+// (Phase R) reverts after the user signalled they want the live site to
+// look like the Stitch design exactly.
 const savedTheme = (typeof window !== 'undefined' ? localStorage.getItem('atheon-theme') : null) as Theme | null;
-const initialTheme = savedTheme || 'light';
+const initialTheme = savedTheme || 'dark';
 // Migrate legacy accent values
 const rawAccent = typeof window !== 'undefined' ? localStorage.getItem('atheon-accent') : null;
 const legacyMap: Record<string, AccentColor> = { amber: 'indigo', teal: 'indigo', sky: 'blue', cyan: 'blue' };
