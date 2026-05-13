@@ -93,7 +93,9 @@ export function AppLayout() {
       <main
         className={cn(
           'pt-12 min-h-screen transition-all duration-200',
-          'pl-0 md:pl-14'
+          // Sidebar is now 240px wide (Stitch 5-section IA, Phase P).
+          // Match the offset; mobile gets no padding since the sidebar is a drawer.
+          'pl-0 md:pl-sidebar-expanded',
         )}
       >
         <div id="main-content" className="p-4 sm:p-5 lg:p-6">
