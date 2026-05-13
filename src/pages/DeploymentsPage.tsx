@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import { HeroHeader } from '@/components/ui/hero-header';
+import { Server } from 'lucide-react';
 import type {
   ManagedDeployment, CreateDeploymentRequest, CreateDeploymentResponse, AgentErrorLog
 } from '@/lib/api';
@@ -97,11 +99,13 @@ export function DeploymentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Deployments</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Hybrid & On-Premise deployment management</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <HeroHeader
+          icon={Server}
+          title="Deployments"
+          subtitle="Hybrid & On-Premise Deployment Management"
+          accent="bronze"
+        />
         <div className="flex gap-2">
           {view !== 'overview' && (
             <button

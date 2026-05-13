@@ -159,7 +159,7 @@ export function TenantLlmBudgetPage() {
           <ArrowLeft size={16} className="mr-2" />
           Back to Tenants
         </Button>
-        <h1 className="text-2xl font-bold text-white">LLM Budget</h1>
+        <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">LLM Budget</h1>
       </div>
 
       {tenantMeta && (
@@ -204,14 +204,14 @@ export function TenantLlmBudgetPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
                   <div className="text-xs text-gray-400 mb-1">Tokens used this month</div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-headline-xl font-bold t-primary tracking-tight leading-tight">
                     {budget.tokensUsedThisMonth.toLocaleString()}
                   </div>
                 </div>
 
                 <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
                   <div className="text-xs text-gray-400 mb-1">Monthly budget</div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-headline-xl font-bold t-primary tracking-tight leading-tight">
                     {budget.monthlyTokenBudget === null
                       ? <span className="text-emerald-400">Unlimited</span>
                       : budget.monthlyTokenBudget.toLocaleString()}

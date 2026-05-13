@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -264,15 +265,12 @@ export function ControlPlanePage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
-            <Cpu className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold t-primary">Agent Control Plane</h1>
-            <p className="text-sm t-muted">Deploy, scale, and monitor Catalyst agents per tenant</p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={Cpu}
+          title="Agent Control Plane"
+          subtitle="Deploy, scale & monitor Catalyst agents per tenant"
+          accent="bronze"
+        />
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"

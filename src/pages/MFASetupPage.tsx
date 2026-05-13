@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { Shield, Loader2, RefreshCw, XCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAppStore } from '@/stores/appStore';
@@ -123,13 +124,12 @@ export function MFASetupPage() {
         >
           <ArrowLeft size={14} />
         </button>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-subtle)' }}>
-          <Shield className="w-5 h-5 text-accent" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold t-primary">Two-Factor Authentication</h1>
-          <p className="text-sm t-muted">Manage MFA and recovery codes for your account</p>
-        </div>
+        <HeroHeader
+          icon={Shield}
+          title="Two-Factor Authentication"
+          subtitle="Manage MFA & recovery codes for your account"
+          accent="sage"
+        />
       </div>
 
       {mfaEnforcementWarning && !status?.enabled && (

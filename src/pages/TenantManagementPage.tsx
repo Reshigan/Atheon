@@ -230,7 +230,7 @@ export function TenantManagementPage() {
             <ArrowLeft size={16} className="mr-2" />
             Back to List
           </Button>
-          <h1 className="text-2xl font-bold text-white">Tenant Details</h1>
+          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Tenant Details</h1>
         </div>
 
         {actionLoading === selectedTenant.id && (
@@ -246,7 +246,7 @@ export function TenantManagementPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-2xl font-bold text-white">{selectedTenant.name}</h2>
+                  <h2 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{selectedTenant.name}</h2>
                   <Badge variant={selectedTenant.is_deleted ? 'default' : 'info'}>
                     {selectedTenant.is_deleted ? 'Deleted' : 'Active'}
                   </Badge>
@@ -339,7 +339,7 @@ export function TenantManagementPage() {
                     <Icon size={16} className="text-gray-400" />
                     <span className="text-xs text-gray-400">{label}</span>
                   </div>
-                  <p className="text-2xl font-bold text-white">{value.toLocaleString()}</p>
+                  <p className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{value.toLocaleString()}</p>
                 </div>
               ))}
             </div>
@@ -435,7 +435,7 @@ export function TenantManagementPage() {
               <Building2 size={16} className="text-gray-400" />
               <span className="text-xs text-gray-400">Total</span>
             </div>
-            <p className="text-2xl font-bold text-white">{stats.total}</p>
+            <p className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{stats.total}</p>
           </div>
         </Card>
         <Card>

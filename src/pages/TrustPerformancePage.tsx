@@ -111,7 +111,7 @@ export function TrustPerformancePage(): JSX.Element {
     <div className="p-6 max-w-7xl mx-auto space-y-6" data-testid="trust-performance-page">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold t-primary mb-1">Trust &amp; Performance</h1>
+          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight mb-1">Trust &amp; Performance</h1>
           <p className="text-sm t-muted max-w-3xl">
             Three independent claims, three live verifications: predictions calibrated against
             real outcomes, AI decisions cryptographically chained and auditable, and
