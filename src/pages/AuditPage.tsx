@@ -9,6 +9,7 @@ import { LoadingState } from "@/components/ui/state";
 import { useToast } from "@/components/ui/toast";
 import { ProvenanceVerifyPanel } from "@/components/ProvenanceVerifyPanel";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { ProvenanceTimeline } from "@/components/audit/ProvenanceTimeline";
 
 export function AuditPage() {
  const toast = useToast();
@@ -20,6 +21,8 @@ export function AuditPage() {
  // Phase 4.6: Date range filter
  const [dateFrom, setDateFrom] = useState<string>('');
  const [dateTo, setDateTo] = useState<string>('');
+ // Phase Z: Provenance timeline view (Stitch default) ↔ classic table view.
+ const [viewMode, setViewMode] = useState<'timeline' | 'table'>('timeline');
 
  useEffect(() => {
  async function load() {
@@ -206,15 +209,40 @@ export function AuditPage() {
  </Card>
  </div>
 
- {/* Audit Table */}
- <Card>
+ {/* View-mode toggle — Stitch timeline is default; classic table is still
+     accessible for ops who prefer dense rows. */}
+ {entries.length > 0 && filteredEntries.length > 0 && (
+ <div className="flex items-center justify-end">
+ <div className="inline-flex rounded-lg p-0.5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+ {(['timeline', 'table'] as const).map((m) => (
+ <button
+ key={m}
+ type="button"
+ onClick={() => setViewMode(m)}
+ className={`px-3 py-1 rounded-md text-caption font-medium transition-colors ${
+ viewMode === m ? 't-primary' : 't-muted hover:t-primary'
+ }`}
+ style={viewMode === m ? { background: 'var(--bg-card-solid)' } : undefined}
+ aria-pressed={viewMode === m}
+ >
+ {m === 'timeline' ? 'Timeline' : 'Table'}
+ </button>
+ ))}
+ </div>
+ </div>
+ )}
+
+ {/* Audit ledger */}
  {entries.length === 0 ? (
+ <Card>
  <div className="flex flex-col items-center justify-center py-16">
  <Shield className="w-10 h-10 t-muted mb-3 opacity-40" />
  <p className="text-sm font-medium t-primary">No audit entries found</p>
  <p className="text-xs t-muted mt-1">Audit events will appear here as actions are performed across Atheon.</p>
  </div>
+ </Card>
  ) : filteredEntries.length === 0 ? (
+ <Card>
  <div className="flex flex-col items-center justify-center py-16">
  <Filter className="w-10 h-10 t-muted mb-3 opacity-40" />
  <p className="text-sm font-medium t-primary">No entries match the current filters</p>
@@ -223,7 +251,11 @@ export function AuditPage() {
  <button onClick={() => { setFilterLayer(''); setFilterOutcome(''); setDateFrom(''); setDateTo(''); }} className="mt-3 text-xs text-accent hover:underline" title="Reset all filters">Clear filters</button>
  )}
  </div>
+ </Card>
+ ) : viewMode === 'timeline' ? (
+ <ProvenanceTimeline entries={filteredEntries} />
  ) : (
+ <Card>
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
  <thead>
@@ -277,8 +309,8 @@ export function AuditPage() {
  </tbody>
  </table>
  </div>
- )}
  </Card>
+ )}
  </div>
  );
 }
