@@ -1,4 +1,5 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyWithRetry } from "@/lib/lazy-with-retry";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -22,51 +23,51 @@ import type { UserRole } from "@/types";
 // dependencies (heavy chart / table libs) blow up the main chunk if loaded
 // up-front. The named-to-default adapter is needed because most pages use
 // named exports.
-const ApexPage = lazy(() => import("@/pages/ApexPage").then(m => ({ default: m.ApexPage })));
-const ROIDashboardPage = lazy(() => import("@/pages/ROIDashboardPage"));
+const ApexPage = lazyWithRetry(() => import("@/pages/ApexPage").then(m => ({ default: m.ApexPage })));
+const ROIDashboardPage = lazyWithRetry(() => import("@/pages/ROIDashboardPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
-const PulsePage = lazy(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
-const CatalystsPage = lazy(() => import("@/pages/CatalystsPage").then(m => ({ default: m.CatalystsPage })));
-const CatalystRunDetailPage = lazy(() => import("@/pages/CatalystRunDetailPage").then(m => ({ default: m.CatalystRunDetailPage })));
-const MindPage = lazy(() => import("@/pages/MindPage").then(m => ({ default: m.MindPage })));
-const MemoryPage = lazy(() => import("@/pages/MemoryPage").then(m => ({ default: m.MemoryPage })));
-const ChatPage = lazy(() => import("@/pages/ChatPage").then(m => ({ default: m.ChatPage })));
-const ConnectivityPage = lazy(() => import("@/pages/ConnectivityPage").then(m => ({ default: m.ConnectivityPage })));
+const PulsePage = lazyWithRetry(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
+const CatalystsPage = lazyWithRetry(() => import("@/pages/CatalystsPage").then(m => ({ default: m.CatalystsPage })));
+const CatalystRunDetailPage = lazyWithRetry(() => import("@/pages/CatalystRunDetailPage").then(m => ({ default: m.CatalystRunDetailPage })));
+const MindPage = lazyWithRetry(() => import("@/pages/MindPage").then(m => ({ default: m.MindPage })));
+const MemoryPage = lazyWithRetry(() => import("@/pages/MemoryPage").then(m => ({ default: m.MemoryPage })));
+const ChatPage = lazyWithRetry(() => import("@/pages/ChatPage").then(m => ({ default: m.ChatPage })));
+const ConnectivityPage = lazyWithRetry(() => import("@/pages/ConnectivityPage").then(m => ({ default: m.ConnectivityPage })));
 // AuditPage no longer lazy-loaded here — CompliancePage imports it directly
 // and renders it inside the "Audit Log" tab (May 2026 merge).
-const TenantsPage = lazy(() => import("@/pages/TenantsPage").then(m => ({ default: m.TenantsPage })));
-const IAMPage = lazy(() => import("@/pages/IAMPage").then(m => ({ default: m.IAMPage })));
-const ControlPlanePage = lazy(() => import("@/pages/ControlPlanePage").then(m => ({ default: m.ControlPlanePage })));
-const IntegrationsPage = lazy(() => import("@/pages/IntegrationsPage").then(m => ({ default: m.IntegrationsPage })));
-const ActionLayerPage = lazy(() => import("@/pages/ActionLayerPage").then(m => ({ default: m.ActionLayerPage })));
-const AccessStatePage = lazy(() => import("@/pages/AccessStatePage").then(m => ({ default: m.AccessStatePage })));
-const DeploymentsPage = lazy(() => import("@/pages/DeploymentsPage").then(m => ({ default: m.DeploymentsPage })));
-const AssessmentsPage = lazy(() => import("@/pages/AssessmentsPage").then(m => ({ default: m.AssessmentsPage })));
-const TenantManagementPage = lazy(() => import("@/pages/TenantManagementPage").then(m => ({ default: m.TenantManagementPage })));
-const TenantLlmBudgetPage = lazy(() => import("@/pages/admin/TenantLlmBudgetPage").then(m => ({ default: m.TenantLlmBudgetPage })));
-const ExecutiveSummaryPage = lazy(() => import("@/pages/ExecutiveSummaryPage").then(m => ({ default: m.ExecutiveSummaryPage })));
-const PlatformHealthPage = lazy(() => import("@/pages/PlatformHealthPage").then(m => ({ default: m.PlatformHealthPage })));
-const SupportConsolePage = lazy(() => import("@/pages/SupportConsolePage").then(m => ({ default: m.SupportConsolePage })));
+const TenantsPage = lazyWithRetry(() => import("@/pages/TenantsPage").then(m => ({ default: m.TenantsPage })));
+const IAMPage = lazyWithRetry(() => import("@/pages/IAMPage").then(m => ({ default: m.IAMPage })));
+const ControlPlanePage = lazyWithRetry(() => import("@/pages/ControlPlanePage").then(m => ({ default: m.ControlPlanePage })));
+const IntegrationsPage = lazyWithRetry(() => import("@/pages/IntegrationsPage").then(m => ({ default: m.IntegrationsPage })));
+const ActionLayerPage = lazyWithRetry(() => import("@/pages/ActionLayerPage").then(m => ({ default: m.ActionLayerPage })));
+const AccessStatePage = lazyWithRetry(() => import("@/pages/AccessStatePage").then(m => ({ default: m.AccessStatePage })));
+const DeploymentsPage = lazyWithRetry(() => import("@/pages/DeploymentsPage").then(m => ({ default: m.DeploymentsPage })));
+const AssessmentsPage = lazyWithRetry(() => import("@/pages/AssessmentsPage").then(m => ({ default: m.AssessmentsPage })));
+const TenantManagementPage = lazyWithRetry(() => import("@/pages/TenantManagementPage").then(m => ({ default: m.TenantManagementPage })));
+const TenantLlmBudgetPage = lazyWithRetry(() => import("@/pages/admin/TenantLlmBudgetPage").then(m => ({ default: m.TenantLlmBudgetPage })));
+const ExecutiveSummaryPage = lazyWithRetry(() => import("@/pages/ExecutiveSummaryPage").then(m => ({ default: m.ExecutiveSummaryPage })));
+const PlatformHealthPage = lazyWithRetry(() => import("@/pages/PlatformHealthPage").then(m => ({ default: m.PlatformHealthPage })));
+const SupportConsolePage = lazyWithRetry(() => import("@/pages/SupportConsolePage").then(m => ({ default: m.SupportConsolePage })));
 // CompanyHealthPage no longer lazy-loaded here — PlatformHealthPage imports
 // it directly and conditionally renders it based on role (May 2026 merge).
-const ImpersonationPage = lazy(() => import("@/pages/ImpersonationPage").then(m => ({ default: m.ImpersonationPage })));
-const BulkUserManagementPage = lazy(() => import("@/pages/BulkUserManagementPage").then(m => ({ default: m.BulkUserManagementPage })));
-const CustomRoleBuilderPage = lazy(() => import("@/pages/CustomRoleBuilderPage").then(m => ({ default: m.CustomRoleBuilderPage })));
-const RevenueUsagePage = lazy(() => import("@/pages/RevenueUsagePage").then(m => ({ default: m.RevenueUsagePage })));
-const FeatureFlagsPage = lazy(() => import("@/pages/FeatureFlagsPage").then(m => ({ default: m.FeatureFlagsPage })));
+const ImpersonationPage = lazyWithRetry(() => import("@/pages/ImpersonationPage").then(m => ({ default: m.ImpersonationPage })));
+const BulkUserManagementPage = lazyWithRetry(() => import("@/pages/BulkUserManagementPage").then(m => ({ default: m.BulkUserManagementPage })));
+const CustomRoleBuilderPage = lazyWithRetry(() => import("@/pages/CustomRoleBuilderPage").then(m => ({ default: m.CustomRoleBuilderPage })));
+const RevenueUsagePage = lazyWithRetry(() => import("@/pages/RevenueUsagePage").then(m => ({ default: m.RevenueUsagePage })));
+const FeatureFlagsPage = lazyWithRetry(() => import("@/pages/FeatureFlagsPage").then(m => ({ default: m.FeatureFlagsPage })));
 // DataGovernancePage no longer lazy-loaded here — CompliancePage imports it
 // directly and renders it inside the "Governance" tab (May 2026 merge).
-const IntegrationHealthPage = lazy(() => import("@/pages/IntegrationHealthPage").then(m => ({ default: m.IntegrationHealthPage })));
-const SystemAlertsPage = lazy(() => import("@/pages/SystemAlertsPage").then(m => ({ default: m.SystemAlertsPage })));
-const WebhooksPage = lazy(() => import("@/pages/WebhooksPage").then(m => ({ default: m.WebhooksPage })));
-const SupportPage = lazy(() => import("@/pages/SupportPage").then(m => ({ default: m.SupportPage })));
-const SupportTicketDetailPage = lazy(() => import("@/pages/SupportTicketDetailPage").then(m => ({ default: m.SupportTicketDetailPage })));
-const SupportTriagePage = lazy(() => import("@/pages/admin/SupportTriagePage").then(m => ({ default: m.SupportTriagePage })));
-const TrustPerformancePage = lazy(() => import("@/pages/TrustPerformancePage"));
-const OnboardingWizardPage = lazy(() => import("@/pages/OnboardingWizardPage"));
-const PricingPage = lazy(() => import("@/pages/PricingPage"));
-const CompliancePage = lazy(() => import("@/pages/CompliancePage"));
+const IntegrationHealthPage = lazyWithRetry(() => import("@/pages/IntegrationHealthPage").then(m => ({ default: m.IntegrationHealthPage })));
+const SystemAlertsPage = lazyWithRetry(() => import("@/pages/SystemAlertsPage").then(m => ({ default: m.SystemAlertsPage })));
+const WebhooksPage = lazyWithRetry(() => import("@/pages/WebhooksPage").then(m => ({ default: m.WebhooksPage })));
+const SupportPage = lazyWithRetry(() => import("@/pages/SupportPage").then(m => ({ default: m.SupportPage })));
+const SupportTicketDetailPage = lazyWithRetry(() => import("@/pages/SupportTicketDetailPage").then(m => ({ default: m.SupportTicketDetailPage })));
+const SupportTriagePage = lazyWithRetry(() => import("@/pages/admin/SupportTriagePage").then(m => ({ default: m.SupportTriagePage })));
+const TrustPerformancePage = lazyWithRetry(() => import("@/pages/TrustPerformancePage"));
+const OnboardingWizardPage = lazyWithRetry(() => import("@/pages/OnboardingWizardPage"));
+const PricingPage = lazyWithRetry(() => import("@/pages/PricingPage"));
+const CompliancePage = lazyWithRetry(() => import("@/pages/CompliancePage"));
 
 /**
  * 3.10: Role-based frontend route protection
