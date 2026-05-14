@@ -101,22 +101,31 @@ jobs:
 
       - name: Deploy to Cloudflare Pages (with retry)
         run: |
+          # Cloudflare Pages' API has rejected commit messages containing
+          # certain UTF-8 sequences (rightwards-arrow U+2192, em-dash U+2014)
+          # with "Invalid commit message, it must be a valid UTF-8 string."
+          # We strip the body and pass only the ASCII subject + short SHA so
+          # the deploy succeeds regardless of what was in the merge commit.
+          SUBJECT=$(git log -1 --pretty=%s | tr -cd '[:print:][:space:]' | cut -c 1-120)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG="$SUBJECT ($SHORT_SHA)"
+          echo "Deploy commit message: $COMMIT_MSG"
           MAX_ATTEMPTS=3
           for ATTEMPT in $(seq 1 $MAX_ATTEMPTS); do
             echo "::group::Deploy attempt $ATTEMPT of $MAX_ATTEMPTS"
-            if npx wrangler pages deploy dist --project-name=atheon --branch=main 2>&1; then
+            if npx wrangler pages deploy dist --project-name=atheon --branch=main --commit-message="$COMMIT_MSG" --commit-hash="$SHORT_SHA" 2>&1; then
               echo "::endgroup::"
-              echo "✓ Production deploy succeeded on attempt $ATTEMPT"
+              echo "Production deploy succeeded on attempt $ATTEMPT"
               exit 0
             fi
             echo "::endgroup::"
             if [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; then
               WAIT=$((ATTEMPT * 10))
-              echo "⚠ Deploy failed, retrying in ${WAIT}s..."
+              echo "Deploy failed, retrying in ${WAIT}s..."
               sleep $WAIT
             fi
           done
-          echo "✗ Deploy failed after $MAX_ATTEMPTS attempts"
+          echo "Deploy failed after $MAX_ATTEMPTS attempts"
           exit 1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -155,12 +164,17 @@ jobs:
 
       - name: Deploy Preview to Cloudflare Pages
         run: |
+          # Sanitise commit subject to ASCII so the Cloudflare Pages API
+          # doesn't reject the deploy on UTF-8 commit metadata (Phase W fix).
+          SUBJECT=$(git log -1 --pretty=%s | tr -cd '[:print:][:space:]' | cut -c 1-120)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG="$SUBJECT ($SHORT_SHA)"
           MAX_ATTEMPTS=3
           for ATTEMPT in $(seq 1 $MAX_ATTEMPTS); do
             echo "::group::Preview deploy attempt $ATTEMPT of $MAX_ATTEMPTS"
-            if npx wrangler pages deploy dist --project-name=atheon --branch="$BRANCH_NAME" 2>&1; then
+            if npx wrangler pages deploy dist --project-name=atheon --branch="$BRANCH_NAME" --commit-message="$COMMIT_MSG" --commit-hash="$SHORT_SHA" 2>&1; then
               echo "::endgroup::"
-              echo "✓ Preview deploy succeeded on attempt $ATTEMPT"
+              echo "Preview deploy succeeded on attempt $ATTEMPT"
               exit 0
             fi
             echo "::endgroup::"
