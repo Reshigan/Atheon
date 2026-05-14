@@ -11,6 +11,7 @@ import { ActionQueueWidget } from "@/components/layout/ActionQueueWidget";
 import { CalibrationChip } from "@/components/layout/CalibrationChip";
 import { PlatformTotalsChip } from "@/components/layout/PlatformTotalsChip";
 import { ModuleSwitcher } from "@/components/layout/ModuleSwitcher";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 
 const PLATFORM_ADMIN_ROLES = ['superadmin', 'support_admin', 'admin'];
 
@@ -303,6 +304,9 @@ export function Header() {
 
         {/* Intelligence-module quick switch (Stitch top bar pattern) */}
         <ModuleSwitcher />
+
+        {/* Global route search (Stitch top bar pattern; Cmd/Ctrl+K to focus) */}
+        <GlobalSearch />
 
         {/* §9.3 Global freshness indicator */}
         <FreshnessDot />
