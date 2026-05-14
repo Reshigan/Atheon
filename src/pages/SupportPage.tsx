@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import type { SupportTicket, SupportTicketCategory, SupportTicketPriority } from '@/lib/api';
@@ -124,18 +125,12 @@ export function SupportPage() {
   return (
     <div className="p-5 max-w-5xl mx-auto space-y-5">
       <header className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-               style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
-            <LifeBuoy size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold t-primary">Support</h1>
-            <p className="text-xs t-muted mt-0.5">
-              File a ticket and track our response. For urgent outages, escalate via your CSM.
-            </p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={LifeBuoy}
+          title="Support"
+          subtitle="File a ticket and track our response. For urgent outages, escalate via your CSM."
+          accent="sage"
+        />
         <Button
           variant="primary"
           size="md"

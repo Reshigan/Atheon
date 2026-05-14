@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { api, ApiError } from '@/lib/api';
 import type { RevenueUsageResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -90,15 +91,12 @@ export function RevenueUsagePage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold t-primary">Revenue & Usage</h1>
-            <p className="text-xs t-muted">Platform-wide metrics, plan distribution, and LLM usage</p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={DollarSign}
+          title="Revenue & Usage"
+          subtitle="Platform-wide metrics, plan distribution & LLM usage"
+          accent="sage"
+        />
         <button
           onClick={handleRefresh}
           disabled={refreshing}

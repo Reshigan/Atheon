@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HeroHeader } from '@/components/ui/hero-header';
 import { LoadingState, EmptyState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
@@ -215,15 +216,12 @@ export function FeatureFlagsPage() {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Flag className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold t-primary">Feature Flags</h1>
-            <p className="text-xs t-muted">Control feature rollout across tenants</p>
-          </div>
-        </div>
+        <HeroHeader
+          icon={Flag}
+          title="Feature Flags"
+          subtitle="Control feature rollout across tenants"
+          accent="amber"
+        />
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setShowEvaluator(true)}>
             <FlaskConical size={14} className="mr-1" /> Evaluate as Tenant
