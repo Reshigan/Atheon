@@ -728,11 +728,11 @@ export function ApexPage() {
      <p className="text-caption t-muted mt-1 text-center">Health</p>
     </Card>
     <Card className="flex flex-col items-center justify-center py-3 px-2">
-     <p className="text-2xl font-bold text-red-400">{risks.length}</p>
+     <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{risks.length}</p>
      <p className="text-caption t-muted text-center">Risks</p>
     </Card>
     <Card className="flex flex-col items-center justify-center py-3 px-2">
-     <p className="text-2xl font-bold text-amber-400">{dimensions.filter(d => d.score < 60).length}</p>
+     <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{dimensions.filter(d => d.score < 60).length}</p>
      <p className="text-caption t-muted text-center">Critical</p>
     </Card>
    </div>
@@ -1631,9 +1631,9 @@ export function ApexPage() {
     <div className="space-y-4">
      {/* Summary Cards */}
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Card><div className="text-center"><p className="text-2xl font-bold t-primary">{radarContext.summary.totalSignals}</p><p className="text-label">Total Signals</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{radarContext.summary.activeSignals}</p><p className="text-label">Active Signals</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{radarContext.summary.criticalImpacts}</p><p className="text-label">Critical Impacts</p></div></Card>
+      <Card><div className="text-center"><p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{radarContext.summary.totalSignals}</p><p className="text-label">Total Signals</p></div></Card>
+      <Card><div className="text-center"><p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{radarContext.summary.activeSignals}</p><p className="text-label">Active Signals</p></div></Card>
+      <Card><div className="text-center"><p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{radarContext.summary.criticalImpacts}</p><p className="text-label">Critical Impacts</p></div></Card>
       <Card><div className="text-center"><p className="text-2xl font-bold text-purple-400 capitalize">{radarContext.summary.overallSentiment}</p><p className="text-label">Sentiment</p></div></Card>
      </div>
 

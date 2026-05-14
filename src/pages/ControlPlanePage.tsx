@@ -500,22 +500,22 @@ export function ControlPlanePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs t-secondary">Total Deployments</span>
-          <p className="text-2xl font-bold t-primary mt-1">{deployments.length}</p>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{deployments.length}</p>
           <span className="text-xs text-emerald-400">{computed.running} running</span>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Total Replicas</span>
-          <p className="text-2xl font-bold t-primary mt-1">{computed.totalReplicas}</p>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{computed.totalReplicas}</p>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Avg Uptime</span>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">
+          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono mt-1">
             {computed.avgUptime.toFixed(2)}%
           </p>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Avg Health</span>
-          <p className="text-2xl font-bold t-primary mt-1">
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
             {Math.round(computed.avgHealth)}%
           </p>
         </Card>

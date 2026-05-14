@@ -63,7 +63,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
       const d = data as HealthDimensionTraceResponse;
       return (
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold t-primary">{d.score !== null ? `${d.score}/100` : 'N/A'}</span>
+          <span className="text-headline-lg font-bold t-primary tabular-nums font-mono">{d.score !== null ? `${d.score}/100` : 'N/A'}</span>
           {d.trend === 'improving' ? <TrendingUp size={16} className="text-emerald-400" /> :
            d.trend === 'declining' ? <TrendingDown size={16} className="text-red-400" /> :
            <Minus size={16} className="text-gray-400" />}

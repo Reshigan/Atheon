@@ -1675,7 +1675,7 @@ export function PulsePage() {
                   <span className="text-label">Correlations</span>
                   <Link2 size={14} className="text-accent" />
                 </div>
-                <p className="text-2xl font-bold t-primary">{correlations.length}</p>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{correlations.length}</p>
                 <p className="text-caption t-muted mt-1">Discovered patterns</p>
               </Card>
               <Card>
@@ -1693,7 +1693,7 @@ export function PulsePage() {
                   <span className="text-label">Unique Systems</span>
                   <Workflow size={14} className="text-blue-400" />
                 </div>
-                <p className="text-2xl font-bold t-primary">
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">
                   {new Set([...correlations.map(c => c.sourceSystem), ...correlations.map(c => c.targetSystem)]).size}
                 </p>
                 <p className="text-caption t-muted mt-1">Connected sources</p>
@@ -1703,7 +1703,7 @@ export function PulsePage() {
                   <span className="text-label">Avg Lag</span>
                   <Clock size={14} className="text-gray-400" />
                 </div>
-                <p className="text-2xl font-bold t-primary">{Math.round(correlations.reduce((s, c) => s + c.lagDays, 0) / correlations.length)}d</p>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{Math.round(correlations.reduce((s, c) => s + c.lagDays, 0) / correlations.length)}d</p>
                 <p className="text-caption t-muted mt-1">Between events</p>
               </Card>
             </div>
@@ -1878,7 +1878,7 @@ export function PulsePage() {
                     <Play className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold t-primary">{catalystSummary.reduce((s, c) => s + (c.totalRuns as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.totalRuns as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Total Runs</p>
                   </div>
                 </div>
@@ -1889,7 +1889,7 @@ export function PulsePage() {
                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-emerald-400">{catalystSummary.reduce((s, c) => s + (c.completed as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.completed as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Completed</p>
                   </div>
                 </div>
@@ -1900,7 +1900,7 @@ export function PulsePage() {
                     <FileWarning className="w-5 h-5 text-red-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-red-400">{catalystSummary.reduce((s, c) => s + (c.exceptions as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.exceptions as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Exceptions</p>
                   </div>
                 </div>
@@ -1911,7 +1911,7 @@ export function PulsePage() {
                     <UserCheck className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-amber-400">{catalystSummary.reduce((s, c) => s + (c.pending as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.pending as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Pending Review</p>
                   </div>
                 </div>
@@ -2266,11 +2266,11 @@ export function PulsePage() {
             <div className="space-y-4">
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <Card><div className="text-center"><p className="text-2xl font-bold t-primary">{diagSummary.totalAnalyses}</p><p className="text-label">Total Analyses</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{diagSummary.pendingAnalyses}</p><p className="text-label">Pending</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-emerald-400">{diagSummary.completedAnalyses}</p><p className="text-label">Completed</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{diagSummary.undiagnosedMetrics}</p><p className="text-label">Undiagnosed</p></div></Card>
-                <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{diagSummary.criticalFindings}</p><p className="text-label">Critical Findings</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{diagSummary.totalAnalyses}</p><p className="text-label">Total Analyses</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{diagSummary.pendingAnalyses}</p><p className="text-label">Pending</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{diagSummary.completedAnalyses}</p><p className="text-label">Completed</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{diagSummary.undiagnosedMetrics}</p><p className="text-label">Undiagnosed</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{diagSummary.criticalFindings}</p><p className="text-label">Critical Findings</p></div></Card>
                 <Card><div className="text-center"><p className="text-2xl font-bold text-accent">{diagSummary.activeFixes}</p><p className="text-label">Active Fixes</p></div></Card>
               </div>
 

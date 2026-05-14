@@ -221,7 +221,7 @@ export function CompanyHealthPage() {
               <Zap size={14} className="text-accent" />
               <span className="text-sm font-medium t-primary">Catalyst Clusters</span>
             </div>
-            <p className="text-2xl font-bold t-primary">{data.catalysts.clusters}</p>
+            <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{data.catalysts.clusters}</p>
             <p className="text-xs t-muted mt-1">Configured clusters</p>
           </Card>
           <Card className="p-4">
@@ -229,7 +229,7 @@ export function CompanyHealthPage() {
               <Activity size={14} className="text-accent" />
               <span className="text-sm font-medium t-primary">Recent Activity</span>
             </div>
-            <p className="text-2xl font-bold t-primary">{data.catalysts.actionsLast30d.toLocaleString()}</p>
+            <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{data.catalysts.actionsLast30d.toLocaleString()}</p>
             <p className="text-xs t-muted mt-1 flex items-center gap-1">
               <Clock size={10} /> Actions in last 30 days
             </p>
@@ -246,14 +246,14 @@ export function CompanyHealthPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-label">Total Tokens</p>
-              <p className="text-2xl font-bold t-primary">{data.llm.tokens30d.toLocaleString()}</p>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{data.llm.tokens30d.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-label flex items-center gap-1">
                 Estimated Cost
                 {data.llm.costIsEstimate && <Badge variant="warning" className="text-caption">ESTIMATE</Badge>}
               </p>
-              <p className="text-2xl font-bold t-primary">${data.llm.estCostUsd.toFixed(2)}</p>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">${data.llm.estCostUsd.toFixed(2)}</p>
             </div>
           </div>
           {data.llm.costIsEstimate && (

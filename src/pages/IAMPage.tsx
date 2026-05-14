@@ -366,22 +366,22 @@ export function IAMPage() {
      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
        <Card>
          <span className="text-xs t-secondary">Active Users</span>
-         <p className="text-2xl font-bold t-primary mt-1">{users.filter(u => u.status === 'active').length}</p>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{users.filter(u => u.status === 'active').length}</p>
          <span className="text-caption t-muted">{users.filter(u => u.status === 'suspended').length} suspended</span>
        </Card>
        <Card>
          <span className="text-xs t-secondary">User Roles</span>
-         <p className="text-2xl font-bold t-primary mt-1">{roles.filter(r => r.userCount > 0).length}</p>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{roles.filter(r => r.userCount > 0).length}</p>
          <span className="text-caption t-muted">{roles.length} total defined</span>
        </Card>
        <Card>
          <span className="text-xs t-secondary">Active Policies</span>
-         <p className="text-2xl font-bold t-primary mt-1">{policies.length}</p>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{policies.length}</p>
          <span className="text-caption t-muted">{policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0)} rules</span>
        </Card>
        <Card>
          <span className="text-xs t-secondary">SSO Providers</span>
-         <p className="text-2xl font-bold t-primary mt-1">{ssoConfigs.filter(s => s.enabled).length}</p>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{ssoConfigs.filter(s => s.enabled).length}</p>
          <span className="text-caption t-muted">{ssoConfigs.length} configured</span>
        </Card>
      </div>

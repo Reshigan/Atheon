@@ -444,7 +444,7 @@ export function TenantManagementPage() {
               <CheckCircle size={16} className="text-emerald-400" />
               <span className="text-xs text-gray-400">Active</span>
             </div>
-            <p className="text-2xl font-bold text-emerald-400">{stats.active}</p>
+            <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{stats.active}</p>
           </div>
         </Card>
         <Card>
@@ -453,7 +453,7 @@ export function TenantManagementPage() {
               <XCircle size={16} className="text-red-400" />
               <span className="text-xs text-gray-400">Deleted</span>
             </div>
-            <p className="text-2xl font-bold text-red-400">{stats.deleted}</p>
+            <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{stats.deleted}</p>
           </div>
         </Card>
         <Card>
@@ -462,7 +462,7 @@ export function TenantManagementPage() {
               <Activity size={16} className="text-blue-400" />
               <span className="text-xs text-gray-400">Total Runs</span>
             </div>
-            <p className="text-2xl font-bold text-blue-400">{stats.totalRuns.toLocaleString()}</p>
+            <p className="text-headline-lg font-bold text-blue-400 tabular-nums font-mono">{stats.totalRuns.toLocaleString()}</p>
           </div>
         </Card>
         <Card>
@@ -471,7 +471,7 @@ export function TenantManagementPage() {
               <Users size={16} className="text-purple-400" />
               <span className="text-xs text-gray-400">Total Users</span>
             </div>
-            <p className="text-2xl font-bold text-purple-400">{stats.totalUsers.toLocaleString()}</p>
+            <p className="text-headline-lg font-bold text-purple-400 tabular-nums font-mono">{stats.totalUsers.toLocaleString()}</p>
           </div>
         </Card>
       </div>
