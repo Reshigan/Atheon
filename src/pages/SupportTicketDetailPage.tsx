@@ -147,7 +147,7 @@ export function SupportTicketDetailPage() {
       <Card>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold t-primary">{ticket.subject}</h1>
+            <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{ticket.subject}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <Badge variant={STATUS_VARIANT[ticket.status] ?? 'default'}>{ticket.status.replace('_', ' ')}</Badge>
               <Badge variant={PRIORITY_VARIANT[ticket.priority] ?? 'default'}>{ticket.priority}</Badge>
