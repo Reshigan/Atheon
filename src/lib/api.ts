@@ -3,8 +3,24 @@ import { generateRequestId } from './request-id';
 
 export const API_URL = import.meta.env.VITE_API_URL || 'https://atheon-api.vantax.co.za';
 
-let authToken: string | null = localStorage.getItem('atheon_token');
-let refreshToken: string | null = localStorage.getItem('atheon_refresh_token');
+// "Remember me" semantics:
+//   - true  → token persisted in localStorage (survives tab close + browser restart)
+//   - false → token persisted in sessionStorage (cleared when the tab closes)
+// On app load we check sessionStorage FIRST so a non-remember-me session in
+// one tab doesn't get clobbered by a remember-me token in another. The
+// preference itself is stored under `atheon_remember_me` (boolean) so
+// setToken() can re-apply the same scope on a refresh.
+const REMEMBER_ME_KEY = 'atheon_remember_me';
+function readToken(name: string): string | null {
+  // sessionStorage wins (current tab's choice); fall back to localStorage.
+  return sessionStorage.getItem(name) ?? localStorage.getItem(name);
+}
+function rememberMeEnabled(): boolean {
+  // Default to true for backwards compatibility — pre-Phase X behaviour.
+  return localStorage.getItem(REMEMBER_ME_KEY) !== 'false';
+}
+let authToken: string | null = readToken('atheon_token');
+let refreshToken: string | null = readToken('atheon_refresh_token');
 let tenantOverrideId: string | null = localStorage.getItem('atheon_tenant_override');
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
@@ -49,20 +65,37 @@ export class ApiError extends Error {
   }
 }
 
+export function setRememberMe(persistent: boolean) {
+  // Caller decides whether the active session should survive a browser close.
+  // `false` keeps the token in sessionStorage only; `true` (the default) writes
+  // to localStorage so the user stays signed in across restarts.
+  localStorage.setItem(REMEMBER_ME_KEY, persistent ? 'true' : 'false');
+}
+
+function writeToken(name: string, value: string | null) {
+  const persistent = rememberMeEnabled();
+  // Always clear the *other* storage so a stale entry can't shadow the
+  // current scope after a remember-me toggle.
+  if (value === null) {
+    localStorage.removeItem(name);
+    sessionStorage.removeItem(name);
+    return;
+  }
+  if (persistent) {
+    localStorage.setItem(name, value);
+    sessionStorage.removeItem(name);
+  } else {
+    sessionStorage.setItem(name, value);
+    localStorage.removeItem(name);
+  }
+}
+
 export function setToken(token: string | null, refresh?: string | null) {
   authToken = token;
-  if (token) {
-    localStorage.setItem('atheon_token', token);
-  } else {
-    localStorage.removeItem('atheon_token');
-  }
+  writeToken('atheon_token', token);
   if (refresh !== undefined) {
     refreshToken = refresh;
-    if (refresh) {
-      localStorage.setItem('atheon_refresh_token', refresh);
-    } else {
-      localStorage.removeItem('atheon_refresh_token');
-    }
+    writeToken('atheon_refresh_token', refresh);
   }
 }
 

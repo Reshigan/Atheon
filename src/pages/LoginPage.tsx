@@ -5,7 +5,7 @@ import { useAppStore } from "@/stores/appStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Building2, Loader2, ShieldCheck, UserPlus } from "lucide-react";
-import { api, setToken, getToken, setTenantOverride } from "@/lib/api";
+import { api, setToken, getToken, setTenantOverride, setRememberMe as setApiRememberMe } from "@/lib/api";
 import type { IndustryVertical, UserRole } from "@/types";
 
 type AuthMode= 'login' | 'register';
@@ -30,6 +30,14 @@ export function LoginPage() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Remember me" controls whether the auth token survives a browser close.
+  // Default reads the existing preference (true on first visit for backwards
+  // compatibility); toggling here writes through to api.setRememberMe BEFORE
+  // setToken runs so the token lands in the right storage scope.
+  const [rememberMe, setRememberMeState] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('atheon_remember_me') !== 'false';
+  });
   const [tenantOptions, setTenantOptions] = useState<{ slug: string; name: string }[] | null>(null);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -376,7 +384,23 @@ export function LoginPage() {
             <Input label="Password" type="password" placeholder={mode === 'register' ? 'Min 10 characters' : '••••••••'} value={password} onChange={(e) => setPassword(e.target.value)} data-testid="password" />
             {mode === 'login' && (
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-1.5 text-caption t-muted"><input type="checkbox" className="rounded" style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }} />Remember me</label>
+                <label className="flex items-center gap-1.5 text-caption t-muted cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="rounded"
+                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }}
+                    checked={rememberMe}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setRememberMeState(next);
+                      // Persist preference immediately so it applies when
+                      // setToken() runs after sign-in.
+                      setApiRememberMe(next);
+                    }}
+                    data-testid="remember-me"
+                  />
+                  Remember me
+                </label>
                 <button type="button" onClick={() => setShowForgotPw(true)} className="text-caption font-medium" style={{ color: 'var(--accent)' }} data-testid="forgot-password">Forgot password?</button>
               </div>
             )}
