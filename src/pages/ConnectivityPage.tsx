@@ -188,7 +188,17 @@ export function ConnectivityPage() {
             <div key={conn.id} className="rounded-xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  {statusIcon(conn._status)}
+                  {/* Live status pulse — connected nodes get a sage breathing
+                      dot (matches Stitch "Live Protocols" pattern); other
+                      states fall back to the static status glyph. */}
+                  {conn._status === 'connected' ? (
+                    <span className="relative inline-flex w-2.5 h-2.5" aria-hidden="true" title="Live connection">
+                      <span className="absolute inset-0 rounded-full animate-ping" style={{ background: '#34D399', opacity: 0.55 }} />
+                      <span className="relative inline-flex w-2.5 h-2.5 rounded-full" style={{ background: '#34D399', boxShadow: '0 0 0 3px rgba(52,211,153,0.18)' }} />
+                    </span>
+                  ) : (
+                    statusIcon(conn._status)
+                  )}
                   <div>
                     <p className="text-sm font-medium t-primary">{conn.name}</p>
                     <p className="text-xs t-muted">{conn.adapterName} &middot; {statusLabel(conn._status)}</p>
