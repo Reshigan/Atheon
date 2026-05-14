@@ -462,22 +462,22 @@ export function TenantsPage() {
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
  <Card>
  <span className="text-xs t-secondary">Total Tenants</span>
- <p className="text-2xl font-bold t-primary mt-1">{tenants.length}</p>
+ <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{tenants.length}</p>
  <span className="text-xs text-emerald-400">{tenants.filter(t => t.status === 'active').length} active</span>
  </Card>
  <Card>
  <span className="text-xs t-secondary">SaaS</span>
- <p className="text-2xl font-bold text-accent mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
+ <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">{tenants.filter(t => t.deploymentModel === 'saas').length}</p>
  <span className="text-xs t-secondary">cloud-hosted</span>
  </Card>
  <Card>
  <span className="text-xs t-secondary">On-Premise</span>
- <p className="text-2xl font-bold text-accent mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
+ <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">{tenants.filter(t => t.deploymentModel === 'on-premise').length}</p>
  <span className="text-xs t-secondary">self-hosted</span>
  </Card>
  <Card>
  <span className="text-xs t-secondary">Hybrid</span>
- <p className="text-2xl font-bold text-accent mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
+ <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">{tenants.filter(t => t.deploymentModel === 'hybrid').length}</p>
  <span className="text-xs t-secondary">mixed deployment</span>
  </Card>
  </div>

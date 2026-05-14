@@ -867,19 +867,19 @@ export function IntegrationsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <span className="text-xs t-secondary">Active Connections</span>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{connections.filter(c => c.status === 'connected').length}</p>
+          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono mt-1">{connections.filter(c => c.status === 'connected').length}</p>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Available Adapters</span>
-          <p className="text-2xl font-bold t-primary mt-1">{adapters.length}</p>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{adapters.length}</p>
         </Card>
         <Card>
           <span className="text-xs t-secondary">API Endpoints</span>
-          <p className="text-2xl font-bold t-primary mt-1">{endpoints.length}</p>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{endpoints.length}</p>
         </Card>
         <Card>
           <span className="text-xs t-secondary">Records Synced</span>
-          <p className="text-2xl font-bold t-primary mt-1">{(connections.reduce((s, c) => s + (c.recordsSynced || 0), 0) / 1000).toFixed(1)}K</p>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{(connections.reduce((s, c) => s + (c.recordsSynced || 0), 0) / 1000).toFixed(1)}K</p>
         </Card>
       </div>
 

@@ -476,7 +476,7 @@ export function Dashboard() {
             <span className="text-label">Dimensions</span>
             <Gauge size={14} className="text-accent" />
           </div>
-          <p className="text-2xl font-bold t-primary">{dimensions.length}</p>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{dimensions.length}</p>
           <p className="text-caption t-muted mt-1">monitored areas</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.slice(0, 3).map((d) => (
@@ -492,7 +492,7 @@ export function Dashboard() {
             <span className="text-label">Healthy</span>
             <CheckCircle2 size={14} className="text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-emerald-400">{dimensions.filter(d => d.score >= 80).length}</p>
+          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{dimensions.filter(d => d.score >= 80).length}</p>
           <p className="text-caption t-muted mt-1">above threshold</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.filter(d => d.score >= 80).slice(0, 3).map((d) => (
@@ -508,7 +508,7 @@ export function Dashboard() {
             <span className="text-label">At Risk</span>
             <AlertTriangle size={14} className="text-amber-400" />
           </div>
-          <p className="text-2xl font-bold text-amber-400">{dimensions.filter(d => d.score >= 60 && d.score < 80).length}</p>
+          <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{dimensions.filter(d => d.score >= 60 && d.score < 80).length}</p>
           <p className="text-caption t-muted mt-1">needs attention</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.filter(d => d.score >= 60 && d.score < 80).slice(0, 3).map((d) => (
@@ -524,7 +524,7 @@ export function Dashboard() {
             <span className="text-label">Critical</span>
             <XCircle size={14} className="text-red-400" />
           </div>
-          <p className="text-2xl font-bold text-red-400">{dimensions.filter(d => d.score < 60).length}</p>
+          <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{dimensions.filter(d => d.score < 60).length}</p>
           <p className="text-caption t-muted mt-1">requires action</p>
           <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
             {dimensions.filter(d => d.score < 60).slice(0, 3).map((d) => (
@@ -557,7 +557,7 @@ export function Dashboard() {
             {radarCtx ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold t-primary">{radarCtx.signals?.length ?? 0}</span>
+                  <span className="text-headline-lg font-bold t-primary tabular-nums font-mono">{radarCtx.signals?.length ?? 0}</span>
                   <span className="text-xs t-muted">active signals</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export function Dashboard() {
             {diagSummary ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold t-primary">{diagSummary.totalAnalyses ?? 0}</span>
+                  <span className="text-headline-lg font-bold t-primary tabular-nums font-mono">{diagSummary.totalAnalyses ?? 0}</span>
                   <span className="text-xs t-muted">analyses completed</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -626,7 +626,7 @@ export function Dashboard() {
             {roiData?.roiMultiple != null ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-emerald-400">
+                  <span className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">
                     {roiData.roiMultiple}x
                   </span>
                   <span className="text-xs t-muted">return multiple</span>
@@ -806,11 +806,11 @@ export function Dashboard() {
             </div>
             <div className="flex items-center gap-4 mb-3">
               <div>
-                <p className="text-2xl font-bold t-primary">{activeCatalysts}</p>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{activeCatalysts}</p>
                 <p className="text-caption t-muted">active</p>
               </div>
               <div>
-                <p className="text-2xl font-bold t-primary">{totalTasks}</p>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{totalTasks}</p>
                 <p className="text-caption t-muted">tasks</p>
               </div>
             </div>

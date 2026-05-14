@@ -192,20 +192,20 @@ export function AuditPage() {
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
  <Card>
  <span className="text-xs t-secondary">{activeFilterCount > 0 ? 'Filtered Events' : 'Total Events'}</span>
- <p className="text-2xl font-bold t-primary mt-1">{filteredEntries.length}</p>
+ <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{filteredEntries.length}</p>
  {activeFilterCount > 0 && <span className="text-caption t-muted">of {entries.length} total</span>}
  </Card>
  <Card>
  <span className="text-xs t-secondary">Success</span>
- <p className="text-2xl font-bold text-emerald-400 mt-1">{filteredEntries.filter(a => a.outcome === 'success').length}</p>
+ <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono mt-1">{filteredEntries.filter(a => a.outcome === 'success').length}</p>
  </Card>
  <Card>
  <span className="text-xs t-secondary">Pending</span>
- <p className="text-2xl font-bold text-accent mt-1">{filteredEntries.filter(a => a.outcome === 'pending').length}</p>
+ <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">{filteredEntries.filter(a => a.outcome === 'pending').length}</p>
  </Card>
  <Card>
  <span className="text-xs t-secondary">Failed</span>
- <p className="text-2xl font-bold text-red-400 mt-1">{filteredEntries.filter(a => a.outcome === 'failure').length}</p>
+ <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono mt-1">{filteredEntries.filter(a => a.outcome === 'failure').length}</p>
  </Card>
  </div>
 

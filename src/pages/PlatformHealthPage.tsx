@@ -274,7 +274,7 @@ function SuperadminPlatformHealth() {
                    infra.apiResponseMs < 500 ? 'degraded' : 'critical'}
                 </Badge>
               </div>
-              <p className="text-2xl font-bold t-primary">
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">
                 {infra.apiResponseMs ?? '—'}
                 <span className="text-sm t-muted ml-1">ms</span>
               </p>
@@ -286,7 +286,7 @@ function SuperadminPlatformHealth() {
                 <span className="text-xs t-muted">Requests / Hour</span>
                 <CheckCircle size={14} className="text-emerald-400" />
               </div>
-              <p className="text-2xl font-bold t-primary">
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">
                 {typeof infra.totalRequestsLastHour === 'number'
                   ? infra.totalRequestsLastHour.toLocaleString()
                   : '—'}
@@ -321,7 +321,7 @@ function SuperadminPlatformHealth() {
                 <span className="text-xs t-muted">Total Tenants</span>
                 <Building2 size={14} className="text-accent" />
               </div>
-              <p className="text-2xl font-bold t-primary">{platformHealth.tenants?.total ?? '—'}</p>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{platformHealth.tenants?.total ?? '—'}</p>
               <p className="text-caption t-muted mt-1">Non-deleted tenants</p>
             </Card>
 
@@ -330,7 +330,7 @@ function SuperadminPlatformHealth() {
                 <span className="text-xs t-muted">Total Users</span>
                 <Users size={14} className="text-accent" />
               </div>
-              <p className="text-2xl font-bold t-primary">{platformHealth.users?.total ?? '—'}</p>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{platformHealth.users?.total ?? '—'}</p>
               <p className="text-caption t-muted mt-1">All tenants combined</p>
             </Card>
           </div>
