@@ -4,6 +4,7 @@ import type { GraphEntity, GraphRelationship, GraphQueryResult } from "@/lib/api
 import { useToast } from "@/components/ui/toast";
 import { LoadingState } from "@/components/ui/state";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { KnowledgeGraphViz } from "@/components/memory/KnowledgeGraphViz";
 import {
   Database,
   Plus,
@@ -46,7 +47,7 @@ const ENTITY_TYPES = [
 
 export function MemoryPage() {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState<"entities" | "relationships" | "search">("entities");
+  const [activeTab, setActiveTab] = useState<"graph" | "entities" | "relationships" | "search">("graph");
 
   const [entities, setEntities] = useState<GraphEntity[]>([]);
   const [relationships, setRelationships] = useState<GraphRelationship[]>([]);
@@ -200,6 +201,7 @@ export function MemoryPage() {
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
         {[
+          { id: "graph" as const, label: "Graph" },
           { id: "entities" as const, label: "Entities" },
           { id: "relationships" as const, label: "Relationships" },
           { id: "search" as const, label: "GraphRAG Search" },
@@ -214,6 +216,33 @@ export function MemoryPage() {
           </button>
         ))}
       </div>
+
+      {/* Graph Tab — Stitch "Knowledge Graph" force-directed canvas */}
+      {activeTab === "graph" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Highlight entities by name..."
+                className="w-full pl-9 pr-3 py-2 rounded-md text-body-sm t-primary"
+                style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}
+              />
+            </div>
+            <span className="text-caption t-muted font-mono">
+              {entities.length} entities · {relationships.length} relationships
+            </span>
+          </div>
+          <KnowledgeGraphViz
+            entities={entities}
+            relationships={relationships}
+            highlight={search}
+            onSelect={() => { /* future: open side-panel for detail */ }}
+          />
+        </div>
+      )}
 
       {/* Entities Tab */}
       {activeTab === "entities" && (
