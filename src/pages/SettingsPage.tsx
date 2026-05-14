@@ -212,9 +212,41 @@ export function SettingsPage() {
   accent="sage"
  />
 
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+ {/* Stitch "Settings — Account & Preferences" sticky sub-nav.
+     Horizontal chip strip that jumps to a section card via anchor scroll.
+     Sticks just below the global header on scroll. */}
+ <nav
+  aria-label="Settings sections"
+  className="sticky z-20 -mx-1 px-1 py-2 flex flex-wrap gap-2 backdrop-blur-md"
+  style={{
+   top: 'calc(var(--header-height, 48px) + 1px)',
+   background: 'color-mix(in srgb, var(--bg-primary) 88%, transparent)',
+   borderBottom: '1px solid var(--border-card)',
+  }}
+ >
+  {[
+   { id: 'profile',       label: 'Profile' },
+   { id: 'notifications', label: 'Notifications' },
+   { id: 'appearance',    label: 'Appearance' },
+   { id: 'security',      label: 'Two-Factor' },
+   { id: 'api',           label: 'API Key' },
+   { id: 'privacy',       label: 'Data & Privacy' },
+   { id: 'platform',      label: 'Platform' },
+  ].map((s) => (
+   <a
+    key={s.id}
+    href={`#${s.id}`}
+    className="text-caption font-medium px-3 py-1 rounded-full t-secondary hover:t-primary transition-colors"
+    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
+   >
+    {s.label}
+   </a>
+  ))}
+ </nav>
+
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 scroll-mt-24">
  {/* Profile */}
- <Card>
+ <Card><span id="profile" className="sr-only">Profile</span>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
  <User className="w-4 h-4 text-accent" /> Profile
  </h3>
@@ -263,7 +295,7 @@ export function SettingsPage() {
  {/* Notifications */}
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Bell className="w-4 h-4 text-accent" /> Notifications
+ <Bell className="w-4 h-4 text-accent" /> <span id="notifications">Notifications</span>
  </h3>
  <div className="space-y-3">
  {notifications.map((notif, index) => (
@@ -295,7 +327,7 @@ export function SettingsPage() {
  {/* Appearance */}
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Palette className="w-4 h-4 text-accent" /> Appearance
+ <Palette className="w-4 h-4 text-accent" /> <span id="appearance">Appearance</span>
  </h3>
  <div className="space-y-4">
  <div>
@@ -357,7 +389,7 @@ export function SettingsPage() {
  {/* Phase 4.4: MFA / Two-Factor Authentication — summary card; full UX at /settings/mfa */}
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Shield className="w-4 h-4 text-accent" /> Two-Factor Authentication
+ <Shield className="w-4 h-4 text-accent" /> <span id="security">Two-Factor Authentication</span>
  </h3>
  {mfaEnforcementWarning && !mfaStatus?.enabled && (
    <div
@@ -412,7 +444,7 @@ export function SettingsPage() {
  {/* Phase 4.4: API Key */}
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Key className="w-4 h-4 text-accent" /> API Key
+ <Key className="w-4 h-4 text-accent" /> <span id="api">API Key</span>
  </h3>
  <div className="space-y-3">
    <p className="text-xs t-muted">Use this key to authenticate API requests programmatically.</p>
@@ -454,7 +486,7 @@ export function SettingsPage() {
  {/* Spec 7 POPIA-3: Data & Privacy */}
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Shield className="w-4 h-4 text-accent" /> Data &amp; Privacy (POPIA)
+ <Shield className="w-4 h-4 text-accent" /> <span id="privacy">Data &amp; Privacy (POPIA)</span>
  </h3>
  <div className="space-y-4">
    <div className="p-3 rounded-lg" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
@@ -554,7 +586,7 @@ export function SettingsPage() {
  {/* Platform Info */}
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Cpu className="w-4 h-4 text-accent" /> Platform
+ <Cpu className="w-4 h-4 text-accent" /> <span id="platform">Platform</span>
  </h3>
  <div className="space-y-3">
  {[
