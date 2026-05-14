@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { api, getToken, setToken } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { clearChunkReloadGuard } from "@/lib/lazy-with-retry";
 
 export function AppLayout() {
   const { user, setUser, theme, onboardingDismissed } = useAppStore();
@@ -59,6 +60,14 @@ export function AppLayout() {
     if (!user) return;
     loadCompanies();
   }, [user, activeTenantId, loadCompanies]);
+
+  // Clear the chunk-load reload guard once the layout mounts successfully.
+  // This lets a subsequent stale-cache scenario (mid-session second deploy)
+  // self-heal via lazyWithRetry — the user gets one auto-reload per session
+  // per stale-bundle event.
+  useEffect(() => {
+    clearChunkReloadGuard();
+  }, []);
 
   // TASK-006: Global keyboard handlers
   useEffect(() => {
