@@ -40,6 +40,7 @@ const IAMPage = lazy(() => import("@/pages/IAMPage").then(m => ({ default: m.IAM
 const ControlPlanePage = lazy(() => import("@/pages/ControlPlanePage").then(m => ({ default: m.ControlPlanePage })));
 const IntegrationsPage = lazy(() => import("@/pages/IntegrationsPage").then(m => ({ default: m.IntegrationsPage })));
 const ActionLayerPage = lazy(() => import("@/pages/ActionLayerPage").then(m => ({ default: m.ActionLayerPage })));
+const AccessStatePage = lazy(() => import("@/pages/AccessStatePage").then(m => ({ default: m.AccessStatePage })));
 const DeploymentsPage = lazy(() => import("@/pages/DeploymentsPage").then(m => ({ default: m.DeploymentsPage })));
 const AssessmentsPage = lazy(() => import("@/pages/AssessmentsPage").then(m => ({ default: m.AssessmentsPage })));
 const TenantManagementPage = lazy(() => import("@/pages/TenantManagementPage").then(m => ({ default: m.TenantManagementPage })));
@@ -75,15 +76,7 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   const user = useAppStore((s) => s.user);
   if (!user) return <Navigate to="/login" replace />;
   if (!allowedRoles.includes(user.role)) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-3">
-          <h2 className="text-xl font-semibold text-white">Access Denied</h2>
-          <p className="text-sm text-gray-500">You do not have permission to access this page.</p>
-          <p className="text-xs text-gray-400">Required role: {allowedRoles.join(', ')}</p>
-        </div>
-      </div>
-    );
+    return <AccessStatePage kind="403" requiredRoles={allowedRoles} />;
   }
   return <>{children}</>;
 }
@@ -204,6 +197,10 @@ export default function App() {
             <Route path="/support-tickets/:id" element={<SupportTicketDetailPage />} />
             <Route path="/support-triage" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><SupportTriagePage /></ProtectedRoute>} />
           </Route>
+
+          {/* Catch-all 404 — last route, lives outside AppLayout so the
+              standalone error surface renders without the sidebar/header. */}
+          <Route path="*" element={<AccessStatePage kind="404" />} />
         </Routes>
       </Suspense>
       </BrandProvider>
