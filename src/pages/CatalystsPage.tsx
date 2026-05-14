@@ -13,6 +13,7 @@ import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceCo
 import { SuccessStoryCard } from "@/components/ui/success-story-card";
 import { HeroHeader } from "@/components/ui/hero-header";
 import { StatusPill } from "@/components/ui/status-pill";
+import { Numeric } from "@/components/ui/numeric";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
@@ -1213,30 +1214,45 @@ export function CatalystsPage() {
  </div>
  </div>
  </div>
- <Badge variant={cluster.status === 'active' ? 'success' : cluster.status === 'paused' ? 'warning' : 'danger'}>
- {cluster.status}
- </Badge>
+ <StatusPill
+  status={cluster.status === 'active' ? 'completed' : cluster.status === 'paused' ? 'deferred' : 'failed'}
+  label={cluster.status}
+  size="sm"
+ />
  </div>
 
- <p className="text-xs t-secondary mt-3">{cluster.description}</p>
+ <p className="text-body-sm t-secondary mt-3">{cluster.description}</p>
 
- <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-caption t-muted">Trust Score</span>
- <p className="text-sm font-bold t-primary">{Number(cluster.trustScore).toFixed(1)}%</p>
- </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-caption t-muted">Agents</span>
- <p className="text-sm font-bold t-primary">{cluster.agentCount}</p>
- </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-caption t-muted">Completed</span>
- <p className="text-sm font-bold t-primary">{(cluster.tasksCompleted / 1000).toFixed(1)}K</p>
- </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <span className="text-caption t-muted">Success Rate</span>
- <p className="text-sm font-bold text-emerald-400">{Number(cluster.successRate).toFixed(1)}%</p>
- </div>
+ {/* Hero number + supporting tiles — Stitch cluster-card pattern.
+     We surface tasksCompleted as the headline metric and feed agents
+     / success rate / trust score into a compact strip below it. */}
+ <div className="mt-4 grid grid-cols-3 gap-3">
+  <div className="col-span-1 p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+   <span className="text-caption uppercase tracking-wider t-muted">Tasks Completed</span>
+   <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
+    <Numeric value={cluster.tasksCompleted} compact size="lg" />
+   </p>
+  </div>
+  <div className="col-span-2 grid grid-cols-3 gap-2">
+   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
+    <span className="text-caption uppercase tracking-wider t-muted">Agents</span>
+    <p className="text-body font-bold t-primary tabular-nums font-mono mt-1">
+     <Numeric value={cluster.agentCount} size="md" />
+    </p>
+   </div>
+   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+    <span className="text-caption uppercase tracking-wider t-muted">Success</span>
+    <p className="text-body font-bold text-emerald-400 tabular-nums font-mono mt-1">
+     {Number(cluster.successRate).toFixed(1)}<span className="text-caption">%</span>
+    </p>
+   </div>
+   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+    <span className="text-caption uppercase tracking-wider t-muted">Trust</span>
+    <p className="text-body font-bold t-primary tabular-nums font-mono mt-1">
+     {Number(cluster.trustScore).toFixed(1)}<span className="text-caption">%</span>
+    </p>
+   </div>
+  </div>
  </div>
 
  <div className="mt-3">
