@@ -20,10 +20,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Progress } from "@/components/ui/progress";
 import {
-  CheckCircle2, Circle, ArrowRight, Loader2, Rocket, Sparkles,
+  CheckCircle2, ArrowRight, Loader2, Rocket, Sparkles,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -120,12 +120,21 @@ export function OnboardingWizardPage(): JSX.Element {
         <Progress value={progressPct} color={allComplete ? 'emerald' : 'amber'} size="md" />
       </Card>
 
-      {/* Celebration */}
+      {/* Celebration — Stitch sage success card */}
       {allComplete && (
-        <Card className="p-6 text-center" style={{ background: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)' }}>
-          <Sparkles className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-          <h2 className="text-lg font-semibold t-primary mb-1">You're set up.</h2>
-          <p className="text-sm t-muted mb-4">
+        <Card className="p-7 text-center" style={{ background: 'rgba(163, 177, 138, 0.08)', border: '1px solid rgba(163, 177, 138, 0.30)' }}>
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border"
+            style={{
+              background: 'rgba(163, 177, 138, 0.15)',
+              borderColor: 'rgba(163, 177, 138, 0.35)',
+            }}
+            aria-hidden="true"
+          >
+            <Sparkles className="w-7 h-7" style={{ color: 'var(--accent)' }} />
+          </div>
+          <h2 className="text-headline-xl font-bold t-primary tracking-tight leading-tight mb-2">You're set up.</h2>
+          <p className="text-body-sm t-muted mb-5 max-w-md mx-auto leading-relaxed">
             All seven first-week milestones complete. Your customer success engineer can now schedule
             the week-4 ROI review.
           </p>
@@ -144,20 +153,42 @@ export function OnboardingWizardPage(): JSX.Element {
             <Card
               key={step.id}
               className={`p-4 transition-colors ${isCurrent ? 'border-accent/40' : ''}`}
-              style={isCurrent ? { background: 'rgba(126, 179, 205, 0.05)' } : undefined}
+              style={isCurrent ? { background: 'rgba(163, 177, 138, 0.06)', borderLeft: '3px solid var(--accent)' } : undefined}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
+                  {/* Step number bubble matches Stitch onboarding: completed
+                      steps get a sage check; pending steps show the step
+                      number; current step pulses subtly. */}
                   {step.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center border"
+                      style={{
+                        background: 'rgba(52, 211, 153, 0.15)',
+                        borderColor: 'rgba(52, 211, 153, 0.35)',
+                      }}
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    </div>
                   ) : (
-                    <Circle className={`w-5 h-5 ${isCurrent ? 'text-accent' : 't-muted'}`} />
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center border text-caption font-mono font-bold ${
+                        isCurrent ? 'animate-pulse' : ''
+                      }`}
+                      style={{
+                        background: isCurrent ? 'rgba(163, 177, 138, 0.15)' : 'var(--bg-secondary)',
+                        borderColor: isCurrent ? 'var(--accent)' : 'var(--border-card)',
+                        color: isCurrent ? 'var(--accent)' : 'var(--text-muted)',
+                      }}
+                    >
+                      {i + 1}
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs t-muted font-mono">Step {i + 1}</span>
-                    {isCurrent && <Badge variant="info" size="sm">Current</Badge>}
+                    <span className="text-caption t-muted font-mono uppercase tracking-widest">Step {i + 1} / {totalSteps}</span>
+                    {isCurrent && <StatusPill status="in_progress" label="Current" size="sm" />}
                     {step.completed && step.completedAt && (
                       <span className="text-caption t-muted">
                         Done {new Date(step.completedAt).toLocaleDateString()}
