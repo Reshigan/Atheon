@@ -2952,12 +2952,32 @@ export function CatalystsPage() {
    )}
    {intellOverview && (
     <div className="space-y-4">
-     {/* Summary Cards — reduced from 7 to 4 per UI cleanup */}
+     {/* Summary — Stitch hover-tint bento */}
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Card><div className="text-center"><p className="text-2xl font-bold text-amber-400">{intellOverview.summary.activePatterns}</p><p className="text-label">Active Patterns</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-red-400">{intellOverview.summary.criticalPatterns}</p><p className="text-label">Critical</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold t-primary">R{(intellOverview.summary.totalValueProcessed / 1000).toFixed(0)}k</p><p className="text-label">Value Processed</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-purple-400">{intellOverview.summary.avgRoi > 0 ? '+' : ''}{Math.round(intellOverview.summary.avgRoi)}%</p><p className="text-label">Avg ROI</p></div></Card>
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+       <span className="text-caption uppercase tracking-wider t-muted">Active Patterns</span>
+       <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono mt-1">
+        <Numeric value={intellOverview.summary.activePatterns} size="lg" />
+       </p>
+      </div>
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
+       <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
+       <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono mt-1">
+        <Numeric value={intellOverview.summary.criticalPatterns} size="lg" />
+       </p>
+      </div>
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+       <span className="text-caption uppercase tracking-wider t-muted">Value Processed</span>
+       <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
+        <Numeric value={intellOverview.summary.totalValueProcessed} unit="ZAR" compact size="lg" />
+       </p>
+      </div>
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+       <span className="text-caption uppercase tracking-wider t-muted">Avg ROI</span>
+       <p className={`text-headline-lg font-bold tabular-nums font-mono mt-1 ${intellOverview.summary.avgRoi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        {intellOverview.summary.avgRoi > 0 ? '+' : ''}{Math.round(intellOverview.summary.avgRoi)}<span className="text-body">%</span>
+       </p>
+      </div>
      </div>
 
      {/* ROI Card */}

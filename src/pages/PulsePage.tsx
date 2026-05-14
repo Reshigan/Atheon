@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
+import { Numeric } from "@/components/ui/numeric";
 import { HeroHeader } from "@/components/ui/hero-header";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
@@ -893,68 +894,74 @@ export function PulsePage() {
             </Card>
           </div>
 
-          {/* Status Breakdown Cards (Static — FlipCards removed per UI cleanup) */}
+          {/* Status Breakdown — Stitch hover-tint bento with Numeric */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card className="h-full">
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-label">Total Metrics</span>
+                <span className="text-caption uppercase tracking-wider t-muted">Total Metrics</span>
                 <Activity size={14} className="text-accent" />
               </div>
-              <p className="text-2xl font-bold t-primary">{summary?.totalMetrics ?? metrics.length}</p>
-              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+              <Numeric value={summary?.totalMetrics ?? metrics.length} size="lg" />
+              <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className={`font-medium ${statusColor(m.status)}`}>{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className={`font-medium font-mono ${statusColor(m.status)}`}>{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
                 ))}
               </div>
-            </Card>
-            <Card className="h-full">
+            </div>
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-label">Healthy</span>
+                <span className="text-caption uppercase tracking-wider t-muted">Healthy</span>
                 <CheckCircle2 size={14} className="text-emerald-400" />
               </div>
-              <p className="text-2xl font-bold text-emerald-400">{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length}</p>
-              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+              <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">
+                <Numeric value={summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} size="lg" />
+              </p>
+              <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'green').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium text-emerald-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className="font-medium font-mono text-emerald-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
                 ))}
               </div>
-            </Card>
-            <Card className="h-full">
+            </div>
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-label">Warning</span>
+                <span className="text-caption uppercase tracking-wider t-muted">Warning</span>
                 <AlertTriangle size={14} className="text-amber-400" />
               </div>
-              <p className="text-2xl font-bold text-amber-400">{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length}</p>
-              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+              <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">
+                <Numeric value={summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} size="lg" />
+              </p>
+              <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'amber').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium text-amber-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className="font-medium font-mono text-amber-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
                 ))}
               </div>
-            </Card>
-            <Card className="h-full">
+            </div>
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-label">Critical</span>
+                <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
                 <XCircle size={14} className="text-red-400" />
               </div>
-              <p className="text-2xl font-bold text-red-400">{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length}</p>
-              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+              <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">
+                <Numeric value={summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length} size="lg" />
+              </p>
+              <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'red').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium text-red-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className="font-medium font-mono text-red-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* Narrative + Insights */}
@@ -1414,45 +1421,45 @@ export function PulsePage() {
               </div>
             )}
 
-            {/* Process Health Summary */}
+            {/* Process Health Summary — Stitch hover-tint bento */}
             {processes.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-label">Processes</span>
+                    <span className="text-caption uppercase tracking-wider t-muted">Processes</span>
                     <GitBranch size={14} className="text-accent" />
                   </div>
-                  <p className="text-2xl font-bold t-primary">{processes.length}</p>
+                  <Numeric value={processes.length} size="lg" />
                   <p className="text-caption t-muted mt-1">Mapped & monitored</p>
-                </Card>
-                <Card>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-label">Avg Conformance</span>
+                    <span className="text-caption uppercase tracking-wider t-muted">Avg Conformance</span>
                     <Target size={14} className="text-emerald-400" />
                   </div>
-                  <p className={`text-2xl font-bold ${
+                  <p className={`text-headline-lg font-bold tabular-nums font-mono ${
                     (processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length) >= 80 ? 'text-emerald-400' : 'text-amber-400'
-                  }`}>{Math.round(processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length)}%</p>
+                  }`}>{Math.round(processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length)}<span className="text-body">%</span></p>
                   <p className="text-caption t-muted mt-1">Target: 85%+</p>
-                </Card>
-                <Card>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-label">Total Variants</span>
-                    <Workflow size={14} className="text-blue-400" />
+                    <span className="text-caption uppercase tracking-wider t-muted">Total Variants</span>
+                    <Workflow size={14} style={{ color: 'var(--sky)' }} />
                   </div>
-                  <p className="text-2xl font-bold t-primary">{processes.reduce((s, p) => s + p.variants, 0)}</p>
+                  <Numeric value={processes.reduce((s, p) => s + p.variants, 0)} size="lg" />
                   <p className="text-caption t-muted mt-1">Across all processes</p>
-                </Card>
-                <Card>
+                </div>
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-label">Bottlenecks</span>
+                    <span className="text-caption uppercase tracking-wider t-muted">Bottlenecks</span>
                     <AlertTriangle size={14} className="text-red-400" />
                   </div>
-                  <p className={`text-2xl font-bold ${processes.reduce((s, p) => s + p.bottlenecks.length, 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {processes.reduce((s, p) => s + p.bottlenecks.length, 0)}
+                  <p className={`text-headline-lg font-bold tabular-nums font-mono ${processes.reduce((s, p) => s + p.bottlenecks.length, 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                    <Numeric value={processes.reduce((s, p) => s + p.bottlenecks.length, 0)} size="lg" />
                   </p>
                   <p className="text-caption t-muted mt-1">Steps requiring attention</p>
-                </Card>
+                </div>
               </div>
             )}
 
