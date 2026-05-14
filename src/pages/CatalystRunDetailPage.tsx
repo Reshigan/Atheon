@@ -5,6 +5,7 @@ import { LoadingState } from "@/components/ui/state";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
+import { Numeric } from "@/components/ui/numeric";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import type { SubCatalystRunItem, SubCatalystRunItemsResponse, RunComment } from "@/lib/api";
@@ -463,56 +464,41 @@ export function CatalystRunDetailPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Key Metrics */}
+        {/* Run summary KPIs — Stitch bento. Same accent vocabulary as
+            the Apex briefing tiles and the Operator Queue dispatch tiles:
+            emerald success / amber discrepancy / red exception / sky value. */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <CheckCircle2 size={20} className="text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-label">Matched Records</p>
-                <p className="text-2xl font-bold t-primary">{run.matched?.toLocaleString() || '0'}</p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-caption uppercase tracking-wider t-muted">Matched Records</span>
+              <CheckCircle2 size={16} className="text-emerald-400" />
             </div>
-          </Card>
+            <Numeric value={run.matched ?? 0} size="lg" />
+          </div>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <AlertCircle size={20} className="text-amber-400" />
-              </div>
-              <div>
-                <p className="text-label">Discrepancies</p>
-                <p className="text-2xl font-bold t-primary">{run.discrepancies?.toLocaleString() || '0'}</p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-caption uppercase tracking-wider t-muted">Discrepancies</span>
+              <AlertCircle size={16} className="text-amber-400" />
             </div>
-          </Card>
+            <Numeric value={run.discrepancies ?? 0} size="lg" />
+          </div>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-                <XCircle size={20} className="text-red-400" />
-              </div>
-              <div>
-                <p className="text-label">Exceptions</p>
-                <p className="text-2xl font-bold t-primary">{run.exceptions?.toLocaleString() || '0'}</p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-caption uppercase tracking-wider t-muted">Exceptions</span>
+              <XCircle size={16} className="text-red-400" />
             </div>
-          </Card>
+            <Numeric value={run.exceptions ?? 0} size="lg" />
+          </div>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Database size={20} className="text-blue-400" />
-              </div>
-              <div>
-                <p className="text-label">Total Value</p>
-                <p className="text-2xl font-bold t-primary">
-                  {run.totalValue ? `R ${(run.totalValue / 1000000).toFixed(2)}M` : 'N/A'}
-                </p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-caption uppercase tracking-wider t-muted">Total Value</span>
+              <Database size={16} style={{ color: 'var(--sky)' }} />
             </div>
-          </Card>
+            <Numeric value={run.totalValue ?? null} unit="ZAR" compact size="lg" />
+          </div>
         </div>
 
         {/* Run Items — filtering + approval workflow */}
