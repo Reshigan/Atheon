@@ -711,6 +711,8 @@ iam.get('/sso', async (c) => {
     autoProvision: !!s.auto_provision,
     defaultRole: s.default_role,
     domainHint: s.domain_hint,
+    // Phase AY: WorkOS-brokered SAML connection identifier
+    workosConnectionId: s.workos_connection_id ?? null,
   }));
 
   return c.json({ configs: formatted });
@@ -997,6 +999,71 @@ iam.post('/sso', async (c) => {
   ).bind(id, tenantId, body.provider, body.client_id, body.issuer_url, body.auto_provision ? 1 : 0, body.default_role || 'analyst', body.domain_hint || '').run();
 
   return c.json({ id }, 201);
+});
+
+// ─── Phase AY: SAML configuration (admin-only, JWT-authed) ───────────
+// Manages the workos_connection_id + auto_provision + domain_hint for the
+// tenant's SAML SSO connection. Frontend reads via GET /api/iam/sso and
+// writes via this PATCH endpoint (which upserts the sso_configs row).
+
+// PATCH /api/iam/sso/saml — upsert SAML config for the active tenant.
+iam.patch('/sso/saml', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  let body: { workos_connection_id?: string | null; domain_hint?: string | null; auto_provision?: boolean; default_role?: string; enabled?: boolean };
+  try { body = await c.req.json(); }
+  catch { return c.json({ error: 'Invalid JSON' }, 400); }
+
+  // Validate the WorkOS connection_id shape (conn_<26 chars>) so admins
+  // don't paste a URL or random string and wonder why login fails.
+  const conn = body.workos_connection_id?.trim() || null;
+  if (conn && !/^conn_[A-Za-z0-9]{20,40}$/.test(conn)) {
+    return c.json({ error: 'workos_connection_id must look like "conn_..." from your WorkOS dashboard' }, 400);
+  }
+
+  // Upsert the tenant's sso_configs row. If a row exists, we update; if
+  // not, we insert a SAML-mode row.
+  const existing = await c.env.DB.prepare(
+    `SELECT id FROM sso_configs WHERE tenant_id = ? LIMIT 1`
+  ).bind(tenantId).first<{ id: string }>();
+
+  if (existing) {
+    await c.env.DB.prepare(
+      `UPDATE sso_configs
+          SET workos_connection_id = ?,
+              domain_hint = COALESCE(?, domain_hint),
+              auto_provision = COALESCE(?, auto_provision),
+              default_role = COALESCE(?, default_role),
+              enabled = COALESCE(?, enabled)
+        WHERE id = ?`
+    ).bind(
+      conn,
+      body.domain_hint ?? null,
+      body.auto_provision === undefined ? null : (body.auto_provision ? 1 : 0),
+      body.default_role ?? null,
+      body.enabled === undefined ? null : (body.enabled ? 1 : 0),
+      existing.id,
+    ).run();
+  } else {
+    await c.env.DB.prepare(
+      `INSERT INTO sso_configs (id, tenant_id, provider, client_id, issuer_url, workos_connection_id, domain_hint, auto_provision, default_role, enabled)
+       VALUES (?, ?, 'workos_saml', '', '', ?, ?, ?, ?, ?)`
+    ).bind(
+      crypto.randomUUID(), tenantId, conn, body.domain_hint ?? '',
+      body.auto_provision ? 1 : 0, body.default_role ?? 'analyst',
+      body.enabled === false ? 0 : 1,
+    ).run();
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome, created_at)
+     VALUES (?, ?, ?, 'iam.saml.configured', 'iam', 'sso_configs', ?, 'success', datetime('now'))`
+  ).bind(
+    crypto.randomUUID(), tenantId, auth?.userId || null,
+    JSON.stringify({ hasConnection: !!conn, domainHint: body.domain_hint, autoProvision: !!body.auto_provision }),
+  ).run();
+
+  return c.json({ ok: true });
 });
 
 // ─── Phase AX: SCIM 2.0 token management (admin-only, JWT-authed) ─────

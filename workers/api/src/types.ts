@@ -69,6 +69,20 @@ export interface Env {
    * Declared in wrangler.toml as [[queues.producers]] queue="catalyst-tasks".
    */
   CATALYST_QUEUE?: Queue<unknown>;
+  /**
+   * WorkOS API key + client ID for SAML SSO via WorkOS Connections.
+   * Phase AY enterprise SAML path — we use WorkOS as the federation
+   * broker rather than implementing xmldsig in Workers (no battle-tested
+   * library + Big-4 reviewers prefer vendored SAML).
+   *
+   * When unset, the SAML endpoints return 503 with a clear message so
+   * customers see "SAML not configured — contact your platform admin"
+   * instead of a stack trace. Local + test environments stay green.
+   */
+  WORKOS_API_KEY?: string;
+  WORKOS_CLIENT_ID?: string;
+  /** Override callback URL — defaults to https://atheon.vantax.co.za/auth/sso/saml/callback */
+  WORKOS_REDIRECT_URI?: string;
 }
 
 export interface AuthContext {

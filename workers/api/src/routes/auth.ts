@@ -1646,4 +1646,214 @@ auth.delete('/api-keys/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// ─── Phase AY: WorkOS-brokered SAML SSO ──────────────────────────────
+//
+// Atheon does NOT implement SAML/xmldsig directly — we federate via WorkOS
+// because (a) there's no battle-tested xmldsig library that runs in the
+// Workers runtime, (b) Big-4 security reviews prefer vendored SAML, and
+// (c) per-IdP edge-case handling (encrypted assertions, multi-cert rotation,
+// ADFS quirks) is exactly the kind of work a federation broker exists for.
+//
+// Flow:
+//   1. User clicks "Sign in with SSO" on /login and types their work email
+//   2. Frontend POSTs to /auth/sso/saml/start with { email }
+//   3. We look up the tenant via email domain → fetch its sso_configs row
+//   4. If workos_connection_id is set, we mint a WorkOS authorization URL
+//      and return it; frontend redirects there
+//   5. WorkOS forwards the user to the customer's IdP (Okta / Azure AD /
+//      Ping / OneLogin / etc.). User authenticates there
+//   6. IdP redirects back to WorkOS; WorkOS redirects back to
+//      /auth/sso/saml/callback?code=... on our domain
+//   7. We exchange the code with WorkOS for the user profile, upsert the
+//      user (creating if missing — auto-provisioning), and mint our JWT
+
+// POST /api/auth/sso/saml/start — kick off SAML SSO for an email
+auth.post('/sso/saml/start', async (c) => {
+  if (!c.env.WORKOS_API_KEY || !c.env.WORKOS_CLIENT_ID) {
+    return c.json({
+      error: 'SAML SSO not configured',
+      detail: 'WorkOS credentials are not set on this deployment. Contact your platform admin to enable SAML.',
+    }, 503);
+  }
+  let body: { email?: string };
+  try { body = await c.req.json<{ email?: string }>(); }
+  catch { return c.json({ error: 'Invalid JSON' }, 400); }
+  const email = (body.email || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    return c.json({ error: 'A valid email is required' }, 400);
+  }
+  const domain = email.split('@')[1];
+
+  // Locate the tenant via the SSO config's domain_hint. Tenants must opt
+  // into SAML by setting workos_connection_id; we never auto-create.
+  const config = await c.env.DB.prepare(
+    `SELECT s.id, s.tenant_id, s.workos_connection_id, s.default_role, s.auto_provision, t.slug as tenant_slug
+       FROM sso_configs s
+       JOIN tenants t ON t.id = s.tenant_id
+      WHERE s.enabled = 1
+        AND s.workos_connection_id IS NOT NULL
+        AND s.workos_connection_id != ''
+        AND (s.domain_hint = ? OR s.domain_hint = '' OR s.domain_hint IS NULL)
+      LIMIT 1`
+  ).bind(domain).first<{ id: string; tenant_id: string; workos_connection_id: string; default_role: string; auto_provision: number; tenant_slug: string }>();
+  if (!config) {
+    return c.json({
+      error: 'SAML not enabled for this email domain',
+      detail: 'Your organisation has not enabled SAML SSO on Atheon, or your email domain is not registered. Sign in with your password or ask your admin to configure SAML.',
+    }, 404);
+  }
+
+  // Build the WorkOS authorization URL. WorkOS handles the SAML/xmldsig
+  // dance and returns to our callback with an opaque code.
+  const redirectUri = c.env.WORKOS_REDIRECT_URI
+    || 'https://atheon.vantax.co.za/auth/sso/saml/callback';
+  // State is a tenant-scoped CSRF-resistant nonce we re-verify on callback.
+  const state = `${config.tenant_id}|${crypto.randomUUID()}`;
+  // Persist state with short TTL so the callback can validate it. Reusing
+  // the password_reset_tokens schema (token_hash + expires_at) keeps schema
+  // surface flat — the user_id column gets the SAML-state marker.
+  await c.env.DB.prepare(
+    `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, used, created_at)
+     VALUES (?, ?, ?, datetime('now', '+10 minutes'), 0, datetime('now'))`
+  ).bind(crypto.randomUUID(), `saml-state:${config.tenant_id}`, state).run();
+
+  const authUrl = new URL('https://api.workos.com/sso/authorize');
+  authUrl.searchParams.set('connection', config.workos_connection_id);
+  authUrl.searchParams.set('client_id', c.env.WORKOS_CLIENT_ID);
+  authUrl.searchParams.set('redirect_uri', redirectUri);
+  authUrl.searchParams.set('state', state);
+  authUrl.searchParams.set('response_type', 'code');
+
+  return c.json({
+    authorizationUrl: authUrl.toString(),
+    tenantId: config.tenant_id,
+  });
+});
+
+// GET /api/auth/sso/saml/callback — exchange code for profile, mint JWT
+auth.get('/sso/saml/callback', async (c) => {
+  if (!c.env.WORKOS_API_KEY || !c.env.WORKOS_CLIENT_ID) {
+    return c.json({ error: 'SAML SSO not configured' }, 503);
+  }
+  const code = c.req.query('code');
+  const state = c.req.query('state');
+  if (!code || !state) {
+    return c.json({ error: 'Missing code or state' }, 400);
+  }
+  // Validate state — must exist, be unused, and within TTL.
+  const stateRow = await c.env.DB.prepare(
+    `SELECT id, user_id, expires_at, used FROM password_reset_tokens
+      WHERE token_hash = ? LIMIT 1`
+  ).bind(state).first<{ id: string; user_id: string; expires_at: string; used: number }>();
+  if (!stateRow || stateRow.used || !stateRow.user_id?.startsWith('saml-state:')) {
+    return c.json({ error: 'Invalid SAML state' }, 400);
+  }
+  if (new Date(stateRow.expires_at) < new Date()) {
+    return c.json({ error: 'SAML state expired — please try again' }, 400);
+  }
+  await c.env.DB.prepare(
+    `UPDATE password_reset_tokens SET used = 1 WHERE id = ?`
+  ).bind(stateRow.id).run();
+  const expectedTenantId = stateRow.user_id.slice('saml-state:'.length);
+
+  // Exchange the WorkOS code for a profile via the WorkOS REST API.
+  const profileRes = await fetch('https://api.workos.com/sso/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: c.env.WORKOS_CLIENT_ID,
+      client_secret: c.env.WORKOS_API_KEY,
+      grant_type: 'authorization_code',
+      code,
+    }),
+  });
+  if (!profileRes.ok) {
+    return c.json({ error: 'SAML profile exchange failed', status: profileRes.status }, 502);
+  }
+  const profileData = await profileRes.json() as {
+    profile?: {
+      id?: string; email?: string; first_name?: string; last_name?: string;
+      organization_id?: string; connection_id?: string;
+      raw_attributes?: Record<string, unknown>;
+    };
+    access_token?: string;
+  };
+  const profile = profileData.profile;
+  if (!profile?.email) {
+    return c.json({ error: 'SAML profile missing email' }, 502);
+  }
+  const email = profile.email.toLowerCase();
+
+  // Verify the WorkOS connection matches the tenant we redirected for.
+  const config = await c.env.DB.prepare(
+    `SELECT id, tenant_id, default_role, auto_provision, workos_connection_id
+       FROM sso_configs WHERE tenant_id = ? AND enabled = 1 LIMIT 1`
+  ).bind(expectedTenantId).first<{ id: string; tenant_id: string; default_role: string; auto_provision: number; workos_connection_id: string }>();
+  if (!config || profile.connection_id !== config.workos_connection_id) {
+    return c.json({ error: 'SAML connection mismatch — please contact your administrator' }, 403);
+  }
+
+  // Upsert the user. Auto-provision new users into the tenant's
+  // configured default role when auto_provision is enabled.
+  let userRow = await c.env.DB.prepare(
+    `SELECT id, email, name, role, tenant_id, permissions, status
+       FROM users WHERE tenant_id = ? AND email = ? LIMIT 1`
+  ).bind(config.tenant_id, email).first<{ id: string; email: string; name: string; role: string; tenant_id: string; permissions: string; status: string }>();
+
+  if (!userRow) {
+    if (!config.auto_provision) {
+      return c.json({
+        error: 'Account not found',
+        detail: 'Your SAML login succeeded but this email has no Atheon user yet, and auto-provisioning is disabled for your tenant. Ask your admin to invite you first.',
+      }, 403);
+    }
+    const newId = crypto.randomUUID();
+    const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || email;
+    await c.env.DB.prepare(
+      `INSERT INTO users (id, tenant_id, email, name, given_name, family_name, external_id, role, status, permissions, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', '["read"]', datetime('now'), datetime('now'))`
+    ).bind(
+      newId, config.tenant_id, email, name,
+      profile.first_name ?? null, profile.last_name ?? null,
+      profile.id ?? null, config.default_role || 'analyst',
+    ).run();
+    userRow = {
+      id: newId, email, name, role: config.default_role || 'analyst',
+      tenant_id: config.tenant_id, permissions: '["read"]', status: 'active',
+    };
+    await c.env.DB.prepare(
+      `INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome, created_at)
+       VALUES (?, ?, ?, 'auth.saml.provisioned', 'auth', ?, ?, 'success', datetime('now'))`
+    ).bind(crypto.randomUUID(), config.tenant_id, newId, `user/${newId}`, JSON.stringify({ email, connectionId: profile.connection_id })).run();
+  } else if (userRow.status === 'deactivated' || userRow.status === 'suspended') {
+    return c.json({
+      error: 'Account inactive',
+      detail: 'Your Atheon account has been deactivated. Contact your administrator.',
+    }, 403);
+  }
+
+  await c.env.DB.prepare(
+    `UPDATE users SET last_login = datetime('now'), updated_at = datetime('now') WHERE id = ?`
+  ).bind(userRow.id).run();
+  await c.env.DB.prepare(
+    `INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome, created_at)
+     VALUES (?, ?, ?, 'auth.saml.login', 'auth', ?, ?, 'success', datetime('now'))`
+  ).bind(crypto.randomUUID(), config.tenant_id, userRow.id, `user/${userRow.id}`, JSON.stringify({ email, connectionId: profile.connection_id })).run();
+
+  const token = await generateToken({
+    sub: userRow.id,
+    email: userRow.email,
+    name: userRow.name,
+    role: userRow.role,
+    tenant_id: userRow.tenant_id,
+    permissions: JSON.parse(userRow.permissions || '[]'),
+  }, c.env.JWT_SECRET);
+
+  // Redirect to the frontend with the token in a fragment so the SPA can
+  // pick it up without it ever hitting server logs. Frontend reads the
+  // fragment, persists via setToken(), then replaces history to scrub it.
+  const frontendBase = c.env.SSO_REDIRECT_URI?.replace(/\/api\/.*$/, '') || 'https://atheon.vantax.co.za';
+  return c.redirect(`${frontendBase}/login#sso-token=${encodeURIComponent(token)}`, 302);
+});
+
 export default auth;
