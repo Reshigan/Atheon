@@ -11,6 +11,7 @@ import { LoadingState } from "@/components/ui/state";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 
 import { api } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
@@ -275,6 +276,9 @@ export function ApexPage() {
  const [expandedRisk, setExpandedRisk] = useState<string | null>(null);
  const [health, setHealth] = useState<HealthScore | null>(null);
  const [briefing, setBriefing] = useState<Briefing | null>(null);
+ // ISO timestamp of last briefing/health load — surfaced by MetricSource
+ // freshness rows on the 4 executive briefing tiles.
+ const [apexLoadedAt, setApexLoadedAt] = useState<string | null>(null);
  const [risks, setRisks] = useState<Risk[]>([]);
  const [scenarios, setScenarios] = useState<ScenarioItem[]>([]);
  const [loading, setLoading] = useState(true);
@@ -515,6 +519,7 @@ export function ApexPage() {
   if (hh.status === 'fulfilled') setHealthHistory(hh.value);
   if (br.status === 'fulfilled') setBoardReports(br.value.reports);
   if (rc.status === 'fulfilled') setRadarContext(rc.value);
+  setApexLoadedAt(new Date().toISOString());
   if (opts.showLoading) setLoading(false);
  }, [companyId]);
 
@@ -943,9 +948,27 @@ export function ApexPage() {
  <p className="text-body-base leading-relaxed t-secondary">{briefing.summary}</p>
  {(briefing.healthDelta !== null || briefing.redMetricCount !== null || briefing.anomalyCount !== null || briefing.activeRiskCount !== null) && (
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+ {(() => {
+   const baseProvenance: Partial<MetricProvenance> = {
+     endpoint: 'GET /api/apex/briefing',
+     refreshedAt: apexLoadedAt,
+     window: 'Latest snapshot',
+   };
+   return <>
  {briefing.healthDelta !== null && (
  <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
- <span className="text-caption uppercase tracking-wider t-muted">Health Delta</span>
+ <div className="flex items-center justify-between">
+   <span className="text-caption uppercase tracking-wider t-muted">Health Delta</span>
+   <MetricSource source={{
+     ...baseProvenance,
+     label: 'Health delta',
+     definition: 'Change in overall health score versus the previous snapshot. Positive = improvement.',
+     table: 'health_scores',
+     query: '(latest.overall - previous.overall) FROM health_scores WHERE tenant_id = ? ORDER BY computed_at DESC',
+     notes: [{ label: 'Unit', value: 'points (Δ overall health score)' }],
+     drillTo: '/pulse',
+   }} />
+ </div>
  <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.healthDelta ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
  {(briefing.healthDelta ?? 0) > 0 ? '+' : ''}{briefing.healthDelta}<span className="text-body-sm font-normal t-muted ml-0.5">pts</span>
  </p>
@@ -953,22 +976,57 @@ export function ApexPage() {
  )}
  {briefing.redMetricCount !== null && (
  <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
- <span className="text-caption uppercase tracking-wider t-muted">RED Metrics</span>
+ <div className="flex items-center justify-between">
+   <span className="text-caption uppercase tracking-wider t-muted">RED Metrics</span>
+   <MetricSource source={{
+     ...baseProvenance,
+     label: 'RED metrics',
+     definition: 'Pulse metrics that have breached the critical threshold (status = red) in the latest snapshot.',
+     table: 'pulse_metrics',
+     query: "COUNT(*) FROM pulse_metrics WHERE tenant_id = ? AND status = 'red'",
+     sample: briefing.redMetricCount,
+     notes: [{ label: 'Threshold', value: 'status = red' }],
+     drillTo: '/pulse',
+   }} />
+ </div>
  <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.redMetricCount ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{briefing.redMetricCount}</p>
  </div>
  )}
  {briefing.anomalyCount !== null && (
  <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
- <span className="text-caption uppercase tracking-wider t-muted">Anomalies</span>
+ <div className="flex items-center justify-between">
+   <span className="text-caption uppercase tracking-wider t-muted">Anomalies</span>
+   <MetricSource source={{
+     ...baseProvenance,
+     label: 'Active anomalies',
+     definition: 'Statistical anomalies flagged by Pulse that have not yet been acknowledged or resolved.',
+     table: 'pulse_anomalies',
+     query: "COUNT(*) FROM pulse_anomalies WHERE tenant_id = ? AND status = 'active'",
+     sample: briefing.anomalyCount,
+     drillTo: '/pulse',
+   }} />
+ </div>
  <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.anomalyCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.anomalyCount}</p>
  </div>
  )}
  {briefing.activeRiskCount !== null && (
  <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
- <span className="text-caption uppercase tracking-wider t-muted">Active Risks</span>
+ <div className="flex items-center justify-between">
+   <span className="text-caption uppercase tracking-wider t-muted">Active Risks</span>
+   <MetricSource source={{
+     ...baseProvenance,
+     label: 'Active risks',
+     definition: 'Open business risks flagged by Apex that still require executive attention.',
+     table: 'apex_risks',
+     query: "COUNT(*) FROM apex_risks WHERE tenant_id = ? AND status IN ('open', 'monitoring')",
+     sample: briefing.activeRiskCount,
+   }} />
+ </div>
  <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.activeRiskCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.activeRiskCount}</p>
  </div>
  )}
+   </>;
+ })()}
  </div>
  )}
  </>
