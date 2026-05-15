@@ -25,12 +25,13 @@ import {
 import { api, ApiError } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
 import { useToast } from "@/components/ui/toast";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { AuditPage } from "./AuditPage";
 import { DataGovernancePage } from "./DataGovernancePage";
 
 type EvidencePack = Awaited<ReturnType<typeof api.compliance.evidencePack>>;
 
-function StatChip({ label, value, tone }: { label: string; value: string | number; tone?: 'good' | 'warn' | 'bad' | 'neutral' }) {
+function StatChip({ label, value, tone, source }: { label: string; value: string | number; tone?: 'good' | 'warn' | 'bad' | 'neutral'; source?: MetricProvenance }) {
   const colors: Record<string, string> = {
     good: 'text-emerald-400',
     warn: 'text-amber-400',
@@ -39,7 +40,10 @@ function StatChip({ label, value, tone }: { label: string; value: string | numbe
   };
   return (
     <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-      <div className="text-label mb-1">{label}</div>
+      <div className="flex items-center justify-between">
+        <div className="text-label mb-1">{label}</div>
+        {source && <MetricSource source={source} />}
+      </div>
       <div className={`text-xl font-semibold ${colors[tone || 'neutral']}`}>{value}</div>
     </div>
   );
@@ -93,11 +97,15 @@ function ComplianceEvidence(): JSX.Element {
   const [pack, setPack] = useState<EvidencePack | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // ISO timestamp of last evidence-pack load, fuels freshness rows on each
+  // StatChip's MetricSource popover.
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);
 
   async function load() {
     try {
       const p = await api.compliance.evidencePack(activeTenantId || undefined);
       setPack(p);
+      setLoadedAt(new Date().toISOString());
     } catch (err) {
       toast.error('Failed to load evidence pack', {
         message: err instanceof Error ? err.message : undefined,
@@ -172,11 +180,36 @@ function ComplianceEvidence(): JSX.Element {
           <Badge variant="info" size="sm">SOC 2 CC6.1, CC6.2</Badge>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatChip label="Active admins" value={pack.accessReviews.activeAdminCount} />
-          <StatChip label="Active users" value={pack.accessReviews.activeUserCount} />
-          <StatChip label="Admins assigned (90d)" value={pack.accessReviews.adminsAssignedLast90d} />
-          <StatChip label="Role changes (90d)" value={pack.accessReviews.roleChangesLast90d} />
-          <StatChip label="MFA-enabled users" value={pack.accessReviews.mfaEnabledCount} />
+          <StatChip label="Active admins" value={pack.accessReviews.activeAdminCount} source={{
+            label: 'Active admins', definition: 'Users with an admin role and an active session token / non-deleted account.',
+            table: 'users × user_roles', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(DISTINCT user_id) FROM user_roles WHERE role LIKE '%admin%' AND user.status = 'active'",
+            window: 'Snapshot at load', refreshedAt: loadedAt, sample: pack.accessReviews.activeAdminCount,
+          }} />
+          <StatChip label="Active users" value={pack.accessReviews.activeUserCount} source={{
+            label: 'Active users', definition: 'Total non-deleted user accounts for this tenant.',
+            table: 'users', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(*) FROM users WHERE tenant_id = ? AND status = 'active'",
+            window: 'Snapshot at load', refreshedAt: loadedAt, sample: pack.accessReviews.activeUserCount,
+          }} />
+          <StatChip label="Admins assigned (90d)" value={pack.accessReviews.adminsAssignedLast90d} source={{
+            label: 'Admins assigned (last 90 days)', definition: 'Number of admin-role assignments in the audit log within the last 90 days. Drives SOC 2 CC6.1 access-review evidence.',
+            table: 'audit_log', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(*) FROM audit_log WHERE action LIKE 'iam.role.assigned%' AND created_at >= now() - 90d",
+            window: 'Last 90 days', refreshedAt: loadedAt,
+          }} />
+          <StatChip label="Role changes (90d)" value={pack.accessReviews.roleChangesLast90d} source={{
+            label: 'Role changes (last 90 days)', definition: 'Total IAM role mutations (assigns + revokes) in the last 90 days.',
+            table: 'audit_log', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(*) FROM audit_log WHERE action LIKE 'iam.role.%' AND created_at >= now() - 90d",
+            window: 'Last 90 days', refreshedAt: loadedAt,
+          }} />
+          <StatChip label="MFA-enabled users" value={pack.accessReviews.mfaEnabledCount} source={{
+            label: 'MFA-enabled users', definition: 'Users with at least one verified MFA factor enrolled.',
+            table: 'user_mfa_factors', endpoint: 'GET /api/compliance/evidence-pack',
+            query: 'COUNT(DISTINCT user_id) FROM user_mfa_factors WHERE verified_at IS NOT NULL',
+            window: 'Snapshot at load', refreshedAt: loadedAt, sample: pack.accessReviews.mfaEnabledCount,
+          }} />
         </div>
       </Card>
 
@@ -188,11 +221,34 @@ function ComplianceEvidence(): JSX.Element {
           <Badge variant="info" size="sm">CC6.1</Badge>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-          <StatChip label="Total active users" value={pack.mfa.totalUsers} />
-          <StatChip label="MFA enabled" value={pack.mfa.mfaEnabled} />
-          <StatChip label="Coverage %" value={`${pack.mfa.mfaCoveragePct}%`} tone={mfaTone} />
-          <StatChip label="Admins in grace" value={pack.mfa.adminsInGracePeriod} tone={pack.mfa.adminsInGracePeriod > 0 ? 'warn' : 'good'} />
-          <StatChip label="Admins expired grace" value={pack.mfa.adminsExpiredGrace} tone={expiredGraceTone} />
+          <StatChip label="Total active users" value={pack.mfa.totalUsers} source={{
+            label: 'Total active users', definition: 'Denominator for MFA coverage — non-deleted users for this tenant.',
+            table: 'users', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(*) FROM users WHERE tenant_id = ? AND status = 'active'", refreshedAt: loadedAt,
+          }} />
+          <StatChip label="MFA enabled" value={pack.mfa.mfaEnabled} source={{
+            label: 'MFA enabled', definition: 'Active users with at least one verified MFA factor.',
+            table: 'users × user_mfa_factors', endpoint: 'GET /api/compliance/evidence-pack',
+            query: 'COUNT(DISTINCT u.id) FROM users u JOIN user_mfa_factors f ON f.user_id = u.id WHERE f.verified_at IS NOT NULL',
+            refreshedAt: loadedAt, sample: pack.mfa.mfaEnabled,
+          }} />
+          <StatChip label="Coverage %" value={`${pack.mfa.mfaCoveragePct}%`} tone={mfaTone} source={{
+            label: 'MFA coverage %', definition: 'mfaEnabled / totalUsers. Compliance gates at 95% — anything below trips the SOC 2 CC6.1 control.',
+            query: 'mfaEnabled / totalUsers * 100',
+            endpoint: 'GET /api/compliance/evidence-pack', refreshedAt: loadedAt,
+            notes: [{ label: 'Gate', value: '≥ 95% for CC6.1 pass' }],
+          }} />
+          <StatChip label="Admins in grace" value={pack.mfa.adminsInGracePeriod} tone={pack.mfa.adminsInGracePeriod > 0 ? 'warn' : 'good'} source={{
+            label: 'Admins in MFA grace period', definition: 'Admin users who have not yet enrolled an MFA factor but are still within the configured grace window after account creation.',
+            table: 'users', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(*) FROM users WHERE is_admin AND mfa_enrolled_at IS NULL AND created_at >= now() - grace_days", refreshedAt: loadedAt,
+          }} />
+          <StatChip label="Admins expired grace" value={pack.mfa.adminsExpiredGrace} tone={expiredGraceTone} source={{
+            label: 'Admins past MFA grace', definition: 'Admin users whose grace window has elapsed without MFA enrolment. Each one is a CC6.1 finding.',
+            table: 'users', endpoint: 'GET /api/compliance/evidence-pack',
+            query: "COUNT(*) FROM users WHERE is_admin AND mfa_enrolled_at IS NULL AND created_at < now() - grace_days", refreshedAt: loadedAt,
+            notes: [{ label: 'Compliance impact', value: 'Each row is a CC6.1 exception' }],
+          }} />
         </div>
         <Progress value={pack.mfa.mfaCoveragePct} color={mfaTone === 'good' ? 'emerald' : mfaTone === 'warn' ? 'amber' : 'red'} size="md" />
       </Card>

@@ -6,6 +6,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import type { SubCatalystRunItem, SubCatalystRunItemsResponse, RunComment } from "@/lib/api";
@@ -467,11 +468,29 @@ export function CatalystRunDetailPage() {
         {/* Run summary KPIs — Stitch bento. Same accent vocabulary as
             the Apex briefing tiles and the Operator Queue dispatch tiles:
             emerald success / amber discrepancy / red exception / sky value. */}
+        {(() => {
+          const runProvenance: Partial<MetricProvenance> = {
+            endpoint: `GET /api/catalysts/runs/${runId}`,
+            table: 'sub_catalyst_runs',
+            window: `Run started ${run.startedAt ?? ''}`,
+            refreshedAt: run.completedAt ?? run.startedAt ?? null,
+          };
+          return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Matched Records</span>
-              <CheckCircle2 size={16} className="text-emerald-400" />
+              <div className="flex items-center gap-1">
+                <MetricSource source={{
+                  ...runProvenance,
+                  label: 'Matched records',
+                  definition: 'Number of source records this run successfully matched against their target row(s). High match rate is the "no surprises" signal.',
+                  query: 'matched FROM sub_catalyst_runs WHERE id = ?',
+                  sample: run.matched ?? 0,
+                  drillTo: `/catalysts/runs/${runId}?status=matched`,
+                }} />
+                <CheckCircle2 size={16} className="text-emerald-400" />
+              </div>
             </div>
             <Numeric value={run.matched ?? 0} size="lg" />
           </div>
@@ -479,7 +498,17 @@ export function CatalystRunDetailPage() {
           <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Discrepancies</span>
-              <AlertCircle size={16} className="text-amber-400" />
+              <div className="flex items-center gap-1">
+                <MetricSource source={{
+                  ...runProvenance,
+                  label: 'Discrepancies',
+                  definition: 'Source/target pairs whose values disagree by more than the configured tolerance. Each is a candidate for a write-back action.',
+                  query: 'discrepancies FROM sub_catalyst_runs WHERE id = ?',
+                  sample: run.discrepancies ?? 0,
+                  drillTo: `/catalysts/runs/${runId}?status=discrepancy`,
+                }} />
+                <AlertCircle size={16} className="text-amber-400" />
+              </div>
             </div>
             <Numeric value={run.discrepancies ?? 0} size="lg" />
           </div>
@@ -487,7 +516,17 @@ export function CatalystRunDetailPage() {
           <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Exceptions</span>
-              <XCircle size={16} className="text-red-400" />
+              <div className="flex items-center gap-1">
+                <MetricSource source={{
+                  ...runProvenance,
+                  label: 'Exceptions',
+                  definition: 'Items the catalyst could not auto-classify — they need an operator decision before a write-back can be proposed.',
+                  query: 'exceptions FROM sub_catalyst_runs WHERE id = ?',
+                  sample: run.exceptions ?? 0,
+                  drillTo: `/catalysts/runs/${runId}?status=exception`,
+                }} />
+                <XCircle size={16} className="text-red-400" />
+              </div>
             </div>
             <Numeric value={run.exceptions ?? 0} size="lg" />
           </div>
@@ -495,11 +534,22 @@ export function CatalystRunDetailPage() {
           <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Total Value</span>
-              <Database size={16} style={{ color: 'var(--sky)' }} />
+              <div className="flex items-center gap-1">
+                <MetricSource source={{
+                  ...runProvenance,
+                  label: 'Total value at stake',
+                  definition: 'Sum of value_zar across every record this run touched — the financial scope this catalyst is moving across in one execution.',
+                  query: 'total_value FROM sub_catalyst_runs WHERE id = ?',
+                  notes: [{ label: 'Currency', value: 'ZAR' }],
+                }} />
+                <Database size={16} style={{ color: 'var(--sky)' }} />
+              </div>
             </div>
             <Numeric value={run.totalValue ?? null} unit="ZAR" compact size="lg" />
           </div>
         </div>
+          );
+        })()}
 
         {/* Run Items — filtering + approval workflow */}
         <Card className="p-6 mb-6">
