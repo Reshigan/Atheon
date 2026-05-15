@@ -465,6 +465,7 @@ export function Dashboard() {
         totalTasks={totalTasks}
         risksCount={risks.length}
         anomaliesCount={anomalies.length}
+        refreshedAt={lastRefreshed.toISOString()}
       />
 
       {/* TASK-002: Decomposed Health Dimensions sub-component */}

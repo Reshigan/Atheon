@@ -1,5 +1,6 @@
 import { Sparkline } from "@/components/ui/sparkline";
 import { Numeric } from "@/components/ui/numeric";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 /**
@@ -46,10 +47,14 @@ interface KpiCardProps {
    *  the prior `badge` prop — keeps the tile typographically clean. */
   subline?: string;
   accent?: Accent;
+  /** Source-of-measure metadata. When provided, renders an inline ⓘ trigger
+   *  on the card that opens a popover with the endpoint/table/query behind
+   *  the value. Optional so existing callers stay valid. */
+  source?: MetricProvenance;
 }
 
 export function KpiCard({
-  label, value, trend = "stable", delta, sparkData, subline, accent = 'sage',
+  label, value, trend = "stable", delta, sparkData, subline, accent = 'sage', source,
 }: KpiCardProps): JSX.Element {
   const sparkColour = trend === "down" || trend === "declining"
     ? '#F87171'
@@ -61,7 +66,10 @@ export function KpiCard({
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-caption font-medium t-muted uppercase tracking-wider">{label}</span>
-        {subline && <span className="text-caption t-muted">{subline}</span>}
+        <div className="flex items-center gap-1.5">
+          {subline && <span className="text-caption t-muted">{subline}</span>}
+          {source && <MetricSource source={source} />}
+        </div>
       </div>
       <div className="flex items-end justify-between">
         <div>
@@ -95,15 +103,61 @@ interface KpiGridProps {
   totalTasks: number;
   risksCount: number;
   anomaliesCount: number;
+  /** ISO timestamp of last load — feeds the MetricSource freshness rows
+   *  on every tile. Optional so callers that don't track this stay valid. */
+  refreshedAt?: string | null;
 }
 
-export function KpiGrid({ overallScore, healthTrend, avgDelta, activeCatalysts, totalTasks, risksCount, anomaliesCount }: KpiGridProps): JSX.Element {
+export function KpiGrid({
+  overallScore, healthTrend, avgDelta, activeCatalysts, totalTasks,
+  risksCount, anomaliesCount, refreshedAt,
+}: KpiGridProps): JSX.Element {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <KpiCard label="Atheon Score" value={overallScore} trend={healthTrend} delta={avgDelta} subline="Live" accent="sage" />
-      <KpiCard label="Active Catalysts" value={activeCatalysts} trend="stable" subline={`${totalTasks} tasks`} accent="bronze" />
-      <KpiCard label="Active Risks" value={risksCount} trend={risksCount > 3 ? "up" : "stable"} accent={risksCount > 3 ? 'red' : 'sage'} />
-      <KpiCard label="Anomalies" value={anomaliesCount} trend={anomaliesCount > 2 ? "up" : "stable"} accent={anomaliesCount > 2 ? 'amber' : 'sage'} />
+      <KpiCard label="Atheon Score" value={overallScore} trend={healthTrend} delta={avgDelta} subline="Live" accent="sage" source={{
+        label: 'Atheon Score',
+        definition: 'Overall business-health score (0–100), a weighted composite across all monitored dimensions.',
+        table: 'health_scores',
+        endpoint: 'GET /api/apex/health',
+        query: 'health_scores.overall — latest snapshot for tenant',
+        window: 'Latest snapshot',
+        refreshedAt,
+        notes: [{ label: 'Δ vs prior', value: `${avgDelta > 0 ? '+' : ''}${avgDelta.toFixed(1)}%` }],
+        drillTo: '/apex',
+      }} />
+      <KpiCard label="Active Catalysts" value={activeCatalysts} trend="stable" subline={`${totalTasks} tasks`} accent="bronze" source={{
+        label: 'Active catalysts',
+        definition: 'Catalyst clusters currently in active state. Each cluster is a domain-specific automation (AR aging, GR/IR matching, etc.).',
+        table: 'catalyst_clusters',
+        endpoint: 'GET /api/catalysts/clusters',
+        query: "COUNT(*) FROM catalyst_clusters WHERE tenant_id = ? AND status = 'active'",
+        window: 'Snapshot at load',
+        refreshedAt,
+        notes: [{ label: 'Tasks in flight', value: totalTasks }],
+        drillTo: '/catalysts',
+      }} />
+      <KpiCard label="Active Risks" value={risksCount} trend={risksCount > 3 ? "up" : "stable"} accent={risksCount > 3 ? 'red' : 'sage'} source={{
+        label: 'Active risks',
+        definition: 'Open business risks flagged by Apex that still require attention.',
+        table: 'apex_risks',
+        endpoint: 'GET /api/apex/risks',
+        query: "COUNT(*) FROM apex_risks WHERE tenant_id = ? AND status IN ('open', 'monitoring')",
+        window: 'Snapshot at load',
+        refreshedAt,
+        sample: risksCount,
+        drillTo: '/apex',
+      }} />
+      <KpiCard label="Anomalies" value={anomaliesCount} trend={anomaliesCount > 2 ? "up" : "stable"} accent={anomaliesCount > 2 ? 'amber' : 'sage'} source={{
+        label: 'Active anomalies',
+        definition: 'Statistical anomalies detected by Pulse that have not yet been acknowledged.',
+        table: 'pulse_anomalies',
+        endpoint: 'GET /api/pulse/anomalies',
+        query: "COUNT(*) FROM pulse_anomalies WHERE tenant_id = ? AND status = 'active'",
+        window: 'Snapshot at load',
+        refreshedAt,
+        sample: anomaliesCount,
+        drillTo: '/pulse',
+      }} />
     </div>
   );
 }
