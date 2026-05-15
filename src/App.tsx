@@ -29,6 +29,7 @@ const BoardDigestPage = lazyWithRetry(() => import("@/pages/BoardDigestPage"));
 const StatusPage = lazyWithRetry(() => import("@/pages/StatusPage"));
 const SecurityPage = lazyWithRetry(() => import("@/pages/SecurityPage"));
 const ConnectorsPage = lazyWithRetry(() => import("@/pages/ConnectorsPage"));
+const StatusIncidentsAdminPage = lazyWithRetry(() => import("@/pages/admin/StatusIncidentsAdminPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
 const PulsePage = lazyWithRetry(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
@@ -241,6 +242,10 @@ export default function App() {
             <Route path="/data-governance" element={<Navigate to="/compliance" replace />} />
             <Route path="/integration-health" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><IntegrationHealthPage /></ProtectedRoute>} />
             <Route path="/system-alerts" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><SystemAlertsPage /></ProtectedRoute>} />
+            {/* Phase BC: incident manager for the public /status page.
+                Superadmin/support_admin gated inside the page; ProtectedRoute
+                here is the outer floor. */}
+            <Route path="/admin/incidents" element={<ProtectedRoute allowedRoles={SUPPORT_ROLES}><StatusIncidentsAdminPage /></ProtectedRoute>} />
             <Route path="/webhooks" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><WebhooksPage /></ProtectedRoute>} />
             <Route path="/webhooks/:webhookId" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><WebhooksPage /></ProtectedRoute>} />
             {/* v48: Support ticket system — all authenticated users can file tickets;
