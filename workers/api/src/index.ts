@@ -18,6 +18,8 @@ import auth, { validatePasswordStrength } from './routes/auth';
 import tenants from './routes/tenants';
 import iam from './routes/iam';
 import scim from './routes/scim';
+import statusPublic from './routes/status';
+import statusAdmin from './routes/status-admin';
 import apex from './routes/apex';
 import pulse from './routes/pulse';
 import catalysts from './routes/catalysts';
@@ -495,6 +497,17 @@ app.route('/api/admin', demoSeedRoutes);
 // per RFC 7644; authenticates via Bearer token, NOT JWT. Tenant scope is
 // derived from the token row inside the scimAuth() middleware.
 app.route('/scim/v2', scim);
+
+// Phase AZ: Public platform status page + admin incident management.
+// /api/status* is PUBLIC (no auth) — procurement teams probe this URL
+// during vendor onboarding. /api/admin/status/* is JWT-authed and
+// superadmin/support_admin gated inside the handler.
+app.route('/api/status', statusPublic);
+app.route('/api/v1/status', statusPublic);
+app.use('/api/v1/admin/status/*', tenantIsolation());
+app.route('/api/v1/admin/status', statusAdmin);
+app.use('/api/admin/status/*', tenantIsolation());
+app.route('/api/admin/status', statusAdmin);
 
 // Tenant admin routes need auth middleware (tenantIsolation sets c.get('auth'))
 // Scoped to /tenants/* so /admin/setup and /admin/migrate (JWT-free) are not blocked
