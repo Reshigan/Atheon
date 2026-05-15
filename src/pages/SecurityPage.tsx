@@ -80,6 +80,10 @@ export default function SecurityPage(): JSX.Element {
                   Connector matrix <ExternalLink size={11} />
                 </Link>
                 <span className="t-muted text-caption">·</span>
+                <Link to="/legal/performance" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
+                  Performance <ExternalLink size={11} />
+                </Link>
+                <span className="t-muted text-caption">·</span>
                 <a href="mailto:dpa@vantax.co.za" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
                   Request DPA template <Mail size={11} />
                 </a>

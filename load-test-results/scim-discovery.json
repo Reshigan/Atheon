@@ -1,0 +1,26 @@
+{
+  "label": "GET /scim/v2/ServiceProviderConfig · 10 VU · 30s · auth-rejected",
+  "url": "https://atheon-api.vantax.co.za/scim/v2/ServiceProviderConfig",
+  "method": "GET",
+  "vus": 10,
+  "durationSec": 14.1,
+  "requestsTotal": 5000,
+  "requestsOk": 0,
+  "requestsFailed": 5000,
+  "errorRatePct": 100,
+  "throughputRps": 355.8,
+  "latencyMs": {
+    "min": null,
+    "p50": null,
+    "p95": null,
+    "p99": null,
+    "max": null,
+    "avg": null
+  },
+  "statusCounts": {
+    "401": 5000
+  },
+  "bytesReceived": 530000,
+  "errorsSample": [],
+  "ranAt": "2026-05-15T14:37:48.558Z"
+}
