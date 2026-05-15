@@ -5,6 +5,7 @@ import type { Assessment, AssessmentResults, CatalystScore, ERPConnection, Value
 import { useToast } from '@/components/ui/toast';
 import { AssessmentFindingsPanel } from '@/components/AssessmentFindingsPanel';
 import { HeroHeader } from '@/components/ui/hero-header';
+import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { ClipboardList } from 'lucide-react';
 import { catalystDeployUrl } from '@/lib/catalyst-recommendation';
 
@@ -807,21 +808,97 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 
           {hasValueData && !loadingVA && valueSummary && (
             <>
-              {/* Section 1: Headline Numbers */}
+              {/* Section 1: Headline Numbers — these tiles ARE the business
+                  case. Every Rand claimed is a billing artefact under the
+                  shared-savings model, so source-of-measure is mandatory. */}
+              {(() => {
+                const assessmentBase: Partial<MetricProvenance> = {
+                  endpoint: `GET /api/assessments/${assessment.id}`,
+                  refreshedAt: assessment.createdAt,
+                  window: `Assessment run ${assessment.createdAt}`,
+                };
+                const tiles: Array<{ label: string; value: string; sub: string; color: string; source: MetricProvenance }> = [
+                  {
+                    label: 'Total Issues Found',
+                    value: valueSummary.total_findings.toString(),
+                    sub: `${valueSummary.total_critical_findings} critical`,
+                    color: 'var(--text-primary)',
+                    source: {
+                      ...assessmentBase,
+                      label: 'Total findings',
+                      definition: 'Distinct discrepancies, data-quality issues, and process delays discovered by the value-assessment engine on this run.',
+                      table: 'assessment_findings',
+                      query: 'COUNT(*) FROM assessment_findings WHERE assessment_id = ?',
+                      sample: valueSummary.total_findings,
+                      notes: [{ label: 'Critical', value: `${valueSummary.total_critical_findings} (severity = critical)` }],
+                    },
+                  },
+                  {
+                    label: 'Immediate Recovery',
+                    value: formatRk(valueSummary.total_immediate_value),
+                    sub: 'One-time cleanup value',
+                    color: '#10b981',
+                    source: {
+                      ...assessmentBase,
+                      label: 'Immediate recovery value (ZAR)',
+                      definition: 'Sum of one-time financial recovery across every finding — money already at stake in the ERP that can be recovered immediately on remediation.',
+                      table: 'assessment_findings',
+                      query: 'SUM(immediate_value) FROM assessment_findings WHERE assessment_id = ?',
+                      notes: [
+                        { label: 'Currency', value: 'ZAR' },
+                        { label: 'Trace', value: 'every Rand → assessment_findings.evidence.sample_records → ERP refs' },
+                      ],
+                    },
+                  },
+                  {
+                    label: 'Ongoing Monthly Value',
+                    value: formatRk(valueSummary.total_ongoing_monthly_value),
+                    sub: `${formatRk(valueSummary.total_ongoing_annual_value)}/year`,
+                    color: '#3b82f6',
+                    source: {
+                      ...assessmentBase,
+                      label: 'Ongoing monthly value (ZAR)',
+                      definition: 'Recurring monthly savings the value-assessment engine projects after the findings are remediated and Atheon catalysts run continuously.',
+                      table: 'assessment_findings',
+                      query: 'SUM(ongoing_monthly_value) FROM assessment_findings WHERE assessment_id = ?',
+                      notes: [
+                        { label: 'Annualised', value: formatRk(valueSummary.total_ongoing_annual_value) },
+                        { label: 'Currency', value: 'ZAR' },
+                      ],
+                    },
+                  },
+                  {
+                    label: 'Payback Period',
+                    value: `${valueSummary.payback_days} days`,
+                    sub: `Outcome fee: ${formatRk(valueSummary.outcome_based_monthly_fee)}/mo`,
+                    color: '#8b5cf6',
+                    source: {
+                      ...assessmentBase,
+                      label: 'Payback period',
+                      definition: 'Number of days before cumulative customer savings exceed the cumulative outcome-based Atheon fee. This is the no-brainer purchase metric.',
+                      query: '(outcome_based_monthly_fee × 30) / total_immediate_value ≈ break-even days',
+                      notes: [
+                        { label: 'Outcome fee', value: `${formatRk(valueSummary.outcome_based_monthly_fee)}/mo` },
+                        { label: 'Fee %', value: `${valueSummary.outcome_based_fee_pct}%` },
+                      ],
+                    },
+                  },
+                ];
+                return (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Total Issues Found', value: valueSummary.total_findings.toString(), sub: `${valueSummary.total_critical_findings} critical`, color: 'var(--text-primary)' },
-                  { label: 'Immediate Recovery', value: formatRk(valueSummary.total_immediate_value), sub: 'One-time cleanup value', color: '#10b981' },
-                  { label: 'Ongoing Monthly Value', value: formatRk(valueSummary.total_ongoing_monthly_value), sub: `${formatRk(valueSummary.total_ongoing_annual_value)}/year`, color: '#3b82f6' },
-                  { label: 'Payback Period', value: `${valueSummary.payback_days} days`, sub: `Outcome fee: ${formatRk(valueSummary.outcome_based_monthly_fee)}/mo`, color: '#8b5cf6' },
-                ].map(m => (
+                {tiles.map(m => (
                   <div key={m.label} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
+                      <MetricSource source={m.source} />
+                    </div>
                     <p className="text-xl font-bold mt-1" style={{ color: m.color }}>{m.value}</p>
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.sub}</span>
                   </div>
                 ))}
               </div>
+                );
+              })()}
 
               {/* Section 2: Executive Narrative */}
               {valueSummary.executive_narrative && (
