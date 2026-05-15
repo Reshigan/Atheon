@@ -12,6 +12,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
 import { HeroHeader } from "@/components/ui/hero-header";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
+import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 
 import { api } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
@@ -553,13 +554,19 @@ export function ApexPage() {
  ];
 
   const pageHeader = (
-    <HeroHeader
-      icon={Crown}
-      title="Apex"
-      subtitle="Executive Intelligence & Strategic Context"
-      accent="sage"
-      trailing={<SectionFreshness section="Health" />}
-    />
+    <div className="space-y-3">
+      {/* CFO-facing shared-savings strip — slim banner above the
+          executive intelligence header. Hidden for tenants without
+          realised savings yet; dismissible per session. */}
+      <SharedSavingsStrip />
+      <HeroHeader
+        icon={Crown}
+        title="Apex"
+        subtitle="Executive Intelligence & Strategic Context"
+        accent="sage"
+        trailing={<SectionFreshness section="Health" />}
+      />
+    </div>
   );
 
   if (loading) {
