@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { SortHeader, cycleSort, type SortSpec } from '@/components/ui/sort-header';
 import { ActionEvidenceDrawer } from '@/components/action/ActionEvidenceDrawer';
+import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 
 interface ActionItem {
   id: string;
@@ -113,6 +114,16 @@ const TILE_DEFS: Array<{
   { key: 'rejected',         label: 'Rejected',  countKey: 'rejected_count',          valueKey: 'rejected_value_zar',          icon: AlertOctagon,  accent: '#F97316', hoverBorder: 'hover:border-orange-500/40' },
 ];
 
+// Plain-English definitions for each status. Surfaced by MetricSource on
+// the tile so an operator can audit exactly what the count represents.
+const TILE_DEFINITIONS: Record<Exclude<StatusFilter, 'all'>, string> = {
+  pending_approval: 'Catalyst write-back proposals queued for human approval before dispatch.',
+  previewed:        'Actions run in preview mode — payload composed and validated but not yet committed to the ERP.',
+  completed:        'Actions successfully dispatched to the ERP and confirmed by the connector.',
+  failed:           'Actions whose ERP write-back returned an error — usually a validation or auth failure on the target system.',
+  rejected:         'Actions explicitly rejected by an operator. Cleared from the queue but retained for audit.',
+};
+
 function shortRef(id: string): string {
   // Friendly short-ref for the queue table — last 10 chars uppercase.
   return id.length > 10 ? id.slice(-10).toUpperCase() : id.toUpperCase();
@@ -150,6 +161,9 @@ export function ActionLayerPage(): JSX.Element {
   const [savedViews, setSavedViews] = useState<SavedView[]>(() => loadSavedViews());
   // Drill-through: action id of the row whose evidence drawer is open.
   const [drillId, setDrillId] = useState<string | null>(null);
+  // When the summary was last loaded — fuels MetricSource "Refreshed" rows
+  // on the 5 status tiles so operators can see staleness at a glance.
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -162,6 +176,7 @@ export function ActionLayerPage(): JSX.Element {
       ]);
       setSummary(sum.summary);
       setActions(list.actions);
+      setLoadedAt(new Date().toISOString());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load action queue');
     } finally {
@@ -412,26 +427,51 @@ export function ActionLayerPage(): JSX.Element {
         <LoadingState variant="cards" count={4} />
       ) : (
         <>
-          {/* 5 status tiles — Stitch dispatch-queue pattern */}
+          {/* 5 status tiles — Stitch dispatch-queue pattern. Each tile is a
+              filter toggle AND carries a MetricSource so the operator can
+              audit where its count + ZAR value came from. Tile is a div
+              (not button) so the MetricSource trigger can nest safely. */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {TILE_DEFS.map((tile) => {
               const Icon = tile.icon;
               const count = (summary?.[tile.countKey] as number | undefined) ?? 0;
               const value = (summary?.[tile.valueKey] as number | undefined) ?? 0;
               const isActiveFilter = filter === tile.key;
+              const tileProvenance: MetricProvenance = {
+                label: `${tile.label} actions`,
+                definition: TILE_DEFINITIONS[tile.key],
+                table: 'catalyst_actions',
+                endpoint: 'GET /api/erp/actions/summary',
+                query: `SELECT COUNT(*), SUM(value_zar)\n  FROM catalyst_actions\n WHERE tenant_id = ?\n   AND status = '${tile.key}'`,
+                window: 'All time',
+                sample: count,
+                refreshedAt: loadedAt,
+                drillTo: `/action-layer?status=${tile.key}`,
+                notes: [{ label: 'Value', value: <Numeric value={value} unit="ZAR" compact size="sm" /> }],
+              };
               return (
-                <button
+                <div
                   key={tile.key}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setFilter(isActiveFilter ? 'all' : tile.key)}
-                  className={`text-left p-4 rounded-2xl bg-[var(--bg-card-solid)] border transition-colors ${tile.hoverBorder} ${
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setFilter(isActiveFilter ? 'all' : tile.key);
+                    }
+                  }}
+                  className={`text-left p-4 rounded-2xl bg-[var(--bg-card-solid)] border transition-colors cursor-pointer ${tile.hoverBorder} ${
                     isActiveFilter ? 'border-accent' : 'border-[var(--border-card)]'
                   }`}
                   aria-pressed={isActiveFilter}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">{tile.label}</span>
-                    <Icon size={16} style={{ color: tile.accent }} />
+                    <div className="flex items-center gap-1">
+                      <MetricSource source={tileProvenance} />
+                      <Icon size={16} style={{ color: tile.accent }} />
+                    </div>
                   </div>
                   <div className="text-headline-lg font-bold t-primary tabular-nums font-mono">
                     <Numeric value={count} size="lg" />
@@ -439,7 +479,7 @@ export function ActionLayerPage(): JSX.Element {
                   <div className="text-caption font-mono t-muted mt-1">
                     <Numeric value={value} unit="ZAR" compact size="sm" tone="mute" />
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

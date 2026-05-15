@@ -25,6 +25,7 @@ import { OnboardingChecklist } from "@/components/common/OnboardingChecklist";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { KpiGrid } from "./dashboard/KpiCards";
 import { HealthDimensions } from "./dashboard/HealthDimensions";
 import { IntelligencePanel } from "./dashboard/IntelligencePanel";
@@ -469,73 +470,129 @@ export function Dashboard() {
       {/* TASK-002: Decomposed Health Dimensions sub-component */}
       <HealthDimensions dimensions={dimensions} onOpenTrace={handleOpenDimensionTrace} />
 
-      {/* Status Breakdown Cards (Static — FlipCards removed per UI cleanup) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="h-full">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-label">Dimensions</span>
-            <Gauge size={14} className="text-accent" />
-          </div>
-          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{dimensions.length}</p>
-          <p className="text-caption t-muted mt-1">monitored areas</p>
-          <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
-            {dimensions.slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-caption">
-                <span className="t-secondary truncate mr-2">{d.name}</span>
-                <span className={`font-medium ${d.score >= 80 ? 'text-emerald-400' : d.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>{d.score}</span>
+      {/* Status Breakdown Cards (Static — FlipCards removed per UI cleanup).
+          Each card now carries a MetricSource so the operator can audit
+          where the count came from: Apex health endpoint, dimension
+          score threshold, refresh timestamp. */}
+      {(() => {
+        const healthyCount  = dimensions.filter(d => d.score >= 80).length;
+        const atRiskCount   = dimensions.filter(d => d.score >= 60 && d.score < 80).length;
+        const criticalCount = dimensions.filter(d => d.score < 60).length;
+        const baseProvenance: Partial<MetricProvenance> = {
+          table: 'health_scores',
+          endpoint: 'GET /api/apex/health',
+          window: 'Latest snapshot',
+          refreshedAt: lastRefreshed.toISOString(),
+        };
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="h-full">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-label">Dimensions</span>
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Monitored dimensions',
+                    definition: 'Number of business health dimensions Atheon is tracking for this tenant.',
+                    query: 'COUNT(DISTINCT dimension) FROM health_scores WHERE tenant_id = ?',
+                    sample: dimensions.length,
+                    drillTo: '/pulse',
+                  }} />
+                  <Gauge size={14} className="text-accent" />
+                </div>
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card className="h-full">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-label">Healthy</span>
-            <CheckCircle2 size={14} className="text-emerald-400" />
-          </div>
-          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{dimensions.filter(d => d.score >= 80).length}</p>
-          <p className="text-caption t-muted mt-1">above threshold</p>
-          <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
-            {dimensions.filter(d => d.score >= 80).slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-caption">
-                <span className="t-secondary truncate mr-2">{d.name}</span>
-                <span className="font-medium text-emerald-400">{d.score}</span>
+              <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{dimensions.length}</p>
+              <p className="text-caption t-muted mt-1">monitored areas</p>
+              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+                {dimensions.slice(0, 3).map((d) => (
+                  <div key={d.key} className="flex items-center justify-between text-caption">
+                    <span className="t-secondary truncate mr-2">{d.name}</span>
+                    <span className={`font-medium ${d.score >= 80 ? 'text-emerald-400' : d.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>{d.score}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card className="h-full">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-label">At Risk</span>
-            <AlertTriangle size={14} className="text-amber-400" />
-          </div>
-          <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{dimensions.filter(d => d.score >= 60 && d.score < 80).length}</p>
-          <p className="text-caption t-muted mt-1">needs attention</p>
-          <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
-            {dimensions.filter(d => d.score >= 60 && d.score < 80).slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-caption">
-                <span className="t-secondary truncate mr-2">{d.name}</span>
-                <span className="font-medium text-amber-400">{d.score}</span>
+            </Card>
+            <Card className="h-full">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-label">Healthy</span>
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Healthy dimensions',
+                    definition: 'Dimensions whose latest health score is at or above the healthy threshold (≥ 80).',
+                    query: "COUNT(*) FROM health_scores WHERE tenant_id = ? AND score >= 80",
+                    sample: healthyCount,
+                    notes: [{ label: 'Threshold', value: 'score ≥ 80' }],
+                  }} />
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                </div>
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card className="h-full">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-label">Critical</span>
-            <XCircle size={14} className="text-red-400" />
-          </div>
-          <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{dimensions.filter(d => d.score < 60).length}</p>
-          <p className="text-caption t-muted mt-1">requires action</p>
-          <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
-            {dimensions.filter(d => d.score < 60).slice(0, 3).map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-caption">
-                <span className="t-secondary truncate mr-2">{d.name}</span>
-                <span className="font-medium text-red-400">{d.score}</span>
+              <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{healthyCount}</p>
+              <p className="text-caption t-muted mt-1">above threshold</p>
+              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+                {dimensions.filter(d => d.score >= 80).slice(0, 3).map((d) => (
+                  <div key={d.key} className="flex items-center justify-between text-caption">
+                    <span className="t-secondary truncate mr-2">{d.name}</span>
+                    <span className="font-medium text-emerald-400">{d.score}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </Card>
+            <Card className="h-full">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-label">At Risk</span>
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'At-risk dimensions',
+                    definition: 'Dimensions whose latest health score falls in the warning band (60 ≤ score < 80).',
+                    query: 'COUNT(*) FROM health_scores WHERE tenant_id = ? AND score >= 60 AND score < 80',
+                    sample: atRiskCount,
+                    notes: [{ label: 'Threshold', value: '60 ≤ score < 80' }],
+                  }} />
+                  <AlertTriangle size={14} className="text-amber-400" />
+                </div>
+              </div>
+              <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{atRiskCount}</p>
+              <p className="text-caption t-muted mt-1">needs attention</p>
+              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+                {dimensions.filter(d => d.score >= 60 && d.score < 80).slice(0, 3).map((d) => (
+                  <div key={d.key} className="flex items-center justify-between text-caption">
+                    <span className="t-secondary truncate mr-2">{d.name}</span>
+                    <span className="font-medium text-amber-400">{d.score}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card className="h-full">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-label">Critical</span>
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Critical dimensions',
+                    definition: 'Dimensions whose latest health score is below the critical threshold (< 60). These force operator review.',
+                    query: 'COUNT(*) FROM health_scores WHERE tenant_id = ? AND score < 60',
+                    sample: criticalCount,
+                    notes: [{ label: 'Threshold', value: 'score < 60' }],
+                  }} />
+                  <XCircle size={14} className="text-red-400" />
+                </div>
+              </div>
+              <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{criticalCount}</p>
+              <p className="text-caption t-muted mt-1">requires action</p>
+              <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
+                {dimensions.filter(d => d.score < 60).slice(0, 3).map((d) => (
+                  <div key={d.key} className="flex items-center justify-between text-caption">
+                    <span className="t-secondary truncate mr-2">{d.name}</span>
+                    <span className="font-medium text-red-400">{d.score}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
+        );
+      })()}
 
       {/* v63 — write-back action queue: pending count + value at stake.
           Shipped in Phase 7-2 alongside Pulse / Apex equivalents so the
