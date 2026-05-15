@@ -118,6 +118,7 @@ const SECTIONS: NavSection[] = [
       { path: '/assessments',      label: 'Assessments',      symbol: 'fact_check',     roles: SUPERADMIN_ROLES },
       { path: '/platform-health',  label: 'Operations Health', symbol: 'health_metrics', roles: PLATFORM_ADMIN_ROLES },
       { path: '/system-alerts',    label: 'System Alerts',    symbol: 'notifications',  roles: PLATFORM_ADMIN_ROLES },
+      { path: '/admin/incidents',  label: 'Incident Manager', symbol: 'report',         roles: SUPPORT_ROLES },
       { path: '/feature-flags',    label: 'Feature Flags',    symbol: 'flag',           roles: SUPERADMIN_ROLES },
     ],
   },
