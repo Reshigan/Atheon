@@ -733,6 +733,11 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     // per tenant; the token itself is never stored (only its hash). Used
     // exclusively by /scim/v2/* endpoints — separate from JWT auth.
     `CREATE TABLE IF NOT EXISTS scim_tokens (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, token_hash TEXT NOT NULL, key_prefix TEXT NOT NULL, created_by TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_used_at TEXT, revoked_at TEXT, UNIQUE(token_hash))`,
+    // Phase AZ: Platform-wide incidents shown on the public /status page.
+    // Cross-tenant by design — incidents impact every tenant, so tenant_id
+    // is omitted. severity ∈ {operational, degraded, partial_outage, major_outage}.
+    // updates JSON is a chronological log: [{ at, status, message }]
+    `CREATE TABLE IF NOT EXISTS system_incidents (id TEXT PRIMARY KEY, title TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'degraded', status TEXT NOT NULL DEFAULT 'investigating', impact TEXT, components TEXT NOT NULL DEFAULT '[]', updates TEXT NOT NULL DEFAULT '[]', started_at TEXT NOT NULL DEFAULT (datetime('now')), resolved_at TEXT, created_by TEXT, updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   ];
 
   result.tablesCreated += await batchOrFallback(db, qbTables, 'QB table', result.errors);

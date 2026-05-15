@@ -419,6 +419,23 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(config),
       }),
+    // Phase AZ: platform-incident admin endpoints (superadmin/support).
+    statusIncidents: () =>
+      request<{ incidents: Array<{
+        id: string; title: string; severity: string; status: string;
+        impact: string | null; components: string; updates: string;
+        started_at: string; resolved_at: string | null; updated_at: string;
+      }> }>(`/api/admin/status/incidents`),
+    createStatusIncident: (incident: { title: string; severity?: string; status?: string; impact?: string; components?: string[]; message?: string }) =>
+      request<{ id: string; title: string; severity: string; status: string }>(`/api/admin/status/incidents`, {
+        method: 'POST',
+        body: JSON.stringify(incident),
+      }),
+    updateStatusIncident: (id: string, patch: { severity?: string; status?: string; impact?: string; components?: string[]; message?: string }) =>
+      request<{ ok: boolean; resolved: boolean }>(`/api/admin/status/incidents/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      }),
   },
 
   // v46-platform: Feature Flags (superadmin CRUD, authenticated /evaluate)
@@ -441,6 +458,20 @@ export const api = {
   // frontend switcher can scope catalyst/apex/pulse calls via ?company_id=.
   companies: {
     list: () => request<{ companies: ERPCompany[]; total: number }>('/api/erp/companies'),
+  },
+
+  // Phase AZ: public platform status — no auth, hits /api/status which is
+  // the same shape an external monitoring tool (StatusGator etc.) can poll.
+  status: {
+    get: () =>
+      request<{
+        status: string;
+        components: Record<string, string>;
+        probes: { database_ms: number };
+        activeIncident: StatusIncident | null;
+        incidents: StatusIncident[];
+        checkedAt: string;
+      }>('/api/status'),
   },
 
   apex: {
@@ -1877,6 +1908,19 @@ export interface IAMUser {
   status: string;
   lastLogin: string | null;
   createdAt: string;
+}
+
+export interface StatusIncident {
+  id: string;
+  title: string;
+  severity: 'operational' | 'degraded' | 'partial_outage' | 'major_outage' | string;
+  status: 'investigating' | 'identified' | 'monitoring' | 'resolved' | string;
+  impact: string | null;
+  components: string[];
+  updates: Array<{ at: string; status: string; message: string }>;
+  startedAt: string;
+  resolvedAt: string | null;
+  updatedAt: string;
 }
 
 export interface SSOConfig {
