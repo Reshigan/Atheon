@@ -582,6 +582,13 @@ export function LoginPage() {
             {mode === 'login' ? <>Don&apos;t have an account? <button onClick={() => { setMode('register'); setError(null); }} className="font-medium" style={{ color: 'var(--accent)' }}>Create one</button></> : <>Already have an account? <button onClick={() => { setMode('login'); setError(null); }} className="font-medium" style={{ color: 'var(--accent)' }}>Sign in</button></>}
           </p>
           <p className="text-caption t-muted text-center mt-8">Protected by enterprise-grade security. &copy; {new Date().getFullYear()} Atheon</p>
+          <p className="text-caption t-muted text-center mt-2">
+            <a href="/status" className="hover:t-primary">Status</a>
+            <span className="mx-2">·</span>
+            <a href="/legal/security" className="hover:t-primary">Security &amp; Privacy</a>
+            <span className="mx-2">·</span>
+            <a href="/pricing" className="hover:t-primary">Pricing</a>
+          </p>
         </div>
       </div>
     </div>

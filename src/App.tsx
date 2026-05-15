@@ -27,6 +27,7 @@ const ApexPage = lazyWithRetry(() => import("@/pages/ApexPage").then(m => ({ def
 const ROIDashboardPage = lazyWithRetry(() => import("@/pages/ROIDashboardPage"));
 const BoardDigestPage = lazyWithRetry(() => import("@/pages/BoardDigestPage"));
 const StatusPage = lazyWithRetry(() => import("@/pages/StatusPage"));
+const SecurityPage = lazyWithRetry(() => import("@/pages/SecurityPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
 const PulsePage = lazyWithRetry(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
@@ -147,6 +148,11 @@ export default function App() {
               auth — procurement teams probe this URL during vendor risk
               assessments. Polls /api/status every 30s. */}
           <Route path="/status" element={<StatusPage />} />
+          {/* Phase BA: public security overview + sub-processor list +
+              DPA contact. No auth — vendor-risk teams need this URL
+              before they engage. Crawler-friendly for SEO discoverability. */}
+          <Route path="/legal/security" element={<SecurityPage />} />
+          <Route path="/security" element={<SecurityPage />} />
           <Route element={<AppLayout />}>
             {/* Operational dashboard — open to every role except the
                 scoped read-only ones (auditor, board_member), which get
