@@ -28,7 +28,10 @@ import { StatusPill } from '@/components/ui/status-pill';
 import { Numeric } from '@/components/ui/numeric';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
-import { Inbox, CheckCircle2, XCircle, AlertOctagon, FileSearch, RefreshCw, Check, X as XIcon } from 'lucide-react';
+import {
+  Inbox, CheckCircle2, XCircle, AlertOctagon, FileSearch, RefreshCw, Check, X as XIcon,
+  ArrowUp, ArrowDown, ArrowUpDown, Bookmark, BookmarkPlus, Trash2,
+} from 'lucide-react';
 
 interface ActionItem {
   id: string;
@@ -56,6 +59,43 @@ interface SummaryShape {
 }
 
 type StatusFilter = 'all' | 'pending_approval' | 'previewed' | 'completed' | 'failed' | 'rejected';
+
+// SAP-grade sortable columns. `null` means unsorted (server order).
+type SortKey = 'status' | 'ref' | 'type' | 'catalyst' | 'value' | 'created';
+type SortDir = 'asc' | 'desc';
+interface SortSpec { key: SortKey; dir: SortDir }
+
+// User-saved view: a named (filter, sort) pair persisted to localStorage so
+// operators can flip between routines like "My open high-value" or
+// "Today's rejections" without rebuilding the filter each session.
+interface SavedView {
+  id: string;
+  label: string;
+  filter: StatusFilter;
+  sort: SortSpec | null;
+}
+
+const SAVED_VIEWS_KEY = 'atheon:operator-queue:saved-views:v1';
+function loadSavedViews(): SavedView[] {
+  try {
+    const raw = localStorage.getItem(SAVED_VIEWS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((v): v is SavedView =>
+      v && typeof v.id === 'string' && typeof v.label === 'string' && typeof v.filter === 'string',
+    );
+  } catch {
+    return [];
+  }
+}
+function persistSavedViews(views: SavedView[]) {
+  try {
+    localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(views));
+  } catch {
+    // localStorage may be unavailable (private browsing) — silently no-op
+  }
+}
 
 const TILE_DEFS: Array<{
   key: Exclude<StatusFilter, 'all'>;
@@ -104,6 +144,10 @@ export function ActionLayerPage(): JSX.Element {
   // bar never claims to act on rows the user can't see.
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  // SAP-style sortable columns. Default: newest first (Created desc).
+  const [sort, setSort] = useState<SortSpec | null>({ key: 'created', dir: 'desc' });
+  // localStorage-persisted saved views (filter + sort presets).
+  const [savedViews, setSavedViews] = useState<SavedView[]>(() => loadSavedViews());
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -164,6 +208,74 @@ export function ActionLayerPage(): JSX.Element {
     });
   };
   const clearSelection = () => setSelected(new Set());
+
+  // ── Sortable columns ────────────────────────────────────────────
+  // Cycle: unsorted → asc → desc → unsorted (per column).
+  const onSortColumn = (key: SortKey) => {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: 'asc' };
+      if (prev.dir === 'asc') return { key, dir: 'desc' };
+      return null;
+    });
+  };
+  const sortedActions = useMemo(() => {
+    if (!sort) return actions;
+    const { key, dir } = sort;
+    const mult = dir === 'asc' ? 1 : -1;
+    const get = (a: ActionItem): string | number => {
+      switch (key) {
+        case 'status':   return a.status;
+        case 'ref':      return a.id;
+        case 'type':     return a.action_type;
+        case 'catalyst': return a.catalyst_name;
+        case 'value':    return a.value_zar;
+        case 'created':  return new Date(a.created_at).getTime();
+      }
+    };
+    return [...actions].sort((a, b) => {
+      const av = get(a);
+      const bv = get(b);
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * mult;
+      return String(av).localeCompare(String(bv)) * mult;
+    });
+  }, [actions, sort]);
+
+  // ── Saved views (filter + sort presets) ─────────────────────────
+  const saveCurrentView = () => {
+    const label = window.prompt('Name this view (e.g. "Open high-value"):');
+    const trimmed = label?.trim();
+    if (!trimmed) return;
+    const view: SavedView = {
+      id: `v_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      label: trimmed.slice(0, 40),
+      filter,
+      sort,
+    };
+    const next = [...savedViews, view];
+    setSavedViews(next);
+    persistSavedViews(next);
+    toast.success('View saved', trimmed);
+  };
+  const applyView = (view: SavedView) => {
+    setFilter(view.filter);
+    setSort(view.sort);
+  };
+  const deleteView = (id: string) => {
+    const next = savedViews.filter((v) => v.id !== id);
+    setSavedViews(next);
+    persistSavedViews(next);
+  };
+  const currentMatchesView = useCallback(
+    (v: SavedView): boolean => {
+      if (v.filter !== filter) return false;
+      if ((v.sort == null) !== (sort == null)) return false;
+      if (v.sort && sort) {
+        if (v.sort.key !== sort.key || v.sort.dir !== sort.dir) return false;
+      }
+      return true;
+    },
+    [filter, sort],
+  );
 
   // ── Bulk approve / reject ───────────────────────────────────────
   // Server has no batch endpoint, so we fan-out serially with a Promise.all
@@ -349,6 +461,55 @@ export function ActionLayerPage(): JSX.Element {
             <span className="text-caption t-muted">{totalRowsLabel}</span>
           </div>
 
+          {/* Saved views — SAP-style preset strip. Save current (filter + sort)
+              as a named view, click to re-apply, hover row × to delete. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Bookmark size={14} className="t-muted" aria-hidden="true" />
+            <span className="text-caption uppercase tracking-wider t-muted font-medium">Saved views</span>
+            {savedViews.length === 0 && (
+              <span className="text-caption t-muted italic">No saved views yet — set a filter + sort, then save.</span>
+            )}
+            {savedViews.map((v) => {
+              const active = currentMatchesView(v);
+              return (
+                <span
+                  key={v.id}
+                  className={`group inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full text-body-sm border transition-colors ${
+                    active ? 'font-medium' : 'border-transparent hover:bg-[var(--bg-secondary)]'
+                  }`}
+                  style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : { borderColor: 'var(--border-card)' }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => applyView(v)}
+                    className="text-inherit hover:underline-offset-2"
+                    title={`Apply: ${v.filter}${v.sort ? ` · ${v.sort.key} ${v.sort.dir}` : ''}`}
+                  >
+                    {v.label}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteView(v.id)}
+                    className="p-0.5 rounded-full opacity-50 hover:opacity-100 hover:bg-[var(--bg-elevated)] transition-opacity"
+                    aria-label={`Delete view ${v.label}`}
+                    title="Delete view"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </span>
+              );
+            })}
+            <button
+              type="button"
+              onClick={saveCurrentView}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-body-sm t-secondary hover:t-primary border border-dashed transition-colors hover:bg-[var(--bg-secondary)]"
+              style={{ borderColor: 'var(--border-card)' }}
+              title="Save current filter + sort as a named view"
+            >
+              <BookmarkPlus size={12} /> Save current
+            </button>
+          </div>
+
           {/* Bulk action bar — slides in when rows are selected. SAP-style
               dispatch queue: select N rows → Approve / Reject N. */}
           {selectedCount > 0 && (
@@ -427,17 +588,17 @@ export function ActionLayerPage(): JSX.Element {
                           style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }}
                         />
                       </th>
-                      <th className="text-left px-4 py-3 font-medium">Status</th>
-                      <th className="text-left px-4 py-3 font-medium">Ref</th>
-                      <th className="text-left px-4 py-3 font-medium">Type</th>
-                      <th className="text-left px-4 py-3 font-medium">Catalyst</th>
-                      <th className="text-right px-4 py-3 font-medium">Value</th>
-                      <th className="text-left px-4 py-3 font-medium">Created</th>
+                      <SortHeader sortKey="status"   label="Status"   sort={sort} onSort={onSortColumn} />
+                      <SortHeader sortKey="ref"      label="Ref"      sort={sort} onSort={onSortColumn} />
+                      <SortHeader sortKey="type"     label="Type"     sort={sort} onSort={onSortColumn} />
+                      <SortHeader sortKey="catalyst" label="Catalyst" sort={sort} onSort={onSortColumn} />
+                      <SortHeader sortKey="value"    label="Value"    sort={sort} onSort={onSortColumn} align="right" />
+                      <SortHeader sortKey="created"  label="Created"  sort={sort} onSort={onSortColumn} />
                       <th className="text-right px-4 py-3 font-medium">Review</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {actions.map((a) => {
+                    {sortedActions.map((a) => {
                       const isPending = a.status === 'pending_approval' || a.status === 'pending';
                       const isPreviewed = a.status === 'previewed';
                       const canAct = isPending || isPreviewed;
@@ -505,6 +666,62 @@ export function ActionLayerPage(): JSX.Element {
         </>
       )}
     </div>
+  );
+}
+
+// SAP-grade sortable column header: click cycles unsorted → asc → desc → unsorted.
+// Renders the active sort direction with a sage arrow; idle columns get the
+// muted neutral ArrowUpDown to advertise that they're clickable.
+function SortHeader({
+  sortKey,
+  label,
+  sort,
+  onSort,
+  align = 'left',
+}: {
+  sortKey: SortKey;
+  label: string;
+  sort: SortSpec | null;
+  onSort: (k: SortKey) => void;
+  align?: 'left' | 'right';
+}): JSX.Element {
+  const active = sort?.key === sortKey;
+  const dir = active ? sort?.dir : null;
+  const ariaSort = !active ? 'none' : dir === 'asc' ? 'ascending' : 'descending';
+  const Icon = !active ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th
+      scope="col"
+      aria-sort={ariaSort}
+      className={`px-4 py-3 font-medium ${align === 'right' ? 'text-right' : 'text-left'}`}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1.5 uppercase tracking-wider text-caption transition-colors ${
+          active ? 't-primary' : 't-muted hover:t-primary'
+        }`}
+        title={
+          !active
+            ? `Sort by ${label}`
+            : dir === 'asc'
+              ? `Sorted by ${label} (asc) — click for desc`
+              : `Sorted by ${label} (desc) — click to clear`
+        }
+      >
+        {align === 'right' ? (
+          <>
+            <Icon size={11} style={active ? { color: 'var(--accent)' } : undefined} aria-hidden="true" />
+            {label}
+          </>
+        ) : (
+          <>
+            {label}
+            <Icon size={11} style={active ? { color: 'var(--accent)' } : undefined} aria-hidden="true" />
+          </>
+        )}
+      </button>
+    </th>
   );
 }
 
