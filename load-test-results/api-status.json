@@ -1,0 +1,26 @@
+{
+  "label": "GET /api/status · 5 VU · 30s",
+  "url": "https://atheon-api.vantax.co.za/api/status",
+  "method": "GET",
+  "vus": 5,
+  "durationSec": 30.9,
+  "requestsTotal": 97,
+  "requestsOk": 97,
+  "requestsFailed": 0,
+  "errorRatePct": 0,
+  "throughputRps": 3.1,
+  "latencyMs": {
+    "min": 1389.1,
+    "p50": 1459.1,
+    "p95": 2723.5,
+    "p99": 2889.4,
+    "max": 2889.4,
+    "avg": 1567.5
+  },
+  "statusCounts": {
+    "200": 97
+  },
+  "bytesReceived": 22795,
+  "errorsSample": [],
+  "ranAt": "2026-05-15T14:37:20.989Z"
+}

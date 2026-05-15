@@ -29,6 +29,7 @@ const BoardDigestPage = lazyWithRetry(() => import("@/pages/BoardDigestPage"));
 const StatusPage = lazyWithRetry(() => import("@/pages/StatusPage"));
 const SecurityPage = lazyWithRetry(() => import("@/pages/SecurityPage"));
 const ConnectorsPage = lazyWithRetry(() => import("@/pages/ConnectorsPage"));
+const PerformancePage = lazyWithRetry(() => import("@/pages/PerformancePage"));
 const StatusIncidentsAdminPage = lazyWithRetry(() => import("@/pages/admin/StatusIncidentsAdminPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
@@ -160,6 +161,10 @@ export default function App() {
               Preview/On-request levels per connector. */}
           <Route path="/legal/connectors" element={<ConnectorsPage />} />
           <Route path="/connectors" element={<ConnectorsPage />} />
+          {/* Phase BD: public load-test datasheet — real numbers + the
+              regressions caught & fixed during the load-test pass. */}
+          <Route path="/legal/performance" element={<PerformancePage />} />
+          <Route path="/performance" element={<PerformancePage />} />
           <Route element={<AppLayout />}>
             {/* Operational dashboard — open to every role except the
                 scoped read-only ones (auditor, board_member), which get

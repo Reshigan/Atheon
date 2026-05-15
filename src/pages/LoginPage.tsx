@@ -589,6 +589,8 @@ export function LoginPage() {
             <span className="mx-2">·</span>
             <a href="/legal/connectors" className="hover:t-primary">Connectors</a>
             <span className="mx-2">·</span>
+            <a href="/legal/performance" className="hover:t-primary">Performance</a>
+            <span className="mx-2">·</span>
             <a href="/pricing" className="hover:t-primary">Pricing</a>
           </p>
         </div>
