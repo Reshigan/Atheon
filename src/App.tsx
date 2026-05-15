@@ -28,6 +28,7 @@ const ROIDashboardPage = lazyWithRetry(() => import("@/pages/ROIDashboardPage"))
 const BoardDigestPage = lazyWithRetry(() => import("@/pages/BoardDigestPage"));
 const StatusPage = lazyWithRetry(() => import("@/pages/StatusPage"));
 const SecurityPage = lazyWithRetry(() => import("@/pages/SecurityPage"));
+const ConnectorsPage = lazyWithRetry(() => import("@/pages/ConnectorsPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
 const PulsePage = lazyWithRetry(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
@@ -153,6 +154,11 @@ export default function App() {
               before they engage. Crawler-friendly for SEO discoverability. */}
           <Route path="/legal/security" element={<SecurityPage />} />
           <Route path="/security" element={<SecurityPage />} />
+          {/* Phase BB: public connector conformance matrix. Procurement +
+              CIOs probe this before vendor engagement. Honest GA/Beta/
+              Preview/On-request levels per connector. */}
+          <Route path="/legal/connectors" element={<ConnectorsPage />} />
+          <Route path="/connectors" element={<ConnectorsPage />} />
           <Route element={<AppLayout />}>
             {/* Operational dashboard — open to every role except the
                 scoped read-only ones (auditor, board_member), which get
