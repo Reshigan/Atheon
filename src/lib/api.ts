@@ -284,6 +284,14 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ code, state }),
       }),
+    // Phase AY: WorkOS-brokered SAML. Returns the WorkOS authorization
+    // URL — frontend redirects there; user comes back to /auth/sso/saml/
+    // callback with a code, server mints JWT, redirects to /login#sso-token=…
+    samlStart: (email: string) =>
+      request<{ authorizationUrl: string; tenantId: string }>('/api/auth/sso/saml/start', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
     logout: () =>
       request<{ success: boolean; message: string }>('/api/auth/logout', { method: 'POST' }),
     forgotPassword: (email: string) =>
@@ -398,6 +406,19 @@ export const api = {
       request<{ id: string; name: string; prefix: string; token: string }>(`/api/iam/scim-tokens`, { method: 'POST', body: JSON.stringify({ name }) }),
     revokeScimToken: (id: string) =>
       request<{ ok: boolean; alreadyRevoked?: boolean }>(`/api/iam/scim-tokens/${id}`, { method: 'DELETE' }),
+    // Phase AY: SAML configuration upsert. workos_connection_id is the
+    // "conn_..." identifier from the WorkOS dashboard for this tenant.
+    saveSamlConfig: (config: {
+      workos_connection_id?: string | null;
+      domain_hint?: string | null;
+      auto_provision?: boolean;
+      default_role?: string;
+      enabled?: boolean;
+    }) =>
+      request<{ ok: boolean }>(`/api/iam/sso/saml`, {
+        method: 'PATCH',
+        body: JSON.stringify(config),
+      }),
   },
 
   // v46-platform: Feature Flags (superadmin CRUD, authenticated /evaluate)
@@ -1867,6 +1888,10 @@ export interface SSOConfig {
   autoProvision: boolean;
   defaultRole: string;
   domainHint: string;
+  /** Phase AY: WorkOS-brokered SAML connection ID (conn_…). Null when SAML
+   * is not configured for this tenant — the SAML "Continue with SSO"
+   * button surfaces a 404 in that case. */
+  workosConnectionId: string | null;
 }
 
 // ── v46-platform: Feature Flags + Custom Roles ─────────────────────────

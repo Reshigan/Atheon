@@ -18,6 +18,7 @@ import {
  UploadCloud,
 } from "lucide-react";
 import { ScimTokenManager } from "@/components/iam/ScimTokenManager";
+import { SamlConfigPanel } from "@/components/iam/SamlConfigPanel";
 
 /** Per-role permission map */
 const ROLE_PERMISSIONS: Record<string, { pages: string[]; actions: string[] }> = {
@@ -751,6 +752,16 @@ export function IAMPage() {
      {activeTab === 'sso' && (
        <TabPanel>
          <div className="space-y-4">
+           {/* Phase AY: SAML configuration form — WorkOS-brokered, so the
+               admin only needs to paste the WorkOS connection_id + set a
+               domain hint + decide auto-provisioning. */}
+           <SamlConfigPanel
+             ssoConfigs={ssoConfigs}
+             onSaved={async () => {
+               const u = await api.iam.sso(tenantId);
+               setSsoConfigs(u.configs);
+             }}
+           />
            {ssoConfigs.length === 0 && (
              <div className="text-center py-12 text-gray-400">
                <Globe className="w-8 h-8 mx-auto mb-3 text-gray-300" />

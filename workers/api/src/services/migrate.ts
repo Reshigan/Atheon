@@ -846,6 +846,10 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'sso_configs', column: 'auto_provision', definition: 'INTEGER NOT NULL DEFAULT 0' },
     { table: 'sso_configs', column: 'default_role', definition: "TEXT NOT NULL DEFAULT 'analyst'" },
     { table: 'sso_configs', column: 'domain_hint', definition: 'TEXT' },
+    // Phase AY: WorkOS-brokered SAML SSO. Per-tenant WorkOS Connection ID
+    // (e.g. "conn_01H..."). When set, the SAML start endpoint redirects
+    // through WorkOS to the customer's IdP (Okta / Azure AD / Ping / etc.).
+    { table: 'sso_configs', column: 'workos_connection_id', definition: 'TEXT' },
     // OIDC generic provider (Okta, Auth0, Google Workspace, Keycloak) needs
     // a per-tenant client secret since each tenant has its own IdP app.
     // Azure AD uses a shared env var so didn't need this column historically.

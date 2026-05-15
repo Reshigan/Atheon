@@ -95,6 +95,38 @@ export function LoginPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Phase AY: SAML callback returns the user via a fragment token to keep
+  // the secret out of server access logs. Persist the token, fetch the
+  // user via /auth/me, then scrub the URL bar so reloads don't replay it.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (!hash.startsWith('#sso-token=')) return;
+    const token = decodeURIComponent(hash.slice('#sso-token='.length));
+    if (!token) return;
+    setLoading(true);
+    setToken(token, null);
+    api.auth.me()
+      .then((user) => {
+        setTenantOverride(null);
+        setActiveTenant(null, null, null);
+        setUser({ id: user.id, email: user.email, name: user.name, role: user.role as UserRole, tenantId: user.tenantId, tenantName: user.tenantName, permissions: user.permissions });
+        window.history.replaceState({}, '', window.location.pathname);
+        const landing =
+          user.role === 'auditor' ? '/compliance'
+          : user.role === 'board_member' ? '/board-digest'
+          : '/dashboard';
+        navigate(landing);
+      })
+      .catch((err) => {
+        setToken('', null);
+        setError(err instanceof Error ? err.message : 'SAML login failed');
+        window.history.replaceState({}, '', window.location.pathname);
+      })
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (existingUser && getToken()) {
       const landing =
@@ -209,6 +241,31 @@ export function LoginPage() {
       setError('SSO configuration not available');
     } catch (err) { setError(err instanceof Error ? err.message : 'SSO login failed.'); }
     finally { setLoading(false); }
+  };
+
+  // Phase AY: WorkOS-brokered SAML. The user types their work email; we
+  // look up their tenant's WorkOS Connection ID and redirect to WorkOS,
+  // which then forwards to Okta / Azure AD / Ping / etc.
+  const handleSamlSSO = async () => {
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      setError('Enter your work email above, then click SAML SSO.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.auth.samlStart(trimmed);
+      if (res.authorizationUrl) {
+        window.location.href = res.authorizationUrl;
+        return;
+      }
+      setError('SAML configuration not available for this tenant.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'SAML login failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = async () => {
@@ -383,6 +440,20 @@ export function LoginPage() {
             <div className="space-y-2 mb-5">
               <button onClick={() => handleSSO('azure')} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-all hover:bg-[var(--bg-secondary)]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
                 <div className="w-4 h-4 rounded bg-sky-600 flex items-center justify-center text-[8px] font-bold text-white">M</div>Continue with Azure AD
+              </button>
+              {/* Phase AY: SAML SSO. Enabled when the tenant has set a
+                  WorkOS connection_id; backend returns 404 + a clear
+                  message if not configured. Requires the email field
+                  filled so we can route to the right WorkOS connection. */}
+              <button
+                onClick={() => void handleSamlSSO()}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-all hover:bg-[var(--bg-secondary)]"
+                style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
+                title="Use your organisation's SAML identity provider (Okta, Azure AD, Ping, etc.)"
+              >
+                <div className="w-4 h-4 rounded bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white">S</div>
+                Continue with SAML SSO
+                <span className="ml-auto text-[10px] t-muted">enter email first</span>
               </button>
             </div>
           )}
