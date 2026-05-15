@@ -30,8 +30,10 @@ import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import {
   Inbox, CheckCircle2, XCircle, AlertOctagon, FileSearch, RefreshCw, Check, X as XIcon,
-  ArrowUp, ArrowDown, ArrowUpDown, Bookmark, BookmarkPlus, Trash2,
+  Bookmark, BookmarkPlus, Trash2, Link2,
 } from 'lucide-react';
+import { SortHeader, cycleSort, type SortSpec } from '@/components/ui/sort-header';
+import { ActionEvidenceDrawer } from '@/components/action/ActionEvidenceDrawer';
 
 interface ActionItem {
   id: string;
@@ -62,8 +64,6 @@ type StatusFilter = 'all' | 'pending_approval' | 'previewed' | 'completed' | 'fa
 
 // SAP-grade sortable columns. `null` means unsorted (server order).
 type SortKey = 'status' | 'ref' | 'type' | 'catalyst' | 'value' | 'created';
-type SortDir = 'asc' | 'desc';
-interface SortSpec { key: SortKey; dir: SortDir }
 
 // User-saved view: a named (filter, sort) pair persisted to localStorage so
 // operators can flip between routines like "My open high-value" or
@@ -72,7 +72,7 @@ interface SavedView {
   id: string;
   label: string;
   filter: StatusFilter;
-  sort: SortSpec | null;
+  sort: SortSpec<SortKey> | null;
 }
 
 const SAVED_VIEWS_KEY = 'atheon:operator-queue:saved-views:v1';
@@ -145,9 +145,11 @@ export function ActionLayerPage(): JSX.Element {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   // SAP-style sortable columns. Default: newest first (Created desc).
-  const [sort, setSort] = useState<SortSpec | null>({ key: 'created', dir: 'desc' });
+  const [sort, setSort] = useState<SortSpec<SortKey> | null>({ key: 'created', dir: 'desc' });
   // localStorage-persisted saved views (filter + sort presets).
   const [savedViews, setSavedViews] = useState<SavedView[]>(() => loadSavedViews());
+  // Drill-through: action id of the row whose evidence drawer is open.
+  const [drillId, setDrillId] = useState<string | null>(null);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -211,13 +213,7 @@ export function ActionLayerPage(): JSX.Element {
 
   // ── Sortable columns ────────────────────────────────────────────
   // Cycle: unsorted → asc → desc → unsorted (per column).
-  const onSortColumn = (key: SortKey) => {
-    setSort((prev) => {
-      if (!prev || prev.key !== key) return { key, dir: 'asc' };
-      if (prev.dir === 'asc') return { key, dir: 'desc' };
-      return null;
-    });
-  };
+  const onSortColumn = (key: SortKey) => setSort((prev) => cycleSort(prev, key));
   const sortedActions = useMemo(() => {
     if (!sort) return actions;
     const { key, dir } = sort;
@@ -622,7 +618,20 @@ export function ActionLayerPage(): JSX.Element {
                             />
                           </td>
                           <td className="px-4 py-3"><StatusPill status={statusToPillKind(a.status)} size="sm" /></td>
-                          <td className="px-4 py-3 font-mono t-primary">{shortRef(a.id)}</td>
+                          <td className="px-4 py-3">
+                            {/* Ref is now a drill-through: opens the evidence
+                                drawer with the full chain (finding, sample
+                                records, confidence, execution trace). */}
+                            <button
+                              type="button"
+                              onClick={() => setDrillId(a.id)}
+                              className="font-mono t-primary hover:text-accent transition-colors inline-flex items-center gap-1 group"
+                              title="Open evidence chain"
+                            >
+                              {shortRef(a.id)}
+                              <Link2 size={11} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+                            </button>
+                          </td>
                           <td className="px-4 py-3 t-secondary">{a.action_type.replace(/_/g, ' ')}</td>
                           <td className="px-4 py-3 t-muted">{a.catalyst_name}</td>
                           <td className="px-4 py-3 text-right">
@@ -630,30 +639,41 @@ export function ActionLayerPage(): JSX.Element {
                           </td>
                           <td className="px-4 py-3 t-muted" title={new Date(a.created_at).toLocaleString()}>{relativeTime(a.created_at)}</td>
                           <td className="px-4 py-3 text-right">
-                            {canAct ? (
-                              <div className="inline-flex items-center gap-1">
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => void handleApprove(a)}
-                                  disabled={actingOn === a.id}
-                                  title="Approve & dispatch"
-                                >
-                                  <Check size={12} />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => void handleReject(a)}
-                                  disabled={actingOn === a.id}
-                                  title="Reject"
-                                >
-                                  <XIcon size={12} />
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="text-caption t-muted">—</span>
-                            )}
+                            <div className="inline-flex items-center gap-1">
+                              {/* Open-evidence is always available — even on
+                                  completed/rejected rows, the chain is still
+                                  the audit-trail record of what shipped. */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDrillId(a.id)}
+                                title="Open evidence chain"
+                              >
+                                <FileSearch size={12} />
+                              </Button>
+                              {canAct ? (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => void handleApprove(a)}
+                                    disabled={actingOn === a.id}
+                                    title="Approve & dispatch"
+                                  >
+                                    <Check size={12} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => void handleReject(a)}
+                                    disabled={actingOn === a.id}
+                                    title="Reject"
+                                  >
+                                    <XIcon size={12} />
+                                  </Button>
+                                </>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -665,63 +685,18 @@ export function ActionLayerPage(): JSX.Element {
           )}
         </>
       )}
-    </div>
-  );
-}
 
-// SAP-grade sortable column header: click cycles unsorted → asc → desc → unsorted.
-// Renders the active sort direction with a sage arrow; idle columns get the
-// muted neutral ArrowUpDown to advertise that they're clickable.
-function SortHeader({
-  sortKey,
-  label,
-  sort,
-  onSort,
-  align = 'left',
-}: {
-  sortKey: SortKey;
-  label: string;
-  sort: SortSpec | null;
-  onSort: (k: SortKey) => void;
-  align?: 'left' | 'right';
-}): JSX.Element {
-  const active = sort?.key === sortKey;
-  const dir = active ? sort?.dir : null;
-  const ariaSort = !active ? 'none' : dir === 'asc' ? 'ascending' : 'descending';
-  const Icon = !active ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
-  return (
-    <th
-      scope="col"
-      aria-sort={ariaSort}
-      className={`px-4 py-3 font-medium ${align === 'right' ? 'text-right' : 'text-left'}`}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1.5 uppercase tracking-wider text-caption transition-colors ${
-          active ? 't-primary' : 't-muted hover:t-primary'
-        }`}
-        title={
-          !active
-            ? `Sort by ${label}`
-            : dir === 'asc'
-              ? `Sorted by ${label} (asc) — click for desc`
-              : `Sorted by ${label} (desc) — click to clear`
-        }
-      >
-        {align === 'right' ? (
-          <>
-            <Icon size={11} style={active ? { color: 'var(--accent)' } : undefined} aria-hidden="true" />
-            {label}
-          </>
-        ) : (
-          <>
-            {label}
-            <Icon size={11} style={active ? { color: 'var(--accent)' } : undefined} aria-hidden="true" />
-          </>
-        )}
-      </button>
-    </th>
+      {/* Drill-through drawer — opens when the operator clicks a Ref cell
+          or the FileSearch button. Loads the full evidence chain
+          (finding, sample records, confidence, execution trace) and
+          carries Approve / Reject CTAs so action can be taken without
+          leaving the chain of evidence. */}
+      <ActionEvidenceDrawer
+        actionId={drillId}
+        onClose={() => setDrillId(null)}
+        onActed={() => void load(true)}
+      />
+    </div>
   );
 }
 

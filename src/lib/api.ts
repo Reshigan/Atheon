@@ -871,6 +871,47 @@ export const api = {
         previewed_count: number; previewed_value_zar: number;
         total_count: number; total_value_zar: number;
       } }>(`/api/erp/actions/summary`),
+    // Phase AL traceability: full evidence chain for one action so the
+    // operator can approve with eyes open. Returns the action + linked
+    // assessment finding (title, severity, sample_records, root_cause,
+    // prescription) + per-step execution logs + confidence/sample_size
+    // hints surfaced from output_data.
+    actionEvidence: (actionId: string) =>
+      request<{
+        tenantId: string;
+        action: {
+          id: string; catalyst_name: string; action_type: string; status: string;
+          value_zar: number; source_finding_id: string | null;
+          idempotency_key: string | null; connection_id: string | null;
+          input: Record<string, unknown> | null;
+          output: Record<string, unknown> | null;
+          reasoning: string | null;
+          approved_by: string | null;
+          created_at: string; completed_at: string | null;
+          confidence: number | null;
+          sample_size: number | null;
+        };
+        finding: {
+          id: string; assessment_id: string; run_id: string;
+          severity: string; title: string; description: string;
+          category: string; domain: string;
+          financial_impact: number; affected_records: number;
+          evidence: {
+            sample_records?: Array<{ ref?: string; source_value?: string; target_value?: string; difference?: number }>;
+            pattern?: string;
+            first_occurrence?: string;
+            frequency?: string;
+          } | null;
+          root_cause: string | null;
+          prescription: string | null;
+          immediate_value: number;
+          ongoing_monthly_value: number;
+        } | null;
+        execution_logs: Array<{
+          id: string; step_number: number; step_name: string; status: string;
+          detail: string | null; duration_ms: number | null; created_at: string;
+        }>;
+      }>(`/api/erp/actions/${encodeURIComponent(actionId)}`),
     // v64: onboarding-status — checklist of what the customer still needs
     // to do per connection to get full value (sync, review mappings, set
     // profile rules, choose autonomy, dispatch first action).
