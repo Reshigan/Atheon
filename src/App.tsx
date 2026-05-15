@@ -82,6 +82,19 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   return <>{children}</>;
 }
 
+/**
+ * Phase AT: silently redirects auditors away from operational surfaces.
+ * The auditor role is scoped to compliance + audit-log reading only; any
+ * attempt to deep-link into an operational route (/dashboard, /pulse, etc)
+ * sends them to /compliance instead of rendering an access-denied page —
+ * less alarming for an external auditor opening a shared link.
+ */
+function AuditorGuardRedirect({ children }: { children: React.ReactNode }) {
+  const user = useAppStore((s) => s.user);
+  if (user?.role === 'auditor') return <Navigate to="/compliance" replace />;
+  return <>{children}</>;
+}
+
 /** Lightweight loader shown while a lazy-loaded route's chunk is fetching. */
 function RouteLoader() {
   return (
@@ -98,6 +111,12 @@ const EXECUTIVE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'ex
 const MANAGER_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager'];
 const OPERATOR_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager', 'operator'];
 const STANDARD_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager', 'analyst', 'operator'];
+// Phase AT: `auditor` role — read-only access scoped to /compliance only.
+// Procurement + legal need to point external auditors (PwC/Deloitte etc.) at
+// the SOC 2 evidence pack + audit log WITHOUT giving them executive scope.
+// COMPLIANCE_ROLES adds auditor on top of PLATFORM_ADMIN_ROLES so the route
+// gate accepts both populations.
+const COMPLIANCE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'auditor'];
 
 export default function App() {
   return (
@@ -116,7 +135,10 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/erp/oauth/callback" element={<ERPOAuthCallbackPage />} />
           <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Operational dashboard — open to every role except auditor,
+                who has no operational scope and gets redirected to their
+                compliance landing instead. */}
+            <Route path="/dashboard" element={<AuditorGuardRedirect><Dashboard /></AuditorGuardRedirect>} />
             {/* Guided onboarding wizard — full-screen version of the
                 Dashboard's OnboardingChecklist, walks the user through the
                 7 week-1 stop-gates with deep-link CTAs. Open to all auth users
@@ -146,7 +168,7 @@ export default function App() {
                 audit_log + IAM + support tables. Admin+ for own tenant;
                 support_admin / superadmin for cross-tenant via the existing
                 tenant switcher. Backend enforces role + cross-tenant rules. */}
-            <Route path="/compliance" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><CompliancePage /></ProtectedRoute>} />
+            <Route path="/compliance" element={<ProtectedRoute allowedRoles={COMPLIANCE_ROLES}><CompliancePage /></ProtectedRoute>} />
             {/* Trust & Performance — buyer-facing aggregation of calibration,
                 provenance, and federated peer patterns. Open to standard roles
                 so a salesperson with a viewer login can demo it. */}

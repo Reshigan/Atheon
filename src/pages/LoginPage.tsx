@@ -71,7 +71,11 @@ export function LoginPage() {
     setIndustry((res.user.tenantIndustry || 'general') as IndustryVertical);
     // Persist MFA grace-period warning (if any) so the Dashboard / Settings pages can surface it.
     setMfaEnforcementWarning(res.mfaEnforcementWarning ?? null);
-    navigate('/dashboard');
+    // Role-aware landing — Auditors don't have access to /dashboard so they
+    // land directly on /compliance where their scope begins. All other roles
+    // get the operational dashboard as before.
+    const landing = res.user.role === 'auditor' ? '/compliance' : '/dashboard';
+    navigate(landing);
   };
 
   useEffect(() => {
@@ -89,7 +93,10 @@ export function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (existingUser && getToken()) navigate('/dashboard', { replace: true });
+    if (existingUser && getToken()) {
+      const landing = existingUser.role === 'auditor' ? '/compliance' : '/dashboard';
+      navigate(landing, { replace: true });
+    }
   }, [existingUser, navigate]);
 
   useEffect(() => {
