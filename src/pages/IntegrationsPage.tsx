@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { HeroHeader } from "@/components/ui/hero-header";
 import { StatusPill } from "@/components/ui/status-pill";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { api, ApiError } from "@/lib/api";
 import type { ERPAdapter, ERPConnection, CanonicalEndpoint, CircuitBreakerState } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -179,6 +180,9 @@ export function IntegrationsPage() {
   const toast = useToast();
   const [adapters, setAdapters] = useState<ERPAdapter[]>([]);
   const [connections, setConnections] = useState<ERPConnection[]>([]);
+  // ISO timestamp of the last successful integration load — used by the
+  // MetricSource popovers on each summary tile.
+  const [integrationsLoadedAt, setIntegrationsLoadedAt] = useState<string | null>(null);
   const [endpoints, setEndpoints] = useState<CanonicalEndpoint[]>([]);
   const [circuitStates, setCircuitStates] = useState<Record<string, CircuitBreakerState>>({});
   const [loading, setLoading] = useState(true);
@@ -629,6 +633,7 @@ export function IntegrationsPage() {
           requestId: err instanceof ApiError ? err.requestId : null,
         });
       }
+      setIntegrationsLoadedAt(new Date().toISOString());
       setLoading(false);
     }
     load();
@@ -863,25 +868,80 @@ export function IntegrationsPage() {
         </div></Portal>
       )}
 
-      {/* Summary Stats */}
+      {/* Summary Stats — each tile carries a MetricSource exposing the
+          endpoint, table, and SQL hint behind its count. Connections /
+          records-synced are the two CIOs always probe first ("how many
+          live, how much data") so traceability matters more here. */}
+      {(() => {
+        const activeCount = connections.filter(c => c.status === 'connected').length;
+        const totalRecords = connections.reduce((s, c) => s + (c.recordsSynced || 0), 0);
+        const baseProvenance: Partial<MetricProvenance> = {
+          endpoint: 'GET /api/erp/connections + GET /api/erp/adapters + GET /api/erp/canonical',
+          refreshedAt: integrationsLoadedAt,
+          window: 'Snapshot at load',
+        };
+        return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <span className="text-xs t-secondary">Active Connections</span>
-          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono mt-1">{connections.filter(c => c.status === 'connected').length}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs t-secondary">Active Connections</span>
+            <MetricSource source={{
+              ...baseProvenance,
+              label: 'Active connections',
+              definition: 'ERP / system connections whose latest health probe returned status = connected.',
+              table: 'erp_connections',
+              query: "COUNT(*) FROM erp_connections WHERE tenant_id = ? AND status = 'connected'",
+              sample: activeCount,
+            }} />
+          </div>
+          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono mt-1">{activeCount}</p>
         </Card>
         <Card>
-          <span className="text-xs t-secondary">Available Adapters</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs t-secondary">Available Adapters</span>
+            <MetricSource source={{
+              ...baseProvenance,
+              label: 'Available adapters',
+              definition: 'Connector modules shipped with this build — SAP, Oracle, NetSuite, Sage, Xero, etc. New adapters become available with each platform release.',
+              table: '(in-memory adapter registry)',
+              query: 'GET /api/erp/adapters → registry.list()',
+              sample: adapters.length,
+            }} />
+          </div>
           <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{adapters.length}</p>
         </Card>
         <Card>
-          <span className="text-xs t-secondary">API Endpoints</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs t-secondary">API Endpoints</span>
+            <MetricSource source={{
+              ...baseProvenance,
+              label: 'Canonical API endpoints',
+              definition: 'Distinct canonical endpoints the connector layer exposes — used by catalysts to read or write across all connected systems with one signature.',
+              table: 'canonical_endpoints',
+              query: 'COUNT(*) FROM canonical_endpoints',
+              sample: endpoints.length,
+            }} />
+          </div>
           <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{endpoints.length}</p>
         </Card>
         <Card>
-          <span className="text-xs t-secondary">Records Synced</span>
-          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{(connections.reduce((s, c) => s + (c.recordsSynced || 0), 0) / 1000).toFixed(1)}K</p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs t-secondary">Records Synced</span>
+            <MetricSource source={{
+              ...baseProvenance,
+              label: 'Records synced',
+              definition: 'Cumulative records ingested across every active connection since first sync — typical CIO sizing question.',
+              table: 'erp_connections',
+              query: 'SUM(records_synced) FROM erp_connections WHERE tenant_id = ?',
+              sample: totalRecords,
+              notes: [{ label: 'Display unit', value: 'thousands (K) — divide by 1000' }],
+            }} />
+          </div>
+          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{(totalRecords / 1000).toFixed(1)}K</p>
         </Card>
       </div>
+        );
+      })()}
 
       <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 

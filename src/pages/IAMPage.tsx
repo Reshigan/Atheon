@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/state";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { api, ApiError } from "@/lib/api";
 import type { IAMPolicy, SSOConfig, IAMRole, IAMUser } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
@@ -42,6 +43,8 @@ export function IAMPage() {
  const [ssoConfigs, setSsoConfigs] = useState<SSOConfig[]>([]);
  const [roles, setRoles] = useState<IAMRole[]>([]);
  const [users, setUsers] = useState<IAMUser[]>([]);
+ // ISO timestamp of last successful IAM load — fuels MetricSource freshness rows.
+ const [iamLoadedAt, setIamLoadedAt] = useState<string | null>(null);
  const [loading, setLoading] = useState(true);
  const [showNewPolicy, setShowNewPolicy] = useState(false);
  const [showInviteUser, setShowInviteUser] = useState(false);
@@ -205,6 +208,7 @@ export function IAMPage() {
      if (s.status === 'fulfilled') setSsoConfigs(s.value.configs);
      if (r.status === 'fulfilled') setRoles(r.value.roles);
      if (u.status === 'fulfilled') setUsers(u.value.users);
+     setIamLoadedAt(new Date().toISOString());
      // Surface load failures so users know something is missing instead of
      // just seeing a partial/empty page. Pick the first rejection's requestId
      // so support can trace.
@@ -362,29 +366,89 @@ export function IAMPage() {
        </div></Portal>
      )}
 
-     {/* Summary Cards */}
+     {/* Summary Cards — each tile carries a MetricSource so a CISO can
+         audit exactly which IAM table and predicate produced the number.
+         CC6.1 / CC6.2 evidence-pack alignment matters here. */}
+     {(() => {
+       const activeUsers = users.filter(u => u.status === 'active').length;
+       const suspendedUsers = users.filter(u => u.status === 'suspended').length;
+       const rolesInUse = roles.filter(r => r.userCount > 0).length;
+       const totalRules = policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0);
+       const enabledSso = ssoConfigs.filter(s => s.enabled).length;
+       const baseProvenance: Partial<MetricProvenance> = {
+         endpoint: 'GET /api/iam/users + /roles + /policies + /sso',
+         refreshedAt: iamLoadedAt,
+         window: 'Snapshot at load',
+       };
+       return (
      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
        <Card>
-         <span className="text-xs t-secondary">Active Users</span>
-         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{users.filter(u => u.status === 'active').length}</p>
-         <span className="text-caption t-muted">{users.filter(u => u.status === 'suspended').length} suspended</span>
+         <div className="flex items-center justify-between">
+           <span className="text-xs t-secondary">Active Users</span>
+           <MetricSource source={{
+             ...baseProvenance,
+             label: 'Active users',
+             definition: 'Non-suspended user accounts for this tenant. SOC 2 CC6.1 access-review denominator.',
+             table: 'users',
+             query: "COUNT(*) FROM users WHERE tenant_id = ? AND status = 'active'",
+             sample: activeUsers,
+             notes: [{ label: 'Suspended', value: `${suspendedUsers} accounts` }],
+           }} />
+         </div>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{activeUsers}</p>
+         <span className="text-caption t-muted">{suspendedUsers} suspended</span>
        </Card>
        <Card>
-         <span className="text-xs t-secondary">User Roles</span>
-         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{roles.filter(r => r.userCount > 0).length}</p>
+         <div className="flex items-center justify-between">
+           <span className="text-xs t-secondary">User Roles</span>
+           <MetricSource source={{
+             ...baseProvenance,
+             label: 'Roles in use',
+             definition: 'IAM roles with at least one user assignment. Roles with 0 users are defined but unused and a red flag for SOC 2 CC6.1 hygiene.',
+             table: 'iam_roles × user_roles',
+             query: 'COUNT(DISTINCT role_id) FROM user_roles WHERE tenant_id = ?',
+             sample: rolesInUse,
+             notes: [{ label: 'Total defined', value: roles.length }],
+           }} />
+         </div>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{rolesInUse}</p>
          <span className="text-caption t-muted">{roles.length} total defined</span>
        </Card>
        <Card>
-         <span className="text-xs t-secondary">Active Policies</span>
+         <div className="flex items-center justify-between">
+           <span className="text-xs t-secondary">Active Policies</span>
+           <MetricSource source={{
+             ...baseProvenance,
+             label: 'Active access policies',
+             definition: 'IAM access policies the engine evaluates on every request. Each policy carries N rules.',
+             table: 'iam_policies',
+             query: 'COUNT(*) FROM iam_policies WHERE tenant_id = ?',
+             sample: policies.length,
+             notes: [{ label: 'Total rules', value: totalRules }],
+           }} />
+         </div>
          <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{policies.length}</p>
-         <span className="text-caption t-muted">{policies.reduce((s, p) => s + (Array.isArray(p.rules) ? p.rules.length : 0), 0)} rules</span>
+         <span className="text-caption t-muted">{totalRules} rules</span>
        </Card>
        <Card>
-         <span className="text-xs t-secondary">SSO Providers</span>
-         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{ssoConfigs.filter(s => s.enabled).length}</p>
+         <div className="flex items-center justify-between">
+           <span className="text-xs t-secondary">SSO Providers</span>
+           <MetricSource source={{
+             ...baseProvenance,
+             label: 'SSO providers enabled',
+             definition: 'Identity providers (SAML / OIDC) currently enforced for sign-in. Enterprise procurement gates: ≥ 1 SSO provider is the de-facto floor.',
+             table: 'sso_configs',
+             query: 'COUNT(*) FROM sso_configs WHERE tenant_id = ? AND enabled = 1',
+             sample: enabledSso,
+             notes: [{ label: 'Configured (incl. disabled)', value: ssoConfigs.length }],
+           }} />
+         </div>
+         <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{enabledSso}</p>
          <span className="text-caption t-muted">{ssoConfigs.length} configured</span>
        </Card>
      </div>
+       );
+     })()}
 
      <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
