@@ -9,6 +9,7 @@ import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/state";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 
 import { api, ApiError } from "@/lib/api";
 import { cleanLlmText, formatDuration } from "@/lib/utils";
@@ -351,6 +352,9 @@ export function PulsePage() {
   const [processes, setProcesses] = useState<ProcessItem[]>([]);
   const [correlations, setCorrelations] = useState<CorrelationItem[]>([]);
   const [summary, setSummary] = useState<PulseSummary | null>(null);
+  // ISO timestamp of the last summary/metrics load — surfaced by MetricSource
+  // popovers on the headline status-breakdown tiles so freshness is auditable.
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Expandable states
@@ -550,6 +554,7 @@ export function PulsePage() {
       if (a.status === 'fulfilled') setAnomalies(a.value.anomalies);
       if (cor.status === 'fulfilled') setCorrelations(cor.value.correlations);
       if (s.status === 'fulfilled') setSummary(s.value);
+      setLoadedAt(new Date().toISOString());
 
       // Auto-refresh process mining from catalyst runs if no processes exist yet
       const hasProcesses = p.status === 'fulfilled' && p.value.processes.length > 0;
@@ -894,14 +899,37 @@ export function PulsePage() {
             </Card>
           </div>
 
-          {/* Status Breakdown — Stitch hover-tint bento with Numeric */}
+          {/* Status Breakdown — Stitch hover-tint bento with Numeric.
+              Each tile carries a MetricSource so the operator can audit
+              which endpoint + threshold yielded the count. */}
+          {(() => {
+            const totalMetrics = summary?.totalMetrics ?? metrics.length;
+            const green = summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length;
+            const amber = summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length;
+            const red   = summary?.statusBreakdown?.red   ?? metrics.filter(m => m.status === 'red').length;
+            const baseProvenance: Partial<MetricProvenance> = {
+              table: 'pulse_metrics',
+              endpoint: 'GET /api/pulse/summary',
+              window: 'Latest snapshot',
+              refreshedAt: loadedAt,
+            };
+            return (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Total Metrics</span>
-                <Activity size={14} className="text-accent" />
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Total metrics',
+                    definition: 'Distinct business metrics Pulse is computing for this tenant — KPIs ingested from connectors plus catalyst-produced metrics.',
+                    query: 'COUNT(DISTINCT metric_name) FROM pulse_metrics WHERE tenant_id = ?',
+                    sample: totalMetrics,
+                  }} />
+                  <Activity size={14} className="text-accent" />
+                </div>
               </div>
-              <Numeric value={summary?.totalMetrics ?? metrics.length} size="lg" />
+              <Numeric value={totalMetrics} size="lg" />
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
@@ -914,10 +942,20 @@ export function PulsePage() {
             <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Healthy</span>
-                <CheckCircle2 size={14} className="text-emerald-400" />
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Healthy metrics',
+                    definition: 'Metrics whose latest reading is within the configured healthy band (status = green).',
+                    query: "COUNT(*) FROM pulse_metrics WHERE tenant_id = ? AND status = 'green'",
+                    sample: green,
+                    notes: [{ label: 'Threshold', value: 'status = green' }],
+                  }} />
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                </div>
               </div>
               <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">
-                <Numeric value={summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} size="lg" />
+                <Numeric value={green} size="lg" />
               </p>
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'green').slice(0, 3).map((m, i) => (
@@ -931,10 +969,20 @@ export function PulsePage() {
             <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Warning</span>
-                <AlertTriangle size={14} className="text-amber-400" />
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Warning metrics',
+                    definition: 'Metrics whose latest reading falls in the warning band (status = amber). Trending toward critical but not yet breached.',
+                    query: "COUNT(*) FROM pulse_metrics WHERE tenant_id = ? AND status = 'amber'",
+                    sample: amber,
+                    notes: [{ label: 'Threshold', value: 'status = amber' }],
+                  }} />
+                  <AlertTriangle size={14} className="text-amber-400" />
+                </div>
               </div>
               <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">
-                <Numeric value={summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} size="lg" />
+                <Numeric value={amber} size="lg" />
               </p>
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'amber').slice(0, 3).map((m, i) => (
@@ -948,10 +996,20 @@ export function PulsePage() {
             <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors h-full">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
-                <XCircle size={14} className="text-red-400" />
+                <div className="flex items-center gap-1">
+                  <MetricSource source={{
+                    ...baseProvenance,
+                    label: 'Critical metrics',
+                    definition: 'Metrics whose latest reading has breached the critical threshold (status = red). These force operator review.',
+                    query: "COUNT(*) FROM pulse_metrics WHERE tenant_id = ? AND status = 'red'",
+                    sample: red,
+                    notes: [{ label: 'Threshold', value: 'status = red' }],
+                  }} />
+                  <XCircle size={14} className="text-red-400" />
+                </div>
               </div>
               <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">
-                <Numeric value={summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length} size="lg" />
+                <Numeric value={red} size="lg" />
               </p>
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'red').slice(0, 3).map((m, i) => (
@@ -963,6 +1021,8 @@ export function PulsePage() {
               </div>
             </div>
           </div>
+            );
+          })()}
 
           {/* Narrative + Insights */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

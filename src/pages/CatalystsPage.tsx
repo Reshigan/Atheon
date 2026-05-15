@@ -14,6 +14,7 @@ import { SuccessStoryCard } from "@/components/ui/success-story-card";
 import { HeroHeader } from "@/components/ui/hero-header";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
+import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import {
  Zap, Bot, Shield, CheckCircle, Clock, XCircle, Eye, Wrench, Send,
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
@@ -508,6 +509,8 @@ export function CatalystsPage() {
 
  // Catalyst Intelligence state
  const [intellOverview, setIntellOverview] = useState<CatalystIntelligenceOverview | null>(null);
+ // ISO timestamp of last intelligence load — feeds MetricSource freshness rows.
+ const [intellLoadedAt, setIntellLoadedAt] = useState<string | null>(null);
  const [intellLoading, setIntellLoading] = useState(false);
  const [expandedPattern, setExpandedPattern] = useState<string | null>(null);
 
@@ -540,7 +543,7 @@ export function CatalystsPage() {
        api.roi.get(),
        api.catalystIntelligence.getPrescriptions(undefined, undefined),
      ]);
-     if (overview.status === 'fulfilled') setIntellOverview(overview.value);
+     if (overview.status === 'fulfilled') { setIntellOverview(overview.value); setIntellLoadedAt(new Date().toISOString()); }
      else if (overview.status === 'rejected') {
        const err = overview.reason;
        toast.error('Failed to load catalyst intelligence', {
@@ -2952,33 +2955,84 @@ export function CatalystsPage() {
    )}
    {intellOverview && (
     <div className="space-y-4">
-     {/* Summary — Stitch hover-tint bento */}
+     {/* Summary — Stitch hover-tint bento. Each tile carries a
+         MetricSource so the operator can audit the source endpoint +
+         table the pattern count, value, and ROI came from. */}
+     {(() => {
+       const intellProvenance: Partial<MetricProvenance> = {
+         endpoint: 'GET /api/catalysts/intelligence/overview',
+         refreshedAt: intellLoadedAt,
+         window: 'Latest snapshot',
+       };
+       return (
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
-       <span className="text-caption uppercase tracking-wider t-muted">Active Patterns</span>
+       <div className="flex items-center justify-between">
+        <span className="text-caption uppercase tracking-wider t-muted">Active Patterns</span>
+        <MetricSource source={{
+          ...intellProvenance,
+          label: 'Active patterns',
+          definition: 'Behavioural patterns the catalyst intelligence engine is currently tracking across all runs.',
+          table: 'catalyst_patterns',
+          query: "COUNT(*) FROM catalyst_patterns WHERE tenant_id = ? AND status = 'active'",
+          sample: intellOverview.summary.activePatterns,
+        }} />
+       </div>
        <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono mt-1">
         <Numeric value={intellOverview.summary.activePatterns} size="lg" />
        </p>
       </div>
       <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
-       <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
+       <div className="flex items-center justify-between">
+        <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
+        <MetricSource source={{
+          ...intellProvenance,
+          label: 'Critical patterns',
+          definition: 'Patterns flagged as critical severity by the catalyst intelligence engine — typically force operator review on next run.',
+          table: 'catalyst_patterns',
+          query: "COUNT(*) FROM catalyst_patterns WHERE tenant_id = ? AND severity = 'critical'",
+          sample: intellOverview.summary.criticalPatterns,
+          notes: [{ label: 'Severity', value: 'critical' }],
+        }} />
+       </div>
        <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono mt-1">
         <Numeric value={intellOverview.summary.criticalPatterns} size="lg" />
        </p>
       </div>
       <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
-       <span className="text-caption uppercase tracking-wider t-muted">Value Processed</span>
+       <div className="flex items-center justify-between">
+        <span className="text-caption uppercase tracking-wider t-muted">Value Processed</span>
+        <MetricSource source={{
+          ...intellProvenance,
+          label: 'Value processed (ZAR)',
+          definition: 'Total monetary value flowing through catalyst runs — sum of value_zar across every action this catalyst engine has processed.',
+          table: 'catalyst_actions',
+          query: 'SUM(value_zar) FROM catalyst_actions WHERE tenant_id = ?',
+          sample: intellOverview.summary.activePatterns,
+        }} />
+       </div>
        <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
         <Numeric value={intellOverview.summary.totalValueProcessed} unit="ZAR" compact size="lg" />
        </p>
       </div>
       <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
-       <span className="text-caption uppercase tracking-wider t-muted">Avg ROI</span>
+       <div className="flex items-center justify-between">
+        <span className="text-caption uppercase tracking-wider t-muted">Avg ROI</span>
+        <MetricSource source={{
+          ...intellProvenance,
+          label: 'Average ROI',
+          definition: 'Weighted average return-on-investment across active catalyst patterns. Computed by the intelligence engine using value_recovered ÷ cost_to_resolve.',
+          table: 'catalyst_patterns × roi_tracking',
+          query: 'AVG(value_recovered / NULLIF(cost_to_resolve, 0)) FROM catalyst_patterns',
+        }} />
+       </div>
        <p className={`text-headline-lg font-bold tabular-nums font-mono mt-1 ${intellOverview.summary.avgRoi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
         {intellOverview.summary.avgRoi > 0 ? '+' : ''}{Math.round(intellOverview.summary.avgRoi)}<span className="text-body">%</span>
        </p>
       </div>
      </div>
+       );
+     })()}
 
      {/* ROI Card */}
      {roiData && (
