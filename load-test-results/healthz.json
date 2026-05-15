@@ -1,0 +1,27 @@
+{
+  "label": "GET /healthz · 10 VU · 30s",
+  "url": "https://atheon-api.vantax.co.za/healthz",
+  "method": "GET",
+  "vus": 10,
+  "durationSec": 30.7,
+  "requestsTotal": 377,
+  "requestsOk": 310,
+  "requestsFailed": 67,
+  "errorRatePct": 17.77,
+  "throughputRps": 12.3,
+  "latencyMs": {
+    "min": 707.6,
+    "p50": 734.3,
+    "p95": 1265,
+    "p99": 1652.9,
+    "max": 1720.7,
+    "avg": 828.8
+  },
+  "statusCounts": {
+    "200": 310,
+    "503": 67
+  },
+  "bytesReceived": 87769,
+  "errorsSample": [],
+  "ranAt": "2026-05-15T14:27:55.619Z"
+}
