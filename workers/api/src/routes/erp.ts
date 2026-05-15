@@ -1069,6 +1069,49 @@ erp.get('/actions', async (c) => {
   return c.json({ tenantId, total: rows.length, actions: rows });
 });
 
+// GET /api/erp/actions/summary — aggregate counts + values per status.
+// Designed for Dashboard / Apex headline numbers.
+//
+// IMPORTANT: registered BEFORE the /actions/:actionId route below. Hono
+// matches in registration order, so if :actionId were declared first it
+// would capture "summary" as the action id and this route would 404.
+erp.get('/actions/summary', async (c) => {
+  const tenantId = getTenantId(c);
+  const result = await c.env.DB.prepare(
+    `SELECT status, COUNT(*) as count, COALESCE(SUM(value_zar), 0) as value_zar
+       FROM catalyst_actions
+      WHERE tenant_id = ?
+      GROUP BY status`
+  ).bind(tenantId).all<{ status: string; count: number; value_zar: number }>();
+  const summary = {
+    pending_approval_count: 0,
+    pending_approval_value_zar: 0,
+    completed_count: 0,
+    completed_value_zar: 0,
+    rejected_count: 0,
+    rejected_value_zar: 0,
+    failed_count: 0,
+    failed_value_zar: 0,
+    previewed_count: 0,
+    previewed_value_zar: 0,
+    total_count: 0,
+    total_value_zar: 0,
+  };
+  for (const r of result.results || []) {
+    const key = r.status as keyof typeof summary;
+    summary.total_count += r.count;
+    summary.total_value_zar += r.value_zar || 0;
+    const countKey = `${r.status}_count` as keyof typeof summary;
+    const valueKey = `${r.status}_value_zar` as keyof typeof summary;
+    if (countKey in summary) {
+      (summary[countKey] as number) = r.count;
+      (summary[valueKey] as number) = r.value_zar || 0;
+    }
+    void key; // type-only marker
+  }
+  return c.json({ tenantId, summary });
+});
+
 // GET /api/erp/actions/:actionId — full evidence chain for a single
 // write-back action. SAP-grade traceability: the Operator Queue row
 // click opens a drawer that needs to display the WHOLE chain so the
@@ -1204,45 +1247,6 @@ erp.get('/actions/:actionId', async (c) => {
     finding,
     execution_logs,
   });
-});
-
-// GET /api/erp/actions/summary — aggregate counts + values per status.
-// Designed for Dashboard / Apex headline numbers.
-erp.get('/actions/summary', async (c) => {
-  const tenantId = getTenantId(c);
-  const result = await c.env.DB.prepare(
-    `SELECT status, COUNT(*) as count, COALESCE(SUM(value_zar), 0) as value_zar
-       FROM catalyst_actions
-      WHERE tenant_id = ?
-      GROUP BY status`
-  ).bind(tenantId).all<{ status: string; count: number; value_zar: number }>();
-  const summary = {
-    pending_approval_count: 0,
-    pending_approval_value_zar: 0,
-    completed_count: 0,
-    completed_value_zar: 0,
-    rejected_count: 0,
-    rejected_value_zar: 0,
-    failed_count: 0,
-    failed_value_zar: 0,
-    previewed_count: 0,
-    previewed_value_zar: 0,
-    total_count: 0,
-    total_value_zar: 0,
-  };
-  for (const r of result.results || []) {
-    const key = r.status as keyof typeof summary;
-    summary.total_count += r.count;
-    summary.total_value_zar += r.value_zar || 0;
-    const countKey = `${r.status}_count` as keyof typeof summary;
-    const valueKey = `${r.status}_value_zar` as keyof typeof summary;
-    if (countKey in summary) {
-      (summary[countKey] as number) = r.count;
-      (summary[valueKey] as number) = r.value_zar || 0;
-    }
-    void key; // type-only marker
-  }
-  return c.json({ tenantId, summary });
 });
 
 // GET /api/erp/companies — list ERP companies for the authenticated tenant.
