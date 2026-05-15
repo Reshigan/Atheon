@@ -389,6 +389,15 @@ export const api = {
       request<{ role: CustomRole }>(`/api/iam/custom-roles/${id}${qs({ tenant_id: tenantId })}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteCustomRole: (id: string, tenantId?: string) =>
       request<{ success: boolean }>(`/api/iam/custom-roles/${id}${qs({ tenant_id: tenantId })}`, { method: 'DELETE' }),
+    // Phase AX: SCIM 2.0 provisioning token management. The clear token
+    // value is returned ONLY by createScimToken — every subsequent read
+    // shows only the key_prefix for identification.
+    scimTokens: () =>
+      request<{ tokens: Array<{ id: string; name: string; key_prefix: string; created_by: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }> }>(`/api/iam/scim-tokens`),
+    createScimToken: (name: string) =>
+      request<{ id: string; name: string; prefix: string; token: string }>(`/api/iam/scim-tokens`, { method: 'POST', body: JSON.stringify({ name }) }),
+    revokeScimToken: (id: string) =>
+      request<{ ok: boolean; alreadyRevoked?: boolean }>(`/api/iam/scim-tokens/${id}`, { method: 'DELETE' }),
   },
 
   // v46-platform: Feature Flags (superadmin CRUD, authenticated /evaluate)

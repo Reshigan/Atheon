@@ -14,8 +14,10 @@ import { useToast } from "@/components/ui/toast";
 import {
  Shield, Key, Users, UserCheck, Lock, Unlock, Plus, UserPlus,
  ShieldCheck, Globe, Loader2, X, Pencil, Trash2, Save, Mail,
- Ban, CheckCircle, RotateCcw, Eye, ChevronDown, ChevronUp
+ Ban, CheckCircle, RotateCcw, Eye, ChevronDown, ChevronUp,
+ UploadCloud,
 } from "lucide-react";
+import { ScimTokenManager } from "@/components/iam/ScimTokenManager";
 
 /** Per-role permission map */
 const ROLE_PERMISSIONS: Record<string, { pages: string[]; actions: string[] }> = {
@@ -237,6 +239,7 @@ export function IAMPage() {
    { id: 'roles', label: 'Roles & Permissions', icon: <ShieldCheck size={14} />, count: roles.length },
    { id: 'policies', label: 'Policies', icon: <Shield size={14} />, count: policies.length },
    { id: 'sso', label: 'SSO / Identity', icon: <Key size={14} /> },
+   { id: 'scim', label: 'Provisioning (SCIM)', icon: <UploadCloud size={14} /> },
  ];
 
  if (loading) return <LoadingState variant="cards" count={4} />;
@@ -790,6 +793,15 @@ export function IAMPage() {
              </Card>
            ))}
          </div>
+       </TabPanel>
+     )}
+
+     {/* Phase AX: SCIM 2.0 provisioning — bearer tokens enterprise IdPs
+         (Okta / Azure AD / Google / OneLogin / JumpCloud) use to call
+         /scim/v2/Users. Issue / list / revoke lives in <ScimTokenManager>. */}
+     {activeTab === 'scim' && (
+       <TabPanel id="scim" activeTab={activeTab}>
+         <ScimTokenManager />
        </TabPanel>
      )}
    </div>
