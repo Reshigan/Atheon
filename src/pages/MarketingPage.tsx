@@ -1761,7 +1761,18 @@ export function MarketingPage() {
       {/* FOOTER */}
       <footer className="mk5-footer">
         <div className="mk5-fl">Atheon</div>
-        <div className="mk5-fc">The World&rsquo;s First Catalyst Platform&nbsp;&mdash; A Vanta X Platform</div>
+        <div className="mk5-fc">
+          The World&rsquo;s First Catalyst Platform&nbsp;&mdash; A Vanta X Platform
+          <div style={{ marginTop: '0.5rem', fontSize: '0.85em', opacity: 0.8 }}>
+            <a href="/status" style={{ color: 'inherit', textDecoration: 'underline' }}>Status</a>
+            {' · '}
+            <a href="/legal/security" style={{ color: 'inherit', textDecoration: 'underline' }}>Security &amp; Privacy</a>
+            {' · '}
+            <a href="/pricing" style={{ color: 'inherit', textDecoration: 'underline' }}>Pricing</a>
+            {' · '}
+            <a href="/login" style={{ color: 'inherit', textDecoration: 'underline' }}>Sign in</a>
+          </div>
+        </div>
         <div className="mk5-fr">&copy; 2026 Atheon. All rights reserved.</div>
       </footer>
     </div>

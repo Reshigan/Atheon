@@ -73,7 +73,10 @@
 // orchestration_step_executions tables for multi-step catalyst
 // workflows. Substrate for "fix-procurement-cost spans 3 catalysts:
 // renegotiate supplier → re-issue PO → update GL coding".
-export const MIGRATION_VERSION = 'v73-orchestration';
+// v74-enterprise-scim-saml-status: Phase AX/AY/AZ. Adds scim_tokens,
+// system_incidents tables; adds external_id/updated_at/given_name/
+// family_name to users; adds workos_connection_id to sso_configs.
+export const MIGRATION_VERSION = 'v74-enterprise-scim-saml-status';
 
 /** Result of a migration run */
 export interface MigrationResult {
