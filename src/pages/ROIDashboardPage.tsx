@@ -22,6 +22,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { HeroHeader } from '@/components/ui/hero-header';
 import { LoadingState, ErrorState } from '@/components/ui/state';
+import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { TrendingUp, Shield, Activity, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import type {
@@ -51,6 +52,8 @@ export default function ROIDashboardPage(): JSX.Element {
   const [dsar, setDsar] = useState<DsarSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Freshness marker for MetricSource popovers on every billing/forecast tile.
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);
 
   // Stable loader so the error retry button can re-invoke without
   // racing the cancelled flag below.
@@ -71,6 +74,7 @@ export default function ROIDashboardPage(): JSX.Element {
       setForecast(f);
       setCalibration(c);
       setDsar(d);
+      setLoadedAt(new Date().toISOString());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
@@ -114,26 +118,70 @@ export default function ROIDashboardPage(): JSX.Element {
           <TrendingUp size={18} style={{ color: 'var(--accent)' }} />
           <h2 className="text-headline-md font-semibold t-primary">Shared-savings billing</h2>
         </div>
-        {billing ? (
+        {billing ? (() => {
+          const billingBase: Partial<MetricProvenance> = {
+            endpoint: 'GET /api/insights-stats/billing/summary',
+            refreshedAt: loadedAt,
+            window: 'All elapsed billable periods',
+          };
+          return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
-              <div className="text-caption uppercase tracking-wider t-muted">Periods invoiced</div>
+              <div className="flex items-center justify-between">
+                <div className="text-caption uppercase tracking-wider t-muted">Periods invoiced</div>
+                <MetricSource source={{
+                  ...billingBase,
+                  label: 'Periods invoiced',
+                  definition: 'Number of distinct billing periods that have completed and produced an invoice line.',
+                  table: 'billable_periods',
+                  query: 'COUNT(*) FROM billable_periods WHERE tenant_id = ? AND status IN (graded, invoiced)',
+                  sample: billing.periods_count,
+                }} />
+              </div>
               <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{billing.periods_count}</p>
             </div>
             <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
-              <div className="text-caption uppercase tracking-wider t-muted">Total realised savings</div>
+              <div className="flex items-center justify-between">
+                <div className="text-caption uppercase tracking-wider t-muted">Total realised savings</div>
+                <MetricSource source={{
+                  ...billingBase,
+                  label: 'Total realised savings',
+                  definition: 'Cumulative sum of operator-confirmed savings across every closed billing period. Each Rand traces to an ERP record via the catalyst action that produced it.',
+                  table: 'billable_periods',
+                  query: 'SUM(realised_savings_zar) FROM billable_periods WHERE tenant_id = ? AND status = graded',
+                  notes: [
+                    { label: 'Currency', value: billing.currency },
+                    { label: 'Trace', value: 'every Rand → catalyst_actions.value_zar → source_finding_id' },
+                  ],
+                  drillTo: '/action-layer?status=completed',
+                }} />
+              </div>
               <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
                 {formatCurrency(billing.total_realised_savings, billing.currency)}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
-              <div className="text-caption uppercase tracking-wider t-muted">Atheon share</div>
+              <div className="flex items-center justify-between">
+                <div className="text-caption uppercase tracking-wider t-muted">Atheon share</div>
+                <MetricSource source={{
+                  ...billingBase,
+                  label: 'Atheon revenue (shared-savings share)',
+                  definition: 'Atheon revenue from the shared-savings billing model: contracted share % × realised savings. Every Rand here is a Rand the customer banked in their ERP first.',
+                  table: 'billable_periods',
+                  query: 'SUM(atheon_revenue_zar) FROM billable_periods WHERE tenant_id = ?',
+                  notes: [
+                    { label: 'Currency', value: billing.currency },
+                    { label: 'Model', value: 'shared-savings (contracted %)' },
+                  ],
+                }} />
+              </div>
               <p className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono mt-1">
                 {formatCurrency(billing.total_atheon_revenue, billing.currency)}
               </p>
             </div>
           </div>
-        ) : <div className="text-sm t-muted">No billing data yet.</div>}
+          );
+        })() : <div className="text-sm t-muted">No billing data yet.</div>}
       </Card>
 
       {/* Forecast accuracy */}
@@ -142,15 +190,41 @@ export default function ROIDashboardPage(): JSX.Element {
           <Activity size={18} style={{ color: 'var(--sky)' }} />
           <h2 className="text-headline-md font-semibold t-primary">Forecast accuracy <span className="text-body-sm font-normal t-muted">(last {forecast?.lookback_days ?? 90} days)</span></h2>
         </div>
-        {forecast && forecast.total_graded > 0 ? (
+        {forecast && forecast.total_graded > 0 ? (() => {
+          const forecastBase: Partial<MetricProvenance> = {
+            endpoint: 'GET /api/insights-stats/forecast/accuracy',
+            refreshedAt: loadedAt,
+            window: `Last ${forecast.lookback_days ?? 90} days`,
+          };
+          return (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
-                <div className="text-caption uppercase tracking-wider t-muted">Graded forecasts</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-caption uppercase tracking-wider t-muted">Graded forecasts</div>
+                  <MetricSource source={{
+                    ...forecastBase,
+                    label: 'Graded forecasts',
+                    definition: 'Number of forecasts whose target horizon has elapsed, so an actual outcome was available to compare against.',
+                    table: 'forecasts',
+                    query: 'COUNT(*) FROM forecasts WHERE tenant_id = ? AND graded_at IS NOT NULL',
+                    sample: forecast.total_graded,
+                  }} />
+                </div>
                 <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{forecast.total_graded}</p>
               </div>
               <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
-                <div className="text-caption uppercase tracking-wider t-muted">Within band</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-caption uppercase tracking-wider t-muted">Within band</div>
+                  <MetricSource source={{
+                    ...forecastBase,
+                    label: 'Forecast within-band rate',
+                    definition: 'Share of graded forecasts whose actual outcome landed inside the predicted confidence interval.',
+                    table: 'forecasts',
+                    query: 'SUM(within_band = 1) / COUNT(*) FROM forecasts WHERE graded_at IS NOT NULL',
+                    sample: forecast.total_graded,
+                  }} />
+                </div>
                 <p className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono mt-1">
                   {forecast.within_band_rate != null
                     ? `${(forecast.within_band_rate * 100).toFixed(1)}%`
@@ -158,7 +232,17 @@ export default function ROIDashboardPage(): JSX.Element {
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
-                <div className="text-caption uppercase tracking-wider t-muted">Median |error| %</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-caption uppercase tracking-wider t-muted">Median |error| %</div>
+                  <MetricSource source={{
+                    ...forecastBase,
+                    label: 'Forecast median absolute error %',
+                    definition: 'Median of |forecast − actual| / actual across all graded forecasts. Lower is better.',
+                    table: 'forecasts',
+                    query: 'MEDIAN(ABS(forecast - actual) / NULLIF(actual, 0)) * 100',
+                    sample: forecast.total_graded,
+                  }} />
+                </div>
                 <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
                   {forecast.median_abs_error_pct != null
                     ? `${forecast.median_abs_error_pct.toFixed(2)}%`
@@ -182,7 +266,8 @@ export default function ROIDashboardPage(): JSX.Element {
               </tbody>
             </table>
           </>
-        ) : <div className="text-sm text-muted-foreground">No forecasts have elapsed yet.</div>}
+          );
+        })() : <div className="text-sm text-muted-foreground">No forecasts have elapsed yet.</div>}
       </Card>
 
       {/* Calibration */}
