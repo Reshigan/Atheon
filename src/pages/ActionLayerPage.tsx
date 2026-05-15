@@ -98,6 +98,12 @@ export function ActionLayerPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [actingOn, setActingOn] = useState<string | null>(null);
+  // SAP-grade multi-select for batch approve/reject across the queue.
+  // Selection is keyed by action id and survives filter changes only for
+  // ids that remain visible — drops the rest on filter switch so the bulk
+  // bar never claims to act on rows the user can't see.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -119,6 +125,94 @@ export function ActionLayerPage(): JSX.Element {
   }, [filter]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Prune selection to only ids that are still in the visible action set
+  // whenever the page reloads / filter changes.
+  useEffect(() => {
+    setSelected((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      const ids = new Set(actions.map((a) => a.id));
+      for (const id of prev) if (ids.has(id)) next.add(id);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [actions]);
+
+  // Only pending / previewed rows are actionable in bulk — completed /
+  // failed / rejected rows have nothing more we can do server-side.
+  const actionableIds = useMemo(
+    () => actions.filter((a) => a.status === 'pending_approval' || a.status === 'pending' || a.status === 'previewed').map((a) => a.id),
+    [actions],
+  );
+  const selectedCount = selected.size;
+  const allActionableSelected = actionableIds.length > 0 && actionableIds.every((id) => selected.has(id));
+
+  const toggleRow = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected((prev) => {
+      if (allActionableSelected) return new Set();
+      const next = new Set(prev);
+      for (const id of actionableIds) next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelected(new Set());
+
+  // ── Bulk approve / reject ───────────────────────────────────────
+  // Server has no batch endpoint, so we fan-out serially with a Promise.all
+  // chunked at 4 concurrent so we don't blow the per-tenant rate limit. We
+  // collect successes + failures and toast a summary, then refresh the list.
+  const runBulk = async (kind: 'approve' | 'reject') => {
+    const target = actions.filter((a) => selected.has(a.id));
+    if (target.length === 0) return;
+    let reason: string | undefined;
+    if (kind === 'reject') {
+      const input = window.prompt(`Reject reason (applied to all ${target.length} selected):`);
+      if (input === null) return; // user cancelled
+      reason = input.trim() || undefined;
+    }
+    setBulkBusy(true);
+    let ok = 0;
+    const errors: string[] = [];
+    const CONCURRENCY = 4;
+    for (let i = 0; i < target.length; i += CONCURRENCY) {
+      const batch = target.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async (a) => {
+        if (!a.connection_id) {
+          errors.push(`${shortRef(a.id)}: no connection_id`);
+          return;
+        }
+        try {
+          if (kind === 'approve') {
+            await api.erp.approveAction(a.connection_id, a.id);
+          } else {
+            await api.erp.rejectAction(a.connection_id, a.id, reason);
+          }
+          ok++;
+        } catch (err) {
+          errors.push(`${shortRef(a.id)}: ${err instanceof ApiError ? err.message : 'failed'}`);
+        }
+      }));
+    }
+    setBulkBusy(false);
+    setSelected(new Set());
+    const verb = kind === 'approve' ? 'Approved' : 'Rejected';
+    if (errors.length === 0) {
+      toast.success(`${verb} ${ok} action${ok === 1 ? '' : 's'}`);
+    } else if (ok === 0) {
+      toast.error(`${verb} failed`, errors[0]);
+    } else {
+      toast.error(`${verb} ${ok} of ${target.length}`, `${errors.length} failed: ${errors[0]}`);
+    }
+    void load(true);
+  };
 
   // ── Approve / Reject ────────────────────────────────────────────
   const handleApprove = async (a: ActionItem) => {
@@ -255,6 +349,49 @@ export function ActionLayerPage(): JSX.Element {
             <span className="text-caption t-muted">{totalRowsLabel}</span>
           </div>
 
+          {/* Bulk action bar — slides in when rows are selected. SAP-style
+              dispatch queue: select N rows → Approve / Reject N. */}
+          {selectedCount > 0 && (
+            <div
+              className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl"
+              style={{
+                background: 'var(--accent-subtle)',
+                border: '1px solid rgba(163, 177, 138, 0.40)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-body-sm font-medium t-primary">
+                  <Numeric value={selectedCount} size="sm" /> selected
+                </span>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="text-caption t-muted hover:t-primary transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => void runBulk('approve')}
+                  disabled={bulkBusy}
+                >
+                  <Check size={12} /> Approve {selectedCount}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void runBulk('reject')}
+                  disabled={bulkBusy}
+                >
+                  <XIcon size={12} /> Reject {selectedCount}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Actions table */}
           {actions.length === 0 ? (
             <EmptyState
@@ -270,8 +407,26 @@ export function ActionLayerPage(): JSX.Element {
             <Card className="p-0 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-body-sm">
-                  <thead className="text-caption uppercase tracking-wider t-muted">
+                  <thead className="text-caption uppercase tracking-wider t-muted sticky top-0 z-10" style={{ background: 'var(--bg-card-solid)' }}>
                     <tr className="border-b border-[var(--border-card)]">
+                      <th className="text-center px-3 py-3 font-medium w-10">
+                        <input
+                          type="checkbox"
+                          checked={allActionableSelected}
+                          onChange={toggleAll}
+                          disabled={actionableIds.length === 0}
+                          title={
+                            actionableIds.length === 0
+                              ? 'No selectable rows'
+                              : allActionableSelected
+                                ? 'Clear selection'
+                                : `Select all ${actionableIds.length} actionable`
+                          }
+                          aria-label="Select all"
+                          className="rounded cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                          style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }}
+                        />
+                      </th>
                       <th className="text-left px-4 py-3 font-medium">Status</th>
                       <th className="text-left px-4 py-3 font-medium">Ref</th>
                       <th className="text-left px-4 py-3 font-medium">Type</th>
@@ -286,8 +441,25 @@ export function ActionLayerPage(): JSX.Element {
                       const isPending = a.status === 'pending_approval' || a.status === 'pending';
                       const isPreviewed = a.status === 'previewed';
                       const canAct = isPending || isPreviewed;
+                      const isSelected = selected.has(a.id);
                       return (
-                        <tr key={a.id} className="border-b border-[var(--border-card)] last:border-0 hover:bg-[var(--bg-secondary)] transition-colors">
+                        <tr
+                          key={a.id}
+                          className="border-b border-[var(--border-card)] last:border-0 hover:bg-[var(--bg-secondary)] transition-colors"
+                          style={isSelected ? { background: 'var(--accent-subtle)' } : undefined}
+                        >
+                          <td className="px-3 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleRow(a.id)}
+                              disabled={!canAct}
+                              title={canAct ? (isSelected ? 'Deselect row' : 'Select row') : `${a.status.replace(/_/g, ' ')} actions can't be bulk-actioned`}
+                              aria-label={`Select action ${shortRef(a.id)}`}
+                              className="rounded cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                              style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)' }}
+                            />
+                          </td>
                           <td className="px-4 py-3"><StatusPill status={statusToPillKind(a.status)} size="sm" /></td>
                           <td className="px-4 py-3 font-mono t-primary">{shortRef(a.id)}</td>
                           <td className="px-4 py-3 t-secondary">{a.action_type.replace(/_/g, ' ')}</td>
