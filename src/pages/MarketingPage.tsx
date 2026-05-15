@@ -1768,6 +1768,8 @@ export function MarketingPage() {
             {' · '}
             <a href="/legal/security" style={{ color: 'inherit', textDecoration: 'underline' }}>Security &amp; Privacy</a>
             {' · '}
+            <a href="/legal/connectors" style={{ color: 'inherit', textDecoration: 'underline' }}>Connectors</a>
+            {' · '}
             <a href="/pricing" style={{ color: 'inherit', textDecoration: 'underline' }}>Pricing</a>
             {' · '}
             <a href="/login" style={{ color: 'inherit', textDecoration: 'underline' }}>Sign in</a>

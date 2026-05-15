@@ -71,9 +71,13 @@ export default function SecurityPage(): JSX.Element {
                 questionnaire response (CAIQ / SIG / vendor-specific), contact{' '}
                 <a href="mailto:security@vantax.co.za" className="text-accent hover:underline">security@vantax.co.za</a>.
               </p>
-              <div className="flex items-center gap-3 mt-3">
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
                 <Link to="/status" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
                   Platform status <ExternalLink size={11} />
+                </Link>
+                <span className="t-muted text-caption">·</span>
+                <Link to="/legal/connectors" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
+                  Connector matrix <ExternalLink size={11} />
                 </Link>
                 <span className="t-muted text-caption">·</span>
                 <a href="mailto:dpa@vantax.co.za" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
