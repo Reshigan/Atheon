@@ -220,6 +220,13 @@ const AUTO_MIGRATE_TIMEOUT_MS = 50_000;
 const AUTO_MIGRATE_LEASE_TTL_S = 90;
 const AUTO_MIGRATE_ERROR_TTL_S = 60;  // shorter so a failure recovers within a minute
 
+// Phase BD: KV-write throttle for /healthz. Single writer per minute per
+// worker isolate so a high-rate probe (load test, external monitoring)
+// doesn't trip Cloudflare KV's 1-write-per-second-per-key limit and
+// self-DoS the health endpoint into 503s.
+const KV_WRITE_THROTTLE_MS = 60_000;
+let lastKvWriteAt = 0;
+
 app.use('*', async (c, next) => {
   const path = c.req.path;
   if (path === '/healthz' || path === '/' || path.includes('/admin/migrate') || path.includes('/admin/setup')) {
@@ -357,11 +364,24 @@ app.get('/healthz', async (c) => {
     console.error('Healthz DB probe failed:', err);
   }
 
+  // KV health probe.
+  //
+  // Phase BD: the original version wrote to a single key ('healthz:probe')
+  // on every probe. Cloudflare KV rate-limits writes to 1/sec/key, so any
+  // monitoring tool polling /healthz at >1 RPS triggered cacheStatus=
+  // 'error' → 503 (self-DoS observed at 10 VUs in the load test).
+  // Fix: read-only probe by default. Writes are gated to one per minute
+  // via a module-scoped timestamp so we still verify write-path health,
+  // but we never write more than 60 times/hour regardless of probe load.
   let cacheStatus = 'ok';
   try {
-    await c.env.CACHE.put('healthz:probe', '1', { expirationTtl: 60 });
+    const now = Date.now();
+    if (now - lastKvWriteAt > KV_WRITE_THROTTLE_MS) {
+      lastKvWriteAt = now; // optimistic stamp so concurrent probes share
+      await c.env.CACHE.put('healthz:probe', String(now), { expirationTtl: 120 });
+    }
     const val = await c.env.CACHE.get('healthz:probe');
-    if (val !== '1') cacheStatus = 'degraded';
+    if (!val) cacheStatus = 'degraded';
   } catch {
     cacheStatus = 'error';
   }
