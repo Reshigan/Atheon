@@ -9,7 +9,7 @@ const iam = new Hono<AppBindings>();
 /** Role hierarchy levels — higher number = more privilege */
 const ROLE_LEVELS: Record<string, number> = {
   superadmin: 120, support_admin: 110, admin: 100, executive: 90,
-  manager: 70, analyst: 50, operator: 40, auditor: 30, viewer: 10,
+  board_member: 80, manager: 70, analyst: 50, operator: 40, auditor: 30, viewer: 10,
 };
 
 /** Only roles in ROLE_LEVELS are valid — reject unknown strings like 'system_admin' */
@@ -99,6 +99,7 @@ iam.get('/roles', async (c) => {
     { id: 'support_admin', name: 'Support Admin', description: 'Configure catalysts, manage users and roles, ERP connections, and system connectivity', level: 110 },
     { id: 'admin', name: 'Company Admin', description: 'Full access within own tenant — manage users, catalysts, and settings', level: 100 },
     { id: 'executive', name: 'Executive', description: 'C-Suite strategic view — Apex intelligence, briefings, risk alerts, and approvals', level: 90 },
+    { id: 'board_member', name: 'Board Member', description: 'Quarterly digest only — recovered savings, ROI multiple, critical risk delta. No operational surfaces.', level: 80 },
     { id: 'manager', name: 'Manager', description: 'Department-level access — dashboards, catalysts, process intelligence, and team oversight', level: 70 },
     { id: 'analyst', name: 'Analyst', description: 'Read-only analytics — dashboards, process metrics, conversational AI, and reports', level: 50 },
     { id: 'operator', name: 'Operator', description: 'Operational execution — dashboards, catalyst tasks, and process monitoring', level: 40 },

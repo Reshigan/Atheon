@@ -25,6 +25,7 @@ import type { UserRole } from "@/types";
 // named exports.
 const ApexPage = lazyWithRetry(() => import("@/pages/ApexPage").then(m => ({ default: m.ApexPage })));
 const ROIDashboardPage = lazyWithRetry(() => import("@/pages/ROIDashboardPage"));
+const BoardDigestPage = lazyWithRetry(() => import("@/pages/BoardDigestPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
 const PulsePage = lazyWithRetry(() => import("@/pages/PulsePage").then(m => ({ default: m.PulsePage })));
@@ -83,15 +84,16 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 }
 
 /**
- * Phase AT: silently redirects auditors away from operational surfaces.
- * The auditor role is scoped to compliance + audit-log reading only; any
- * attempt to deep-link into an operational route (/dashboard, /pulse, etc)
- * sends them to /compliance instead of rendering an access-denied page —
- * less alarming for an external auditor opening a shared link.
+ * Phase AT/AU: silently redirects scoped read-only roles away from
+ * operational surfaces. Auditors and board members both have narrow
+ * scopes; if they deep-link into an operational route (/dashboard, etc.)
+ * we redirect them to their landing page instead of rendering a 403
+ * — less alarming for a shared link.
  */
-function AuditorGuardRedirect({ children }: { children: React.ReactNode }) {
+function ScopedRoleRedirect({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
   if (user?.role === 'auditor') return <Navigate to="/compliance" replace />;
+  if (user?.role === 'board_member') return <Navigate to="/board-digest" replace />;
   return <>{children}</>;
 }
 
@@ -117,6 +119,12 @@ const STANDARD_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'exe
 // COMPLIANCE_ROLES adds auditor on top of PLATFORM_ADMIN_ROLES so the route
 // gate accepts both populations.
 const COMPLIANCE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'auditor'];
+// Phase AU: `board_member` role — quarterly digest only. Audit committee +
+// board directors don't need (and procurement won't approve) executive-grade
+// operational access. BOARD_DIGEST_ROLES gates the digest landing page;
+// every other route stays gated to its prior bucket so a board member sees
+// nothing else.
+const BOARD_DIGEST_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'board_member'];
 
 export default function App() {
   return (
@@ -135,10 +143,11 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/erp/oauth/callback" element={<ERPOAuthCallbackPage />} />
           <Route element={<AppLayout />}>
-            {/* Operational dashboard — open to every role except auditor,
-                who has no operational scope and gets redirected to their
-                compliance landing instead. */}
-            <Route path="/dashboard" element={<AuditorGuardRedirect><Dashboard /></AuditorGuardRedirect>} />
+            {/* Operational dashboard — open to every role except the
+                scoped read-only ones (auditor, board_member), which get
+                redirected to their own landing page instead of seeing
+                operational data they shouldn't have access to. */}
+            <Route path="/dashboard" element={<ScopedRoleRedirect><Dashboard /></ScopedRoleRedirect>} />
             {/* Guided onboarding wizard — full-screen version of the
                 Dashboard's OnboardingChecklist, walks the user through the
                 7 week-1 stop-gates with deep-link CTAs. Open to all auth users
@@ -148,6 +157,9 @@ export default function App() {
             {/* Phase 10-23: ROI / Insights dashboard surfacing billing,
                 forecast accuracy, calibration, and DSAR summaries. */}
             <Route path="/roi-dashboard" element={<ProtectedRoute allowedRoles={EXECUTIVE_ROLES}><ROIDashboardPage /></ProtectedRoute>} />
+            {/* Phase AU: Quarterly digest for Board Members + Audit Committee.
+                Open to executives so they can preview what the board sees. */}
+            <Route path="/board-digest" element={<ProtectedRoute allowedRoles={BOARD_DIGEST_ROLES}><BoardDigestPage /></ProtectedRoute>} />
             {/* ApexBriefPage retired (see commit 2026-05-12 frontend
                 consolidation). Same data lives on /executive-summary
                 which uses a single backend endpoint + cleaner layout. */}
