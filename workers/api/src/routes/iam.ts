@@ -9,7 +9,7 @@ const iam = new Hono<AppBindings>();
 /** Role hierarchy levels — higher number = more privilege */
 const ROLE_LEVELS: Record<string, number> = {
   superadmin: 120, support_admin: 110, admin: 100, executive: 90,
-  manager: 70, analyst: 50, operator: 40, viewer: 10,
+  manager: 70, analyst: 50, operator: 40, auditor: 30, viewer: 10,
 };
 
 /** Only roles in ROLE_LEVELS are valid — reject unknown strings like 'system_admin' */
@@ -102,6 +102,7 @@ iam.get('/roles', async (c) => {
     { id: 'manager', name: 'Manager', description: 'Department-level access — dashboards, catalysts, process intelligence, and team oversight', level: 70 },
     { id: 'analyst', name: 'Analyst', description: 'Read-only analytics — dashboards, process metrics, conversational AI, and reports', level: 50 },
     { id: 'operator', name: 'Operator', description: 'Operational execution — dashboards, catalyst tasks, and process monitoring', level: 40 },
+    { id: 'auditor', name: 'Auditor', description: 'Read-only compliance + audit log access for internal/external audit (SOC 2, POPIA). No operational surfaces.', level: 30 },
     { id: 'viewer', name: 'Viewer', description: 'View-only access — dashboard overview only', level: 10 },
   ].map(r => ({
     ...r,

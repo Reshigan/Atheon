@@ -26,7 +26,7 @@ export interface User {
   brand?: TenantBrandConfig;
 }
 
-export type UserRole = 'superadmin' | 'support_admin' | 'admin' | 'executive' | 'manager' | 'analyst' | 'operator' | 'viewer';
+export type UserRole = 'superadmin' | 'support_admin' | 'admin' | 'executive' | 'manager' | 'analyst' | 'operator' | 'auditor' | 'viewer';
 
 export interface Tenant {
   id: string;

@@ -37,6 +37,9 @@ const EXECUTIVE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'ex
 const MANAGER_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager'];
 const OPERATOR_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager', 'operator'];
 const STANDARD_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'manager', 'analyst', 'operator'];
+// Phase AT: auditors see ONLY /compliance + /settings. The sidebar should
+// render exactly two items for them — anything else exposes the wrong scope.
+const COMPLIANCE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'auditor'];
 
 // ──────────────────────────────────────────────────────────────
 // Nav model — 5 sections + footer
@@ -86,7 +89,7 @@ const SECTIONS: NavSection[] = [
       { path: '/action-layer',        label: 'Operator Queue',      symbol: 'inbox',          roles: PLATFORM_ADMIN_ROLES },
       { path: '/connectivity',        label: 'Connectivity',        symbol: 'lan',            roles: PLATFORM_ADMIN_ROLES },
       { path: '/integration-health',  label: 'Integration Health',  symbol: 'cable',          roles: PLATFORM_ADMIN_ROLES },
-      { path: '/compliance',          label: 'Compliance',          symbol: 'verified_user',  roles: PLATFORM_ADMIN_ROLES },
+      { path: '/compliance',          label: 'Compliance',          symbol: 'verified_user',  roles: COMPLIANCE_ROLES },
     ],
   },
   {
@@ -282,11 +285,18 @@ export function Sidebar() {
     });
   };
 
-  // Pre-compute role-filtered children per section.
+  // Pre-compute role-filtered children per section. Auditors are scoped
+  // strictly to items that explicitly opt them in — un-roled items
+  // (Dashboard, Support tickets) would otherwise leak into the auditor
+  // sidebar, which defeats the read-only-compliance purpose of the role.
   const sectionsForRender = useMemo(() => {
+    const isAuditor = userRole === 'auditor';
     return SECTIONS.map((section) => ({
       section,
-      visible: section.children.filter((c) => !c.roles || (userRole && c.roles.includes(userRole))),
+      visible: section.children.filter((c) => {
+        if (isAuditor) return !!(c.roles && c.roles.includes('auditor'));
+        return !c.roles || (userRole && c.roles.includes(userRole));
+      }),
     })).filter((s) => s.visible.length > 0);
   }, [userRole]);
 
@@ -294,10 +304,13 @@ export function Sidebar() {
   const isDark = theme === 'dark';
 
   // Shared sidebar body (used by desktop + mobile drawer).
+  // Logo target is role-aware — auditors land on /compliance instead of
+  // /dashboard since they don't have access to operational surfaces.
+  const homeTarget = userRole === 'auditor' ? '/compliance' : '/dashboard';
   const sidebarBody = (
     <>
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
-        <Link to="/dashboard" className="flex items-center gap-2.5" onClick={closeMobile}>
+        <Link to={homeTarget} className="flex items-center gap-2.5" onClick={closeMobile}>
           <AtheonSidebarLogo />
           <div className="min-w-0">
             <p className="text-headline-md font-bold t-primary leading-none tracking-tight">Atheon AI</p>
