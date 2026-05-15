@@ -999,4 +999,82 @@ iam.post('/sso', async (c) => {
   return c.json({ id }, 201);
 });
 
+// ─── Phase AX: SCIM 2.0 token management (admin-only, JWT-authed) ─────
+// These admin-side endpoints let a tenant admin generate / list / revoke
+// the bearer tokens that enterprise IdPs (Okta, Azure AD, etc.) use to
+// call /scim/v2/Users for automatic user provisioning.
+//
+// The actual /scim/v2/* endpoints live in workers/api/src/routes/scim.ts
+// and authenticate via the bearer token alone (no JWT). This admin
+// surface is JWT-authed via the existing platformAdminRoutePrefixes guard.
+
+import { generateScimToken } from '../middleware/scim-auth';
+
+// GET /api/iam/scim-tokens — list tokens for the active tenant.
+iam.get('/scim-tokens', async (c) => {
+  const tenantId = getTenantId(c);
+  const result = await c.env.DB.prepare(
+    `SELECT id, name, key_prefix, created_by, created_at, last_used_at, revoked_at
+       FROM scim_tokens
+      WHERE tenant_id = ?
+      ORDER BY created_at DESC`
+  ).bind(tenantId).all();
+  return c.json({ tokens: result.results });
+});
+
+// POST /api/iam/scim-tokens — issue a new SCIM token. The clear value is
+// returned exactly once; subsequent reads only ever return the prefix.
+iam.post('/scim-tokens', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  let body: { name?: string };
+  try { body = await c.req.json<{ name?: string }>(); }
+  catch { return c.json({ error: 'Invalid JSON' }, 400); }
+  const name = (body.name || '').trim();
+  if (!name) return c.json({ error: 'name is required' }, 400);
+
+  const { clear, hash, prefix } = await generateScimToken();
+  const id = crypto.randomUUID();
+  await c.env.DB.prepare(
+    `INSERT INTO scim_tokens (id, tenant_id, name, token_hash, key_prefix, created_by, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+  ).bind(id, tenantId, name.slice(0, 80), hash, prefix, auth?.userId || null).run();
+
+  await c.env.DB.prepare(
+    `INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome, created_at)
+     VALUES (?, ?, ?, 'iam.scim_token.created', 'iam', ?, ?, 'success', datetime('now'))`
+  ).bind(
+    crypto.randomUUID(), tenantId, auth?.userId || null,
+    `scim_token/${id}`, JSON.stringify({ name, prefix }),
+  ).run();
+
+  // Return the token value exactly once. The frontend must surface it
+  // immediately and never persist it; admin clicks "Done" and it's gone.
+  return c.json({ id, name, prefix, token: clear }, 201);
+});
+
+// DELETE /api/iam/scim-tokens/:id — revoke. Soft-delete: sets revoked_at
+// so audit history remains and a revoked token can never be re-activated.
+iam.delete('/scim-tokens/:id', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  const id = c.req.param('id');
+  const row = await c.env.DB.prepare(
+    `SELECT id, revoked_at FROM scim_tokens WHERE id = ? AND tenant_id = ?`
+  ).bind(id, tenantId).first<{ id: string; revoked_at: string | null }>();
+  if (!row) return c.json({ error: 'Token not found' }, 404);
+  if (row.revoked_at) return c.json({ ok: true, alreadyRevoked: true });
+
+  await c.env.DB.prepare(
+    `UPDATE scim_tokens SET revoked_at = datetime('now') WHERE id = ?`
+  ).bind(id).run();
+
+  await c.env.DB.prepare(
+    `INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome, created_at)
+     VALUES (?, ?, ?, 'iam.scim_token.revoked', 'iam', ?, '{}', 'success', datetime('now'))`
+  ).bind(crypto.randomUUID(), tenantId, auth?.userId || null, `scim_token/${id}`).run();
+
+  return c.json({ ok: true });
+});
+
 export default iam;

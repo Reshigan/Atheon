@@ -729,6 +729,10 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     `CREATE TABLE IF NOT EXISTS qb_purchase_order (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), DocNumber TEXT NOT NULL, TxnDate TEXT, VendorRef_name TEXT, VendorRef_value TEXT, TotalAmt REAL DEFAULT 0, TxnTaxDetail_TotalTax REAL DEFAULT 0, CurrencyRef TEXT DEFAULT 'ZAR', POStatus TEXT DEFAULT 'Open', ShipAddr_Line1 TEXT, DueDate TEXT, Memo TEXT, Lines TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     // Deposits (Bank)
     `CREATE TABLE IF NOT EXISTS qb_deposit (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), TxnDate TEXT, DepositToAccountRef_name TEXT, DepositToAccountRef_value TEXT, TotalAmt REAL DEFAULT 0, CurrencyRef TEXT DEFAULT 'ZAR', PrivateNote TEXT, CashBack_Amount REAL DEFAULT 0, Lines TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+    // Phase AX: SCIM 2.0 provisioning tokens. One row per IdP integration
+    // per tenant; the token itself is never stored (only its hash). Used
+    // exclusively by /scim/v2/* endpoints — separate from JWT auth.
+    `CREATE TABLE IF NOT EXISTS scim_tokens (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, token_hash TEXT NOT NULL, key_prefix TEXT NOT NULL, created_by TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_used_at TEXT, revoked_at TEXT, UNIQUE(token_hash))`,
   ];
 
   result.tablesCreated += await batchOrFallback(db, qbTables, 'QB table', result.errors);
@@ -830,6 +834,13 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     { table: 'tenants', column: 'region', definition: "TEXT NOT NULL DEFAULT 'af-south-1'" },
     { table: 'users', column: 'password_hash', definition: 'TEXT' },
     { table: 'users', column: 'last_login', definition: 'TEXT' },
+    // Phase AX: SCIM 2.0 fields. external_id is the IdP-side identifier so
+    // SCIM PATCH/DELETE can locate the row without leaking our internal id.
+    // updated_at + given_name + family_name fulfil RFC 7643 §4.1.2 + Meta.
+    { table: 'users', column: 'external_id', definition: 'TEXT' },
+    { table: 'users', column: 'updated_at', definition: "TEXT NOT NULL DEFAULT (datetime('now'))" },
+    { table: 'users', column: 'given_name', definition: 'TEXT' },
+    { table: 'users', column: 'family_name', definition: 'TEXT' },
     { table: 'risk_alerts', column: 'probability', definition: 'REAL' },
     { table: 'risk_alerts', column: 'impact_unit', definition: "TEXT DEFAULT 'ZAR'" },
     { table: 'sso_configs', column: 'auto_provision', definition: 'INTEGER NOT NULL DEFAULT 0' },

@@ -17,6 +17,7 @@ import { licenseEnforcement, getLicenseStatusForAdmin, refreshLicenseNow } from 
 import auth, { validatePasswordStrength } from './routes/auth';
 import tenants from './routes/tenants';
 import iam from './routes/iam';
+import scim from './routes/scim';
 import apex from './routes/apex';
 import pulse from './routes/pulse';
 import catalysts from './routes/catalysts';
@@ -488,6 +489,12 @@ app.route('/api/v1/seed-vantax', seedVantaX);
 // behind tenant auth.
 app.route('/api/v1/admin', demoSeedRoutes);
 app.route('/api/admin', demoSeedRoutes);
+
+// Phase AX: SCIM 2.0 endpoints for enterprise IdP provisioning (Okta,
+// Azure AD, OneLogin, Google Workspace, JumpCloud). Mounted at /scim/v2
+// per RFC 7644; authenticates via Bearer token, NOT JWT. Tenant scope is
+// derived from the token row inside the scimAuth() middleware.
+app.route('/scim/v2', scim);
 
 // Tenant admin routes need auth middleware (tenantIsolation sets c.get('auth'))
 // Scoped to /tenants/* so /admin/setup and /admin/migrate (JWT-free) are not blocked
