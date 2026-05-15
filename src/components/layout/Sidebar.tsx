@@ -40,6 +40,9 @@ const STANDARD_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'exe
 // Phase AT: auditors see ONLY /compliance + /settings. The sidebar should
 // render exactly two items for them — anything else exposes the wrong scope.
 const COMPLIANCE_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'auditor'];
+// Phase AU: board members see ONLY /board-digest + /settings. Same scope
+// pattern as auditor — narrow read-only landing, nothing operational.
+const BOARD_DIGEST_ROLES: UserRole[] = ['superadmin', 'support_admin', 'admin', 'executive', 'board_member'];
 
 // ──────────────────────────────────────────────────────────────
 // Nav model — 5 sections + footer
@@ -77,6 +80,7 @@ const SECTIONS: NavSection[] = [
       { path: '/memory',            label: 'Memory',        symbol: 'memory',            roles: MANAGER_ROLES },
       { path: '/trust',             label: 'Trust',         symbol: 'verified',          roles: STANDARD_ROLES },
       { path: '/executive-summary', label: 'Exec Briefing', symbol: 'description',       roles: EXECUTIVE_ROLES },
+      { path: '/board-digest',      label: 'Board Digest',  symbol: 'workspaces',        roles: BOARD_DIGEST_ROLES },
     ],
   },
   {
@@ -285,16 +289,16 @@ export function Sidebar() {
     });
   };
 
-  // Pre-compute role-filtered children per section. Auditors are scoped
-  // strictly to items that explicitly opt them in — un-roled items
-  // (Dashboard, Support tickets) would otherwise leak into the auditor
-  // sidebar, which defeats the read-only-compliance purpose of the role.
+  // Pre-compute role-filtered children per section. Scoped read-only roles
+  // (auditor, board_member) are restricted strictly to items that explicitly
+  // opt them in — un-roled items (Dashboard, Support tickets) would
+  // otherwise leak into their sidebar and defeat the narrow-scope intent.
   const sectionsForRender = useMemo(() => {
-    const isAuditor = userRole === 'auditor';
+    const isScoped = userRole === 'auditor' || userRole === 'board_member';
     return SECTIONS.map((section) => ({
       section,
       visible: section.children.filter((c) => {
-        if (isAuditor) return !!(c.roles && c.roles.includes('auditor'));
+        if (isScoped) return !!(c.roles && userRole && c.roles.includes(userRole));
         return !c.roles || (userRole && c.roles.includes(userRole));
       }),
     })).filter((s) => s.visible.length > 0);
@@ -304,9 +308,13 @@ export function Sidebar() {
   const isDark = theme === 'dark';
 
   // Shared sidebar body (used by desktop + mobile drawer).
-  // Logo target is role-aware — auditors land on /compliance instead of
-  // /dashboard since they don't have access to operational surfaces.
-  const homeTarget = userRole === 'auditor' ? '/compliance' : '/dashboard';
+  // Logo target is role-aware — scoped read-only roles land on their own
+  // home page (auditor → /compliance, board_member → /board-digest); others
+  // go to the operational dashboard.
+  const homeTarget =
+    userRole === 'auditor' ? '/compliance'
+    : userRole === 'board_member' ? '/board-digest'
+    : '/dashboard';
   const sidebarBody = (
     <>
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
