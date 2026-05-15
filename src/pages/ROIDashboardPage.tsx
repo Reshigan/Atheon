@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { HeroHeader } from '@/components/ui/hero-header';
 import { LoadingState, ErrorState } from '@/components/ui/state';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
+import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
 import { TrendingUp, Shield, Activity, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import type {
@@ -105,6 +106,7 @@ export default function ROIDashboardPage(): JSX.Element {
 
   return (
     <div className="p-6 space-y-6">
+      <SharedSavingsStrip />
       <HeroHeader
         icon={TrendingUp}
         title="ROI Dashboard"

@@ -26,6 +26,7 @@ import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
+import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { KpiGrid } from "./dashboard/KpiCards";
 import { HealthDimensions } from "./dashboard/HealthDimensions";
 import { IntelligencePanel } from "./dashboard/IntelligencePanel";
@@ -239,6 +240,11 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {/* CFO-facing shared-savings strip — slim banner showing cumulative
+          recovered + billed + ROI multiple. Hidden for tenants without
+          realised savings yet; dismissible per session. */}
+      <SharedSavingsStrip />
+
       {/* §9.2 Onboarding Checklist */}
       <OnboardingChecklist />
 
