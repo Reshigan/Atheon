@@ -8,7 +8,7 @@ import { HeroHeader } from "@/components/ui/hero-header";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { LoadingState } from "@/components/ui/state";
+import { LoadingState, ErrorState } from "@/components/ui/state";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 
 import { api, ApiError } from "@/lib/api";
@@ -404,6 +404,7 @@ export function PulsePage() {
   const [diagAnalyses, setDiagAnalyses] = useState<DiagnosticAnalysisItem[]>([]);
   const [diagDetail, setDiagDetail] = useState<DiagnosticAnalysisDetail | null>(null);
   const [diagLoading, setDiagLoading] = useState(false);
+  const [diagError, setDiagError] = useState<string | null>(null);
 
   // §11.5 Cost of Inaction state
   const [costOfInaction, setCostOfInaction] = useState<CostOfInactionResponse | null>(null);
@@ -413,6 +414,7 @@ export function PulsePage() {
 
   const loadDiagnostics = async () => {
     setDiagLoading(true);
+    setDiagError(null);
     try {
       const [s, a] = await Promise.allSettled([
         api.diagnostics.getSummary(),
@@ -420,7 +422,18 @@ export function PulsePage() {
       ]);
       if (s.status === 'fulfilled') setDiagSummary(s.value);
       if (a.status === 'fulfilled') setDiagAnalyses(a.value.analyses);
-    } catch (err) { console.error('Failed to load diagnostics:', err); }
+      // Both calls rejecting is a real failure — show the user, not just the console.
+      if (s.status === 'rejected' && a.status === 'rejected') {
+        const reason = s.reason instanceof Error ? s.reason.message
+          : a.reason instanceof Error ? a.reason.message
+          : 'Failed to load diagnostics';
+        setDiagError(reason);
+        console.error('Failed to load diagnostics:', s.reason, a.reason);
+      }
+    } catch (err) {
+      setDiagError(err instanceof Error ? err.message : 'Failed to load diagnostics');
+      console.error('Failed to load diagnostics:', err);
+    }
     setDiagLoading(false);
   };
 
@@ -642,6 +655,15 @@ export function PulsePage() {
     }
     loadRuns();
   }, [activeTab, catalystFilter, companyId]);
+
+  // Auto-load diagnostics on tab open — silent failure was confusing users
+  // (the tab rendered a "no data yet" message even when the API errored).
+  useEffect(() => {
+    if (activeTab !== 'diagnostics') return;
+    if (diagSummary || diagLoading) return;
+    loadDiagnostics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
@@ -2330,7 +2352,14 @@ export function PulsePage() {
           {diagLoading && !diagSummary && (
             <div className="flex items-center justify-center h-32"><Loader2 className="w-6 h-6 text-accent animate-spin" /></div>
           )}
-          {!diagLoading && !diagSummary && (
+          {!diagLoading && !diagSummary && diagError && (
+            <ErrorState
+              title="Couldn't load diagnostics"
+              error={diagError}
+              onRetry={loadDiagnostics}
+            />
+          )}
+          {!diagLoading && !diagSummary && !diagError && (
             <Card className="flex items-center gap-3 py-6 px-4">
               <Stethoscope className="w-5 h-5 t-muted opacity-40 flex-shrink-0" />
               <p className="text-sm t-muted">No diagnostics data yet</p>

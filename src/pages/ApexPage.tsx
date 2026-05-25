@@ -7,7 +7,7 @@ import { ScoreRing } from "@/components/ui/score-ring";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
-import { LoadingState } from "@/components/ui/state";
+import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
 import { HeroHeader } from "@/components/ui/hero-header";
@@ -315,6 +315,18 @@ export function ApexPage() {
  // §11.4 Peer Benchmarks state
  const [peerBenchmarks, setPeerBenchmarks] = useState<PeerBenchmarksResponse | null>(null);
  const [peerLoading, setPeerLoading] = useState(false);
+ const [peerError, setPeerError] = useState<string | null>(null);
+
+ const loadPeerBenchmarks = () => {
+  setPeerLoading(true);
+  setPeerError(null);
+  api.peerBenchmarks.get()
+   .then(setPeerBenchmarks)
+   .catch((err: unknown) => {
+    setPeerError(err instanceof Error ? err.message : 'Failed to load peer benchmarks');
+   })
+   .finally(() => setPeerLoading(false));
+ };
 
  // 2.1.1 Dimension comparison state
  const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
@@ -1873,15 +1885,23 @@ export function ApexPage() {
  {/* §11.4 Peer Benchmarks Tab */}
  {activeTab === 'peer-benchmarks' && (
   <TabPanel>
-   {!peerBenchmarks && !peerLoading && (
+   {!peerBenchmarks && !peerLoading && peerError && (
+    <ErrorState
+     title="Couldn't load peer benchmarks"
+     error={peerError}
+     onRetry={loadPeerBenchmarks}
+    />
+   )}
+   {!peerBenchmarks && !peerLoading && !peerError && (
     <Card className="text-center py-12">
      <Globe className="w-10 h-10 t-muted mx-auto mb-3 opacity-30" />
      <p className="text-sm font-medium t-primary">Peer Benchmarks</p>
-     <p className="text-xs t-muted mt-1">Compare your performance against anonymised industry peers.</p>
-     <Button variant="primary" size="sm" className="mt-4" onClick={() => {
-      setPeerLoading(true);
-      api.peerBenchmarks.get().then(setPeerBenchmarks).catch(() => { /* non-critical — button stays visible */ }).finally(() => setPeerLoading(false));
-     }}>Load Benchmarks</Button>
+     <p className="text-xs t-muted mt-1 max-w-md mx-auto">
+       Compare your performance against anonymised industry peers. Benchmarks
+       require at least 3 tenants in your industry so individual results can
+       never be re-identified.
+     </p>
+     <Button variant="primary" size="sm" className="mt-4" onClick={loadPeerBenchmarks}>Load Benchmarks</Button>
     </Card>
    )}
    {peerLoading && (
@@ -1892,17 +1912,17 @@ export function ApexPage() {
      <div className="flex items-center justify-between">
       <div>
        <h3 className="text-sm font-semibold t-primary">Industry: {peerBenchmarks.industry}</h3>
-       <p className="text-caption t-muted">{peerBenchmarks.total} dimension{peerBenchmarks.total !== 1 ? 's' : ''} benchmarked</p>
+       <p className="text-caption t-muted">{peerBenchmarks.total} dimension{peerBenchmarks.total !== 1 ? 's' : ''} benchmarked · anonymity floor: 3 tenants</p>
       </div>
-      <Button variant="secondary" size="sm" onClick={() => {
-       setPeerLoading(true);
-       api.peerBenchmarks.get().then(setPeerBenchmarks).catch(() => { /* non-critical — keep existing data */ }).finally(() => setPeerLoading(false));
-      }}><RefreshCw size={12} /> Refresh</Button>
+      <Button variant="secondary" size="sm" onClick={loadPeerBenchmarks}><RefreshCw size={12} /> Refresh</Button>
      </div>
      {peerBenchmarks.benchmarks.length === 0 ? (
-      <Card className="text-center py-8">
-       <p className="text-xs t-muted">Not enough peers in your industry yet (minimum 3 tenants required for anonymity).</p>
-      </Card>
+      <EmptyState
+       icon={Globe}
+       title="Not enough peers in your industry yet"
+       description="Peer benchmarks need at least 3 tenants in your industry so individual results stay anonymous. Check back once more peers have run assessments."
+       action={{ label: 'Refresh', onClick: loadPeerBenchmarks }}
+      />
      ) : (
       <div className="space-y-3">
        {peerBenchmarks.benchmarks.map((b, i) => (

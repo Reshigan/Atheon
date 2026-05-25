@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
-import { LoadingState } from "@/components/ui/state";
+import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -512,6 +512,7 @@ export function CatalystsPage() {
  // ISO timestamp of last intelligence load — feeds MetricSource freshness rows.
  const [intellLoadedAt, setIntellLoadedAt] = useState<string | null>(null);
  const [intellLoading, setIntellLoading] = useState(false);
+ const [intellError, setIntellError] = useState<string | null>(null);
  const [expandedPattern, setExpandedPattern] = useState<string | null>(null);
 
  // §11.6 Success Stories state
@@ -537,6 +538,7 @@ export function CatalystsPage() {
 
  const loadIntelligence = async () => {
    setIntellLoading(true);
+   setIntellError(null);
    try {
      const [overview, roiRes, rxRes] = await Promise.allSettled([
        api.catalystIntelligence.getOverview(),
@@ -546,14 +548,19 @@ export function CatalystsPage() {
      if (overview.status === 'fulfilled') { setIntellOverview(overview.value); setIntellLoadedAt(new Date().toISOString()); }
      else if (overview.status === 'rejected') {
        const err = overview.reason;
+       const message = err instanceof Error ? err.message : 'Unknown error';
+       setIntellError(message);
        toast.error('Failed to load catalyst intelligence', {
-         message: err instanceof Error ? err.message : 'Unknown error',
+         message,
          requestId: err instanceof ApiError ? err.requestId : null,
        });
      }
      if (roiRes.status === 'fulfilled') setRoiData(roiRes.value);
      if (rxRes.status === 'fulfilled') setPrescriptions(rxRes.value.prescriptions ?? []);
-   } catch (err) { console.error('Failed to load intelligence:', err); }
+   } catch (err) {
+     setIntellError(err instanceof Error ? err.message : 'Failed to load intelligence');
+     console.error('Failed to load intelligence:', err);
+   }
    setIntellLoading(false);
  };
 
@@ -2946,12 +2953,20 @@ export function CatalystsPage() {
    {intellLoading && !intellOverview && (
     <div className="flex items-center justify-center h-32"><Loader2 className="w-6 h-6 text-accent animate-spin" /></div>
    )}
-   {!intellLoading && !intellOverview && (
-    <Card className="flex items-center gap-3 py-6 px-4">
-     <Brain className="w-5 h-5 t-muted opacity-40 flex-shrink-0" />
-     <p className="text-sm t-muted">No intelligence data yet</p>
-     <Button variant="primary" size="sm" className="ml-auto" onClick={loadIntelligence}>Load Intelligence</Button>
-    </Card>
+   {!intellLoading && !intellOverview && intellError && (
+    <ErrorState
+     title="Couldn't load catalyst intelligence"
+     error={intellError}
+     onRetry={loadIntelligence}
+    />
+   )}
+   {!intellLoading && !intellOverview && !intellError && (
+    <EmptyState
+     icon={Brain}
+     title="No intelligence patterns yet"
+     description="Run pattern discovery to surface cross-catalyst patterns, root causes, and prescriptive next-steps."
+     action={{ label: 'Discover patterns', onClick: handleDiscoverPatterns }}
+    />
    )}
    {intellOverview && (
     <div className="space-y-4">
@@ -3270,7 +3285,11 @@ export function CatalystsPage() {
     <Card className="text-center py-12">
      <Sparkles className="w-10 h-10 t-muted mx-auto mb-3 opacity-30" />
      <p className="text-sm font-medium t-primary">Peer Insights</p>
-     <p className="text-xs t-muted mt-1">See anonymised resolution patterns from peers in your industry.</p>
+     <p className="text-xs t-muted mt-1 max-w-md mx-auto">
+       See anonymised resolution patterns from peers in your industry. Each
+       pattern is aggregated from a minimum of 3 tenants so individual
+       behaviour can never be re-identified.
+     </p>
      <Button variant="primary" size="sm" className="mt-4" onClick={loadSuccessStories}>Load Insights</Button>
     </Card>
    )}
@@ -3282,14 +3301,17 @@ export function CatalystsPage() {
      <div className="flex items-center justify-between">
       <div>
        <h3 className="text-sm font-semibold t-primary">Industry: {successStories.industry}</h3>
-       <p className="text-caption t-muted">{successStories.total} resolution pattern{successStories.total !== 1 ? 's' : ''} from peers</p>
+       <p className="text-caption t-muted">{successStories.total} resolution pattern{successStories.total !== 1 ? 's' : ''} from peers · anonymity floor: 3 tenants</p>
       </div>
       <Button variant="secondary" size="sm" onClick={loadSuccessStories}><RefreshCw size={12} /> Refresh</Button>
      </div>
      {successStories.stories.length === 0 ? (
-      <Card className="text-center py-8">
-       <p className="text-xs t-muted">Not enough peer data yet (minimum 3 resolutions for anonymity).</p>
-      </Card>
+      <EmptyState
+       icon={Sparkles}
+       title="Not enough peer data yet"
+       description="Peer insights need at least 3 resolved patterns from tenants in your industry so individual behaviour stays anonymous. Check back once more peers have run resolutions."
+       action={{ label: 'Refresh', onClick: loadSuccessStories }}
+      />
      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
        {successStories.stories.map((story, i) => (
