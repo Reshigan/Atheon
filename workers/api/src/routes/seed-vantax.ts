@@ -970,6 +970,18 @@ seed.post('/seed-vantax', async (c) => {
 
     console.log('[VantaX Seeder] SAP native tables seeded');
 
+    // STEP 9b: Seed ERP companies so the frontend company switcher has at
+    // least the primary entity to display. Without this row, /api/erp/companies
+    // returns an empty list and the switcher renders blank on first login.
+    await c.env.DB.prepare(
+      `INSERT OR REPLACE INTO erp_companies (id, tenant_id, external_id, source_system, code, name, legal_name, currency, country, fiscal_year_start, tax_id, is_primary, status, synced_at)
+       VALUES (?, ?, ?, 'sap', ?, ?, ?, 'ZAR', 'ZA', '03-01', ?, 1, 'active', datetime('now'))`
+    ).bind(
+      `erp-co-${tenantId}-primary`, tenantId, 'VTX-1000',
+      '1000', 'VantaX (Pty) Ltd', 'VantaX Manufacturing (Pty) Ltd', '4123456789'
+    ).run();
+    console.log('[VantaX Seeder] Seeded primary ERP company');
+
     // STEP 10: Create Catalyst Clusters with CONFIGURED sub-catalysts
     // Each sub-catalyst has data_sources and field_mappings for real execution
 

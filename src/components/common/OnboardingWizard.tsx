@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { CheckCircle, ChevronRight, ChevronLeft, X, Rocket, Building2, Database, Shield, BarChart3 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface OnboardingStep {
   id: string;
@@ -87,17 +88,28 @@ export function OnboardingWizard({ tenantName, onComplete, onDismiss, completedS
     }
   }, [allComplete, onComplete]);
 
-  // Check localStorage for dismissal
+  // Cross-device dismissal: if the backend already says all steps are complete
+  // (e.g. user dismissed it on another machine), hide here too AND push that
+  // state into appStore via onDismiss so subsequent renders skip the wrapper
+  // entirely. The localStorage key lives in appStore — AppLayout gates the
+  // wrapper, so we don't read it here to avoid two sources of truth.
   useEffect(() => {
-    try {
-      const d = localStorage.getItem('atheon:onboarding_dismissed');
-      if (d === 'true') setDismissed(true);
-    } catch { /* ignore */ }
-  }, []);
+    let cancelled = false;
+    api.onboarding.progress().then((p) => {
+      if (!cancelled && p.allComplete) {
+        setDismissed(true);
+        onDismiss?.();
+      }
+    }).catch(() => { /* offline / unauth — fall back to client state */ });
+    return () => { cancelled = true; };
+  }, [onDismiss]);
 
   const handleDismiss = () => {
     setDismissed(true);
-    try { localStorage.setItem('atheon:onboarding_dismissed', 'true'); } catch { /* ignore */ }
+    // Persist remotely so the wizard stays dismissed across devices /
+    // localStorage clears. Best-effort — appStore + AppLayout already keep
+    // this device covered via the `atheon-onboarding-dismissed` key.
+    api.onboarding.dismiss().catch(() => { /* non-fatal */ });
     onDismiss?.();
   };
 
