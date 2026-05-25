@@ -1169,13 +1169,24 @@ seed.post('/seed-vantax', async (c) => {
       { name: 'Cash Conversion Cycle', value: 42, unit: 'days', status: 'green', domain: 'finance', category: 'treasury', thresholdGreen: 45, thresholdAmber: 60, thresholdRed: 90, trend: [48.0, 46.5, 45.0, 43.5, 42.0], sourceSystem: 'SAP FI' },
       { name: 'Customer Satisfaction Score', value: 78.5, unit: '%', status: 'amber', domain: 'revenue', category: 'customer', thresholdGreen: 85, thresholdAmber: 70, thresholdRed: 55, trend: [74.0, 75.5, 76.8, 77.6, 78.5], sourceSystem: 'CRM' },
     ];
+    // Domain → cluster_id mapping so each SAP/CRM metric drilldown can surface
+    // the matching cluster (Finance / Supply Chain / Revenue). Sub-catalyst
+    // linkage is intentionally NOT inferred here — aggregate KPIs sit above
+    // any one sub-catalyst. catalyst-engine metrics get their sub-catalyst
+    // linkage via services/scheduled.ts::refreshProcessMining.
+    const domainToCluster: Record<string, string> = {
+      finance: financeClusterId,
+      supply_chain: supplyChainClusterId,
+      revenue: revenueClusterId,
+    };
     const metricIds: string[] = [];
     for (const pm of processMetricsData) {
       const pmId = crypto.randomUUID();
       metricIds.push(pmId);
+      const linkedCluster = domainToCluster[pm.domain] ?? null;
       await c.env.DB.prepare(
-        `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, domain, category, threshold_green, threshold_amber, threshold_red, trend, source_system, measured_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(pmId, tenantId, pm.name, pm.value, pm.unit, pm.status, pm.domain, pm.category, pm.thresholdGreen, pm.thresholdAmber, pm.thresholdRed, JSON.stringify(pm.trend), pm.sourceSystem, now).run();
+        `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, domain, category, threshold_green, threshold_amber, threshold_red, trend, source_system, cluster_id, measured_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(pmId, tenantId, pm.name, pm.value, pm.unit, pm.status, pm.domain, pm.category, pm.thresholdGreen, pm.thresholdAmber, pm.thresholdRed, JSON.stringify(pm.trend), pm.sourceSystem, linkedCluster, now).run();
     }
     console.log(`[VantaX Seeder] Seeded ${processMetricsData.length} process metrics`);
 

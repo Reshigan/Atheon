@@ -296,6 +296,17 @@ pulse.post('/refresh', async (c) => {
     catalystGroups[name].push(row);
   }
 
+  // Lookup so newly written metrics carry their cluster + sub-catalyst linkage —
+  // without this the Pulse drilldown can't surface the matching sub-catalyst panel.
+  const subCatalystToCluster = new Map<string, string>();
+  const scRows = await c.env.DB.prepare(
+    'SELECT cluster_id, sub_catalyst_name FROM sub_catalyst_kpis WHERE tenant_id = ?'
+  ).bind(tenantId).all();
+  for (const row of scRows.results) {
+    const r = row as Record<string, unknown>;
+    subCatalystToCluster.set(r.sub_catalyst_name as string, r.cluster_id as string);
+  }
+
   let flowsCreated = 0;
   let metricsCreated = 0;
 
@@ -375,11 +386,16 @@ pulse.post('/refresh', async (c) => {
     if (successRate < 60) metricStatus = 'red';
     else if (successRate < 80) metricStatus = 'amber';
 
+    const linkedClusterId = subCatalystToCluster.get(catalystName) ?? null;
+    const linkedSubCatalyst = linkedClusterId ? catalystName : null;
+
     await c.env.DB.prepare(
-      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, measured_at)
-       VALUES (?, ?, ?, ?, '%', ?, 80, 80, 60, '[]', 'catalyst-engine', datetime('now'))
-       ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status, measured_at = excluded.measured_at`
-    ).bind(metricId, tenantId, `${catalystName} Success Rate`, successRate, metricStatus).run();
+      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, cluster_id, sub_catalyst_name, measured_at)
+       VALUES (?, ?, ?, ?, '%', ?, 80, 80, 60, '[]', 'catalyst-engine', ?, ?, datetime('now'))
+       ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status,
+         cluster_id = excluded.cluster_id, sub_catalyst_name = excluded.sub_catalyst_name,
+         measured_at = excluded.measured_at`
+    ).bind(metricId, tenantId, `${catalystName} Success Rate`, successRate, metricStatus, linkedClusterId, linkedSubCatalyst).run();
     metricsCreated++;
 
     // Exception rate metric
@@ -390,10 +406,12 @@ pulse.post('/refresh', async (c) => {
     else if (exceptionRate > 20) excStatus = 'amber';
 
     await c.env.DB.prepare(
-      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, measured_at)
-       VALUES (?, ?, ?, ?, '%', ?, 20, 20, 40, '[]', 'catalyst-engine', datetime('now'))
-       ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status, measured_at = excluded.measured_at`
-    ).bind(excMetricId, tenantId, `${catalystName} Exception Rate`, exceptionRate, excStatus).run();
+      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, cluster_id, sub_catalyst_name, measured_at)
+       VALUES (?, ?, ?, ?, '%', ?, 20, 20, 40, '[]', 'catalyst-engine', ?, ?, datetime('now'))
+       ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status,
+         cluster_id = excluded.cluster_id, sub_catalyst_name = excluded.sub_catalyst_name,
+         measured_at = excluded.measured_at`
+    ).bind(excMetricId, tenantId, `${catalystName} Exception Rate`, exceptionRate, excStatus, linkedClusterId, linkedSubCatalyst).run();
     metricsCreated++;
   }
 

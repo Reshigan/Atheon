@@ -509,6 +509,17 @@ async function refreshProcessMining(
     existingStatuses.set(r.id as string, r.status as string);
   }
 
+  // Lookup: sub-catalyst name → cluster_id, so newly written metrics can carry
+  // their linkage to the Pulse drilldown (matching sub-catalyst panel).
+  const subCatalystToCluster = new Map<string, string>();
+  const scRows = await db.prepare(
+    'SELECT cluster_id, sub_catalyst_name FROM sub_catalyst_kpis WHERE tenant_id = ?'
+  ).bind(tenantId).all();
+  for (const row of scRows.results) {
+    const r = row as Record<string, unknown>;
+    subCatalystToCluster.set(r.sub_catalyst_name as string, r.cluster_id as string);
+  }
+
   // Group actions by catalyst name (each catalyst = a process flow)
   const catalystGroups: Record<string, Array<Record<string, unknown>>> = {};
   for (const a of actions.results) {
@@ -634,12 +645,16 @@ async function refreshProcessMining(
       runningTotal--;
     }
 
+    const linkedClusterId = subCatalystToCluster.get(catalystName) ?? null;
+    const linkedSubCatalyst = linkedClusterId ? catalystName : null;
+
     await db.prepare(
-      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, measured_at)
-       VALUES (?, ?, ?, ?, '%', ?, 80, 80, 60, ?, 'catalyst-engine', datetime('now'))
+      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, cluster_id, sub_catalyst_name, measured_at)
+       VALUES (?, ?, ?, ?, '%', ?, 80, 80, 60, ?, 'catalyst-engine', ?, ?, datetime('now'))
        ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status,
-         trend = excluded.trend, measured_at = excluded.measured_at`
-    ).bind(metricId, tenantId, `${catalystName} Success Rate`, successRate, metricStatus, JSON.stringify(trend.reverse())).run();
+         trend = excluded.trend, cluster_id = excluded.cluster_id,
+         sub_catalyst_name = excluded.sub_catalyst_name, measured_at = excluded.measured_at`
+    ).bind(metricId, tenantId, `${catalystName} Success Rate`, successRate, metricStatus, JSON.stringify(trend.reverse()), linkedClusterId, linkedSubCatalyst).run();
 
     // Exception rate metric
     const exceptionMetricId = `pm-${tenantId.substring(0, 8)}-${catalystName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-exc`;
@@ -649,10 +664,12 @@ async function refreshProcessMining(
     else if (exceptionRate > 20) excStatus = 'amber';
 
     await db.prepare(
-      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, measured_at)
-       VALUES (?, ?, ?, ?, '%', ?, 20, 20, 40, '[]', 'catalyst-engine', datetime('now'))
-       ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status, measured_at = excluded.measured_at`
-    ).bind(exceptionMetricId, tenantId, `${catalystName} Exception Rate`, exceptionRate, excStatus).run();
+      `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, threshold_green, threshold_amber, threshold_red, trend, source_system, cluster_id, sub_catalyst_name, measured_at)
+       VALUES (?, ?, ?, ?, '%', ?, 20, 20, 40, '[]', 'catalyst-engine', ?, ?, datetime('now'))
+       ON CONFLICT(id) DO UPDATE SET value = excluded.value, status = excluded.status,
+         cluster_id = excluded.cluster_id, sub_catalyst_name = excluded.sub_catalyst_name,
+         measured_at = excluded.measured_at`
+    ).bind(exceptionMetricId, tenantId, `${catalystName} Exception Rate`, exceptionRate, excStatus, linkedClusterId, linkedSubCatalyst).run();
 
     // ── Phase 3: Detect anomalies from exception patterns ──
     if (exceptionRate > 30 && exceptions.length >= 2) {
