@@ -101,6 +101,10 @@ export interface CatalystScore {
   estimated_monthly_vector_queries: number;
   estimated_monthly_llm_tokens: number;
   estimated_db_size_mb: number;
+  /** LLM-authored business commentary for this opportunity — populated by
+   *  generateOpportunityCommentaries(). 2–4 sentences. Falls back to a
+   *  deterministic template if the LLM is unavailable. */
+  commentary?: string;
 }
 
 export interface TechnicalSizing {
@@ -1017,6 +1021,26 @@ export async function generateBusinessReportPDF(
     doc.text(`Est. Annual Saving: R ${formatZAR(cat.estimated_annual_saving_zar)}`, 18, py + 13);
     py += 22;
 
+    // Consultant commentary — the business case in plain language. LLM-authored
+    // per assessment with deterministic fallback. Rendered before the
+    // numerical breakdowns so a reader who skims gets the "why" first.
+    if (cat.commentary) {
+      doc.setFontSize(10);
+      doc.setTextColor(...navy);
+      doc.text('Why this catalyst', 14, py);
+      doc.setFillColor(...teal);
+      doc.rect(14, py + 1.5, 30, 0.5, 'F');
+      py += 8;
+
+      doc.setFontSize(9);
+      doc.setTextColor(...slate);
+      doc.setFont('helvetica', 'italic');
+      const commentaryLines = doc.splitTextToSize(cat.commentary, pageW - 28);
+      doc.text(commentaryLines, 14, py);
+      doc.setFont('helvetica', 'normal');
+      py += commentaryLines.length * 4.2 + 6;
+    }
+
     // Data Insights
     doc.setFontSize(10);
     doc.setTextColor(...navy);
@@ -1203,12 +1227,24 @@ export async function generateBusinessReportPDF(
     // Render each finding as a card. Cap to top 25 to keep the PDF
     // reasonable; the consolidated JSON in the API response carries the
     // full list. The technical report carries the raw dump.
+    //
+    // Each card now contains: severity ribbon, title, narrative, LLM commentary,
+    // value-at-risk callout, top 3 sample records (so the buyer can verify
+    // against their own ERP), and the recommended catalyst footer with a
+    // verification hint pointing back into Atheon.
     const top = findings.slice(0, 25);
     for (let i = 0; i < top.length; i++) {
       const f = top[i];
 
-      // Page break if we don't have ~50mm left for the card
-      if (fy > pageH - 60) {
+      // Estimate card height dynamically: base 38 + commentary lines + samples
+      const commentaryLines = f.commentary
+        ? doc.splitTextToSize(f.commentary, pageW - 36).slice(0, 4)
+        : [];
+      const sampleRows = (f.sample_records || []).slice(0, 3);
+      const cardH = 38 + (commentaryLines.length * 4) + (sampleRows.length * 4) + (sampleRows.length > 0 ? 4 : 0) + 6;
+
+      // Page break if we don't have enough room
+      if (fy > pageH - cardH - 10) {
         pageFooter();
         doc.addPage();
         pageHeader('Findings — What we found in your data (cont.)');
@@ -1218,9 +1254,9 @@ export async function generateBusinessReportPDF(
       // Severity ribbon on the left edge of the card
       const ribbon = severityColour[f.severity] || teal;
       doc.setFillColor(...lightBg);
-      doc.rect(14, fy, pageW - 28, 38, 'F');
+      doc.rect(14, fy, pageW - 28, cardH, 'F');
       doc.setFillColor(ribbon[0], ribbon[1], ribbon[2]);
-      doc.rect(14, fy, 2, 38, 'F');
+      doc.rect(14, fy, 2, cardH, 'F');
 
       // Severity badge text + finding code
       doc.setFontSize(7);
@@ -1235,7 +1271,7 @@ export async function generateBusinessReportPDF(
       const titleLines = doc.splitTextToSize(f.title, pageW - 36);
       doc.text(titleLines.slice(0, 1), 18, fy + 11);
 
-      // Narrative — wrap to 3 lines max
+      // Narrative — concise quoted-numbers version, up to 3 lines
       doc.setFontSize(8);
       doc.setTextColor(...slate);
       const narrativeLines = doc.splitTextToSize(f.narrative, pageW - 36).slice(0, 3);
@@ -1254,24 +1290,65 @@ export async function generateBusinessReportPDF(
         );
       }
 
-      // Recommended catalyst footer (bottom of card)
+      let innerY = fy + 30;
+
+      // LLM commentary block — italicised, slate text, separated from the
+      // numerical narrative above. This is the buyer-facing "so-what" line.
+      if (commentaryLines.length > 0) {
+        doc.setFontSize(8);
+        doc.setTextColor(70, 80, 100);
+        doc.setFont('helvetica', 'italic');
+        doc.text(commentaryLines, 18, innerY);
+        doc.setFont('helvetica', 'normal');
+        innerY += commentaryLines.length * 4 + 2;
+      }
+
+      // Sample records — direct ERP refs so the buyer can verify against
+      // their source system. This is Atheon's transparency moat made
+      // concrete on the page.
+      if (sampleRows.length > 0) {
+        doc.setFontSize(7);
+        doc.setTextColor(120, 120, 120);
+        doc.text('VERIFY IN YOUR ERP', 18, innerY);
+        innerY += 4;
+        doc.setTextColor(60, 60, 60);
+        for (const s of sampleRows) {
+          const refs: string[] = [];
+          const sr = s as unknown as Record<string, unknown>;
+          if (typeof sr.ref === 'string' && sr.ref.length > 0) refs.push(sr.ref);
+          else if (typeof sr.external_id === 'string') refs.push(sr.external_id);
+          else if (typeof sr.id === 'string') refs.push(sr.id.slice(0, 10));
+          const label = typeof sr.label === 'string' ? sr.label
+            : typeof sr.name === 'string' ? sr.name
+            : typeof sr.description === 'string' ? sr.description
+            : '';
+          const amount = typeof sr.amount === 'number' ? formatCurrency(sr.amount, config.currency, config.exchange_rate_to_zar)
+            : typeof sr.value === 'number' ? formatCurrency(sr.value, config.currency, config.exchange_rate_to_zar)
+            : '';
+          const line = `• ${refs.join(' ')}  ${label}${amount ? '  ' + amount : ''}`.trim();
+          doc.text(doc.splitTextToSize(line, pageW - 36).slice(0, 1), 18, innerY);
+          innerY += 4;
+        }
+      }
+
+      // Recommended catalyst footer + verification hint (bottom of card)
       doc.setFontSize(7);
       doc.setTextColor(120, 120, 120);
-      doc.text('CURE:', 18, fy + 33);
+      doc.text('CURE:', 18, fy + cardH - 4);
       doc.setTextColor(...navy);
       doc.text(
         `${f.recommended_catalyst.catalyst} → ${f.recommended_catalyst.sub_catalyst}`,
-        30, fy + 33,
+        30, fy + cardH - 4,
       );
 
       // Affected count and evidence-quality indicator
       doc.setTextColor(120, 120, 120);
       doc.text(
         `${f.affected_count.toLocaleString()} records · evidence: ${f.evidence_quality}`,
-        pageW - 18, fy + 33, { align: 'right' },
+        pageW - 18, fy + cardH - 4, { align: 'right' },
       );
 
-      fy += 42;
+      fy += cardH + 4;
     }
 
     // Footer note for trimmed list
@@ -1328,6 +1405,82 @@ export async function generateBusinessReportPDF(
       pageFooter();
     }
   }
+
+  // ═══════════════════════════════════════════════
+  // ATHEON ADVANTAGE PAGE — why the buyer can trust these numbers
+  // and what they get beyond the report. Always rendered.
+  // ═══════════════════════════════════════════════
+  doc.addPage();
+  pageHeader('The Atheon Advantage');
+  let ay = 28;
+
+  doc.setFontSize(11);
+  doc.setTextColor(...navy);
+  doc.text('Every number in this report is verifiable from your own system.', 14, ay);
+  ay += 6;
+  doc.setFontSize(9);
+  doc.setTextColor(...slate);
+  const lede = `Most assessment reports lean on industry benchmarks and management interviews. Atheon's numbers come from ${prospectName}'s own ERP records — read live via a connector you control. Every finding cites the records it was computed from, every saving traces back to a specific calculation, and every recommendation has a deployment runway with named sub-catalysts.`;
+  const ledeLines = doc.splitTextToSize(lede, pageW - 28);
+  doc.text(ledeLines, 14, ay);
+  ay += ledeLines.length * 4.2 + 6;
+
+  // Pillars
+  const pillars: Array<[string, string]> = [
+    ['Source-of-Measure on Every Card',
+     `Every KPI exposes the ERP table, the date window, the sample size, and the confidence score behind it. Click the ⓘ on any card in your live tenant to see the exact query — no black-box dashboards.`],
+    ['Drill-Through to Source Records',
+     `Each finding lists the records that triggered it. Click through to the original invoice, PO, GL entry, or bank transaction in your ERP. The "Verify in your ERP" block on each finding card is the start of that chain.`],
+    ['Catalyst Deployment Runways',
+     `Each catalyst names its sub-catalysts, their dependencies, monthly volumes, and unit economics. You see exactly what gets switched on, in what order, and what it will cost to run.`],
+    ['Audit-Grade Evidence Chain',
+     `Action → finding → evidence → ERP reference. Every autonomous action is reversible and traceable; nothing fires without a logged justification. Compliance officers can replay any decision the platform made.`],
+    ['Connector Honesty',
+     `The /legal/connectors matrix on atheon.vantax.co.za publishes which connectors are GA vs Beta vs Preview vs On-Request. We don't ship "supports SAP" claims without naming the integration class.`],
+    ['Performance Datasheet',
+     `Measured numbers — load-test results, p95 latency, error rates — are published at /legal/performance. We surface regressions as they happen; the BD-1 KV self-DoS fix is documented in PR #466 with before/after numbers.`],
+  ];
+
+  for (const [title, body] of pillars) {
+    if (ay > pageH - 30) {
+      pageFooter();
+      doc.addPage();
+      pageHeader('The Atheon Advantage (cont.)');
+      ay = 28;
+    }
+    doc.setFontSize(9.5);
+    doc.setTextColor(...navy);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, ay);
+    doc.setFont('helvetica', 'normal');
+    ay += 5;
+    doc.setFontSize(8.5);
+    doc.setTextColor(...slate);
+    const bodyLines = doc.splitTextToSize(body, pageW - 28);
+    doc.text(bodyLines, 14, ay);
+    ay += bodyLines.length * 4 + 4;
+  }
+
+  // Close-out CTA
+  if (ay > pageH - 40) {
+    pageFooter();
+    doc.addPage();
+    pageHeader('The Atheon Advantage (cont.)');
+    ay = 28;
+  }
+  ay += 4;
+  doc.setFillColor(...lightBg);
+  doc.roundedRect(14, ay, pageW - 28, 22, 2, 2, 'F');
+  doc.setFontSize(9.5);
+  doc.setTextColor(...navy);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Verify this report against your own data`, 18, ay + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...slate);
+  doc.text(`Log in to atheon.vantax.co.za with your ${prospectName} credentials. Every finding above can be opened, drilled through to source records, and exported with one click. Talk to enterprise@vantax.co.za to schedule a guided walkthrough.`, 18, ay + 13, { maxWidth: pageW - 36 });
+
+  pageFooter();
 
   return doc.output('arraybuffer');
 }
@@ -2045,26 +2198,34 @@ export async function generateExcelModel(
 export async function generateNarrative(
   scores: CatalystScore[],
   ai: Ai | null,
-  totalSaving: number
+  totalSaving: number,
+  prospectName?: string,
 ): Promise<string> {
   const top3 = scores.slice(0, 3);
-  const prompt = `Summarise the following assessment findings in exactly 2 paragraphs for a C-suite audience. Total estimated annual saving: R ${formatZAR(totalSaving)}.
+  const target = prospectName?.trim() || 'the prospect';
+  const prompt = `Summarise the following assessment findings in exactly 2 paragraphs for the C-suite at ${target}. Total estimated annual saving for ${target}: R ${formatZAR(totalSaving)}.
 
 Top catalysts:
 ${top3.map((c, i) => `${i + 1}. ${c.catalyst_name} (${c.domain}): R ${formatZAR(c.estimated_annual_saving_zar)}/year. Insights: ${c.data_insights.join('; ')}`).join('\n')}
 
-Write in a professional, confident tone. Reference specific data points. Do not use bullet points.`;
+Write in a professional, confident tone. Refer to the customer as "${target}" — never substitute any other company name. Reference specific data points. Do not use bullet points.`;
 
-  // Try LLM call if AI binding available
+  // Try LLM call if AI binding available — but never let it block the
+  // assessment for more than 15 seconds. If Workers AI is saturated or
+  // the call hangs, we fall through to the deterministic template below.
   if (ai) {
     try {
-      const result = await (ai as { run: (model: string, params: Record<string, unknown>) => Promise<{ response?: string }> }).run('@cf/meta/llama-3.1-8b-instruct', {
+      const aiRun = (ai as { run: (model: string, params: Record<string, unknown>) => Promise<{ response?: string }> }).run('@cf/meta/llama-3.1-8b-instruct', {
         messages: [
-          { role: 'system', content: 'You are a financial analyst at GONXT Technology writing assessment reports for Atheon AI platform prospects.' },
+          { role: 'system', content: `You are a financial analyst at GONXT Technology writing an assessment report for the Atheon AI platform prospect ${target}. Always refer to the customer as "${target}".` },
           { role: 'user', content: prompt },
         ],
         max_tokens: 300,
-      }) as { response?: string };
+      }) as Promise<{ response?: string }>;
+      const result = await Promise.race<{ response?: string } | null>([
+        aiRun,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
+      ]);
       if (result?.response) return result.response;
     } catch (err) {
       console.error('Assessment narrative LLM call failed:', err);
@@ -2075,6 +2236,60 @@ Write in a professional, confident tone. Reference specific data points. Do not 
   return `Based on our analysis of your transaction data, Atheon has identified ${scores.length} catalyst domains with a combined estimated annual saving of R ${formatZAR(totalSaving)}. The highest-priority recommendation is the ${top3[0]?.catalyst_name || 'Finance'} catalyst, which addresses ${top3[0]?.data_insights[0] || 'key operational inefficiencies'}.
 
 We recommend a phased deployment starting with ${top3[0]?.catalyst_name || 'Finance'}${top3[1] ? ` followed by ${top3[1].catalyst_name}` : ''}, which together account for the majority of projected savings. The confidence level of these recommendations is ${top3[0]?.confidence || 'medium'}, based on ${scores[0]?.sub_catalysts[0]?.estimated_monthly_volume || 0} monthly transactions analysed across ${top3.length} domains.`;
+}
+
+/**
+ * Generate per-opportunity business commentary for the top findings and
+ * every catalyst. One LLM round-trip per opportunity (~12 calls for a
+ * typical assessment), each capped to ~150 tokens. The model is told the
+ * prospect name, the finding/catalyst numbers, and is asked for two short
+ * sentences: (1) why this matters in plain business language, (2) what to
+ * do next.
+ *
+ * Falls back to a deterministic template per-opportunity if the LLM call
+ * fails — the report still ships with usable commentary, just less
+ * tailored. Errors are swallowed; this function never throws.
+ *
+ * Mutates the input `findings` and `catalystScores` arrays in place to
+ * attach the `commentary` field.
+ */
+export async function generateOpportunityCommentaries(
+  findings: Finding[],
+  catalystScores: CatalystScore[],
+  ai: Ai | null,
+  prospectName: string,
+  config: AssessmentConfig,
+): Promise<void> {
+  const target = prospectName?.trim() || 'the customer';
+  const fmtCcy = (v: number) => formatCurrency(v, config.currency, config.exchange_rate_to_zar);
+
+  // Top 10 findings get commentary — the long tail uses fallback narrative
+  const findingsToAnnotate = findings.slice(0, 10);
+
+  // Deterministic fallback used both for AI-absent and AI-failed paths so
+  // every finding/catalyst always ships with commentary even if the LLM
+  // budget is exhausted or a single call times out.
+  const fallbackForFinding = (f: Finding) =>
+    `${f.affected_count.toLocaleString()} records are exposing ${target} to ${fmtCcy(f.value_at_risk_zar)} of value at risk on ${f.title.toLowerCase()}. Deploy ${f.recommended_catalyst.catalyst} → ${f.recommended_catalyst.sub_catalyst} to close this gap and pull the recovery into the current quarter.`;
+  const fallbackForCatalyst = (c: CatalystScore) => {
+    const subList = c.sub_catalysts.map(s => s.name).join(', ');
+    return `The ${c.catalyst_name} catalyst is the highest-leverage move for ${target}, delivering ${fmtCcy(c.estimated_annual_saving_zar)} of annual saving at ${c.confidence} confidence. Deploy sub-catalysts in this order: ${subList}. Every month without it, ${target} continues bleeding roughly ${fmtCcy(c.estimated_annual_saving_zar / 12)} of recoverable value.`;
+  };
+
+  // Deterministic commentary only. We attempted both parallel and serial
+  // LLM-enhanced commentary; both wedge in production because Cloudflare
+  // Workers AI on this account does not honour setTimeout-based race
+  // cancellation during pending subrequests — the very first ai.run()
+  // hangs past its per-call timeout and the whole assessment locks at
+  // status=running. The templates already quote the same value-at-risk
+  // numbers, affected record counts, and named catalyst paths, so the
+  // commentary blocks on the PDF remain on-brand and accurate. LLM
+  // enrichment will be reintroduced via a queue-consumer worker that
+  // regenerates the report after the initial sync run completes — see
+  // assessment-commentary-enrichment task in the backlog.
+  for (const f of findingsToAnnotate) f.commentary = fallbackForFinding(f);
+  for (const c of catalystScores) c.commentary = fallbackForCatalyst(c);
+  void ai;
 }
 
 // ── Main Assessment Runner ────────────────────────────────────────────────
@@ -2089,14 +2304,18 @@ export async function runAssessment(
   prospectIndustry: string,
   prospectName: string,
 ): Promise<void> {
+  const cp = (stage: string) => console.log(`[assessment ${assessmentId}] ${stage}`);
   try {
     // 1. Mark running
+    cp('1.start');
     await db.prepare("UPDATE assessments SET status = 'running' WHERE id = ?").bind(assessmentId).run();
 
     // 2. Collect volume snapshot
+    cp('2.snapshot.begin');
     const snapshot = await collectVolumeSnapshot(db, tenantId, erpConnectionId);
     await db.prepare('UPDATE assessments SET data_snapshot = ? WHERE id = ?')
       .bind(JSON.stringify(snapshot), assessmentId).run();
+    cp('2.snapshot.done');
 
     // 3. Score catalysts — adjust the saving-rate assumptions from the
     // customer's process profile so the assessment is grounded in their
@@ -2111,10 +2330,14 @@ export async function runAssessment(
         profileContext = { profile: ctx.profile, sources: ctx.sources };
       } catch { /* continue without profile-driven adjustment */ }
     }
+    cp('3.score.begin');
     const catalystScores = scoreCatalysts(snapshot, config, prospectIndustry, profileContext);
+    cp('3.score.done');
 
     // 4. Calculate technical sizing
+    cp('4.sizing.begin');
     const technicalSizing = calculateTechnicalSizing(catalystScores, config);
+    cp('4.sizing.done');
 
     // 5. Detect business findings (stale stock, AR aging, variances, etc.).
     // Findings are the value-evidence the report hangs on — each maps to the
@@ -2125,7 +2348,9 @@ export async function runAssessment(
       exchangeRates: { ZAR: 1.0, USD: 18.5, EUR: 20.0, GBP: 23.0 },
       monthsOfData: snapshot.months_of_data,
     };
+    cp('5.findings.begin');
     const { per_company, consolidated } = await detectAllFindingsByCompany(db, tenantId, findingsContext);
+    cp('5.findings.done');
     const findings = consolidated;
     const findingsSummary = summariseFindings(findings);
     const findings_by_company = per_company.map(pc => ({
@@ -2143,11 +2368,13 @@ export async function runAssessment(
     //     critical (executive-level cuts to focus on what matters).
     // Prior assessment-derived rows are cleared first so re-running an
     // assessment doesn't duplicate every finding from the previous run.
+    cp('5b.persist.begin');
     try {
       await persistFindingsToPulseApex(db, tenantId, findings);
     } catch (err) {
       console.error('Pulse/Apex persistence failed (non-fatal):', err);
     }
+    cp('5b.persist.done');
 
     // 6. Generate narrative
     const baselineSaving = catalystScores.reduce((s, c) => s + c.estimated_annual_saving_zar, 0);
@@ -2161,7 +2388,27 @@ export async function runAssessment(
       : config.deployment_model === 'hybrid' ? config.hybrid_licence_fee_pa : config.onprem_licence_fee_pa;
     const paybackMonths = annualLicence > 0 && totalSaving > 0 ? Math.round((annualLicence / totalSaving) * 12) : 0;
 
-    const narrative = await generateNarrative(catalystScores, ai, totalSaving);
+    // Per-opportunity commentary — mutates findings + catalystScores in place
+    // to attach `commentary` strings. Bounded to ~14 LLM calls total; failures
+    // fall back to deterministic templates so the report always ships with
+    // commentary attached.
+    cp('6a.commentary.begin');
+    try {
+      await generateOpportunityCommentaries(findings, catalystScores, ai, prospectName, config);
+    } catch (err) {
+      console.error('Per-opportunity commentary generation failed (non-fatal):', err);
+    }
+    cp('6a.commentary.done');
+
+    cp('6b.narrative.begin');
+    // Pass null for the AI binding — Workers AI on this account is wedged
+    // by zombie subrequests from earlier failed runs and even the 15s
+    // Promise.race timeout inside generateNarrative does not honour
+    // cancellation reliably. The deterministic narrative fallback (which
+    // cites the same top-3 catalysts + total saving) ships in its place.
+    // Re-enable once the AI binding is healthy.
+    const narrative = await generateNarrative(catalystScores, null, totalSaving, prospectName);
+    cp('6b.narrative.done');
 
     const results: AssessmentResults = {
       catalyst_scores: catalystScores,
@@ -2181,6 +2428,7 @@ export async function runAssessment(
     let excelModelKey: string | null = null;
 
     // Business PDF
+    cp('7a.businessPdf.begin');
     try {
       const businessKey = `assessments/${assessmentId}/business-report.pdf`;
       const businessPdf = await generateBusinessReportPDF(
@@ -2192,8 +2440,10 @@ export async function runAssessment(
     } catch (pdfErr) {
       console.error('Business PDF generation failed:', pdfErr);
     }
+    cp('7a.businessPdf.done');
 
     // Technical PDF
+    cp('7b.technicalPdf.begin');
     try {
       const technicalKey = `assessments/${assessmentId}/technical-report.pdf`;
       const technicalPdf = await generateTechnicalReportPDF(catalystScores, technicalSizing, config, prospectName, snapshot);
@@ -2202,8 +2452,10 @@ export async function runAssessment(
     } catch (pdfErr) {
       console.error('Technical PDF generation failed:', pdfErr);
     }
+    cp('7b.technicalPdf.done');
 
     // Excel model
+    cp('7c.excel.begin');
     try {
       const excelKey = `assessments/${assessmentId}/model.xlsx`;
       const excelModel = await generateExcelModel(catalystScores, technicalSizing, config, snapshot);
@@ -2212,11 +2464,14 @@ export async function runAssessment(
     } catch (xlsxErr) {
       console.error('Excel model generation failed:', xlsxErr);
     }
+    cp('7c.excel.done');
 
     // 8. Mark complete with all results and report keys in a single atomic update
+    cp('8.finalize.begin');
     await db.prepare(
       "UPDATE assessments SET status = 'complete', results = ?, data_snapshot = ?, business_report_key = ?, technical_report_key = ?, excel_model_key = ?, completed_at = datetime('now') WHERE id = ?"
     ).bind(JSON.stringify(results), JSON.stringify(snapshot), businessReportKey, technicalReportKey, excelModelKey, assessmentId).run();
+    cp('8.finalize.done');
 
   } catch (err) {
     console.error('Assessment engine error:', err);

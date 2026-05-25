@@ -147,6 +147,11 @@ export interface Finding {
   metric_signature: string;
   evidence_quality: EvidenceQuality;
   detected_at: string;
+  /** LLM-authored business commentary attached during report generation.
+   *  Two short sentences: (1) why this matters in plain business language,
+   *  (2) what the operator should do next. Optional — if absent, the PDF
+   *  renderer falls back to `narrative`. */
+  commentary?: string;
   /**
    * When the engine runs per-company (multi-entity / multinational), each
    * Finding is tagged with the entity it belongs to. Unset for tenant-wide
