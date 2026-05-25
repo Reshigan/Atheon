@@ -21,6 +21,7 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import type { ProvenanceVerifyResult, FederatedPattern } from '@/lib/api';
+import { formatDays } from '@/lib/utils';
 
 type CalibrationSummary = Awaited<ReturnType<typeof api.catalysts.getCalibrationSummary>>;
 type ProvenanceRoot = Awaited<ReturnType<typeof api.provenance.root>>;
@@ -243,7 +244,7 @@ export function TrustPerformancePage(): JSX.Element {
                 <div key={p.finding_code} className="flex items-center justify-between text-xs">
                   <div className="t-primary truncate font-mono">{p.finding_code}</div>
                   <div className="t-muted ml-2 whitespace-nowrap">
-                    {p.n_contributors}× · {Math.round(p.avg_resolved_days)}d · {Math.round(p.avg_recovery_pct)}%
+                    {p.n_contributors}× · {formatDays(p.avg_resolved_days)} · {Math.round(p.avg_recovery_pct)}%
                   </div>
                 </div>
               ))

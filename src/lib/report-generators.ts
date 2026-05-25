@@ -14,6 +14,7 @@ import type {
   ProcessTimingRecord,
   ValueSummaryRecord,
 } from './api';
+import { formatDays } from './utils';
 
 // -- Helpers -----------------------------------------------------------------
 
@@ -830,7 +831,7 @@ export async function generateValueAssessmentPDF(
       { label: 'Total Issues Found', value: valueSummary.total_findings.toString(), sub: `${valueSummary.total_critical_findings} critical`, color: NAVY },
       { label: 'Immediate Recovery', value: formatRk(valueSummary.total_immediate_value), sub: 'One-time cleanup value', color: GREEN },
       { label: 'Ongoing Monthly Value', value: formatRk(valueSummary.total_ongoing_monthly_value), sub: `${formatRk(valueSummary.total_ongoing_annual_value)}/year`, color: TEAL },
-      { label: 'Payback Period', value: `${valueSummary.payback_days} days`, sub: `Outcome fee: ${formatRk(valueSummary.outcome_based_monthly_fee)}/mo`, color: GOLD },
+      { label: 'Payback Period', value: formatDays(valueSummary.payback_days, { long: true }), sub: `Outcome fee: ${formatRk(valueSummary.outcome_based_monthly_fee)}/mo`, color: GOLD },
     ];
 
     const kw = (pageW - 25) / 2;
@@ -1051,7 +1052,7 @@ export async function generateValueAssessmentPDF(
 
       doc.setFontSize(7);
       doc.setTextColor(...SLATE);
-      doc.text(`Avg: ${t.avg_cycle_time_days.toFixed(1)} days | P90: ${t.p90_cycle_time_days.toFixed(1)} days | Benchmark: ${t.benchmark_cycle_time_days} days`, 20, y + 14);
+      doc.text(`Avg: ${formatDays(t.avg_cycle_time_days, { long: true, decimals: 1 })} | P90: ${formatDays(t.p90_cycle_time_days, { long: true, decimals: 1 })} | Benchmark: ${formatDays(t.benchmark_cycle_time_days, { long: true })}`, 20, y + 14);
       doc.text(`${t.records_analysed} records | ${t.records_exceeding_benchmark} over benchmark`, 20, y + 19);
       if (t.financial_impact_of_delay > 0) {
         doc.setTextColor(...RED);
@@ -1059,7 +1060,7 @@ export async function generateValueAssessmentPDF(
       }
       if (t.bottleneck_step) {
         doc.setTextColor(120, 120, 120);
-        doc.text(`Bottleneck: ${t.bottleneck_step} (${t.bottleneck_avg_days.toFixed(1)} days)`, 20, y + 23);
+        doc.text(`Bottleneck: ${t.bottleneck_step} (${formatDays(t.bottleneck_avg_days, { long: true, decimals: 1 })})`, 20, y + 23);
       }
 
       y += 28;
@@ -1124,7 +1125,7 @@ export async function generateValueAssessmentPDF(
     doc.setFontSize(8);
     doc.setTextColor(...SLATE);
     doc.text(`Outcome-based fee: ${(fee * 100).toFixed(0)}% of value delivered`, 22, y + 14);
-    doc.text(`Payback period: ${valueSummary.payback_days} days`, 22, y + 19);
+    doc.text(`Payback period: ${formatDays(valueSummary.payback_days, { long: true })}`, 22, y + 19);
 
     vaFooter();
   }

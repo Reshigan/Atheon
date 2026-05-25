@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import type { CostOfInactionResponse } from '@/lib/api';
 import { AlertTriangle, Clock, TrendingUp } from 'lucide-react';
+import { StatusPill, type StatusKind } from '@/components/ui/status-pill';
+import { formatDays } from '@/lib/utils';
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `R${(value / 1_000_000).toFixed(2)}M`;
@@ -71,7 +73,7 @@ export function CostOfInactionTicker({ compact = false, data: externalData }: { 
         </div>
         <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
           <Clock size={10} className="inline mr-1 t-muted" />
-          <span className="text-sm font-bold t-primary">{data.avgDaysOpen}d</span>
+          <span className="text-sm font-bold t-primary">{formatDays(data.avgDaysOpen)}</span>
           <p className="text-caption t-muted">Avg Open</p>
         </div>
         <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
@@ -87,9 +89,12 @@ export function CostOfInactionTicker({ compact = false, data: externalData }: { 
             <div key={rca.rcaId} className="flex items-center justify-between text-caption">
               <span className="t-secondary truncate max-w-[60%]">{rca.metricName}</span>
               <div className="flex items-center gap-2">
-                <span className={`px-1.5 py-0.5 rounded text-[8px] font-medium ${rca.severity === 'red' ? 'bg-red-500/20 text-red-400' : rca.severity === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-500/20 t-muted'}`}>
-                  {rca.daysOpen}d
-                </span>
+                <StatusPill
+                  status={(rca.severity === 'red' ? 'red' : rca.severity === 'amber' ? 'amber' : 'info') as StatusKind}
+                  label={formatDays(rca.daysOpen)}
+                  size="sm"
+                  noGlyph
+                />
                 <span className="t-muted">{rca.pendingPrescriptions} pending</span>
               </div>
             </div>

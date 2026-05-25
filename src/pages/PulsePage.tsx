@@ -12,7 +12,7 @@ import { LoadingState } from "@/components/ui/state";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 
 import { api, ApiError } from "@/lib/api";
-import { cleanLlmText, formatDuration } from "@/lib/utils";
+import { cleanLlmText, formatDuration, formatDays } from "@/lib/utils";
 import type { Metric, AnomalyItem, ProcessItem, CorrelationItem, PulseSummary, CatalystRunItem, CatalystRunSummary, MetricTraceResponse, HealthDimensionTraceResponse, PulseInsightsResponse, DiagnosticSummaryResponse, DiagnosticAnalysisItem, DiagnosticAnalysisDetail, CostOfInactionResponse } from "@/lib/api";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import { CostOfInactionTicker } from "@/components/ui/cost-of-inaction-ticker";
@@ -1778,7 +1778,7 @@ export function PulsePage() {
                   <span className="text-label">Avg Lag</span>
                   <Clock size={14} className="text-gray-400" />
                 </div>
-                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{Math.round(correlations.reduce((s, c) => s + c.lagDays, 0) / correlations.length)}d</p>
+                <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{formatDays(correlations.reduce((s, c) => s + (Number.isFinite(c.lagDays) ? c.lagDays : 0), 0) / correlations.length)}</p>
                 <p className="text-caption t-muted mt-1">Between events</p>
               </Card>
             </div>
@@ -1817,7 +1817,7 @@ export function PulsePage() {
                       <div className="flex-1 relative">
                         <div className="h-px bg-gradient-to-r from-accent/40 to-blue-500/30" />
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-card)] text-caption text-gray-500">
-                          {event.lagDays}d lag
+                          {formatDays(event.lagDays)} lag
                         </div>
                       </div>
                       <div className="p-2.5 rounded-lg bg-accent/10 text-center min-w-24">
@@ -1860,7 +1860,7 @@ export function PulsePage() {
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Time Lag</span>
-                            <p className="text-lg font-bold t-primary mt-0.5">{event.lagDays} day{event.lagDays !== 1 ? 's' : ''}</p>
+                            <p className="text-lg font-bold t-primary mt-0.5">{formatDays(event.lagDays, { long: true })}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Source</span>
@@ -1895,7 +1895,7 @@ export function PulsePage() {
                             <span className={`font-medium ${confidenceColor(event.confidence)}`}>{confPct}%</span> probability
                             that <span className="font-medium text-blue-400">{event.targetImpact}</span> will follow in{' '}
                             <span className="font-medium t-primary">{event.targetSystem}</span> within{' '}
-                            <span className="font-medium t-primary">{event.lagDays} day{event.lagDays !== 1 ? 's' : ''}</span>.
+                            <span className="font-medium t-primary">{formatDays(event.lagDays, { long: true })}</span>.
                             {confPct >= 70 ? ' This is a strong, actionable correlation that can be used for predictive planning.' :
                              confPct >= 50 ? ' This pattern is moderately reliable — use it as an early warning signal alongside other indicators.' :
                              ' This is a weak correlation that requires further data collection to validate.'}
@@ -1914,7 +1914,7 @@ export function PulsePage() {
                             <Eye className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <span className="text-sm t-primary">Set up automated alerts on <span className="font-medium">{event.sourceSystem}</span> for early detection</span>
-                              <p className="text-caption t-muted mt-0.5">Use the {event.lagDays}-day lag as a predictive window to prepare for downstream impact.</p>
+                              <p className="text-caption t-muted mt-0.5">Use the {formatDays(event.lagDays)} lag as a predictive window to prepare for downstream impact.</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">

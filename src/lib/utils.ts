@@ -115,6 +115,25 @@ export function formatDuration(
 }
 
 /**
+ * Render a day count as `"Nd"` (or `"N days"` when `long=true`). Returns
+ * "—" for null / undefined / NaN / Infinity / negative — preventing the
+ * platform from rendering bare `Infinity`, `NaN`, or `undefined` as text.
+ *
+ * Pluralisation is grammatically correct: 0 days, 1 day, 2 days.
+ */
+export function formatDays(
+  value: number | null | undefined,
+  opts: { long?: boolean; decimals?: number } = {},
+): string {
+  if (value == null || !Number.isFinite(value) || value < 0) return '—';
+  const { long = false, decimals } = opts;
+  const display = decimals != null ? value.toFixed(decimals) : String(Math.round(value));
+  if (!long) return `${display}d`;
+  const isOne = Number(display) === 1;
+  return `${display} day${isOne ? '' : 's'}`;
+}
+
+/**
  * Safely divide; returns 0 (or `fallback`) when the divisor is 0 / undefined
  * / NaN, so callers don't ship `Infinity` or `NaN` into the UI.
  */

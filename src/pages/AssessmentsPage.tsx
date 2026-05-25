@@ -7,7 +7,9 @@ import { AssessmentFindingsPanel } from '@/components/AssessmentFindingsPanel';
 import { HeroHeader } from '@/components/ui/hero-header';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { ClipboardList } from 'lucide-react';
+import { EmptyState } from '@/components/ui/state';
 import { catalystDeployUrl } from '@/lib/catalyst-recommendation';
+import { formatDays } from '@/lib/utils';
 
 type View = 'list' | 'new' | 'running' | 'results';
 
@@ -155,11 +157,12 @@ function ListView({ assessments, loading, onView, onDelete }: {
 
   if (assessments.length === 0) {
     return (
-      <div className="text-center py-20">
-        <div className="text-4xl mb-3">📊</div>
-        <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No assessments yet</h3>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Run a pre-assessment against a prospect&apos;s ERP to generate a business case.</p>
-      </div>
+      <EmptyState
+        variant="hero"
+        icon={ClipboardList}
+        title="No assessments yet"
+        description="Run a pre-assessment against a prospect's ERP to generate a business case."
+      />
     );
   }
 
@@ -869,7 +872,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                   },
                   {
                     label: 'Payback Period',
-                    value: `${valueSummary.payback_days} days`,
+                    value: formatDays(valueSummary.payback_days, { long: true }),
                     sub: `Outcome fee: ${formatRk(valueSummary.outcome_based_monthly_fee)}/mo`,
                     color: '#8b5cf6',
                     source: {
@@ -1061,8 +1064,8 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                           <div className="space-y-2 mt-3">
                             <div>
                               <div className="flex justify-between text-xs mb-1">
-                                <span style={{ color: 'var(--text-muted)' }}>Your avg: {t.avg_cycle_time_days.toFixed(1)} days</span>
-                                <span style={{ color: 'var(--text-muted)' }}>P90: {t.p90_cycle_time_days.toFixed(1)} days</span>
+                                <span style={{ color: 'var(--text-muted)' }}>Your avg: {formatDays(t.avg_cycle_time_days, { long: true, decimals: 1 })}</span>
+                                <span style={{ color: 'var(--text-muted)' }}>P90: {formatDays(t.p90_cycle_time_days, { long: true, decimals: 1 })}</span>
                               </div>
                               <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card)' }}>
                                 <div className="h-full rounded-full" style={{ width: `${(t.avg_cycle_time_days / maxTime) * 100}%`, background: overBenchmark ? '#ef4444' : '#10b981' }} />
@@ -1070,7 +1073,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                             </div>
                             <div>
                               <div className="flex justify-between text-xs mb-1">
-                                <span style={{ color: 'var(--text-muted)' }}>Benchmark: {t.benchmark_cycle_time_days} days</span>
+                                <span style={{ color: 'var(--text-muted)' }}>Benchmark: {formatDays(t.benchmark_cycle_time_days, { long: true })}</span>
                               </div>
                               <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card)' }}>
                                 <div className="h-full rounded-full" style={{ width: `${(t.benchmark_cycle_time_days / maxTime) * 100}%`, background: '#6b7280' }} />
@@ -1082,7 +1085,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                             {t.financial_impact_of_delay > 0 && <span className="ml-2 font-medium" style={{ color: '#ef4444' }}>Impact: {formatRk(t.financial_impact_of_delay)}</span>}
                           </div>
                           {t.bottleneck_step && (
-                            <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>Bottleneck: {t.bottleneck_step} ({t.bottleneck_avg_days.toFixed(1)} days)</div>
+                            <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>Bottleneck: {t.bottleneck_step} ({formatDays(t.bottleneck_avg_days, { long: true, decimals: 1 })})</div>
                           )}
                         </div>
                       );
