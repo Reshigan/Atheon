@@ -310,7 +310,7 @@ export function Dashboard() {
           <Link
             to={mfaEnforcementWarning.mfaSetupUrl || '/settings/mfa'}
             className="text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap"
-            style={{ background: 'var(--accent)', color: '#fff' }}
+            style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
           >
             Enable MFA now
           </Link>

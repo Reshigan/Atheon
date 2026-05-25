@@ -242,6 +242,7 @@ export function AssessmentFindingsPanel({
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
             <input
               type="text"
+              aria-label="Search findings, sub-catalysts, codes"
               placeholder="Search findings, sub-catalysts, codes..."
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary focus:outline-none focus:border-accent/40"
               value={search}

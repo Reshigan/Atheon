@@ -385,23 +385,45 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
     <div className="space-y-3">
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
-        <Filter size={14} className="text-white/50" />
-        <select className="bg-surface border border-white/10 rounded px-2 py-1 text-xs" value={historyFilter.status || ''} onChange={e => { setHistoryFilter(f => ({ ...f, status: e.target.value || undefined })); setHistoryPage(0); }}>
+        <Filter size={14} className="text-white/50" aria-hidden="true" />
+        <select
+          aria-label="Filter runs by status"
+          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          value={historyFilter.status || ''}
+          onChange={e => { setHistoryFilter(f => ({ ...f, status: e.target.value || undefined })); setHistoryPage(0); }}
+        >
           <option value="">All Status</option>
           <option value="completed">Completed</option>
           <option value="partial">Partial</option>
           <option value="failed">Failed</option>
           <option value="running">Running</option>
         </select>
-        <select className="bg-surface border border-white/10 rounded px-2 py-1 text-xs" value={historyFilter.triggered_by || ''} onChange={e => { setHistoryFilter(f => ({ ...f, triggered_by: e.target.value || undefined })); setHistoryPage(0); }}>
+        <select
+          aria-label="Filter runs by trigger"
+          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          value={historyFilter.triggered_by || ''}
+          onChange={e => { setHistoryFilter(f => ({ ...f, triggered_by: e.target.value || undefined })); setHistoryPage(0); }}
+        >
           <option value="">All Triggers</option>
           <option value="manual">Manual</option>
           <option value="schedule">Schedule</option>
           <option value="retry">Retry</option>
           <option value="api">API</option>
         </select>
-        <input type="date" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs" placeholder="From" value={historyFilter.from || ''} onChange={e => { setHistoryFilter(f => ({ ...f, from: e.target.value || undefined })); setHistoryPage(0); }} />
-        <input type="date" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs" placeholder="To" value={historyFilter.to || ''} onChange={e => { setHistoryFilter(f => ({ ...f, to: e.target.value || undefined })); setHistoryPage(0); }} />
+        <input
+          type="date"
+          aria-label="Runs from date"
+          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          value={historyFilter.from || ''}
+          onChange={e => { setHistoryFilter(f => ({ ...f, from: e.target.value || undefined })); setHistoryPage(0); }}
+        />
+        <input
+          type="date"
+          aria-label="Runs to date"
+          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          value={historyFilter.to || ''}
+          onChange={e => { setHistoryFilter(f => ({ ...f, to: e.target.value || undefined })); setHistoryPage(0); }}
+        />
         <span className="text-xs text-white/40 ml-auto">{runsTotal} runs</span>
       </div>
 
@@ -698,7 +720,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
             </div>
           ) : (
             <div className="flex gap-2 items-center">
-              <input type="text" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Sign-off notes..." value={signOffNotes} onChange={e => setSignOffNotes(e.target.value)} />
+              <input type="text" aria-label="Sign-off notes" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Sign-off notes..." value={signOffNotes} onChange={e => setSignOffNotes(e.target.value)} />
               <Button size="sm" variant="ghost" className="text-emerald-400 text-xs" onClick={() => handleSignOff('signed_off')}><FileCheck size={12} className="mr-1" />Sign Off</Button>
               <Button size="sm" variant="ghost" className="text-red-400 text-xs" onClick={() => handleSignOff('rejected')}>Reject</Button>
               <Button size="sm" variant="ghost" className="text-amber-400 text-xs" onClick={() => handleSignOff('deferred')}>Defer</Button>
@@ -719,7 +741,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
             ))}
           </div>
           <div className="flex gap-2 mt-2">
-            <input type="text" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Add a comment..." value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddComment()} />
+            <input type="text" aria-label="Add a comment" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Add a comment..." value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddComment()} />
             <Button size="sm" variant="ghost" onClick={handleAddComment}><Send size={12} /></Button>
           </div>
         </Card>

@@ -317,6 +317,7 @@ export function SupportConsolePage() {
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
             <input
+              aria-label="Search tenants by name, slug, or ID"
               className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
               placeholder="Search by tenant name, slug, or ID..."
               value={searchQuery}

@@ -305,7 +305,7 @@ export function IAMPage() {
                  </div>
                </div>
                <p className="text-caption t-muted">Share these credentials securely. The user will be prompted to change their password on first login.</p>
-               <Button variant="primary" size="sm" className="w-full" onClick={() => { setShowInviteUser(false); setInviteResult(null); setInviteForm({ name: '', email: '', role: assignableRoles[0] || 'analyst', sendWelcome: true }); }}>Done</Button>
+               <Button variant="primary" size="sm" className="w-full" onClick={() => { setShowInviteUser(false); setInviteResult(null); setInviteForm({ name: '', email: '', role: assignableRoles[0] || 'analyst', sendWelcome: true }); }} title="Close invite confirmation">Done</Button>
              </div>
            ) : (
              <>
@@ -335,7 +335,7 @@ export function IAMPage() {
                  </div>
                </div>
                <div className="flex gap-3 pt-2">
-                 <Button variant="secondary" size="sm" onClick={() => setShowInviteUser(false)}>Cancel</Button>
+                 <Button variant="secondary" size="sm" onClick={() => setShowInviteUser(false)} title="Cancel invite">Cancel</Button>
                  <Button variant="primary" size="sm" onClick={handleInviteUser} disabled={!inviteForm.name.trim() || !inviteForm.email.trim() || inviting}>
                    {inviting ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />} {isSuperAdmin ? 'Add Admin' : 'Add User'}
                  </Button>
@@ -361,7 +361,7 @@ export function IAMPage() {
            </div>
            <p className="text-caption t-muted">Rules can be added after creating the policy.</p>
            <div className="flex gap-3 pt-2">
-             <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(false)}>Cancel</Button>
+             <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(false)} title="Cancel new policy">Cancel</Button>
              <Button variant="primary" size="sm" onClick={handleCreatePolicy} disabled={!policyForm.name.trim() || creatingPolicy}>
                {creatingPolicy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Create Policy
              </Button>

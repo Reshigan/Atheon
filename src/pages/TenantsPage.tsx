@@ -773,7 +773,7 @@ export function TenantsPage() {
  <div><label className="text-xs t-muted">Full Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
  <div><label className="text-xs t-muted">Role</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
  <div className="flex gap-3">
- <Button variant="secondary" size="sm" onClick={() => setShowAddUser(false)}>Cancel</Button>
+ <Button variant="secondary" size="sm" onClick={() => setShowAddUser(false)} title="Cancel add user">Cancel</Button>
  <Button variant="primary" size="sm" onClick={handleAddUser} disabled={!addUserForm.email.trim() || !addUserForm.name.trim() || addingUser}>
  {addingUser ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add User
  </Button>
@@ -1253,7 +1253,7 @@ export function TenantsPage() {
  </div>
 
  <div className="flex gap-3 pt-2">
- <Button variant="secondary" size="sm" onClick={() => setConfiguringSub(null)}>Cancel</Button>
+ <Button variant="secondary" size="sm" onClick={() => setConfiguringSub(null)} title="Cancel data source configuration">Cancel</Button>
  <Button variant="primary" size="sm" onClick={handleSaveDataSource} disabled={savingDataSource}>
  {savingDataSource ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />} Save Data Source
  </Button>

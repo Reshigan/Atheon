@@ -454,7 +454,7 @@ export function CustomRoleBuilderPage() {
               )}
             </div>
             <div className="flex justify-end gap-2 mt-5">
-              <Button variant="outline" onClick={() => setShowForm(false)} disabled={saving}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowForm(false)} disabled={saving} title="Cancel role changes">Cancel</Button>
               <Button
                 onClick={saveRole}
                 disabled={saving || !form.name.trim() || (form.permissions.length + inheritedPerms.size === 0)}

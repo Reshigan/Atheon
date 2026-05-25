@@ -345,7 +345,7 @@ export function Header() {
           >
             <Bell size={15} />
             {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full text-caption font-bold text-white flex items-center justify-center leading-none" style={{ background: 'var(--accent)' }}>
+              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full text-caption font-bold flex items-center justify-center leading-none" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}

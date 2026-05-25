@@ -155,7 +155,7 @@ export function DeploymentsPage() {
             </div>
             <button
               onClick={() => { setInstallModal(null); loadDeployments(); setView('overview'); }}
-              className="w-full py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--accent)' }}
+              className="w-full py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
             >
               Done
             </button>

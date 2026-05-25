@@ -565,11 +565,11 @@ export function SettingsPage() {
  <div className="grid grid-cols-2 gap-4">
   <div>
    <label className="text-xs font-medium t-secondary mb-1 block">Temperature ({llmTemperature})</label>
-   <input type="range" min="0" max="1" step="0.1" value={llmTemperature} onChange={(e) => setLlmTemperature(parseFloat(e.target.value))} className="w-full" />
+   <input type="range" aria-label="LLM temperature" min="0" max="1" step="0.1" value={llmTemperature} onChange={(e) => setLlmTemperature(parseFloat(e.target.value))} className="w-full" />
   </div>
   <div>
    <label className="text-xs font-medium t-secondary mb-1 block">Max Tokens</label>
-   <input type="number" value={llmMaxTokens} onChange={(e) => setLlmMaxTokens(parseInt(e.target.value) || 1024)} className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] t-primary" />
+   <input type="number" aria-label="LLM max tokens" value={llmMaxTokens} onChange={(e) => setLlmMaxTokens(parseInt(e.target.value) || 1024)} className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] t-primary" />
   </div>
  </div>
  <div className="flex items-center gap-3">

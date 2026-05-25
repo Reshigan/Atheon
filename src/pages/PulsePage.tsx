@@ -1084,7 +1084,7 @@ export function PulsePage() {
                   const Icon = insight.icon;
                   return (
                     <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1450,7 +1450,7 @@ export function PulsePage() {
                             </div>
                             <div className="space-y-2.5">
                               <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>1</div>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>1</div>
                                 <div className="flex-1">
                                   <span className="text-sm t-primary">Investigate root cause: {anom.hypothesis}</span>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1461,7 +1461,7 @@ export function PulsePage() {
                                 </div>
                               </div>
                               <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>2</div>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>2</div>
                                 <div className="flex-1">
                                   <span className="text-sm t-primary">Verify data quality and check for upstream system changes</span>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1472,7 +1472,7 @@ export function PulsePage() {
                                 </div>
                               </div>
                               <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>3</div>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>3</div>
                                 <div className="flex-1">
                                   <span className="text-sm t-primary">{deviationPct >= 50 ? 'Escalate to management and implement corrective action plan' : 'Monitor for recurrence and adjust thresholds if necessary'}</span>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1712,7 +1712,7 @@ export function PulsePage() {
                         <div className="space-y-2.5">
                           {flow.bottlenecks.length > 0 && (
                             <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>1</div>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>1</div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Address bottleneck{flow.bottlenecks.length > 1 ? 's' : ''} at: {flow.bottlenecks.join(', ')}</span>
                                 <p className="text-caption t-muted mt-0.5">Consider resource reallocation, automation, or process redesign to reduce cycle time.</p>
@@ -1721,7 +1721,7 @@ export function PulsePage() {
                           )}
                           {flow.variants > 3 && (
                             <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>{flow.bottlenecks.length > 0 ? '2' : '1'}</div>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>{flow.bottlenecks.length > 0 ? '2' : '1'}</div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Reduce process variants from {flow.variants} to improve standardisation</span>
                                 <p className="text-caption t-muted mt-0.5">High variant count suggests inconsistent execution. Review and enforce SOPs.</p>
@@ -1730,7 +1730,7 @@ export function PulsePage() {
                           )}
                           {flow.conformanceRate < 85 && (
                             <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
                                 {(flow.bottlenecks.length > 0 ? 1 : 0) + (flow.variants > 3 ? 1 : 0) + 1}
                               </div>
                               <div className="flex-1">

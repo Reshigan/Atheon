@@ -914,7 +914,7 @@ export function ApexPage() {
      ) : (
       risks.slice(0, 4).map((risk, i) => (
        <div key={risk.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-        <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: risk.severity === 'critical' ? 'rgba(239,68,68,0.15)' : 'var(--accent)', color: risk.severity === 'critical' ? '#ef4444' : '#fff' }}>
+        <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: risk.severity === 'critical' ? 'rgba(239,68,68,0.15)' : 'var(--accent)', color: risk.severity === 'critical' ? '#ef4444' : 'var(--text-on-accent)' }}>
          {i + 1}
         </div>
         <div className="flex-1 min-w-0">
@@ -1280,7 +1280,7 @@ export function ApexPage() {
  <div className="space-y-2.5">
  {risk.recommendedActions.map((action, i) => (
  <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
- <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: '#fff' }}>
+ <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
  {i + 1}
  </div>
  <div className="flex-1">
