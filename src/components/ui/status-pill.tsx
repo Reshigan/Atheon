@@ -132,9 +132,11 @@ export interface StatusPillProps {
 export function StatusPill({
   status, label, density = 'solid', size = 'md', noGlyph = false, className = '',
 }: StatusPillProps): JSX.Element {
-  // Unknown status → neutral pill with the raw string. Don't crash.
+  // Unknown status → neutral pill. Don't render "undefined"/"null" as a label.
   const def: StatusVisual = STATUS_DEF[status as StatusKind] ?? {
-    label: String(status), tone: 'neutral', glyph: '●',
+    label: status == null || status === '' ? 'unknown' : String(status),
+    tone: 'neutral',
+    glyph: '●',
   };
   const tone = TONE_CLASS[def.tone];
 

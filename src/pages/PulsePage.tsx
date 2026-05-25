@@ -42,6 +42,21 @@ const trendIcon = (trend: string, size = 14) => {
   return <Minus size={size} className="text-gray-400" />;
 };
 
+const CURRENCY_UNITS = new Set(['ZAR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'NGN', 'KES']);
+const formatMetricValue = (value: unknown, unit?: string | null): string => {
+  if (typeof value !== 'number' || !isFinite(value)) return String(value ?? '');
+  const u = (unit || '').toUpperCase();
+  if (CURRENCY_UNITS.has(u)) {
+    try {
+      return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: u, maximumFractionDigits: 0 }).format(value);
+    } catch {
+      return value.toLocaleString('en-ZA', { maximumFractionDigits: 0 });
+    }
+  }
+  if (u === '%' || u === 'PERCENT' || u === 'PCT') return `${value.toFixed(1)}%`;
+  return value.toLocaleString('en-ZA', { maximumFractionDigits: 1 });
+};
+
 /**
  * PulseActionRequired — strip at the top of the Overview tab summarising
  * what needs attention right now. Three categories:
@@ -934,7 +949,7 @@ export function PulsePage() {
                 {metrics.slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className={`font-medium font-mono ${statusColor(m.status)}`}>{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className={`font-medium font-mono ${statusColor(m.status)}`}>{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
@@ -961,7 +976,7 @@ export function PulsePage() {
                 {metrics.filter(m => m.status === 'green').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium font-mono text-emerald-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className="font-medium font-mono text-emerald-400">{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
@@ -988,7 +1003,7 @@ export function PulsePage() {
                 {metrics.filter(m => m.status === 'amber').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium font-mono text-amber-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className="font-medium font-mono text-amber-400">{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
@@ -1015,7 +1030,7 @@ export function PulsePage() {
                 {metrics.filter(m => m.status === 'red').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium font-mono text-red-400">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</span>
+                    <span className="font-medium font-mono text-red-400">{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
@@ -1130,7 +1145,7 @@ export function PulsePage() {
 
                   <div className="flex items-end justify-between">
                     <div>
-                      <span className={`text-2xl font-bold ${statusColor(metric.status)}`}>{metric.value}</span>
+                      <span className={`text-2xl font-bold ${statusColor(metric.status)}`}>{formatMetricValue(metric.value, metric.unit)}</span>
                       <span className="text-sm t-secondary ml-1">{metric.unit}</span>
                     </div>
                     <Sparkline
@@ -1167,7 +1182,7 @@ export function PulsePage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Current Value</span>
-                            <p className={`text-lg font-bold mt-0.5 ${statusColor(metric.status)}`}>{metric.value} {metric.unit}</p>
+                            <p className={`text-lg font-bold mt-0.5 ${statusColor(metric.status)}`}>{formatMetricValue(metric.value, metric.unit)}</p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Green Threshold</span>
@@ -1193,7 +1208,7 @@ export function PulsePage() {
                                 background: metric.status === 'red' ? 'linear-gradient(90deg, #ef4444, #dc2626)' : metric.status === 'amber' ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #10b981, #059669)',
                               }} />
                             </div>
-                            <span className="text-xs font-bold t-primary w-16 text-right">{metric.value} {metric.unit}</span>
+                            <span className="text-xs font-bold t-primary w-16 text-right">{formatMetricValue(metric.value, metric.unit)}</span>
                           </div>
                         </div>
 
@@ -1242,7 +1257,7 @@ export function PulsePage() {
                         </div>
                         <p className="text-sm t-muted leading-relaxed">
                           <span className="font-medium t-primary">{metric.name}</span> is currently at{' '}
-                          <span className={`font-medium ${statusColor(metric.status)}`}>{metric.value} {metric.unit}</span>
+                          <span className={`font-medium ${statusColor(metric.status)}`}>{formatMetricValue(metric.value, metric.unit)}</span>
                           {metric.status === 'green' && ', which is within healthy operational parameters. Continue monitoring to maintain this performance.'}
                           {metric.status === 'amber' && '. This is approaching warning levels — consider proactive investigation to prevent escalation to critical status.'}
                           {metric.status === 'red' && '. This has breached the critical threshold and requires immediate attention. Investigate root cause and implement corrective action.'}

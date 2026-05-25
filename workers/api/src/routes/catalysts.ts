@@ -778,6 +778,7 @@ catalysts.get('/clusters/:id', async (c) => {
     successRate: cl.success_rate,
     trustScore: cl.trust_score,
     autonomyTier: cl.autonomy_tier,
+    subCatalysts: safeJsonParse(cl.sub_catalysts as string) || [],
     recentActions: actions.results.map((a: Record<string, unknown>) => ({
       id: a.id,
       catalystName: a.catalyst_name,

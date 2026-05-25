@@ -31,7 +31,7 @@ async function captureSnapshot(db: D1Database, tenantId: string, snapshotType: s
 
   // Get process conformance
   const conformance = await db.prepare(
-    'SELECT AVG(conformance_score) as avg FROM process_flows WHERE tenant_id = ?'
+    'SELECT AVG(conformance_rate) as avg FROM process_flows WHERE tenant_id = ?'
   ).bind(tenantId).first<{ avg: number | null }>();
 
   // Get catalyst success rate
@@ -135,7 +135,7 @@ app.get('/comparison', async (c) => {
     'SELECT total_discrepancy_value_recovered, roi_multiple FROM roi_tracking WHERE tenant_id = ? ORDER BY calculated_at DESC LIMIT 1'
   ).bind(auth.tenantId).first();
   const conformance = await db.prepare(
-    'SELECT AVG(conformance_score) as avg FROM process_flows WHERE tenant_id = ?'
+    'SELECT AVG(conformance_rate) as avg FROM process_flows WHERE tenant_id = ?'
   ).bind(auth.tenantId).first<{ avg: number | null }>();
   const successRate = await db.prepare(
     'SELECT AVG(success_rate) as avg FROM catalyst_effectiveness WHERE tenant_id = ?'

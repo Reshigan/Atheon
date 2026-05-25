@@ -181,7 +181,7 @@ pulse.get('/anomalies', async (c) => {
   const query = `
     SELECT a.*, pm.name as metric_name, pm.value as current_value
     FROM anomalies a
-    LEFT JOIN process_metrics pm ON a.metric_id = pm.id
+    LEFT JOIN process_metrics pm ON a.metric = pm.id
     WHERE a.tenant_id = ?
     ${severity ? 'AND a.severity = ?' : ''}
     ORDER BY a.detected_at DESC
@@ -755,12 +755,14 @@ pulse.post('/anomalies/detect', async (c) => {
   for (const anomaly of anomalies) {
     if (!anomaly) continue;
     await c.env.DB.prepare(
-      `INSERT INTO anomalies (id, tenant_id, metric_id, metric, deviation, severity, description, status, detected_at, source_run_id)
+      `INSERT INTO anomalies (id, tenant_id, metric, severity, expected_value, actual_value, deviation, hypothesis, status, detected_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
-      crypto.randomUUID(), tenantId, anomaly.metric_id, anomaly.metric_name,
-      anomaly.deviation_percent, anomaly.severity, anomaly.description,
-      'open', new Date().toISOString(), null
+      crypto.randomUUID(), tenantId,
+      String(anomaly.metric_id), anomaly.severity,
+      anomaly.expected_mean, Number(anomaly.current_value),
+      anomaly.deviation_percent, anomaly.description,
+      'open', new Date().toISOString()
     ).run();
   }
 
