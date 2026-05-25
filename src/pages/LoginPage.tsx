@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Building2, Loader2, ShieldCheck, UserPlus } from "lucide-react";
 import { api, setToken, getToken, setTenantOverride, setRememberMe as setApiRememberMe } from "@/lib/api";
+import { FormError } from "@/components/ui/state";
 import type { IndustryVertical, UserRole } from "@/types";
 
 type AuthMode= 'login' | 'register';
@@ -350,7 +351,7 @@ export function LoginPage() {
         >
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
           <p className="text-xs t-muted mb-6">{mode === 'register' ? 'Register for your Atheon workspace' : 'Sign in to your Atheon workspace'}</p>
-          {error && <div className="mb-4 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">{error}</div>}
+          <FormError error={error} className="mb-4" />
           {mfaChallengeActive && (
             <div className="mb-5 space-y-3">
               <div className="flex items-center gap-2">

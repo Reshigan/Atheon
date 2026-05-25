@@ -10,6 +10,7 @@ import type { AccentColor } from "@/stores/appStore";
 import { api, ApiError } from "@/lib/api";
 import type { LlmConfigResponse } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { FormError } from "@/components/ui/state";
 import {
  Settings, User, Bell, Palette, Cpu, Loader2, Check, Sun, Moon, Shield, Key, Copy, Download, Trash2, Brain, ArrowRight, AlertTriangle
 } from "lucide-react";
@@ -478,7 +479,7 @@ export function SettingsPage() {
        {apiKeyLoading ? <Loader2 size={14} className="animate-spin" /> : <Key size={14} />} Generate API Key
      </Button>
    )}
-   {apiKeyError && <div className="text-xs p-2 rounded bg-red-500/10 text-red-400">{apiKeyError}</div>}
+   <FormError error={apiKeyError} />
    <p className="text-caption t-muted">Include as <code className="text-accent">X-API-Key</code> header in your requests.</p>
  </div>
  </Card>

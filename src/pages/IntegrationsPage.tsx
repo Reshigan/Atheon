@@ -17,6 +17,7 @@ import { MetricSource, type MetricProvenance } from "@/components/ui/metric-sour
 import { api, ApiError } from "@/lib/api";
 import type { ERPAdapter, ERPConnection, CanonicalEndpoint, CircuitBreakerState } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { FormError } from "@/components/ui/state";
 import {
   Plug, CheckCircle, XCircle, RefreshCw, Plus, Database,
   Activity, Loader2, X, AlertCircle, Code, Layers, Globe, Play,
@@ -757,9 +758,7 @@ export function IntegrationsPage() {
               </div>
             )}
 
-            {connectError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertCircle size={14} /> {connectError}</div>
-            )}
+            <FormError error={connectError} />
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => { setShowConnect(false); setConnectError(null); }}>Cancel</Button>
               <Button variant="primary" size="sm" onClick={handleConnect} disabled={!connectForm.adapterId || !connectForm.name.trim() || connecting}>
@@ -839,9 +838,7 @@ export function IntegrationsPage() {
               </div>
             )}
 
-            {configError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertCircle size={14} /> {configError}</div>
-            )}
+            <FormError error={configError} />
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => { setConfigureConn(null); setConfigError(null); }}>Cancel</Button>
               <Button variant="primary" size="sm" onClick={handleSaveConfig} disabled={configSaving}>
@@ -1154,11 +1151,7 @@ export function IntegrationsPage() {
                         </Button>
                       </div>
 
-                      {mappingError && (
-                        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                          {mappingError}
-                        </div>
-                      )}
+                      <FormError error={mappingError} className="mb-2" />
 
                       {mappingsLoading === conn.id ? (
                         <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">
@@ -1265,11 +1258,7 @@ export function IntegrationsPage() {
                         </Button>
                       </div>
 
-                      {profileError && (
-                        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                          {profileError}
-                        </div>
-                      )}
+                      <FormError error={profileError} className="mb-2" />
 
                       {profileLoading === conn.id ? (
                         <div className="flex items-center gap-2 text-xs t-muted py-4 justify-center">

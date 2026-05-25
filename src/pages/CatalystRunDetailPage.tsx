@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
-import { LoadingState } from "@/components/ui/state";
+import { LoadingState, EmptyState } from "@/components/ui/state";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -628,13 +628,9 @@ export function CatalystRunDetailPage() {
               </div>
             </div>
           ) : !items || items.items.length === 0 ? (
-            <div className="text-center py-8 text-sm t-muted">
-              No items found for this run.
-            </div>
+            <EmptyState title="No items found for this run." />
           ) : filteredItems.length === 0 ? (
-            <div className="text-center py-8 text-sm t-muted">
-              No items match the current filters.
-            </div>
+            <EmptyState title="No items match the current filters." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

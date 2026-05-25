@@ -7,18 +7,20 @@ interface MaturityBadgeProps {
   className?: string;
 }
 
+// Tone tokens align with StatusPill's success/warning/neutral mapping so
+// MaturityBadge reads the same as the rest of the platform's status pills.
 const MATURITY_META: Record<Maturity, { label: string; classes: string }> = {
   production: {
     label: 'Production',
-    classes: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    classes: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
   },
   partial: {
     label: 'Partial',
-    classes: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    classes: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300',
   },
   planned: {
     label: 'Planned',
-    classes: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+    classes: 'bg-[var(--bg-secondary)] t-muted border-[var(--border-subtle)]',
   },
 };
 
@@ -47,28 +49,13 @@ export function maturityTooltip(maturity: Maturity, summary?: ImplementationSumm
   return 'This cluster is in the catalog for completeness but has no real runtime handlers yet.';
 }
 
-/**
- * MaturityBadge
- *
- * Small pill-style badge indicating whether a catalyst cluster has real
- * runtime logic (`production`), partial coverage (`partial`), or is
- * named-only / stub (`planned`).
- *
- * Color tokens match the app's existing Badge palette:
- *   - production -> emerald (success)
- *   - partial    -> amber   (warning)
- *   - planned    -> gray    (muted)
- *
- * A `title` attribute is attached for native hover tooltip, and an
- * `aria-label` carries the same copy for accessibility.
- */
 export function MaturityBadge({ maturity, summary, className }: MaturityBadgeProps) {
   const meta = MATURITY_META[maturity];
   const tooltip = maturityTooltip(maturity, summary);
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md border font-medium px-1.5 py-0.5 text-caption',
+        'inline-flex items-center rounded-full border font-medium px-2 py-0.5 text-caption',
         meta.classes,
         className
       )}

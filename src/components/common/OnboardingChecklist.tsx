@@ -7,8 +7,11 @@ import { api } from "@/lib/api";
 import type { OnboardingStep } from "@/lib/api";
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, X, Rocket, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useAppStore } from "@/stores/appStore";
 
 export function OnboardingChecklist() {
+  const onboardingDismissed = useAppStore((s) => s.onboardingDismissed);
+  const dismissOnboarding = useAppStore((s) => s.dismissOnboarding);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [totalSteps, setTotalSteps] = useState(7);
@@ -16,21 +19,19 @@ export function OnboardingChecklist() {
   const [allComplete, setAllComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
 
   useEffect(() => {
-    const wasDismissed = localStorage.getItem('atheon-checklist-dismissed') === 'true';
-    if (wasDismissed) { setDismissed(true); setLoading(false); return; }
+    if (onboardingDismissed) { setLoading(false); return; }
     api.onboarding.progress().then((data) => {
       setSteps(data.steps);
       setCompletedCount(data.completedCount);
       setTotalSteps(data.totalSteps);
       setProgressPct(data.progressPct);
       setAllComplete(data.allComplete);
-      if (data.allComplete) setDismissed(true);
+      if (data.allComplete) dismissOnboarding();
     }).catch(() => { /* silent */ }).finally(() => setLoading(false));
-  }, []);
+  }, [onboardingDismissed, dismissOnboarding]);
 
   const handleComplete = async (stepId: string) => {
     if (completing) return;
@@ -47,12 +48,11 @@ export function OnboardingChecklist() {
   };
 
   const handleDismiss = async () => {
-    localStorage.setItem('atheon-checklist-dismissed', 'true');
+    dismissOnboarding();
     try { await api.onboarding.dismiss(); } catch { /* silent */ }
-    setDismissed(true);
   };
 
-  if (dismissed || loading || allComplete) return null;
+  if (onboardingDismissed || loading || allComplete) return null;
 
   return (
     <div

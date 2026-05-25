@@ -3,6 +3,7 @@
  */
 import type { SuccessStory } from '@/lib/api';
 import { CheckCircle2, Clock, Coins, Tag } from 'lucide-react';
+import { StatusPill } from '@/components/ui/status-pill';
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `R${(value / 1_000_000).toFixed(1)}M`;
@@ -20,9 +21,7 @@ export function SuccessStoryCard({ story }: { story: SuccessStory }) {
           <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
           <h4 className="text-xs font-semibold t-primary">{signature}</h4>
         </div>
-        <span className="text-caption px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
-          {story.resolutionCount} resolved
-        </span>
+        <StatusPill status="verified" label={`${story.resolutionCount} resolved`} size="sm" noGlyph />
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-2">

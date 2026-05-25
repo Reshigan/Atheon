@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { WebhookDelivery, WebhookDeliveryStatus } from "@/lib/api";
+import { FormError } from "@/components/ui/state";
 
 interface WebhookDeliveriesTableProps {
   webhookId: string;
@@ -100,11 +101,7 @@ export function WebhookDeliveriesTable({ webhookId, pollIntervalMs = 30_000, lim
         </Button>
       </div>
 
-      {error && (
-        <div className="text-xs p-2 rounded bg-red-500/10 text-red-400 border border-red-500/20">
-          {error}
-        </div>
-      )}
+      <FormError error={error} />
 
       <div
         className="rounded-lg border overflow-hidden"

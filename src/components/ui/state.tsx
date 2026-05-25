@@ -152,6 +152,35 @@ export function ErrorState({
   );
 }
 
+// ─── FormError ───────────────────────────────────────────────
+
+export interface FormErrorProps {
+  /** Error to surface. Falsy values render nothing — so forms can keep
+   *  `<FormError error={error} />` outside conditional blocks. */
+  error?: Error | string | null | false;
+  className?: string;
+}
+
+/**
+ * Inline form-submit error banner. Replaces the duplicated
+ * `bg-red-500/10 text-red-400 border border-red-500/20` divs that grew
+ * across ~20 forms. Pairs naturally with the `<input>` + `<Button>` flow
+ * — drop one above the submit button.
+ */
+export function FormError({ error, className = '' }: FormErrorProps): JSX.Element | null {
+  if (!error) return null;
+  const message = error instanceof Error ? error.message : error;
+  return (
+    <div
+      className={`flex items-start gap-2 px-3 py-2 rounded-md text-body-sm pill-danger ${className}`}
+      role="alert"
+    >
+      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+      <span>{message}</span>
+    </div>
+  );
+}
+
 // ─── EmptyState ──────────────────────────────────────────────
 
 export interface EmptyStateProps {

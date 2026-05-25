@@ -18,6 +18,7 @@ import { api, ApiError } from "@/lib/api";
 import type { ERPConnection, CircuitBreakerState, ERPCompany } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { EmptyState } from "@/components/ui/state";
 import {
   Plug, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Clock, Loader2,
   Play, Wifi, ShieldAlert, ShieldCheck, Building2,
@@ -259,11 +260,12 @@ export function ConnectivityPage() {
           );
         })}
         {normalisedConnections.length === 0 && (
-          <div className="text-center py-12">
-            <Plug size={32} className="mx-auto mb-3 t-muted" />
-            <p className="text-sm t-muted">No connections configured yet.</p>
-            <p className="text-xs t-muted mt-1">Go to Integrations to set up your first connection.</p>
-          </div>
+          <EmptyState
+            icon={Plug}
+            title="No connections configured yet."
+            description="Go to Integrations to set up your first connection."
+            action={{ label: 'Open Integrations', href: '/integrations' }}
+          />
         )}
       </div>
     </div>

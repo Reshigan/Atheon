@@ -3,7 +3,6 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { OnboardingWizard } from "@/components/common/OnboardingWizard";
 import { HelpButton } from "@/components/common/HelpButton";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
@@ -12,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { clearChunkReloadGuard } from "@/lib/lazy-with-retry";
 
 export function AppLayout() {
-  const { user, setUser, theme, onboardingDismissed } = useAppStore();
+  const { user, setUser, theme } = useAppStore();
   const loadCompanies = useAppStore((s) => s.loadCompanies);
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
@@ -113,7 +112,6 @@ export function AppLayout() {
         </div>
       </main>
 
-      {!onboardingDismissed && <OnboardingWizard onDismiss={() => useAppStore.getState().dismissOnboarding()} />}
       <HelpButton />
     </div>
   );

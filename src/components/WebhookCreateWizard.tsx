@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import type { WebhookCreateResponse } from "@/lib/api";
 import { WebhookSecretReveal } from "./WebhookSecretReveal";
+import { FormError } from "@/components/ui/state";
 
 /**
  * Backend-documented event catalog. Kept in sync with PR #225 docs. If the
@@ -188,11 +189,7 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
         )}
       </div>
 
-      {error && (
-        <div className="text-xs p-2 rounded bg-red-500/10 text-red-400 border border-red-500/20">
-          {error}
-        </div>
-      )}
+      <FormError error={error} />
 
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="ghost" size="md" onClick={onCancel} disabled={submitting}>

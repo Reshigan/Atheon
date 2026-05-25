@@ -62,6 +62,7 @@ export function SortHeader<K extends string>({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function cycleSort<K extends string>(prev: SortSpec<K> | null, key: K): SortSpec<K> | null {
   if (!prev || prev.key !== key) return { key, dir: 'asc' };
   if (prev.dir === 'asc') return { key, dir: 'desc' };
