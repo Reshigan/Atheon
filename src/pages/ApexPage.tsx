@@ -262,7 +262,7 @@ function ExecutiveBriefHero({
           <div className="text-xs t-secondary line-clamp-4 leading-relaxed">{briefing.summary}</div>
         ) : (
           <div className="text-xs t-muted py-3">
-            No strategic signals captured yet. Sources from the Radar tab populate this card.
+            No strategic signals captured yet. Add one from the Strategic Context tab to populate this card.
           </div>
         )}
       </Card>

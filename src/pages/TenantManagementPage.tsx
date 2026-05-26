@@ -108,12 +108,11 @@ export function TenantManagementPage() {
     try {
       setActionLoading(tenantId);
       const data = await api.post<{ message: string }>(`/api/v1/admin/tenants/${tenantId}/soft-delete`);
-      alert(`Success: ${data.message}`);
+      toast.success('Tenant soft-deleted', { message: data.message });
       loadTenants();
       setSelectedTenant(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to soft-delete tenant';
-      alert(message);
       toast.error('Soft-delete failed', {
         message,
         requestId: err instanceof ApiError ? err.requestId : null,
@@ -131,12 +130,11 @@ export function TenantManagementPage() {
     try {
       setActionLoading(tenantId);
       const data = await api.post<{ message: string }>(`/api/v1/admin/tenants/${tenantId}/reactivate`);
-      alert(`Success: ${data.message}`);
+      toast.success('Tenant reactivated', { message: data.message });
       loadTenants();
       setSelectedTenant(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to reactivate tenant';
-      alert(message);
       toast.error('Reactivate failed', {
         message,
         requestId: err instanceof ApiError ? err.requestId : null,
@@ -159,10 +157,9 @@ export function TenantManagementPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      alert('Export downloaded successfully');
+      toast.success('Export downloaded', { message: `tenant-export-${tenantSlug}.json` });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to export tenant';
-      alert(message);
       toast.error('Export failed', {
         message,
         requestId: err instanceof ApiError ? err.requestId : null,
@@ -186,12 +183,13 @@ export function TenantManagementPage() {
     try {
       setActionLoading(tenantId);
       const data = await api.delete<{ message: string; audit: { totalRecordsDeleted: number } }>(`/api/v1/admin/tenants/${tenantId}/hard-delete`);
-      alert(`PERMANENTLY DELETED: ${data.message}\n\nRecords deleted: ${data.audit.totalRecordsDeleted}`);
+      toast.success('Tenant permanently deleted', {
+        message: `${data.message} — ${data.audit.totalRecordsDeleted.toLocaleString()} records removed`,
+      });
       loadTenants();
       setSelectedTenant(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to hard-delete tenant';
-      alert(message);
       toast.error('Hard-delete failed', {
         message,
         requestId: err instanceof ApiError ? err.requestId : null,

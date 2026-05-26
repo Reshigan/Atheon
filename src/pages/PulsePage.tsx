@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1201,13 +1202,18 @@ export function PulsePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredMetrics.length === 0 && (
-              <div className="col-span-full flex items-center gap-3 py-6 px-4">
+              <div className="col-span-full flex flex-col sm:flex-row sm:items-center gap-3 py-6 px-4">
                 <Activity className="w-5 h-5 t-muted opacity-40 flex-shrink-0" />
-                <p className="text-sm t-muted">
-                  {metrics.length === 0
-                    ? 'No metrics available yet'
-                    : 'No metrics match the current filters'}
-                </p>
+                {metrics.length === 0 ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <p className="text-sm t-muted">No metrics available yet.</p>
+                    <Link to="/catalysts" className="text-sm text-accent hover:underline inline-flex items-center gap-1">
+                      Deploy a catalyst <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-sm t-muted">No metrics match the current filters</p>
+                )}
               </div>
             )}
             {filteredMetrics.map((metric) => {
