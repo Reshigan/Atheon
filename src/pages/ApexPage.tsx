@@ -20,6 +20,7 @@ import { useSelectedCompanyId } from "@/stores/appStore";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cleanLlmText } from "@/lib/utils";
 import type { HealthScore, Briefing, Risk, ScenarioItem, HealthHistoryResponse, HealthDimensionTraceResponse, RiskTraceResponse, ApexInsightsResponse, RadarContextResponse, BoardReportItem, PeerBenchmarksResponse } from "@/lib/api";
+import { resolveScenarioVariableName } from "@/lib/api";
 import { PeerComparisonBar } from "@/components/ui/peer-comparison-bar";
 import { Portal } from "@/components/ui/portal";
 import { TraceabilityModal } from "@/components/TraceabilityModal";
@@ -1405,8 +1406,10 @@ export function ApexPage() {
  </div>
  )}
    {scenarios.map((scenario) => {
-  // Filter out internal/technical fields that should never be shown to users
-  const hiddenFields = new Set(['model', 'source', 'generated_at', 'recommendation', 'analysis_points']);
+  // Filter out internal/technical fields that should never be shown to users.
+  // downside_case / upside_case are nested objects → would render as "[object Object]" in the metric grid;
+  // they're context for the recommendation, not standalone metrics.
+  const hiddenFields = new Set(['model', 'source', 'generated_at', 'recommendation', 'analysis_points', 'downside_case', 'upside_case']);
 
   // If recommendation contains embedded JSON, extract structured fields from it
   const effectiveResults = scenario.results ? { ...scenario.results } : null;
@@ -1442,7 +1445,7 @@ export function ApexPage() {
       </div>
       <p className="text-sm t-muted mt-1">{scenario.description}</p>
       <div className="flex items-center gap-3 mt-2 text-caption t-muted">
-       {scenario.variables.length > 0 && <span>Variables: {scenario.variables.join(', ')}</span>}
+       {scenario.variables.length > 0 && <span>Variables: {scenario.variables.map(resolveScenarioVariableName).join(', ')}</span>}
        {scenario.createdAt && <span>Created: {new Date(scenario.createdAt).toLocaleDateString()}</span>}
       </div>
      </div>
@@ -1519,12 +1522,15 @@ export function ApexPage() {
        <div>
         <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">What to Watch</h5>
         <div className="space-y-2">
-         {scenario.variables.map((variable, i) => (
+         {scenario.variables.map((variable, i) => {
+          const varName = resolveScenarioVariableName(variable);
+          return (
           <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
            <Lightbulb className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
-           <span className="text-sm t-secondary">Monitor <span className="font-medium t-primary">{variable}</span> closely and review thresholds if deviation exceeds projected ranges.</span>
+           <span className="text-sm t-secondary">Monitor <span className="font-medium t-primary">{varName}</span> closely and review thresholds if deviation exceeds projected ranges.</span>
           </div>
-         ))}
+          );
+         })}
          {scenario.variables.length === 0 && (
           <div className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
            <Lightbulb className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />

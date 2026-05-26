@@ -55,7 +55,19 @@ function extractAssumptionEntries(s: ScenarioItem): Array<[string, string]> {
     }
   } else if (s.variables && Array.isArray(s.variables)) {
     for (const v of s.variables) {
-      entries.push([v, "--"]);
+      if (typeof v === "string") {
+        entries.push([v, "--"]);
+      } else if (v && typeof v === "object" && typeof (v as { name?: string }).name === "string") {
+        const obj = v as { name: string; current?: number; hypothetical?: number; value?: number; unit?: string };
+        const valueParts: string[] = [];
+        if (obj.hypothetical !== undefined) {
+          valueParts.push(`${obj.current ?? "?"} → ${obj.hypothetical}`);
+        } else if (obj.value !== undefined) {
+          valueParts.push(String(obj.value));
+        }
+        if (obj.unit) valueParts.push(obj.unit);
+        entries.push([obj.name, valueParts.join(" ") || "--"]);
+      }
     }
   }
   return entries.slice(0, 5);

@@ -2021,16 +2021,32 @@ export interface Risk {
   subCatalystName: string | null;
 }
 
+/**
+ * Scenario variables can be either:
+ *   - simple strings (user-built via /scenarios POST sends v.name)
+ *   - rich objects from seeded data: { name, current, hypothetical, unit } or { name, value, unit }
+ * Renderers must handle both shapes — see resolveScenarioVariableName.
+ */
+export type ScenarioVariable =
+  | string
+  | { name: string; current?: number; hypothetical?: number; value?: number; unit?: string };
+
 export interface ScenarioItem {
   id: string;
   title: string;
   description: string;
   inputQuery: string;
-  variables: string[];
+  variables: ScenarioVariable[];
   results: Record<string, unknown>;
   context?: Record<string, unknown>;
   status: string;
   createdAt: string;
+}
+
+export function resolveScenarioVariableName(v: ScenarioVariable): string {
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object' && typeof v.name === 'string') return v.name;
+  return String(v);
 }
 
 // A1-4: Health dimension traceability response
