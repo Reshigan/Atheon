@@ -1663,8 +1663,14 @@ export function CatalystsPage() {
          </div>
          <div className="flex items-center gap-2">
            {subConfig && (
-             <button onClick={() => handleDeleteHitl(cluster.id, sub.name)} className="text-xs text-red-400 hover:text-red-300">
-               <Trash2 size={12} />
+             <button
+               type="button"
+               onClick={() => handleDeleteHitl(cluster.id, sub.name)}
+               className="h-8 w-8 flex items-center justify-center rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors"
+               aria-label={`Remove custom HITL assignment for ${sub.name}`}
+               title="Remove custom assignment"
+             >
+               <Trash2 size={14} aria-hidden="true" />
              </button>
            )}
            <Button variant="secondary" size="sm" onClick={() => openHitlEdit(cluster.id, sub.name)}>
@@ -2094,7 +2100,7 @@ export function CatalystsPage() {
  const DsIcon = dsIcon;
  const dsColor = src.type === 'erp' ? 'text-blue-400' : src.type === 'email' ? 'text-purple-400' : src.type === 'cloud_storage' ? 'text-cyan-400' : src.type === 'custom_system' ? 'text-rose-400' : 'text-amber-400';
  const dsBg = src.type === 'erp' ? 'bg-blue-500/5 border-blue-500/20' : src.type === 'email' ? 'bg-purple-500/5 border-purple-500/20' : src.type === 'cloud_storage' ? 'bg-cyan-500/5 border-cyan-500/20' : src.type === 'custom_system' ? 'bg-rose-500/5 border-rose-500/20' : 'bg-amber-500/5 border-amber-500/20';
- const dsLabel = src.type === 'erp' ? `ERP (${(src.config.erp_type as string) || 'unknown'})` : src.type === 'email' ? `Email (${(src.config.mailbox as string) || '...'})` : src.type === 'cloud_storage' ? `Cloud (${(src.config.provider as string) || '...'})` : src.type === 'custom_system' ? `Custom: ${(src.config.system_name as string) || 'System'}` : 'Manual Upload';
+ const dsLabel = src.type === 'erp' ? `ERP (${(src.config.erp_type as string) || 'unknown'})` : src.type === 'email' ? `Email${src.config.mailbox ? ` (${String(src.config.mailbox)})` : ''}` : src.type === 'cloud_storage' ? `Cloud${src.config.provider ? ` (${String(src.config.provider)})` : ''}` : src.type === 'custom_system' ? `Custom: ${(src.config.system_name as string) || 'System'}` : 'Manual Upload';
  return (
  <div key={i} className={`flex items-center justify-between p-3 rounded-lg border ${dsBg}`}>
  <div className="flex items-center gap-2 min-w-0">
@@ -2106,11 +2112,23 @@ export function CatalystsPage() {
  </div>
  </div>
  <div className="flex items-center gap-1 flex-shrink-0">
- <button onClick={() => dsStartEdit(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent/10 transition-colors" title="Edit">
- <Settings size={12} className="text-accent" />
+ <button
+   type="button"
+   onClick={() => dsStartEdit(i)}
+   className="h-9 w-9 flex items-center justify-center rounded hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors"
+   aria-label={`Edit ${dsLabel} configuration`}
+   title="Edit"
+ >
+ <Settings size={14} className="text-accent" aria-hidden="true" />
  </button>
- <button onClick={() => dsRemoveSource(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/10 transition-colors" title="Remove">
- <Trash2 size={12} className="text-red-400" />
+ <button
+   type="button"
+   onClick={() => dsRemoveSource(i)}
+   className="h-9 w-9 flex items-center justify-center rounded hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors"
+   aria-label={`Remove ${dsLabel}`}
+   title="Remove"
+ >
+ <Trash2 size={14} className="text-red-400" aria-hidden="true" />
  </button>
  </div>
  </div>

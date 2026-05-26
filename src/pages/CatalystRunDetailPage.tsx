@@ -913,12 +913,20 @@ export function CatalystRunDetailPage() {
                     <div className="text-sm t-muted">
                       Value: <span className="t-primary font-medium">{String(metric.value)} {String(metric.unit)}</span>
                     </div>
-                    <button
-                      onClick={() => navigate(`/pulse?metric=${metric.id}`)}
-                      className="text-xs text-accent hover:underline mt-1"
-                    >
-                      View in Pulse →
-                    </button>
+                    {metric.id ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/pulse?metric=${encodeURIComponent(String(metric.id))}`)}
+                        className="text-xs text-accent hover:underline mt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded"
+                        aria-label={`View ${String(metric.name)} in Pulse`}
+                      >
+                        View in Pulse →
+                      </button>
+                    ) : (
+                      <span className="text-xs t-muted mt-1 inline-block" title="Metric not yet registered in Pulse">
+                        Pulse link unavailable
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

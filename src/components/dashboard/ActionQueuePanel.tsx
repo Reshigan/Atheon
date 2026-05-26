@@ -20,13 +20,13 @@
  * <Numeric> for tabular-nums alignment.
  */
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Fragment, useEffect, useMemo, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusPill, type StatusKind } from '@/components/ui/status-pill';
 import { Numeric } from '@/components/ui/numeric';
 import { api, ApiError } from '@/lib/api';
-import { CheckCircle, XCircle, Loader2, Inbox, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Inbox, Zap, ChevronRight, FileText } from 'lucide-react';
 
 type ActionRow = Awaited<ReturnType<typeof api.erp.listAllActions>>['actions'][number];
 type Summary = Awaited<ReturnType<typeof api.erp.actionsSummary>>['summary'];
@@ -77,6 +77,7 @@ export function ActionQueuePanel({
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -215,10 +216,33 @@ export function ActionQueuePanel({
             </thead>
             <tbody>
               {actions.map((a) => {
-                const out = a.output as { mode?: 'live' | 'stub' | 'preview' } | null;
+                const out = a.output as { mode?: 'live' | 'stub' | 'preview'; summary?: string } | null;
+                const hasDetail = !!a.reasoning || !!out?.summary || !!a.source_finding_id;
+                const isExpanded = expandedId === a.id;
+                const toggle = () => setExpandedId(isExpanded ? null : a.id);
                 return (
-                  <tr key={a.id} className="border-b border-[var(--border-card)]/50">
-                    <td className="py-1.5 pr-3 t-primary">{a.catalyst_name}</td>
+                  <Fragment key={a.id}>
+                  <tr
+                    className={`border-b border-[var(--border-card)]/50 ${hasDetail ? 'cursor-pointer hover:bg-[var(--bg-secondary)]/40' : ''}`}
+                    onClick={hasDetail ? toggle : undefined}
+                    role={hasDetail ? 'button' : undefined}
+                    tabIndex={hasDetail ? 0 : undefined}
+                    aria-expanded={hasDetail ? isExpanded : undefined}
+                    aria-label={hasDetail ? `${a.catalyst_name}: ${a.action_type}. ${isExpanded ? 'Hide' : 'Show'} reasoning and outcome.` : undefined}
+                    onKeyDown={hasDetail ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } } : undefined}
+                  >
+                    <td className="py-1.5 pr-3 t-primary">
+                      <div className="flex items-center gap-1.5">
+                        {hasDetail && (
+                          <ChevronRight
+                            size={12}
+                            className={`t-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            aria-hidden="true"
+                          />
+                        )}
+                        {a.catalyst_name}
+                      </div>
+                    </td>
                     <td className="py-1.5 pr-3 font-mono t-muted">{a.action_type}</td>
                     {columns.hasValue && (
                       <td className="py-1.5 pr-3 text-right">
@@ -250,7 +274,7 @@ export function ActionQueuePanel({
                       {relTime(a.created_at)}
                     </td>
                     {allowApprove && (
-                      <td className="py-1.5 pr-3">
+                      <td className="py-1.5 pr-3" onClick={(e) => e.stopPropagation()}>
                         {a.status === 'pending_approval' ? (
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm"
@@ -269,6 +293,37 @@ export function ActionQueuePanel({
                       </td>
                     )}
                   </tr>
+                  {hasDetail && isExpanded && (
+                    <tr className="border-b border-[var(--border-card)]/50 bg-[var(--bg-secondary)]/40">
+                      <td colSpan={2 + (columns.hasValue ? 1 : 0) + 2 + (allowApprove ? 1 : 0)} className="px-3 py-3">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {a.reasoning && (
+                            <div>
+                              <p className="text-label t-muted mb-1 flex items-center gap-1.5">
+                                <FileText size={11} aria-hidden="true" /> Why this is recommended
+                              </p>
+                              <p className="text-body-sm t-primary whitespace-pre-line">{a.reasoning}</p>
+                            </div>
+                          )}
+                          {out?.summary && (
+                            <div>
+                              <p className="text-label t-muted mb-1 flex items-center gap-1.5">
+                                <CheckCircle size={11} aria-hidden="true" /> Outcome ({out.mode ?? 'completed'})
+                              </p>
+                              <p className="text-body-sm t-primary whitespace-pre-line">{out.summary}</p>
+                            </div>
+                          )}
+                          {a.source_finding_id && (
+                            <div className="md:col-span-2">
+                              <p className="text-label t-muted mb-1">Linked finding</p>
+                              <code className="text-caption font-mono t-secondary break-all">{a.source_finding_id}</code>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
