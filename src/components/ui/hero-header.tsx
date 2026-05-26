@@ -46,6 +46,9 @@ export interface HeroHeaderProps {
   title: string;
   /** One-line context line. \"Executive Intelligence & Strategic Context\". */
   subtitle?: ReactNode;
+  /** Small-caps editorial line above the title — v2 eyebrow. Defaults to
+   *  \"ATHEON · ENTERPRISE INTELLIGENCE\" when omitted. Pass null to hide. */
+  eyebrow?: ReactNode | null;
   /** Accent preset for the icon tile. Defaults to sage. */
   accent?: Accent;
   /** Anything to drop to the right of the title — e.g. a freshness chip,
@@ -58,27 +61,48 @@ export function HeroHeader({
   icon: Icon,
   title,
   subtitle,
+  eyebrow,
   accent = 'sage',
   trailing,
   className = '',
 }: HeroHeaderProps): JSX.Element {
   const tokens = ACCENT[accent];
+  const showEyebrow = eyebrow !== null;
+  const eyebrowContent = eyebrow === undefined
+    ? <>Atheon <span className="opacity-50 mx-1">·</span> Enterprise Intelligence</>
+    : eyebrow;
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`relative flex items-center gap-4 ${className}`}>
+      {/* v2: stronger icon tile — navy/sage gradient with subtle inset highlight */}
       <div
-        className="w-10 h-10 rounded flex items-center justify-center border flex-shrink-0"
-        style={{ background: tokens.bg, borderColor: tokens.border }}
+        className="w-12 h-12 rounded-xl flex items-center justify-center border flex-shrink-0 shadow-sm relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${tokens.bg}, ${tokens.bg.replace('0.10', '0.04')})`,
+          borderColor: tokens.border,
+        }}
         aria-hidden="true"
       >
-        <Icon className="w-5 h-5" style={{ color: tokens.fg }} />
+        <span
+          className="absolute inset-0 opacity-60"
+          style={{ background: `radial-gradient(120% 80% at 0% 0%, ${tokens.bg.replace('0.10', '0.25')} 0%, transparent 60%)` }}
+        />
+        <Icon className="w-5 h-5 relative" style={{ color: tokens.fg }} />
       </div>
       <div className="flex-1 min-w-0">
+        {showEyebrow && (
+          <p
+            className="text-[10px] font-semibold uppercase tracking-[0.18em] mb-0.5"
+            style={{ color: tokens.fg, opacity: 0.85 }}
+          >
+            {eyebrowContent}
+          </p>
+        )}
         <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{title}</h1>
         {subtitle && (
           <p className="text-body-sm t-muted mt-0.5">{subtitle}</p>
         )}
       </div>
-      {trailing}
+      {trailing && <div className="flex-shrink-0">{trailing}</div>}
     </div>
   );
 }

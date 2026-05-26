@@ -87,8 +87,11 @@
    * the *values* are swapped to the new corporate palette.
    * ────────────────────────────────────────────────────────────── */
   .atheon-dark {
-    --bg-primary: #06090D;
-    --bg-secondary: #0E151C;
+    /* v2: brand navy primary (PDF cover + datasheets use #0A0E2A) replaces
+       the prior #06090D abyss. Brings web surface into one identity with
+       the value-assessment PDF and printed datasheets. */
+    --bg-primary: #0A0E2A;
+    --bg-secondary: #11163A;
     --bg-card: rgba(26, 31, 38, 0.85);
     --bg-card-solid: #1A1F26;
     --bg-card-hover: rgba(39, 42, 47, 0.90);
@@ -135,7 +138,12 @@
     --teal-dark: #5d92ad;
     --glass-blur: 12px;
     /* Subtle sage radial — exact lift from Stitch body background */
-    --bg-pattern: radial-gradient(circle at 50% 0%, rgba(163, 177, 138, 0.05) 0%, transparent 70%);
+    /* v2: layered sage + bronze atmosphere on the brand navy field —
+       creates depth without overpowering content. */
+    --bg-pattern:
+      radial-gradient(circle at 20% -5%, rgba(163, 177, 138, 0.07) 0%, transparent 55%),
+      radial-gradient(circle at 85% 10%, rgba(205, 163, 126, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(93, 138, 111, 0.06) 0%, transparent 70%);
   }
 
   * { border-color: var(--divider); }
