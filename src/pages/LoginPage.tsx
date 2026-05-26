@@ -309,23 +309,32 @@ export function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10"
-      style={{
-        background: 'var(--bg-primary)',
-        backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(163, 177, 138, 0.06) 0%, transparent 70%)',
-        backgroundAttachment: 'fixed',
-      }}
+      className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10 relative overflow-hidden"
+      style={{ background: 'var(--bg-primary)' }}
     >
-      <div className="w-full max-w-md">
-        {/* Centered brand header — lifted from the Stitch Login screen.
-            Replaces the previous 2-column brand-panel-left + form-right
-            layout with a single centred stack that matches the design 1:1. */}
-        <div className="mb-8 flex flex-col items-center text-center">
+      {/* Editorial atmosphere — radial sage from top + bronze accent
+          drifting from bottom-right. Subtle, dynamic, never asks for
+          attention. Sits behind everything. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 50% -10%, rgba(163, 177, 138, 0.10) 0%, transparent 60%),' +
+            'radial-gradient(circle at 100% 110%, rgba(205, 163, 126, 0.08) 0%, transparent 55%)',
+        }}
+      />
+
+      <div className="w-full max-w-md relative">
+        {/* Centered brand header — Stitch login layout, polished with the
+            riseIn motion-token so it enters on load. Brand mark holds a
+            soft glow so the emblem feels alive without distracting. */}
+        <div className="mb-8 flex flex-col items-center text-center animate-riseIn">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative"
             style={{
               background: 'linear-gradient(135deg, #06090d, #0e151c)',
-              boxShadow: '0 8px 32px rgba(163, 177, 138, 0.25), 0 0 0 1px rgba(163, 177, 138, 0.15)',
+              boxShadow: '0 8px 32px rgba(163, 177, 138, 0.25), 0 0 0 1px rgba(163, 177, 138, 0.18)',
             }}
             aria-hidden="true"
           >
@@ -336,17 +345,21 @@ export function LoginPage() {
               <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
             </svg>
           </div>
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Atheon AI</h1>
-          <p className="text-caption t-muted uppercase tracking-widest mt-1">Enterprise Intelligence &amp; Provenance</p>
+          <p className="text-caption t-muted uppercase tracking-[0.32em] mb-2" style={{ color: 'var(--accent)' }}>Atheon Workspace</p>
+          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">Sign in to continue</h1>
+          <p className="text-caption t-muted uppercase tracking-widest mt-2">Enterprise Intelligence &amp; Provenance</p>
         </div>
 
-        {/* Form card — single column, all sub-states render below the header */}
+        {/* Form card — single column, all sub-states render below the header.
+            riseIn lands 80ms after the brand header so the page entrance
+            feels conducted, not simultaneous. */}
         <div
-          className="w-full rounded-2xl p-6 sm:p-7"
+          className="w-full rounded-2xl p-6 sm:p-7 animate-riseIn"
           style={{
             background: 'var(--bg-card-solid)',
             border: '1px solid var(--border-card)',
             boxShadow: 'var(--shadow-card)',
+            animationDelay: '80ms',
           }}
         >
           <h2 className="text-xl font-semibold t-primary mb-1">{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2>
@@ -419,7 +432,7 @@ export function LoginPage() {
                         setLoading(false);
                       }
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-all hover:bg-[var(--bg-secondary)]"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]"
                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
                   >
                     <Building2 size={14} className="t-muted flex-shrink-0" />
@@ -439,7 +452,7 @@ export function LoginPage() {
           )}
           {!tenantOptions && !mfaChallengeActive && mode === 'login' && (
             <div className="space-y-2 mb-5">
-              <button onClick={() => handleSSO('azure')} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-all hover:bg-[var(--bg-secondary)]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
+              <button onClick={() => handleSSO('azure')} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
                 <div className="w-4 h-4 rounded bg-sky-600 flex items-center justify-center text-[8px] font-bold text-white">M</div>Continue with Azure AD
               </button>
               {/* Phase AY: SAML SSO. Enabled when the tenant has set a
@@ -448,7 +461,7 @@ export function LoginPage() {
                   filled so we can route to the right WorkOS connection. */}
               <button
                 onClick={() => void handleSamlSSO()}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-all hover:bg-[var(--bg-secondary)]"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]"
                 style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
                 title="Use your organisation's SAML identity provider (Okta, Azure AD, Ping, etc.)"
               >

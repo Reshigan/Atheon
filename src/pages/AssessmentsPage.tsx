@@ -91,7 +91,7 @@ export function AssessmentsPage() {
           {view !== 'list' && (
             <button
               onClick={() => { setView('list'); setSelectedId(null); setSelectedAssessment(null); loadAssessments(); }}
-              className="px-3 py-1.5 text-sm rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm rounded-lg transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] hover:opacity-90"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
             >
               &larr; Back
@@ -99,7 +99,7 @@ export function AssessmentsPage() {
           )}
           <button
             onClick={() => setView('new')}
-            className="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
+            className="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] hover:opacity-90"
             style={{ background: 'var(--accent)' }}
           >
             + New Assessment
@@ -192,7 +192,7 @@ function ListView({ assessments, loading, onView, onDelete }: {
             const totalSaving = results?.catalyst_scores?.reduce((sum: number, c: CatalystScore) => sum + (c.estimated_annual_saving_zar || 0), 0) || 0;
 
             return (
-              <tr key={a.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+              <tr key={a.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-[background-color,color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]">
                 <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{a.prospectName}</td>
                 <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{a.prospectIndustry}</td>
                 <td className="px-4 py-3">
@@ -888,9 +888,13 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                   },
                 ];
                 return (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-4">
                 {tiles.map(m => (
-                  <div key={m.label} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+                  <div
+                    key={m.label}
+                    className="rounded-xl p-4 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.20)]"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
+                  >
                     <div className="flex items-center justify-between">
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
                       <MetricSource source={m.source} />
@@ -956,7 +960,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                 <div className="divide-y" style={{ borderColor: 'var(--border-card)' }}>
                   {filteredFindings.slice(0, 20).map(f => (
                     <div key={f.id}>
-                      <div className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      <div className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-[background-color,color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                         onClick={() => setExpandedFinding(expandedFinding === f.id ? null : f.id)}>
                         <span className="text-xs">{expandedFinding === f.id ? '▾' : '▸'}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
