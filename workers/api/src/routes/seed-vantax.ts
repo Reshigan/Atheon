@@ -2137,12 +2137,20 @@ seed.post('/seed-vantax', async (c) => {
     console.log('[VantaX Seeder] Seeded 5 resolution patterns');
 
     // ── STEP: Seed V2 ROI Tracking ──
+    // Must also seed `tenant_settings.licence_cost_annual` because
+    // `calculateROI` (cron + /roi/export) reads the cost from there, not
+    // from roi_tracking. Without it the cron overwrites this seeded row
+    // with roi_multiple=0 the next time it fires, tanking the Atheon Score.
     console.log('[VantaX Seeder] Seeding V2 ROI tracking...');
+    seedBatch.push(c.env.DB.prepare(
+      `INSERT OR REPLACE INTO tenant_settings (id, tenant_id, key, value, updated_at)
+       VALUES (?, ?, 'licence_cost_annual', '580000', ?)`
+    ).bind(crypto.randomUUID(), tenantId, now));
     seedBatch.push(c.env.DB.prepare(
       `INSERT OR REPLACE INTO roi_tracking (id, tenant_id, period, total_discrepancy_value_identified, total_discrepancy_value_recovered, total_downstream_losses_prevented, total_person_hours_saved, licence_cost_annual, roi_multiple, calculated_at)
        VALUES (?, ?, 'Q1 2026', 4850000, 3200000, 1800000, 2400, 580000, 8.3, ?)`
     ).bind(crypto.randomUUID(), tenantId, now));
-    console.log('[VantaX Seeder] Seeded ROI tracking record');
+    console.log('[VantaX Seeder] Seeded ROI tracking record + tenant_settings.licence_cost_annual');
 
     // ── STEP: Seed Industry Playbook Seeds ──
     console.log('[VantaX Seeder] Seeding industry playbook seeds...');
