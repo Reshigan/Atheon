@@ -921,7 +921,7 @@ export function PulsePage() {
             <Card variant="black" className="lg:col-span-1 flex flex-col items-center justify-center">
               {/* Pulse Status Strip (visual differentiation from Apex ring) */}
               <p className="text-label mb-2">Operational Health</p>
-              <p className="text-3xl font-bold t-primary mb-3">{health.score}<span className="text-sm font-normal t-muted">/100</span></p>
+              <p className="text-3xl font-bold t-primary mb-3 tabular-nums font-mono">{health.score}<span className="text-sm font-normal t-muted">/100</span></p>
               <div className="w-full h-3 rounded-full overflow-hidden flex" title={`Green: ${summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} | Amber: ${summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} | Red: ${summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length}`}>
                 {(() => {
                   const green = summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length;
@@ -937,7 +937,7 @@ export function PulsePage() {
                   );
                 })()}
               </div>
-              <div className="flex items-center justify-between w-full mt-2 text-caption">
+              <div className="flex items-center justify-between w-full mt-2 text-caption tabular-nums font-mono">
                 <span className="text-emerald-400">{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} green</span>
                 <span className="text-amber-400">{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} amber</span>
                 <span className="text-red-400">{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length} red</span>

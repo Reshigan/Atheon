@@ -187,7 +187,7 @@ function ExecutiveBriefHero({
         <div className="flex items-center gap-4">
           <ScoreRing score={overall} size="md" />
           <div className="flex-1 min-w-0">
-            <div className="text-3xl font-semibold t-primary leading-none">{Math.round(overall)}</div>
+            <div className="text-3xl font-semibold t-primary leading-none tabular-nums font-mono">{Math.round(overall)}</div>
             <div className="text-xs t-muted mt-1">
               {overall >= 80 ? 'Strong posture' : overall >= 60 ? 'Mixed posture' : overall > 0 ? 'Action required' : 'Awaiting data'}
             </div>
