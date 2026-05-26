@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
@@ -789,6 +790,7 @@ export function PulsePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <SharedSavingsStrip />
       {/* Header */}
       <div className="space-y-4">
         {pageHeader}

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry, FieldMapping, ExecutionConfig, ExecutionResult, HitlConfigListItem, IAMUser, RunAnalytics, RunAnalyticsAggregate, CatalystIntelligenceOverview, ROITrackingResponse, CatalystPrescriptionItem, SuccessStoriesResponse } from "@/lib/api";
 import { SuccessStoryCard } from "@/components/ui/success-story-card";
 import { HeroHeader } from "@/components/ui/hero-header";
+import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
@@ -1086,6 +1087,7 @@ export function CatalystsPage() {
 
  return (
  <div className="space-y-6 animate-fadeIn">
+ <SharedSavingsStrip />
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="space-y-4 flex-1">
  <HeroHeader
