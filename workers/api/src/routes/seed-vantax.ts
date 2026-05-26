@@ -1436,10 +1436,8 @@ seed.post('/seed-vantax', async (c) => {
       'Sales Order Matching': 95,             // ~1.5h
       'Demand Forecasting': 480,              // 8h — long ML batch
     };
-    for (const ca of catalystActionsData) {
+    const catalystActionStmts = catalystActionsData.map((ca) => {
       const elapsedMin = durationMinutesByCatalyst[ca.catalystName] ?? 60;
-      // Staggered start times across the last 7 days so the trend curves
-      // on Pulse have texture. Each row gets its own offset; jitter ±20%.
       const startHoursAgo = Math.round((Math.random() * 168) + 1);
       const completedAt = (ca.status === 'completed' || ca.status === 'verified')
         ? `datetime('now', '-${startHoursAgo} hours', '+${elapsedMin} minutes')`
@@ -1447,7 +1445,7 @@ seed.post('/seed-vantax', async (c) => {
       const outputData = (ca.outputMode || ca.outputSummary)
         ? JSON.stringify({ mode: ca.outputMode, summary: ca.outputSummary })
         : null;
-      await c.env.DB.prepare(
+      return c.env.DB.prepare(
         `INSERT INTO catalyst_actions (
           id, tenant_id, cluster_id, catalyst_name, action, status, confidence, reasoning,
           connection_id, action_type, value_zar, source_finding_id, idempotency_key, vendor, output_data,
@@ -1458,9 +1456,10 @@ seed.post('/seed-vantax', async (c) => {
         ca.status, ca.confidence, ca.reasoning,
         connectionId, ca.actionType, ca.valueZar, ca.sourceFindingId,
         crypto.randomUUID(), ca.vendor, outputData,
-      ).run();
-    }
-    console.log(`[VantaX Seeder] Seeded ${catalystActionsData.length} catalyst actions (with elapsed-time data)`);
+      );
+    });
+    await c.env.DB.batch(catalystActionStmts);
+    console.log(`[VantaX Seeder] Seeded ${catalystActionsData.length} catalyst actions (batched)`);
 
     // STEP 12h: Agent Deployments (Control Plane)
     const agentDeployments = [
