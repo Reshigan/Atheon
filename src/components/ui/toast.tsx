@@ -5,7 +5,7 @@
  * X-Request-ID to every response; the API client captures it and surfaces
  * it here so users can quote it back to support).
  */
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, XCircle, Copy, Check } from 'lucide-react';
 import { Portal } from './portal';
 
@@ -56,28 +56,33 @@ function resolveOpts(messageOrOpts?: string | ToastOpts): ToastOpts {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useToast(): ToastApi {
   const ctx = useContext(ToastContext);
-  if (!ctx) {
-    // Fallback for components outside provider — no-op
-    const noop = () => {};
+  // Memoised: ctx.addToast/removeToast are stable useCallbacks from the provider,
+  // so the returned object only changes when the provider re-creates them (never,
+  // in practice). Without this, every render returned a fresh object — callers
+  // that depended on `toast` in useCallback/useEffect deps would loop forever.
+  return useMemo<ToastApi>(() => {
+    if (!ctx) {
+      const noop = () => {};
+      return {
+        addToast: noop,
+        removeToast: noop,
+        success: noop,
+        error: noop,
+        warning: noop,
+        info: noop,
+      };
+    }
     return {
-      addToast: noop,
-      removeToast: noop,
-      success: noop,
-      error: noop,
-      warning: noop,
-      info: noop,
+      ...ctx,
+      success: (title, opts) => ctx.addToast({ type: 'success', title, ...resolveOpts(opts) }),
+      error: (title, opts) => {
+        const o = resolveOpts(opts);
+        ctx.addToast({ type: 'error', title, duration: 8000, ...o });
+      },
+      warning: (title, opts) => ctx.addToast({ type: 'warning', title, ...resolveOpts(opts) }),
+      info: (title, opts) => ctx.addToast({ type: 'info', title, ...resolveOpts(opts) }),
     };
-  }
-  return {
-    ...ctx,
-    success: (title, opts) => ctx.addToast({ type: 'success', title, ...resolveOpts(opts) }),
-    error: (title, opts) => {
-      const o = resolveOpts(opts);
-      ctx.addToast({ type: 'error', title, duration: 8000, ...o });
-    },
-    warning: (title, opts) => ctx.addToast({ type: 'warning', title, ...resolveOpts(opts) }),
-    info: (title, opts) => ctx.addToast({ type: 'info', title, ...resolveOpts(opts) }),
-  };
+  }, [ctx]);
 }
 
 const ICONS: Record<ToastType, React.ReactNode> = {
