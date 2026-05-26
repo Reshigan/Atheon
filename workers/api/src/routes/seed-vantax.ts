@@ -140,6 +140,20 @@ seed.post('/seed-vantax', async (c) => {
     const now = new Date().toISOString();
     console.log('[VantaX Seeder] Starting seed for tenant:', tenantId);
 
+    // Collect all INSERT/UPDATE statements into one batch to fit D1's per-request CPU budget.
+    // Flushed at the end of each major STEP block via flushSeed().
+    const seedBatch: D1PreparedStatement[] = [];
+    const flushSeed = async (label: string) => {
+      if (seedBatch.length === 0) return;
+      const chunkSize = 50;
+      const total = seedBatch.length;
+      while (seedBatch.length > 0) {
+        const chunk = seedBatch.splice(0, chunkSize);
+        await c.env.DB.batch(chunk);
+      }
+      console.log(`[VantaX Seeder] Flushed ${total} statements (${label})`);
+    };
+
     // STEP 1: Cleanup ALL old data for this tenant
     // Shared with /reset — full tenant wipe in dependency-safe order.
     const { count: cleanupCount, tables: cleanupTablesCount } =
@@ -149,18 +163,18 @@ seed.post('/seed-vantax', async (c) => {
     // STEP 2: Create SAP S/4HANA Connector in erp_connections
     const sapAdapterId = 'sap-s4hana';
     try {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT OR IGNORE INTO erp_adapters (id, name, system, version, protocol, status, operations, auth_methods)
          VALUES (?, 'SAP S/4HANA', 'sap', '2023', 'OData', 'available', ?, ?)`
       ).bind(
         sapAdapterId,
         JSON.stringify(['sync', 'read', 'write', 'reconcile']),
         JSON.stringify(['oauth2', 'basic', 'api_key']),
-      ).run();
+      ));
     } catch { /* adapter may already exist */ }
 
     const connectionId = crypto.randomUUID();
-    await c.env.DB.prepare(
+    seedBatch.push(c.env.DB.prepare(
       `INSERT INTO erp_connections (id, tenant_id, adapter_id, name, status, config, last_sync, sync_frequency, records_synced, connected_at)
        VALUES (?, ?, ?, 'SAP S/4HANA Production', 'connected', ?, ?, 'hourly', 2847, ?)`
     ).bind(
@@ -175,7 +189,7 @@ seed.post('/seed-vantax', async (c) => {
         modules: ['FI', 'CO', 'MM', 'SD', 'PP', 'QM'],
       }),
       now, now,
-    ).run();
+    ));
 
     // STEP 3: Seed SAP Suppliers (Vendor Master)
     // Deliberate data quality issues for validation:
@@ -191,7 +205,7 @@ seed.post('/seed-vantax', async (c) => {
       const hasBankDetails = i < 8;
       const hasVat = i < 11 || i > 12;
       const hasContact = i < 13;
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_suppliers (id, tenant_id, external_id, source_system, name, supplier_group, vat_number, payment_terms, currency, city, province, country, contact_name, contact_email, bank_name, bank_account, status, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, 'ZAR', ?, ?, 'ZA', ?, ?, ?, ?, 'active', ?)`
       ).bind(
@@ -205,7 +219,7 @@ seed.post('/seed-vantax', async (c) => {
         hasBankDetails ? 'First National Bank' : null,
         hasBankDetails ? `62-${(10000 + i * 37).toString()}-${(4521 + i * 13).toString()}` : null,
         now,
-      ).run();
+      ));
     }
 
     // STEP 4: Seed SAP Customers (Customer Master)
@@ -233,7 +247,7 @@ seed.post('/seed-vantax', async (c) => {
         outstanding = Math.floor(250000 * (0.3 + i * 0.05));
       }
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_customers (id, tenant_id, external_id, source_system, name, registration_number, customer_group, credit_limit, credit_balance, payment_terms, currency, city, province, country, contact_name, contact_email, status, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, ?, 'Net 30', 'ZAR', ?, ?, 'ZA', ?, ?, 'active', ?)`
       ).bind(
@@ -245,20 +259,20 @@ seed.post('/seed-vantax', async (c) => {
         hasContact ? 'Procurement' : null,
         hasContact ? `procurement@${cu.name.toLowerCase().replace(/[^a-z]/g, '')}.co.za` : null,
         now,
-      ).run();
+      ));
     }
 
     // STEP 5: Seed SAP Products (Material Master) — system inventory
     for (let i = 0; i < SA_PRODUCTS.length; i++) {
       const p = SA_PRODUCTS[i];
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_products (id, tenant_id, external_id, source_system, sku, name, category, product_group, uom, cost_price, selling_price, vat_rate, stock_on_hand, reorder_level, reorder_quantity, warehouse, is_active, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, ?, ?, ?, 15, ?, ?, ?, 'JHB-MAIN', 1, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, `SAP-M${(30000 + i).toString()}`,
         p.sku, p.name, p.cat, p.cat, p.uom, p.cost, p.sell, p.stock, p.reorder, Math.floor(p.reorder * 1.5),
         now,
-      ).run();
+      ));
     }
 
     // STEP 5b: Seed Physical Count records (PHYSICAL_COUNT source_system)
@@ -281,14 +295,14 @@ seed.post('/seed-vantax', async (c) => {
         const surplusPct = 0.05 + (i - 14) * 0.033;  // 5%, 8.3%, 11.6%, 14.9%
         physicalStock = Math.floor(p.stock * (1 + surplusPct));
       }
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_products (id, tenant_id, external_id, source_system, sku, name, category, product_group, uom, cost_price, selling_price, vat_rate, stock_on_hand, reorder_level, reorder_quantity, warehouse, is_active, synced_at)
          VALUES (?, ?, ?, 'PHYSICAL_COUNT', ?, ?, ?, ?, ?, ?, ?, 15, ?, ?, ?, 'JHB-MAIN', 1, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, `PHY-M${(30000 + i).toString()}`,
         p.sku, p.name, p.cat, p.cat, p.uom, p.cost, p.sell, physicalStock, p.reorder, Math.floor(p.reorder * 1.5),
         now,
-      ).run();
+      ));
     }
 
     // STEP 6: Seed SAP Invoices (80 invoices: mix of paid, posted, pending, overdue)
@@ -311,7 +325,7 @@ seed.post('/seed-vantax', async (c) => {
       const status = statusMap[i % statusMap.length];
       const amountPaid = status === 'paid' ? total : status === 'pending' ? 0 : (status === 'overdue' ? Math.round(total * 0.3 * 100) / 100 : 0);
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_invoices (id, tenant_id, external_id, source_system, invoice_number, customer_id, customer_name, invoice_date, due_date, subtotal, vat_amount, total, amount_paid, amount_due, status, payment_status, reference, notes, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
@@ -323,7 +337,7 @@ seed.post('/seed-vantax', async (c) => {
         `PO-${(50000 + i).toString()}`,
         `SAP Document ${(100000 + i).toString()} - ${SA_SUPPLIERS[suppIdx].name}`,
         now,
-      ).run();
+      ));
     }
 
     // STEP 6b: Seed AR Posting records (SAP-AR source_system)
@@ -358,7 +372,7 @@ seed.post('/seed-vantax', async (c) => {
 
       const amountPaid = arStatus === 'paid' ? arTotal : arStatus === 'pending' ? 0 : (arStatus === 'overdue' ? Math.round(arTotal * 0.3 * 100) / 100 : 0);
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_invoices (id, tenant_id, external_id, source_system, invoice_number, customer_id, customer_name, invoice_date, due_date, subtotal, vat_amount, total, amount_paid, amount_due, status, payment_status, reference, notes, synced_at)
          VALUES (?, ?, ?, 'SAP-AR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
@@ -373,7 +387,7 @@ seed.post('/seed-vantax', async (c) => {
         `PO-${(50000 + i).toString()}`,
         `SAP-AR Posting ${(100000 + i).toString()} - ${SA_SUPPLIERS[suppIdx].name}`,
         now,
-      ).run();
+      ));
     }
 
     // STEP 7: Seed SAP Purchase Orders (80 POs)
@@ -406,7 +420,7 @@ seed.post('/seed-vantax', async (c) => {
       const deliveryStatuses = ['received', 'received', 'received', 'received', 'partial', 'pending'];
       const poStatuses = ['approved', 'approved', 'approved', 'approved', 'approved', 'pending'];
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_purchase_orders (id, tenant_id, external_id, source_system, po_number, supplier_id, supplier_name, order_date, delivery_date, subtotal, vat_amount, total, status, delivery_status, reference, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
@@ -417,7 +431,7 @@ seed.post('/seed-vantax', async (c) => {
         deliveryStatuses[i % deliveryStatuses.length],
         i <= 72 ? (invoiceRefs[i - 1] || null) : null,
         now,
-      ).run();
+      ));
     }
 
     // STEP 8: Seed Bank Transactions (80 transactions)
@@ -454,24 +468,24 @@ seed.post('/seed-vantax', async (c) => {
 
       const runningBalance = Math.round((2500000 - i * 8750 + (i % 7) * 15000) * 100) / 100;
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_bank_transactions (id, tenant_id, external_id, source_system, bank_account, transaction_date, description, reference, debit, credit, balance, reconciled, synced_at)
          VALUES (?, ?, ?, 'SAP', 'FNB-62-000-4521-01', ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, `SAP-BK-${(80000 + i).toString()}`,
         txDate, desc, ref, debit, credit, runningBalance, reconciled, now,
-      ).run();
+      ));
     }
 
     // STEP 9: Seed GL Accounts and Journal Entries (SAP FI)
     for (const gl of GL_ACCOUNTS) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_gl_accounts (id, tenant_id, external_id, source_system, account_code, account_name, account_type, account_class, currency, balance, is_active, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, 'ZAR', ?, 1, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, `SAP-GL-${gl.code}`,
         gl.code, gl.name, gl.type, gl.cls, gl.balance, now,
-      ).run();
+      ));
     }
 
     const jeDescriptions = [
@@ -490,7 +504,7 @@ seed.post('/seed-vantax', async (c) => {
       const daysAgo = Math.floor((i * 23) % 30);
       const jDate = new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0];
       const amount = Math.round((2000 + (i * 1847.63) % 80000) * 100) / 100;
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO erp_journal_entries (id, tenant_id, external_id, source_system, journal_number, journal_date, description, total_debit, total_credit, status, posted_by, synced_at)
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, ?, 'posted', 'SAP-AUTO', ?)`
       ).bind(
@@ -498,7 +512,7 @@ seed.post('/seed-vantax', async (c) => {
         `JE-${(60000 + i).toString()}`, jDate,
         jeDescriptions[i % jeDescriptions.length],
         amount, amount, now,
-      ).run();
+      ));
     }
 
     // ── SAP NATIVE TABLE SEEDING ──
@@ -510,7 +524,7 @@ seed.post('/seed-vantax', async (c) => {
     for (let i = 0; i < SA_SUPPLIERS.length; i++) {
       const s = SA_SUPPLIERS[i];
       const lifnr = (10000 + i).toString().padStart(10, '0');
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_lfa1 (id, tenant_id, LIFNR, LAND1, NAME1, NAME2, ORT01, PSTLZ, REGIO, STCD1, STCD2, TELF1, KTOKK, LOEVM, SPERR, SPERM)
          VALUES (?, ?, ?, 'ZA', ?, ?, ?, ?, ?, ?, ?, ?, 'KRED', ?, ?, ?)`
       ).bind(
@@ -523,7 +537,7 @@ seed.post('/seed-vantax', async (c) => {
         i < 13 ? `+27${(11 + i).toString()}${(1000000 + i * 12345).toString().slice(0, 7)}` : null,  // missing phone for 13-14
         null, null,  // LOEVM, SPERR
         i === 14 ? 'X' : null,  // payment block on last vendor
-      ).run();
+      ));
     }
 
     // SAP-SEED-2: LFB1 — Vendor Master Company Code Data
@@ -531,7 +545,7 @@ seed.post('/seed-vantax', async (c) => {
     for (let i = 0; i < SA_SUPPLIERS.length; i++) {
       const lifnr = (10000 + i).toString().padStart(10, '0');
       const zterms = ['ZB30', 'ZB45', 'ZB30', 'ZB60', 'ZB30', 'ZB45', 'ZB30', 'ZB60'];
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_lfb1 (id, tenant_id, LIFNR, BUKRS, AKONT, ZTERM, ZWELS, REPRF, HBKID)
          VALUES (?, ?, ?, '1000', ?, ?, 'CT', ?, 'FNB1')`
       ).bind(
@@ -539,7 +553,7 @@ seed.post('/seed-vantax', async (c) => {
         (i >= 8 && i <= 10) ? null : '2000',  // missing recon account
         i === 14 ? null : zterms[i % zterms.length],  // missing payment terms
         i < 8 ? 'X' : null,  // double-invoice check
-      ).run();
+      ));
     }
 
     // SAP-SEED-3: KNA1 — Customer Master General Data
@@ -547,7 +561,7 @@ seed.post('/seed-vantax', async (c) => {
     for (let i = 0; i < SA_CUSTOMERS.length; i++) {
       const cu = SA_CUSTOMERS[i];
       const kunnr = (20000 + i).toString().padStart(10, '0');
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_kna1 (id, tenant_id, KUNNR, LAND1, NAME1, NAME2, ORT01, PSTLZ, REGIO, STCD1, TELF1, KTOKD, LOEVM, SPERR)
          VALUES (?, ?, ?, 'ZA', ?, ?, ?, ?, ?, ?, ?, 'DEBI', ?, ?)`
       ).bind(
@@ -559,7 +573,7 @@ seed.post('/seed-vantax', async (c) => {
         i < 18 ? cu.reg : null,  // missing tax/reg number
         i < 17 ? `+27${(21 + i).toString()}${(2000000 + i * 54321).toString().slice(0, 7)}` : null,
         null, null,
-      ).run();
+      ));
     }
 
     // SAP-SEED-4: KNB1 — Customer Master Company Code Data
@@ -569,14 +583,14 @@ seed.post('/seed-vantax', async (c) => {
       let klimk = 500000 + i * 150000 + 50000;
       if (i >= 15 && i <= 17) klimk = 0;
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_knb1 (id, tenant_id, KUNNR, BUKRS, AKONT, ZTERM, KLIMK, CTLPC)
          VALUES (?, ?, ?, '1000', '1100', 'ZB30', ?, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, kunnr,
         klimk,
         klimk > 0 ? 'A' : null,  // no credit control for zero-limit customers
-      ).run();
+      ));
     }
 
     // SAP-SEED-5: BKPF — Accounting Document Headers (80 vendor invoices)
@@ -590,7 +604,7 @@ seed.post('/seed-vantax', async (c) => {
       const bldat = new Date(Date.now() - (daysAgo + 2) * 86400000).toISOString().split('T')[0];
       const monat = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(5, 7);
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_bkpf (id, tenant_id, BUKRS, BELNR, GJAHR, BLART, BUDAT, BLDAT, MONAT, CPUDT, XBLNR, BSTAT, WAERS, USNAM, TCODE, AWTYP, AWKEY)
          VALUES (?, ?, '1000', ?, '2026', ?, ?, ?, ?, ?, ?, ?, 'ZAR', 'SAPUSER', 'FB60', 'BKPF', ?)`
       ).bind(
@@ -600,7 +614,7 @@ seed.post('/seed-vantax', async (c) => {
         i <= 72 ? `PO-${(50000 + i).toString()}` : null,  // missing XBLNR for 73-80
         i <= 65 ? '' : 'V',  // V = parked (not posted)
         belnr,
-      ).run();
+      ));
     }
 
     // SAP-SEED-6: BSEG — Accounting Document Line Items (2 lines per doc: vendor + expense)
@@ -620,7 +634,7 @@ seed.post('/seed-vantax', async (c) => {
       }
 
       // Line 1: Vendor posting (BSCHL 31 = vendor credit)
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_bseg (id, tenant_id, BUKRS, BELNR, GJAHR, BUZEI, BSCHL, KOART, KONTO, DMBTR, WRBTR, MWSKZ, MWSTS, SGTXT, LIFNR, EBELN, SHKZG, ZFBDT, ZBD1T)
          VALUES (?, ?, '1000', ?, '2026', '001', '31', 'K', ?, ?, ?, 'I2', ?, ?, ?, ?, 'H', ?, ?)`
       ).bind(
@@ -631,17 +645,17 @@ seed.post('/seed-vantax', async (c) => {
         i <= 72 ? `PO-${(50000 + i).toString()}` : null,
         new Date(Date.now() - (3 + Math.floor((i * 37) % 90) - 30) * 86400000).toISOString().split('T')[0],
         30,
-      ).run();
+      ));
 
       // Line 2: Expense posting (BSCHL 40 = debit)
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_bseg (id, tenant_id, BUKRS, BELNR, GJAHR, BUZEI, BSCHL, KOART, KONTO, DMBTR, WRBTR, MWSKZ, MWSTS, SGTXT, SHKZG)
          VALUES (?, ?, '1000', ?, '2026', '002', '40', 'S', '5000', ?, ?, 'I2', 0, ?, 'S')`
       ).bind(
         crypto.randomUUID(), tenantId, belnr,
         Math.round((dmbtr - vat) * 100) / 100, Math.round((total - vat) * 100) / 100,
         `Cost of Sales - ${SA_SUPPLIERS[suppIdx].name}`,
-      ).run();
+      ));
     }
 
     // SAP-SEED-7: BSIK — Vendor Open Items
@@ -659,7 +673,7 @@ seed.post('/seed-vantax', async (c) => {
       const augbl = statusMap[i % statusMap.length] === 'C' ? belnr : null;
       const augdt = augbl ? new Date(Date.now() - (daysAgo - 15) * 86400000).toISOString().split('T')[0] : null;
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_bsik (id, tenant_id, BUKRS, LIFNR, AUGDT, AUGBL, GJAHR, BELNR, BUZEI, BUDAT, BLDAT, WAERS, SHKZG, DMBTR, WRBTR, SGTXT, ZFBDT, ZBD1T, EBELN)
          VALUES (?, ?, '1000', ?, ?, ?, '2026', ?, '001', ?, ?, 'ZAR', ?, ?, ?, ?, ?, 30, ?)`
       ).bind(
@@ -671,7 +685,7 @@ seed.post('/seed-vantax', async (c) => {
         `Vendor invoice - ${SA_SUPPLIERS[suppIdx].name}`,
         new Date(Date.now() - (daysAgo - 30) * 86400000).toISOString().split('T')[0],
         i <= 72 ? `PO-${(50000 + i).toString()}` : null,  // missing EBELN for 73-80
-      ).run();
+      ));
     }
 
     // SAP-SEED-8: EKKO — Purchase Order Headers (80 POs)
@@ -682,7 +696,7 @@ seed.post('/seed-vantax', async (c) => {
       const daysAgo = 10 + Math.floor((i * 43) % 120);
       const bedat = new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0];
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_ekko (id, tenant_id, EBELN, BUKRS, BSTYP, BSART, LOEKZ, STATU, AEDAT, ERNAM, LIFNR, EKGRP, WAERS, BEDAT, RLWRT, ZTERM)
          VALUES (?, ?, ?, '1000', 'F', 'NB', ?, ?, ?, 'SAPBUYER', ?, ?, 'ZAR', ?, ?, ?)`
       ).bind(
@@ -694,7 +708,7 @@ seed.post('/seed-vantax', async (c) => {
         bedat,
         invoiceAmounts[i - 1] || Math.round((8000 + (i * 2731.41) % 45000) * 100) / 100,
         ['ZB30', 'ZB45', 'ZB60'][i % 3],
-      ).run();
+      ));
     }
 
     // SAP-SEED-9: EKPO — Purchase Order Items (1-2 items per PO)
@@ -706,14 +720,14 @@ seed.post('/seed-vantax', async (c) => {
       const qty = Math.max(1, Math.floor(total / p.cost));
       const netpr = Math.round(total / qty * 100) / 100;
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_ekpo (id, tenant_id, EBELN, EBELP, MATNR, TXZ01, MENGE, MEINS, NETPR, PEINH, NETWR, MATKL, WERKS, LGORT, MWSKZ)
          VALUES (?, ?, ?, '00010', ?, ?, ?, ?, ?, 1, ?, ?, 'JHB1', '0001', 'I2')`
       ).bind(
         crypto.randomUUID(), tenantId, ebeln,
         p.sku, p.name, qty, p.uom, netpr, Math.round(netpr * qty * 100) / 100,
         p.cat,
-      ).run();
+      ));
     }
 
     // SAP-SEED-10: EKBE — PO History (Goods Receipt + Invoice Receipt)
@@ -734,14 +748,14 @@ seed.post('/seed-vantax', async (c) => {
         grQty = Math.max(1, Math.floor(qty * (0.85 + (i - 66) * 0.015)));
       }
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_ekbe (id, tenant_id, EBELN, EBELP, ZEESSION, VGABE, GJAHR, BELNR, BUZEI, BEWTP, MENGE, WRBTR, WAERS, BUDAT)
          VALUES (?, ?, ?, '00010', '0001', '1', '2026', ?, '001', 'E', ?, ?, 'ZAR', ?)`
       ).bind(
         crypto.randomUUID(), tenantId, ebeln,
         (5000000000 + i).toString(),
         grQty, Math.round(grQty * (total / qty) * 100) / 100, budat,
-      ).run();
+      ));
 
       // Invoice Receipt (VGABE = '2') — only for POs 1-72
       if (i <= 72) {
@@ -751,21 +765,21 @@ seed.post('/seed-vantax', async (c) => {
           const variancePct = 0.03 + ((i * 13) % 5) * 0.01;
           irAmt = Math.round(total * (1 + variancePct * (i % 2 === 0 ? 1 : -1)) * 100) / 100;
         }
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO sap_ekbe (id, tenant_id, EBELN, EBELP, ZEESSION, VGABE, GJAHR, BELNR, BUZEI, BEWTP, MENGE, WRBTR, WAERS, BUDAT)
            VALUES (?, ?, ?, '00010', '0002', '2', '2026', ?, '001', 'Q', ?, ?, 'ZAR', ?)`
         ).bind(
           crypto.randomUUID(), tenantId, ebeln,
           bkpfBelnrs[i - 1],
           qty, irAmt, budat,
-        ).run();
+        ));
       }
     }
 
     // SAP-SEED-11: MARD — Material Warehouse Stock
     for (let i = 0; i < SA_PRODUCTS.length; i++) {
       const p = SA_PRODUCTS[i];
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_mard (id, tenant_id, MATNR, WERKS, LGORT, LABST, INSME, SPEME, EINME, RETME, LFGJA, LFMON)
          VALUES (?, ?, ?, 'JHB1', '0001', ?, ?, ?, 0, 0, '2026', '03')`
       ).bind(
@@ -773,7 +787,7 @@ seed.post('/seed-vantax', async (c) => {
         p.sku, p.stock,
         i >= 10 && i < 14 ? Math.floor(p.stock * 0.05) : 0,  // quality inspection stock
         i >= 14 ? Math.floor(p.stock * 0.03) : 0,  // blocked stock
-      ).run();
+      ));
     }
 
     // SAP-SEED-12: ISEG — Physical Inventory Count (deliberate variances)
@@ -790,7 +804,7 @@ seed.post('/seed-vantax', async (c) => {
         physQty = Math.floor(p.stock * (1 + surplusPct));  // surplus
       }
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_iseg (id, tenant_id, IBLNR, GJAHR, ZEESSION, MATNR, WERKS, LGORT, MENGE, MEINS, BUCHM, XNULL, XDIFF)
          VALUES (?, ?, ?, '2026', ?, ?, 'JHB1', '0001', ?, ?, ?, ?, ?)`
       ).bind(
@@ -801,7 +815,7 @@ seed.post('/seed-vantax', async (c) => {
         physQty === p.stock ? physQty : 0,  // BUCHM = posted qty (0 if diff)
         physQty === 0 ? 'X' : null,  // XNULL = zero count flag
         physQty !== p.stock ? 'X' : null,  // XDIFF = difference flag
-      ).run();
+      ));
     }
 
     // SAP-SEED-13: VBAK — Sales Order Headers (80 sales orders)
@@ -815,7 +829,7 @@ seed.post('/seed-vantax', async (c) => {
       const audat = new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0];
       const total = invoiceAmounts[i - 1] || Math.round((10000 + (i * 1847.63) % 80000) * 100) / 100;
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_vbak (id, tenant_id, VBELN, AUART, VKORG, VTWEG, SPART, KUNNR, BSTNK, AUDAT, VDATU, NETWR, WAERK, VBTYP, ERNAM)
          VALUES (?, ?, ?, 'TA', '1000', '10', '00', ?, ?, ?, ?, ?, 'ZAR', 'C', 'SAPSALES')`
       ).bind(
@@ -825,7 +839,7 @@ seed.post('/seed-vantax', async (c) => {
         audat,
         new Date(Date.now() - (daysAgo - 14) * 86400000).toISOString().split('T')[0],
         total,
-      ).run();
+      ));
     }
 
     // SAP-SEED-14: VBAP — Sales Order Items
@@ -836,7 +850,7 @@ seed.post('/seed-vantax', async (c) => {
       const total = invoiceAmounts[i - 1] || Math.round((10000 + (i * 1847.63) % 80000) * 100) / 100;
       const qty = Math.max(1, Math.floor(total / p.sell));
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_vbap (id, tenant_id, VBELN, POSNR, MATNR, ARKTX, KWMENG, VRKME, NETPR, NETWR, WAERK, WERKS, MATKL)
          VALUES (?, ?, ?, '000010', ?, ?, ?, ?, ?, ?, 'ZAR', 'JHB1', ?)`
       ).bind(
@@ -844,7 +858,7 @@ seed.post('/seed-vantax', async (c) => {
         p.sku, p.name, qty, p.uom,
         Math.round(total / qty * 100) / 100, total,
         p.cat,
-      ).run();
+      ));
     }
 
     // SAP-SEED-15: VBRK — Billing Documents (only 72 of 80 orders billed)
@@ -867,7 +881,7 @@ seed.post('/seed-vantax', async (c) => {
 
       const rfbsk = (i >= 66 && i <= 72) ? 'A' : 'C';  // A = not transferred, C = cleared
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_vbrk (id, tenant_id, VBELN, FKART, VKORG, KUNAG, KUNRG, FKDAT, RFBSK, NETWR, MWSBK, WAERK, BUKRS, XBLNR, ERNAM)
          VALUES (?, ?, ?, 'F2', '1000', ?, ?, ?, ?, ?, ?, 'ZAR', '1000', ?, 'SAPSALES')`
       ).bind(
@@ -875,7 +889,7 @@ seed.post('/seed-vantax', async (c) => {
         kunnr, kunnr, fkdat, rfbsk,
         netwr, Math.round(netwr * 0.15 * 100) / 100,
         `INV-${(100000 + i).toString()}`,
-      ).run();
+      ));
     }
 
     // SAP-SEED-16: VBRP — Billing Document Items
@@ -890,7 +904,7 @@ seed.post('/seed-vantax', async (c) => {
       }
       const qty = Math.max(1, Math.floor(netwr / p.sell));
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_vbrp (id, tenant_id, VBELN, POSNR, FKIMG, VRKME, NETWR, MWSBP, MATNR, ARKTX, AUBEL, AUPOS, WERKS)
          VALUES (?, ?, ?, '000010', ?, ?, ?, ?, ?, ?, ?, '000010', 'JHB1')`
       ).bind(
@@ -898,7 +912,7 @@ seed.post('/seed-vantax', async (c) => {
         qty, p.uom, netwr, Math.round(netwr * 0.15 * 100) / 100,
         p.sku, p.name,
         vbakVbelns[i - 1],
-      ).run();
+      ));
     }
 
     // SAP-SEED-17: BSID — Customer Open Items
@@ -913,7 +927,7 @@ seed.post('/seed-vantax', async (c) => {
       const statusMap = ['', '', '', 'C', 'C', 'C', '', '', ''];
       const augbl = statusMap[i % statusMap.length] === 'C' ? belnr : null;
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_bsid (id, tenant_id, BUKRS, KUNNR, AUGDT, AUGBL, GJAHR, BELNR, BUZEI, BUDAT, BLDAT, WAERS, SHKZG, DMBTR, WRBTR, SGTXT, ZFBDT, ZBD1T, XBLNR)
          VALUES (?, ?, '1000', ?, ?, ?, '2026', ?, '001', ?, ?, 'ZAR', 'S', ?, ?, ?, ?, 30, ?)`
       ).bind(
@@ -925,7 +939,7 @@ seed.post('/seed-vantax', async (c) => {
         `Customer invoice - ${SA_CUSTOMERS[custIdx].name}`,
         new Date(Date.now() - (daysAgo - 30) * 86400000).toISOString().split('T')[0],
         `INV-${(100000 + i).toString()}`,
-      ).run();
+      ));
     }
 
     // SAP-SEED-18: FEBEP — Bank Statement Line Items
@@ -956,7 +970,7 @@ seed.post('/seed-vantax', async (c) => {
         sgtxt = `EFT Payment - ${SA_SUPPLIERS[(i + 3) % SA_SUPPLIERS.length].name}`;
       }
 
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO sap_febep (id, tenant_id, BUKRS, HESSION, AESSION, VALUT, KWBTR, WRBTR, WAERS, VWEZW, XBLNR, SGTXT)
          VALUES (?, ?, '1000', ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?)`
       ).bind(
@@ -965,7 +979,7 @@ seed.post('/seed-vantax', async (c) => {
         (i).toString().padStart(5, '0'),  // AESSION = line item
         valut, kwbtr, Math.abs(kwbtr),
         vwezw, xblnr, sgtxt,
-      ).run();
+      ));
     }
 
     console.log('[VantaX Seeder] SAP native tables seeded');
@@ -973,13 +987,13 @@ seed.post('/seed-vantax', async (c) => {
     // STEP 9b: Seed ERP companies so the frontend company switcher has at
     // least the primary entity to display. Without this row, /api/erp/companies
     // returns an empty list and the switcher renders blank on first login.
-    await c.env.DB.prepare(
+    seedBatch.push(c.env.DB.prepare(
       `INSERT OR REPLACE INTO erp_companies (id, tenant_id, external_id, source_system, code, name, legal_name, currency, country, fiscal_year_start, tax_id, is_primary, status, synced_at)
        VALUES (?, ?, ?, 'sap', ?, ?, ?, 'ZAR', 'ZA', '03-01', ?, 1, 'active', datetime('now'))`
     ).bind(
       `erp-co-${tenantId}-primary`, tenantId, 'VTX-1000',
       '1000', 'VantaX (Pty) Ltd', 'VantaX Manufacturing (Pty) Ltd', '4123456789'
-    ).run();
+    ));
     console.log('[VantaX Seeder] Seeded primary ERP company');
 
     // STEP 10: Create Catalyst Clusters with CONFIGURED sub-catalysts
@@ -1027,10 +1041,10 @@ seed.post('/seed-vantax', async (c) => {
       },
     ];
 
-    await c.env.DB.prepare(`
+    seedBatch.push(c.env.DB.prepare(`
       INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, status, autonomy_tier, agent_count, sub_catalysts)
       VALUES (?, ?, 'Finance', 'finance', 'Financial reconciliation and controls - SAP FI/CO modules. GR/IR 3-way match, AP invoice validation, bank reconciliation against FNB Corporate.', 'active', 'supervised', 3, ?)
-    `).bind(financeClusterId, tenantId, JSON.stringify(financeSubCatalysts)).run();
+    `).bind(financeClusterId, tenantId, JSON.stringify(financeSubCatalysts)));
 
     // -- SUPPLY CHAIN CLUSTER --
     const supplyChainClusterId = crypto.randomUUID();
@@ -1074,10 +1088,10 @@ seed.post('/seed-vantax', async (c) => {
       },
     ];
 
-    await c.env.DB.prepare(`
+    seedBatch.push(c.env.DB.prepare(`
       INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, status, autonomy_tier, agent_count, sub_catalysts)
       VALUES (?, ?, 'Supply Chain', 'operations', 'Supply chain management and procurement - SAP MM/SD. Inventory verification, PO-to-GR matching, vendor master validation.', 'active', 'supervised', 3, ?)
-    `).bind(supplyChainClusterId, tenantId, JSON.stringify(supplyChainSubCatalysts)).run();
+    `).bind(supplyChainClusterId, tenantId, JSON.stringify(supplyChainSubCatalysts)));
 
     // -- REVENUE CLUSTER --
     const revenueClusterId = crypto.randomUUID();
@@ -1116,10 +1130,10 @@ seed.post('/seed-vantax', async (c) => {
       },
     ];
 
-    await c.env.DB.prepare(`
+    seedBatch.push(c.env.DB.prepare(`
       INSERT INTO catalyst_clusters (id, tenant_id, name, domain, description, status, autonomy_tier, agent_count, sub_catalysts)
       VALUES (?, ?, 'Revenue', 'revenue', 'Revenue cycle management - SAP SD/FI. IFRS 15 compliance, AR aging, sales order-to-invoice matching.', 'active', 'supervised', 3, ?)
-    `).bind(revenueClusterId, tenantId, JSON.stringify(revenueSubCatalysts)).run();
+    `).bind(revenueClusterId, tenantId, JSON.stringify(revenueSubCatalysts)));
 
     // STEP 11: Create Sub-Catalyst KPIs (aggregate tracking)
     const allSubCatalysts = [
@@ -1129,10 +1143,10 @@ seed.post('/seed-vantax', async (c) => {
     ];
 
     for (const sub of allSubCatalysts) {
-      await c.env.DB.prepare(`
+      seedBatch.push(c.env.DB.prepare(`
         INSERT INTO sub_catalyst_kpis (id, tenant_id, cluster_id, sub_catalyst_name, total_runs, successful_runs, success_rate, avg_confidence, status, threshold_success_green, threshold_success_amber, threshold_success_red)
         VALUES (?, ?, ?, ?, 0, 0, 0, 0, 'green', 90, 70, 50)
-      `).bind(crypto.randomUUID(), tenantId, sub.clusterId, sub.name).run();
+      `).bind(crypto.randomUUID(), tenantId, sub.clusterId, sub.name));
     }
 
     // STEP 12: Realistic health score with dimensions
@@ -1145,10 +1159,10 @@ seed.post('/seed-vantax', async (c) => {
       revenue: { score: 71, trend: 'improving', delta: 3.1 },
     };
     const overallHealthScore = Math.round(Object.values(healthDimensions).reduce((s, d) => s + d.score, 0) / Object.keys(healthDimensions).length);
-    await c.env.DB.prepare(`
+    seedBatch.push(c.env.DB.prepare(`
       INSERT INTO health_scores (id, tenant_id, overall_score, dimensions, calculated_at)
       VALUES (?, ?, ?, ?, ?)
-    `).bind(crypto.randomUUID(), tenantId, overallHealthScore, JSON.stringify(healthDimensions), now).run();
+    `).bind(crypto.randomUUID(), tenantId, overallHealthScore, JSON.stringify(healthDimensions), now));
 
     // STEP 12b: Health score history for trend sparklines (6 months)
     const healthHistory = [
@@ -1162,9 +1176,9 @@ seed.post('/seed-vantax', async (c) => {
     for (const hh of healthHistory) {
       const d = new Date(); d.setMonth(d.getMonth() + hh.offset);
       const hhDims = Object.fromEntries(Object.entries(hh.dims).map(([k, v]) => [k, { score: v, trend: v > 60 ? 'improving' : 'stable', delta: Math.round((Math.random() * 6 - 2) * 10) / 10 }]));
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO health_score_history (id, tenant_id, overall_score, dimensions, catalyst_name, recorded_at) VALUES (?, ?, ?, ?, 'System Health Check', ?)`
-      ).bind(crypto.randomUUID(), tenantId, hh.score, JSON.stringify(hhDims), d.toISOString()).run();
+      ).bind(crypto.randomUUID(), tenantId, hh.score, JSON.stringify(hhDims), d.toISOString()));
     }
     console.log('[VantaX Seeder] Seeded health score + 6 history records');
 
@@ -1196,9 +1210,9 @@ seed.post('/seed-vantax', async (c) => {
       const pmId = crypto.randomUUID();
       metricIds.push(pmId);
       const linkedCluster = domainToCluster[pm.domain] ?? null;
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO process_metrics (id, tenant_id, name, value, unit, status, domain, category, threshold_green, threshold_amber, threshold_red, trend, source_system, cluster_id, measured_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(pmId, tenantId, pm.name, pm.value, pm.unit, pm.status, pm.domain, pm.category, pm.thresholdGreen, pm.thresholdAmber, pm.thresholdRed, JSON.stringify(pm.trend), pm.sourceSystem, linkedCluster, now).run();
+      ).bind(pmId, tenantId, pm.name, pm.value, pm.unit, pm.status, pm.domain, pm.category, pm.thresholdGreen, pm.thresholdAmber, pm.thresholdRed, JSON.stringify(pm.trend), pm.sourceSystem, linkedCluster, now));
     }
     console.log(`[VantaX Seeder] Seeded ${processMetricsData.length} process metrics`);
 
@@ -1208,9 +1222,9 @@ seed.post('/seed-vantax', async (c) => {
       for (let mo = -5; mo <= 0; mo++) {
         const d = new Date(); d.setMonth(d.getMonth() + mo);
         const histVal = pm.trend[Math.max(0, mo + 5)] ?? pm.value;
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO process_metric_history (id, tenant_id, metric_id, value, recorded_at) VALUES (?, ?, ?, ?, ?)`
-        ).bind(crypto.randomUUID(), tenantId, metricIds[mi], histVal, d.toISOString()).run();
+        ).bind(crypto.randomUUID(), tenantId, metricIds[mi], histVal, d.toISOString()));
       }
     }
     console.log('[VantaX Seeder] Seeded process metric history (18 records)');
@@ -1226,9 +1240,9 @@ seed.post('/seed-vantax', async (c) => {
       { title: 'Supplier Concentration Risk', description: '3 critical raw material suppliers account for 65% of procurement spend. Loss of any single supplier would halt production within 2 weeks.', severity: 'medium', category: 'strategic', probability: 0.30, impactValue: 5000000, actions: ['Diversify supplier base — qualify 2 additional suppliers per category', 'Increase safety stock for critical items', 'Negotiate dual-source agreements'] },
     ];
     for (const ra of riskAlerts) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO risk_alerts (id, tenant_id, title, description, severity, category, probability, impact_value, impact_unit, recommended_actions, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, 'active', ?)`
-      ).bind(crypto.randomUUID(), tenantId, ra.title, ra.description, ra.severity, ra.category, ra.probability, ra.impactValue, JSON.stringify(ra.actions), now).run();
+      ).bind(crypto.randomUUID(), tenantId, ra.title, ra.description, ra.severity, ra.category, ra.probability, ra.impactValue, JSON.stringify(ra.actions), now));
     }
     console.log(`[VantaX Seeder] Seeded ${riskAlerts.length} risk alerts`);
 
@@ -1241,9 +1255,9 @@ seed.post('/seed-vantax', async (c) => {
       { metric: 'Revenue Recognition Compliance', severity: 'medium', deviation: -21.3, expectedValue: 95, actualValue: 73.7, description: 'Revenue recognition timing gap widening. SD billing documents not synchronized with FI revenue posting. Month-end cut-off procedures need review.' },
     ];
     for (const an of anomaliesData) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO anomalies (id, tenant_id, metric, severity, deviation, expected_value, actual_value, hypothesis, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
-      ).bind(crypto.randomUUID(), tenantId, an.metric, an.severity, an.deviation, an.expectedValue, an.actualValue, an.description, now).run();
+      ).bind(crypto.randomUUID(), tenantId, an.metric, an.severity, an.deviation, an.expectedValue, an.actualValue, an.description, now));
     }
     console.log(`[VantaX Seeder] Seeded ${anomaliesData.length} anomalies`);
 
@@ -1436,6 +1450,7 @@ seed.post('/seed-vantax', async (c) => {
       'Sales Order Matching': 95,             // ~1.5h
       'Demand Forecasting': 480,              // 8h — long ML batch
     };
+    await flushSeed('before-catalyst-actions');
     const catalystActionStmts = catalystActionsData.map((ca) => {
       const elapsedMin = durationMinutesByCatalyst[ca.catalystName] ?? 60;
       const startHoursAgo = Math.round((Math.random() * 168) + 1);
@@ -1470,14 +1485,14 @@ seed.post('/seed-vantax', async (c) => {
       { clusterId: null, name: 'Radar Signal Collector', agentType: 'intelligence', status: 'running', version: '1.2.0', healthScore: 85, uptime: 97.8, tasksExecuted: 156 },
     ];
     for (const ad of agentDeployments) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO agent_deployments (id, tenant_id, cluster_id, name, agent_type, status, deployment_model, version, health_score, uptime, tasks_executed, config, last_heartbeat) VALUES (?, ?, ?, ?, ?, ?, 'saas', ?, ?, ?, ?, '{}', ?)`
-      ).bind(crypto.randomUUID(), tenantId, ad.clusterId, ad.name, ad.agentType, ad.status, ad.version, ad.healthScore, ad.uptime, ad.tasksExecuted, now).run();
+      ).bind(crypto.randomUUID(), tenantId, ad.clusterId, ad.name, ad.agentType, ad.status, ad.version, ad.healthScore, ad.uptime, ad.tasksExecuted, now));
     }
     console.log(`[VantaX Seeder] Seeded ${agentDeployments.length} agent deployments`);
 
     // Step 10: Create Executive Briefing
-    await c.env.DB.prepare(`
+    seedBatch.push(c.env.DB.prepare(`
       INSERT INTO executive_briefings (id, tenant_id, title, summary, risks, opportunities, kpi_movements, decisions_needed, generated_at, health_delta, red_metric_count, anomaly_count, active_risk_count)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
@@ -1519,7 +1534,7 @@ seed.post('/seed-vantax', async (c) => {
       3,     // red_metric_count (Bank Recon, Inventory, OEE)
       5,     // anomaly_count
       7      // active_risk_count
-    ).run();
+    ));
 
     // ── STEP: Seed Apex Radar signals + impacts ──
     console.log('[VantaX Seeder] Seeding Apex Radar signals...');
@@ -1541,10 +1556,10 @@ seed.post('/seed-vantax', async (c) => {
     for (const sig of radarSignals) {
       const sigId = crypto.randomUUID();
       signalIds.push(sigId);
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO radar_signals (id, tenant_id, source, signal_type, title, description, url, raw_data, severity, relevance_score, status, detected_at, created_at)
          VALUES (?, ?, ?, ?, ?, ?, NULL, '{}', ?, ?, 'analysed', ?, ?)`
-      ).bind(sigId, tenantId, sig.source, sig.type, sig.title, sig.description, sig.severity, sig.relevance, now, now).run();
+      ).bind(sigId, tenantId, sig.source, sig.type, sig.title, sig.description, sig.severity, sig.relevance, now, now));
     }
 
     // Seed signal impacts
@@ -1574,15 +1589,15 @@ seed.post('/seed-vantax', async (c) => {
 
     for (const imp of impactData) {
       const impId = crypto.randomUUID();
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO radar_signal_impacts (id, tenant_id, signal_id, dimension, impact_direction, impact_magnitude, affected_metrics, recommended_actions, llm_reasoning, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Analysis generated by Atheon Intelligence based on signal context and current health dimensions.', ?)`
-      ).bind(impId, tenantId, signalIds[imp.sigIdx], imp.dimension, imp.direction, imp.magnitude, JSON.stringify(imp.metrics), JSON.stringify(imp.actions), now).run();
+      ).bind(impId, tenantId, signalIds[imp.sigIdx], imp.dimension, imp.direction, imp.magnitude, JSON.stringify(imp.metrics), JSON.stringify(imp.actions), now));
     }
 
     // Seed strategic context
     const ctxId = crypto.randomUUID();
-    await c.env.DB.prepare(
+    seedBatch.push(c.env.DB.prepare(
       `INSERT INTO radar_strategic_context (id, tenant_id, context_type, title, summary, factors, sentiment, confidence, source_signal_ids, valid_from, created_at)
        VALUES (?, ?, 'macro', 'Q2 2026 Strategic Context: Headwinds Intensifying', ?, ?, 'negative', 72, ?, ?, ?)`
     ).bind(
@@ -1597,7 +1612,7 @@ seed.post('/seed-vantax', async (c) => {
       ]),
       JSON.stringify(signalIds),
       now, now,
-    ).run();
+    ));
 
     console.log(`[VantaX Seeder] Seeded ${radarSignals.length} radar signals, ${impactData.length} impacts, 1 strategic context`);
 
@@ -1612,10 +1627,10 @@ seed.post('/seed-vantax', async (c) => {
 
     for (const dm of diagMetrics) {
       const analysisId = crypto.randomUUID();
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO diagnostic_analyses (id, tenant_id, metric_id, metric_name, metric_value, metric_status, trigger_type, status, created_at, completed_at)
          VALUES (?, ?, ?, ?, ?, ?, 'auto', 'completed', ?, ?)`
-      ).bind(analysisId, tenantId, crypto.randomUUID(), dm.name, dm.value, dm.status, now, now).run();
+      ).bind(analysisId, tenantId, crypto.randomUUID(), dm.name, dm.value, dm.status, now, now));
 
       // L0-L3 causal chain for each
       const chains = [
@@ -1627,10 +1642,10 @@ seed.post('/seed-vantax', async (c) => {
 
       for (const ch of chains) {
         const chainId = crypto.randomUUID();
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO diagnostic_causal_chains (id, tenant_id, analysis_id, level, cause_type, title, description, confidence, evidence, related_metrics, recommended_fix, fix_priority, fix_effort, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?, ?, ?)`
-        ).bind(chainId, tenantId, analysisId, ch.level, ch.type, ch.title, ch.desc, ch.confidence, `Review and address: ${ch.title}`, ch.priority, ch.effort, now).run();
+        ).bind(chainId, tenantId, analysisId, ch.level, ch.type, ch.title, ch.desc, ch.confidence, `Review and address: ${ch.title}`, ch.priority, ch.effort, now));
       }
     }
 
@@ -1650,10 +1665,10 @@ seed.post('/seed-vantax', async (c) => {
     for (const pat of patterns) {
       const patId = crypto.randomUUID();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO catalyst_patterns (id, tenant_id, pattern_type, title, description, frequency, first_seen, last_seen, affected_clusters, affected_sub_catalysts, severity, status, recommended_actions, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '[]', ?)`
-      ).bind(patId, tenantId, pat.type, pat.title, pat.desc, pat.freq, thirtyDaysAgo, now, JSON.stringify(pat.clusters), JSON.stringify(pat.subs), pat.severity, now).run();
+      ).bind(patId, tenantId, pat.type, pat.title, pat.desc, pat.freq, thirtyDaysAgo, now, JSON.stringify(pat.clusters), JSON.stringify(pat.subs), pat.severity, now));
     }
 
     console.log(`[VantaX Seeder] Seeded ${patterns.length} catalyst patterns`);
@@ -1667,10 +1682,10 @@ seed.post('/seed-vantax', async (c) => {
       { name: 'Atlas Industrial', industry: 'manufacturing', website: 'https://atlasindustrial.co.za', strengths: ['Manufacturing domain', 'IoT integration'], weaknesses: ['No reconciliation capability', 'Small team'], marketShare: 5, threatLevel: 'medium' },
     ];
     for (const comp of competitors) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO competitors (id, tenant_id, name, industry, estimated_revenue, market_share, strengths, weaknesses, last_updated, signals_count)
          VALUES (?, ?, ?, ?, 'undisclosed', ?, ?, ?, ?, 0)`
-      ).bind(crypto.randomUUID(), tenantId, comp.name, comp.industry, comp.marketShare, JSON.stringify(comp.strengths), JSON.stringify(comp.weaknesses), now).run();
+      ).bind(crypto.randomUUID(), tenantId, comp.name, comp.industry, comp.marketShare, JSON.stringify(comp.strengths), JSON.stringify(comp.weaknesses), now));
     }
     console.log(`[VantaX Seeder] Seeded ${competitors.length} competitors`);
 
@@ -1685,10 +1700,10 @@ seed.post('/seed-vantax', async (c) => {
       { name: 'Digital Maturity Index', category: 'technology', value: 3.2, unit: '/5', source: 'McKinsey Digital SA', percentile: 40 },
     ];
     for (const bm of benchmarks) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO market_benchmarks (id, tenant_id, industry, metric_name, benchmark_value, benchmark_unit, source, measured_at)
          VALUES (?, ?, 'general', ?, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, bm.name, bm.value, bm.unit, bm.source, now).run();
+      ).bind(crypto.randomUUID(), tenantId, bm.name, bm.value, bm.unit, bm.source, now));
     }
     console.log(`[VantaX Seeder] Seeded ${benchmarks.length} market benchmarks`);
 
@@ -1700,10 +1715,10 @@ seed.post('/seed-vantax', async (c) => {
       { title: 'Carbon Tax Phase 2', body: 'National Treasury carbon tax Phase 2 implementation increases levy from R159 to R190 per tonne CO2e. Manufacturing facilities must update emission reporting.', authority: 'National Treasury', effectiveDate: '2026-01-01', impact: 'medium', category: 'environmental', status: 'active' },
     ];
     for (const re of regEvents) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO regulatory_events (id, tenant_id, title, description, effective_date, status)
          VALUES (?, ?, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, re.title, re.body, re.effectiveDate, re.status).run();
+      ).bind(crypto.randomUUID(), tenantId, re.title, re.body, re.effectiveDate, re.status));
     }
     console.log(`[VantaX Seeder] Seeded ${regEvents.length} regulatory events`);
 
@@ -1742,23 +1757,23 @@ seed.post('/seed-vantax', async (c) => {
 
     for (const rca of rcaData) {
       const rcaId = crypto.randomUUID();
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO root_cause_analyses (id, tenant_id, metric_id, metric_name, trigger_status, causal_chain, confidence, impact_summary, status, generated_at)
          VALUES (?, ?, ?, ?, ?, '[]', 85, ?, 'active', ?)`
-      ).bind(rcaId, tenantId, crypto.randomUUID(), rca.metricName, rca.status, `Metric value: ${rca.metricValue}`, now).run();
+      ).bind(rcaId, tenantId, crypto.randomUUID(), rca.metricName, rca.status, `Metric value: ${rca.metricValue}`, now));
 
       for (const f of rca.factors) {
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO causal_factors (id, rca_id, tenant_id, layer, factor_type, title, description, confidence, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(crypto.randomUUID(), rcaId, tenantId, `L${f.level}`, f.category, f.title, f.description, f.confidence, now).run();
+        ).bind(crypto.randomUUID(), rcaId, tenantId, `L${f.level}`, f.category, f.title, f.description, f.confidence, now));
       }
 
       for (const p of rca.prescriptions) {
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO diagnostic_prescriptions (id, rca_id, tenant_id, priority, title, description, expected_impact, effort_level, status, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
-        ).bind(crypto.randomUUID(), rcaId, tenantId, p.priority, p.title, p.description, `${p.estimatedImpact}% improvement`, p.effort, now).run();
+        ).bind(crypto.randomUUID(), rcaId, tenantId, p.priority, p.title, p.description, `${p.estimatedImpact}% improvement`, p.effort, now));
       }
     }
     console.log(`[VantaX Seeder] Seeded ${rcaData.length} root cause analyses with factors and prescriptions`);
@@ -1773,10 +1788,10 @@ seed.post('/seed-vantax', async (c) => {
       { subCatalystName: 'AP Invoice Validation', matchRate: 85.0, exceptionRate: 15.0, avgProcessingTime: 28, trend: [82.0, 83.1, 83.8, 84.5, 85.0], period: 'monthly' },
     ];
     for (const eff of effectivenessData) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT OR REPLACE INTO catalyst_effectiveness (id, tenant_id, cluster_id, sub_catalyst_name, period_start, period_end, runs_count, success_rate, avg_match_rate, avg_duration_ms, created_at)
          VALUES (?, ?, ?, ?, ?, ?, 10, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, financeClusterId, eff.subCatalystName, new Date(Date.now() - 30*86400000).toISOString(), now, eff.matchRate, eff.matchRate, eff.avgProcessingTime * 1000, now).run();
+      ).bind(crypto.randomUUID(), tenantId, financeClusterId, eff.subCatalystName, new Date(Date.now() - 30*86400000).toISOString(), now, eff.matchRate, eff.matchRate, eff.avgProcessingTime * 1000, now));
     }
     console.log(`[VantaX Seeder] Seeded ${effectivenessData.length} catalyst effectiveness records`);
 
@@ -1788,10 +1803,10 @@ seed.post('/seed-vantax', async (c) => {
       { from: 'Sales Order Matching', to: 'Bank Reconciliation', type: 'data_flow', strength: 60, desc: 'SD billing documents create expected bank receipt entries' },
     ];
     for (const dep of deps) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO catalyst_dependencies (id, tenant_id, source_cluster_id, source_sub_catalyst, target_cluster_id, target_sub_catalyst, dependency_type, strength, description)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, financeClusterId, dep.from, financeClusterId, dep.to, dep.type, dep.strength, dep.desc).run();
+      ).bind(crypto.randomUUID(), tenantId, financeClusterId, dep.from, financeClusterId, dep.to, dep.type, dep.strength, dep.desc));
     }
     console.log(`[VantaX Seeder] Seeded ${deps.length} catalyst dependencies`);
 
@@ -1804,10 +1819,10 @@ seed.post('/seed-vantax', async (c) => {
       { title: 'Implement tolerance groups for FX', description: 'Configure automatic posting of FX-related price differences below 3% threshold to reduce AP exception queue by 40%.', priority: 'medium', effort: 'low', sapTransaction: 'OBA3', estimatedSavings: 280000, status: 'approved' },
     ];
     for (const cp of catalystPrescriptions) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO catalyst_prescriptions (id, tenant_id, cluster_id, sub_catalyst_name, prescription_type, title, description, sap_transactions, expected_impact, effort_level, priority, status, created_at)
          VALUES (?, ?, ?, 'General', 'optimization', ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, financeClusterId, cp.title, cp.description, JSON.stringify([cp.sapTransaction]), `R ${(cp.estimatedSavings / 1000).toFixed(0)}K savings`, cp.effort, cp.priority, cp.status, now).run();
+      ).bind(crypto.randomUUID(), tenantId, financeClusterId, cp.title, cp.description, JSON.stringify([cp.sapTransaction]), `R ${(cp.estimatedSavings / 1000).toFixed(0)}K savings`, cp.effort, cp.priority, cp.status, now));
     }
     console.log(`[VantaX Seeder] Seeded ${catalystPrescriptions.length} catalyst prescriptions`);
 
@@ -1957,7 +1972,7 @@ seed.post('/seed-vantax', async (c) => {
         // Totals on the run are derived from baseItems + the avgConf curve,
         // not summed from inserted items — keeps the seed deterministic for
         // demo screenshots without a follow-up UPDATE.
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO sub_catalyst_runs (id, tenant_id, cluster_id, sub_catalyst_name, run_number, triggered_by, started_at, completed_at, duration_ms, data_sources_used, source_record_count, target_record_count, status, mode, matched, unmatched_source, unmatched_target, discrepancies, exceptions_raised, avg_confidence, min_confidence, max_confidence, reasoning, recommendations, total_source_value, total_matched_value, total_discrepancy_value, total_exception_value, items_total, sign_off_status, created_at)
            VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
@@ -1971,7 +1986,7 @@ seed.post('/seed-vantax', async (c) => {
           itemsInRun,
           runIdx === dayOffsets.length - 1 ? 'open' : 'signed_off',
           completedAt,
-        ).run();
+        ));
         totalRunsSeeded += 1;
 
         // sub_catalyst_run_items — synthesise itemsInRun records mixing
@@ -1981,7 +1996,7 @@ seed.post('/seed-vantax', async (c) => {
           const itemConf = Math.max(0.1, Math.min(0.99, avgConf + (Math.random() - 0.5) * 0.3));
           const built = ra.itemMaker(i);
           const isException = built.category !== 'matched';
-          await c.env.DB.prepare(
+          seedBatch.push(c.env.DB.prepare(
             `INSERT INTO sub_catalyst_run_items (id, run_id, tenant_id, item_number, item_status, category, source_ref, source_date, source_entity, source_amount, source_currency, target_ref, target_date, target_entity, target_amount, target_currency, match_confidence, match_method, discrepancy_amount, discrepancy_reason, exception_type, exception_severity, review_status, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, ?, 'ZAR', ?, ?, ?, ?, ?, ?, ?, ?)`
           ).bind(
@@ -1997,7 +2012,7 @@ seed.post('/seed-vantax', async (c) => {
             isException ? (Math.abs(built.discrepancyAmount || 0) > 50000 ? 'high' : 'medium') : null,
             'pending',
             completedAt,
-          ).run();
+          ));
           totalItemsSeeded += 1;
         }
 
@@ -2013,13 +2028,13 @@ seed.post('/seed-vantax', async (c) => {
           escalated > 0 ? `${escalated} item(s) escalated for human review.` : 'No items escalated.',
         ];
 
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO catalyst_run_analytics (id, tenant_id, cluster_id, sub_catalyst_name, run_id, started_at, completed_at, duration_ms, total_items, completed_items, exception_items, escalated_items, pending_items, auto_approved_items, avg_confidence, min_confidence, max_confidence, confidence_distribution, status, insights) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`
         ).bind(
           crypto.randomUUID(), tenantId, ra.clusterId, ra.subCatalystName, runId,
           startedAt, completedAt, durationMs, totalItems, matched, exceptions, escalated, pending, autoApproved,
           avgConf, minConf, maxConf, JSON.stringify(dist), JSON.stringify(insights),
-        ).run();
+        ));
       }
     }
     console.log(`[VantaX Seeder] Seeded ${totalRunsSeeded} catalyst runs with ${totalItemsSeeded} items across 30 days`);
@@ -2032,7 +2047,7 @@ seed.post('/seed-vantax', async (c) => {
     ];
     for (const sm of scoreMonths) {
       const d = new Date(); d.setMonth(d.getMonth() + sm.offset);
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO atheon_score_history (id, tenant_id, score, components, recorded_at) VALUES (?, ?, ?, ?, ?)`
       ).bind(crypto.randomUUID(), tenantId, sm.score,
         JSON.stringify([
@@ -2043,25 +2058,25 @@ seed.post('/seed-vantax', async (c) => {
           { name: 'Catalyst Effectiveness', weight: 15, score: sm.score + 1 },
         ]),
         d.toISOString()
-      ).run();
+      ));
     }
     console.log('[VantaX Seeder] Seeded 6 Atheon Score history records');
 
     // ── STEP: Seed §11.2 Baseline Snapshots ──
     console.log('[VantaX Seeder] Seeding §11 baseline snapshots...');
     const baselineDate = new Date(); baselineDate.setMonth(baselineDate.getMonth() - 5);
-    await c.env.DB.prepare(
+    seedBatch.push(c.env.DB.prepare(
       `INSERT INTO baseline_snapshots (id, tenant_id, snapshot_type, health_score, dimensions, metric_count_green, metric_count_amber, metric_count_red, total_discrepancy_value, total_process_conformance, avg_catalyst_success_rate, roi_at_snapshot, captured_at) VALUES (?, ?, 'day_zero', 48, ?, 3, 5, 4, 2450000, 62.5, 45.0, 0, ?)`
     ).bind(crypto.randomUUID(), tenantId,
       JSON.stringify({ finance: 45, operations: 52, compliance: 38, revenue: 55, supply_chain: 50 }),
       baselineDate.toISOString()
-    ).run();
-    await c.env.DB.prepare(
+    ));
+    seedBatch.push(c.env.DB.prepare(
       `INSERT INTO baseline_snapshots (id, tenant_id, snapshot_type, health_score, dimensions, metric_count_green, metric_count_amber, metric_count_red, total_discrepancy_value, total_process_conformance, avg_catalyst_success_rate, roi_at_snapshot, captured_at) VALUES (?, ?, 'manual', 73, ?, 7, 3, 2, 850000, 81.3, 72.0, 4850000, ?)`
     ).bind(crypto.randomUUID(), tenantId,
       JSON.stringify({ finance: 75, operations: 71, compliance: 68, revenue: 78, supply_chain: 73 }),
       now
-    ).run();
+    ));
     console.log('[VantaX Seeder] Seeded 2 baseline snapshots (day_zero + current)');
 
     // ── STEP: Seed §11.3 Health Targets ──
@@ -2074,9 +2089,9 @@ seed.post('/seed-vantax', async (c) => {
     ];
     for (const t of targetData) {
       const dl = new Date(); dl.setMonth(dl.getMonth() + parseInt(t.deadline));
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT OR REPLACE INTO health_targets (id, tenant_id, target_type, target_name, target_value, target_deadline, status) VALUES (?, ?, ?, ?, ?, ?, 'active')`
-      ).bind(crypto.randomUUID(), tenantId, t.type, t.name, t.value, dl.toISOString().split('T')[0]).run();
+      ).bind(crypto.randomUUID(), tenantId, t.type, t.name, t.value, dl.toISOString().split('T')[0]));
     }
     console.log('[VantaX Seeder] Seeded 4 health targets');
 
@@ -2084,7 +2099,7 @@ seed.post('/seed-vantax', async (c) => {
     console.log('[VantaX Seeder] Seeding §11 anonymised benchmarks...');
     const benchDimensions = ['finance', 'operations', 'compliance', 'revenue', 'supply_chain'];
     for (const dim of benchDimensions) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT OR REPLACE INTO anonymised_benchmarks (id, industry, dimension, period, tenant_count, avg_score, p25_score, p50_score, p75_score, min_score, max_score) VALUES (?, 'manufacturing', ?, '2026-Q1', 8, ?, ?, ?, ?, ?, ?)`
       ).bind(
         crypto.randomUUID(), dim,
@@ -2094,7 +2109,7 @@ seed.post('/seed-vantax', async (c) => {
         65 + Math.round(Math.random() * 10),
         25 + Math.round(Math.random() * 10),
         80 + Math.round(Math.random() * 15),
-      ).run();
+      ));
     }
     console.log('[VantaX Seeder] Seeded 5 anonymised benchmarks');
 
@@ -2108,18 +2123,18 @@ seed.post('/seed-vantax', async (c) => {
       { sig: 'sales_order_credit_block', count: 9, days: 1.5, value: 95000, fixes: ['credit_limit_review', 'payment_terms_update'] },
     ];
     for (const rp of resPatterns) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT OR REPLACE INTO resolution_patterns (id, industry, pattern_signature, resolution_count, avg_resolution_days, avg_value_recovered, common_fix_types, last_updated) VALUES (?, 'manufacturing', ?, ?, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), rp.sig, rp.count, rp.days, rp.value, JSON.stringify(rp.fixes), now).run();
+      ).bind(crypto.randomUUID(), rp.sig, rp.count, rp.days, rp.value, JSON.stringify(rp.fixes), now));
     }
     console.log('[VantaX Seeder] Seeded 5 resolution patterns');
 
     // ── STEP: Seed V2 ROI Tracking ──
     console.log('[VantaX Seeder] Seeding V2 ROI tracking...');
-    await c.env.DB.prepare(
+    seedBatch.push(c.env.DB.prepare(
       `INSERT OR REPLACE INTO roi_tracking (id, tenant_id, period, total_discrepancy_value_identified, total_discrepancy_value_recovered, total_downstream_losses_prevented, total_person_hours_saved, licence_cost_annual, roi_multiple, calculated_at)
        VALUES (?, ?, 'Q1 2026', 4850000, 3200000, 1800000, 2400, 580000, 8.3, ?)`
-    ).bind(crypto.randomUUID(), tenantId, now).run();
+    ).bind(crypto.randomUUID(), tenantId, now));
     console.log('[VantaX Seeder] Seeded ROI tracking record');
 
     // ── STEP: Seed Industry Playbook Seeds ──
@@ -2166,20 +2181,20 @@ seed.post('/seed-vantax', async (c) => {
 
     for (const seed of industrySeeds) {
       if (seed.type === 'signal') {
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO industry_radar_seeds (id, industry, category, title, summary, default_magnitude, default_direction, region)
            VALUES (?, ?, ?, ?, ?, 5, 'headwind', 'ZA')`
-        ).bind(crypto.randomUUID(), seed.industry, seed.category || 'general', seed.title, seed.description || '').run();
+        ).bind(crypto.randomUUID(), seed.industry, seed.category || 'general', seed.title, seed.description || ''));
       } else if (seed.type === 'benchmark') {
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO industry_benchmark_seeds (id, industry, metric_name, benchmark_value, benchmark_unit, source, region)
            VALUES (?, ?, ?, ?, ?, ?, 'ZA')`
-        ).bind(crypto.randomUUID(), seed.industry, (seed as Record<string, unknown>).name, (seed as Record<string, unknown>).value, (seed as Record<string, unknown>).unit, (seed as Record<string, unknown>).source).run();
+        ).bind(crypto.randomUUID(), seed.industry, (seed as Record<string, unknown>).name, (seed as Record<string, unknown>).value, (seed as Record<string, unknown>).unit, (seed as Record<string, unknown>).source));
       } else if (seed.type === 'regulatory') {
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO industry_regulatory_seeds (id, industry, title, description, jurisdiction)
            VALUES (?, ?, ?, ?, 'ZA')`
-        ).bind(crypto.randomUUID(), seed.industry, seed.title, (seed as Record<string, unknown>).body || '').run();
+        ).bind(crypto.randomUUID(), seed.industry, seed.title, (seed as Record<string, unknown>).body || ''));
       }
     }
     console.log('[VantaX Seeder] Seeded industry playbook seeds');
@@ -2190,16 +2205,16 @@ seed.post('/seed-vantax', async (c) => {
 
     // Clean up any existing value assessment data
     for (const vaTable of ['assessment_value_summary', 'assessment_process_timing', 'assessment_data_quality', 'assessment_findings', 'assessment_runs']) {
-      try { await c.env.DB.prepare(`DELETE FROM ${vaTable} WHERE tenant_id = ?`).bind(tenantId).run(); } catch { /* table may not exist */ }
+      try { seedBatch.push(c.env.DB.prepare(`DELETE FROM ${vaTable} WHERE tenant_id = ?`).bind(tenantId)); } catch { /* table may not exist */ }
     }
-    try { await c.env.DB.prepare(`DELETE FROM assessments WHERE tenant_id = ? AND id LIKE 'va-demo-%'`).bind(tenantId).run(); } catch { /* ignore */ }
+    try { seedBatch.push(c.env.DB.prepare(`DELETE FROM assessments WHERE tenant_id = ? AND id LIKE 'va-demo-%'`).bind(tenantId)); } catch { /* ignore */ }
 
     // Create the assessment record
     try {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO assessments (id, tenant_id, prospect_name, prospect_industry, erp_connection_id, status, config, created_by, completed_at)
          VALUES (?, ?, 'VantaX (Pty) Ltd', 'technology', ?, 'complete', '{"mode":"full","outcomeFeePercent":20}', 'system', datetime('now'))`
-      ).bind(vaAssessmentId, tenantId, connectionId).run();
+      ).bind(vaAssessmentId, tenantId, connectionId));
     } catch { /* may exist */ }
 
     // Assessment runs (4 domains)
@@ -2210,10 +2225,10 @@ seed.post('/seed-vantax', async (c) => {
       { id: `va-run-sc-${tenantId.slice(0,6)}`, domain: 'supply_chain', status: 'complete', findingsCount: 4, immediateValue: 145000, ongoingValue: 23000 },
     ];
     for (const run of vaRunDomains) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO assessment_runs (id, assessment_id, tenant_id, cluster_name, sub_catalyst_name, domain, status, source_record_count, discrepancies, total_source_value, total_discrepancy_value, findings, started_at, completed_at)
          VALUES (?, ?, ?, ?, 'value_assessment', ?, ?, ?, ?, ?, ?, ?, datetime('now', '-2 hours'), datetime('now', '-1 hour'))`
-      ).bind(run.id, vaAssessmentId, tenantId, run.domain, run.domain, run.status, run.findingsCount, run.findingsCount, run.immediateValue + run.ongoingValue, run.immediateValue, JSON.stringify({ immediateValue: run.immediateValue, ongoingMonthlyValue: run.ongoingValue })).run();
+      ).bind(run.id, vaAssessmentId, tenantId, run.domain, run.domain, run.status, run.findingsCount, run.findingsCount, run.immediateValue + run.ongoingValue, run.immediateValue, JSON.stringify({ immediateValue: run.immediateValue, ongoingMonthlyValue: run.ongoingValue })));
     }
 
     // Assessment findings (18 specific, evidence-backed findings)
@@ -2243,10 +2258,10 @@ seed.post('/seed-vantax', async (c) => {
     ];
 
     for (const f of vaFindings) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO assessment_findings (id, assessment_id, run_id, tenant_id, finding_type, severity, title, description, affected_records, financial_impact, evidence, root_cause, prescription, category, immediate_value, ongoing_monthly_value, domain, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-      ).bind(crypto.randomUUID(), vaAssessmentId, f.runId, tenantId, f.type, f.severity, f.title, f.desc, f.affected, f.impact, JSON.stringify(f.evidence), f.rootCause, f.prescription, f.category, f.immediate, f.ongoing, f.domain).run();
+      ).bind(crypto.randomUUID(), vaAssessmentId, f.runId, tenantId, f.type, f.severity, f.title, f.desc, f.affected, f.impact, JSON.stringify(f.evidence), f.rootCause, f.prescription, f.category, f.immediate, f.ongoing, f.domain));
     }
 
     // Data Quality records (5 ERP tables)
@@ -2259,10 +2274,10 @@ seed.post('/seed-vantax', async (c) => {
     ];
 
     for (const dq of vaDqRecords) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO assessment_data_quality (id, assessment_id, tenant_id, table_name, total_records, complete_records, completeness_pct, field_scores, referential_issues, duplicate_records, orphan_records, stale_records, overall_quality_score, issues, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', datetime('now'))`
-      ).bind(crypto.randomUUID(), vaAssessmentId, tenantId, dq.table, dq.total, dq.complete, dq.pct, JSON.stringify(dq.fieldScores), dq.refIssues, dq.dups, dq.orphans, dq.stale, dq.quality).run();
+      ).bind(crypto.randomUUID(), vaAssessmentId, tenantId, dq.table, dq.total, dq.complete, dq.pct, JSON.stringify(dq.fieldScores), dq.refIssues, dq.dups, dq.orphans, dq.stale, dq.quality));
     }
 
     // Process Timing records (4 processes)
@@ -2274,10 +2289,10 @@ seed.post('/seed-vantax', async (c) => {
     ];
 
     for (const t of vaTimingRecords) {
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO assessment_process_timing (id, assessment_id, tenant_id, process_name, avg_cycle_time_days, median_cycle_time_days, p90_cycle_time_days, benchmark_cycle_time_days, bottleneck_step, bottleneck_avg_days, records_analysed, records_exceeding_benchmark, financial_impact_of_delay, evidence, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', datetime('now'))`
-      ).bind(crypto.randomUUID(), vaAssessmentId, tenantId, t.process, t.avg, t.median, t.p90, t.benchmark, t.bottleneck, t.bottleneckDays, t.records, t.exceeding, t.impact).run();
+      ).bind(crypto.randomUUID(), vaAssessmentId, tenantId, t.process, t.avg, t.median, t.p90, t.benchmark, t.bottleneck, t.bottleneckDays, t.records, t.exceeding, t.impact));
     }
 
     // Value Summary (1 aggregate record)
@@ -2287,7 +2302,7 @@ seed.post('/seed-vantax', async (c) => {
     const outcomeFee = totalOngoingMonthly * 0.20; // R21,000/mo
     const paybackDays = Math.round((outcomeFee / ((totalImmediate / 365) + (totalOngoingMonthly / 30))) * 30); // ~42 days
 
-    await c.env.DB.prepare(
+    seedBatch.push(c.env.DB.prepare(
       `INSERT INTO assessment_value_summary (id, assessment_id, tenant_id, total_immediate_value, total_ongoing_monthly_value, total_ongoing_annual_value, total_data_quality_issues, total_process_delays, total_findings, total_critical_findings, outcome_based_monthly_fee, outcome_based_fee_pct, payback_days, value_by_domain, value_by_category, executive_narrative, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20, ?, ?, ?, ?, datetime('now'))`
     ).bind(
@@ -2312,7 +2327,7 @@ seed.post('/seed-vantax', async (c) => {
         other: { immediate: 129340, ongoing: 36494, findings: 3 },
       }),
       `VantaX (Pty) Ltd's SAP S/4HANA environment contains 18 findings across 4 operational domains. The assessment identified R${(totalImmediate/1000).toFixed(0)}k in immediate recoverable value from data cleanup and process fixes, plus R${(totalOngoingMonthly/1000).toFixed(0)}k per month (R${(totalOngoingAnnual/1000).toFixed(0)}k annually) in ongoing value through continuous monitoring and prevention. Critical findings include R218k in uncollected overdue invoices, R89.6k in potential duplicate payments, and R67.8k in inventory shrinkage. At a 20% outcome-based fee, VantaX would pay R${(outcomeFee/1000).toFixed(0)}k/month — achieving full payback in approximately ${paybackDays} days. The 3-year projected value exceeds R4.5M.`,
-    ).run();
+    ));
 
     console.log('[VantaX Seeder] Seeded value assessment engine demo data');
 
@@ -2484,13 +2499,13 @@ seed.post('/seed-vantax', async (c) => {
     ];
     for (const sc of scenarioSeeds) {
       const d = new Date(); d.setDate(d.getDate() - sc.daysAgo);
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, sc.title, sc.description, sc.inputQuery,
         JSON.stringify(sc.variables), JSON.stringify(sc.results), sc.status, d.toISOString()
-      ).run();
+      ));
     }
     console.log(`[VantaX Seeder] Seeded ${scenarioSeeds.length} Apex scenarios`);
 
@@ -2597,13 +2612,13 @@ seed.post('/seed-vantax', async (c) => {
     ];
     for (const br of boardReports) {
       const d = new Date(); d.setDate(d.getDate() - br.daysAgo);
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO board_reports (id, tenant_id, title, report_type, content, generated_by, generated_at)
          VALUES (?, ?, ?, ?, ?, 'Atheon Apex', ?)`
       ).bind(
         crypto.randomUUID(), tenantId, br.title, br.report_type,
         JSON.stringify(br.content), d.toISOString()
-      ).run();
+      ));
     }
     console.log(`[VantaX Seeder] Seeded ${boardReports.length} board reports`);
 
@@ -2629,13 +2644,13 @@ seed.post('/seed-vantax', async (c) => {
     ];
     for (const n of notificationSeeds) {
       const d = new Date(); d.setHours(d.getHours() - n.hoursAgo);
-      await c.env.DB.prepare(
+      seedBatch.push(c.env.DB.prepare(
         `INSERT INTO notifications (id, tenant_id, type, title, message, severity, action_url, read, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, n.type, n.title, n.message, n.severity,
         n.actionUrl, n.hoursAgo > 48 ? 1 : 0, d.toISOString()
-      ).run();
+      ));
     }
     console.log(`[VantaX Seeder] Seeded ${notificationSeeds.length} notifications`);
 
@@ -2643,6 +2658,7 @@ seed.post('/seed-vantax', async (c) => {
     // Support Console renders empty without these. Use an existing tenant user
     // as raiser/assignee — fall back to skipping the seed if no users exist.
     console.log('[VantaX Seeder] Seeding support tickets...');
+    await flushSeed('before-users-read');
     const tenantUsers = await c.env.DB.prepare(
       `SELECT id, email, role FROM users WHERE tenant_id = ? ORDER BY created_at ASC LIMIT 5`
     ).bind(tenantId).all<{ id: string; email: string; role: string }>();
@@ -2755,28 +2771,30 @@ seed.post('/seed-vantax', async (c) => {
         const ticketId = crypto.randomUUID();
         const td = new Date(); td.setDate(td.getDate() - t.daysAgo);
         const tu = new Date(); tu.setDate(tu.getDate() - Math.max(0, t.daysAgo - t.replies.length));
-        await c.env.DB.prepare(
+        seedBatch.push(c.env.DB.prepare(
           `INSERT INTO support_tickets (id, tenant_id, user_id, assignee_user_id, subject, body, category, priority, status, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
           ticketId, tenantId, primaryUserId, supportAdminId,
           t.subject, t.body, t.category, t.priority, t.status,
           td.toISOString(), tu.toISOString()
-        ).run();
+        ));
         for (const r of t.replies) {
           const rd = new Date(); rd.setDate(rd.getDate() - r.daysAgo);
-          await c.env.DB.prepare(
+          seedBatch.push(c.env.DB.prepare(
             `INSERT INTO support_ticket_replies (id, ticket_id, tenant_id, user_id, body, created_at)
              VALUES (?, ?, ?, ?, ?, ?)`
           ).bind(
             crypto.randomUUID(), ticketId, tenantId,
             r.fromAdmin ? supportAdminId : primaryUserId,
             r.body, rd.toISOString()
-          ).run();
+          ));
         }
       }
       console.log(`[VantaX Seeder] Seeded ${ticketSeeds.length} support tickets with replies`);
     }
+
+    await flushSeed('final');
 
     // Summary
     // Products: SAP (18) + PHYSICAL_COUNT (18) = 36; Invoices: SAP (80) + SAP-AR (72) = 152
