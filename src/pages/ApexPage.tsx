@@ -1099,14 +1099,27 @@ export function ApexPage() {
  <AlertTriangle className="w-4 h-4 text-red-400" /> Top Risks
  </h3>
  <div className="space-y-3">
- {(briefing?.risks || []).map((risk, i) => (
- <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <div className="flex items-start justify-between gap-2">
- <h4 className="text-sm font-medium t-primary">{risk}</h4>
- <Badge variant="warning" size="sm">risk</Badge>
- </div>
- </div>
- ))}
+ {(briefing?.risks || []).map((risk, i) => {
+  const r = typeof risk === 'string' ? { title: risk } : risk;
+  const sev = (r.severity || '').toLowerCase();
+  const badgeVariant = sev === 'critical' ? 'danger' : sev === 'high' ? 'warning' : sev === 'medium' ? 'info' : 'warning';
+  return (
+   <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+    <div className="flex items-start justify-between gap-2">
+     <h4 className="text-sm font-medium t-primary">{r.title}</h4>
+     <Badge variant={badgeVariant} size="sm">{r.severity || 'risk'}</Badge>
+    </div>
+    {r.detail && <p className="text-xs t-muted mt-1.5 leading-relaxed">{r.detail}</p>}
+    {(r.owner || r.dimension) && (
+     <div className="flex items-center gap-2 mt-2 text-caption t-muted">
+      {r.dimension && <span>{r.dimension}</span>}
+      {r.dimension && r.owner && <span className="opacity-40">·</span>}
+      {r.owner && <span>Owner: {r.owner}</span>}
+     </div>
+    )}
+   </div>
+  );
+ })}
  </div>
  </Card>
 
@@ -1115,14 +1128,34 @@ export function ApexPage() {
  <Lightbulb className="w-4 h-4 text-emerald-400" /> Opportunities
  </h3>
  <div className="space-y-3">
- {(briefing?.opportunities || []).map((opp, i) => (
- <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <div className="flex items-start justify-between gap-2">
- <h4 className="text-sm font-medium t-primary">{opp}</h4>
- <Badge variant="success" size="sm">opportunity</Badge>
- </div>
- </div>
- ))}
+ {(briefing?.opportunities || []).map((opp, i) => {
+  const o = typeof opp === 'string' ? { title: opp } : opp;
+  const savings = typeof o.estimated_savings === 'number'
+   ? `${o.currency || 'ZAR'} ${o.estimated_savings.toLocaleString()}`
+   : null;
+  return (
+   <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+    <div className="flex items-start justify-between gap-2">
+     <h4 className="text-sm font-medium t-primary">{o.title}</h4>
+     <Badge variant="success" size="sm">opportunity</Badge>
+    </div>
+    {o.detail && <p className="text-xs t-muted mt-1.5 leading-relaxed">{o.detail}</p>}
+    {(savings || o.timeframe || typeof o.confidence === 'number') && (
+     <div className="flex items-center gap-2 mt-2 text-caption t-muted flex-wrap">
+      {savings && <span className="font-medium t-primary">~{savings}</span>}
+      {savings && o.timeframe && <span className="opacity-40">·</span>}
+      {o.timeframe && <span>{o.timeframe}</span>}
+      {typeof o.confidence === 'number' && (
+       <>
+        <span className="opacity-40">·</span>
+        <span>{Math.round(o.confidence * 100)}% confidence</span>
+       </>
+      )}
+     </div>
+    )}
+   </div>
+  );
+ })}
  </div>
  </Card>
  </div>
@@ -1132,11 +1165,32 @@ export function ApexPage() {
  <h3 className="text-base font-semibold flex items-center gap-2">
  <Shield className="w-4 h-4 text-accent" /> Decisions Required
  </h3>
- {(briefing?.decisionsNeeded || []).map((dec, i) => (
- <div key={i} className="p-4 rounded-lg bg-accent/5 border border-accent/10 mt-3">
- <h4 className="text-sm font-semibold text-amber-800">{dec}</h4>
- </div>
- ))}
+ {(briefing?.decisionsNeeded || []).map((dec, i) => {
+  const d = typeof dec === 'string' ? { decision: dec } : dec;
+  const amount = typeof d.amount === 'number'
+   ? `${d.currency || 'ZAR'} ${d.amount.toLocaleString()}`
+   : null;
+  const urg = (d.urgency || '').toLowerCase();
+  const urgVariant = urg === 'critical' ? 'danger' : urg === 'high' ? 'warning' : urg === 'medium' ? 'info' : 'info';
+  return (
+   <div key={i} className="p-4 rounded-lg bg-accent/5 border border-accent/10 mt-3">
+    <div className="flex items-start justify-between gap-2">
+     <h4 className="text-sm font-semibold t-primary">{d.decision}</h4>
+     {d.urgency && <Badge variant={urgVariant} size="sm">{d.urgency}</Badge>}
+    </div>
+    {d.context && <p className="text-xs t-muted mt-1.5 leading-relaxed">{d.context}</p>}
+    {(amount || d.owner || d.deadline) && (
+     <div className="flex items-center gap-2 mt-2 text-caption t-muted flex-wrap">
+      {amount && <span className="font-medium t-primary">{amount}</span>}
+      {amount && d.owner && <span className="opacity-40">·</span>}
+      {d.owner && <span>{d.owner}</span>}
+      {(amount || d.owner) && d.deadline && <span className="opacity-40">·</span>}
+      {d.deadline && <span>Due {d.deadline}</span>}
+     </div>
+    )}
+   </div>
+  );
+ })}
  </Card>
  )}
  </TabPanel>

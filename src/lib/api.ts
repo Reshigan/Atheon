@@ -1987,14 +1987,46 @@ export interface HealthScore {
   calculatedAt: string;
 }
 
+/**
+ * Briefing list items historically were string[], but the seeded VantaX briefing
+ * returns rich objects with structured fields. Both shapes must render — the
+ * page-level renderers normalise via narrow type guards.
+ */
+export type BriefingRiskItem = string | {
+  title: string;
+  detail?: string;
+  dimension?: string;
+  severity?: string;
+  owner?: string;
+};
+
+export type BriefingOpportunityItem = string | {
+  title: string;
+  detail?: string;
+  estimated_savings?: number;
+  currency?: string;
+  timeframe?: string;
+  confidence?: number;
+};
+
+export type BriefingDecisionItem = string | {
+  decision: string;
+  amount?: number;
+  currency?: string;
+  owner?: string;
+  deadline?: string;
+  urgency?: string;
+  context?: string;
+};
+
 export interface Briefing {
   id: string;
   title: string;
   summary: string;
-  risks: string[];
-  opportunities: string[];
+  risks: BriefingRiskItem[];
+  opportunities: BriefingOpportunityItem[];
   kpiMovements: { kpi: string; movement: string; period: string }[];
-  decisionsNeeded: string[];
+  decisionsNeeded: BriefingDecisionItem[];
   generatedAt: string;
   // A2: Data-driven briefing fields
   healthDelta: number | null;
