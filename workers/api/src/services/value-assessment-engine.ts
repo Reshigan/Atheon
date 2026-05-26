@@ -1332,18 +1332,629 @@ ${Object.entries(valueByDomain).map(([domain, val]: [string, unknown]) => {
 </body>
 </html>`;
 
-  // Store report in R2
-  const reportKey = `assessments/${assessmentId}/value-report.html`;
-  await storage.put(reportKey, html, {
+  // Store HTML alongside the PDF (kept for any in-app preview).
+  const htmlKey = `assessments/${assessmentId}/value-report.html`;
+  await storage.put(htmlKey, html, {
     httpMetadata: { contentType: 'text/html' },
   });
 
-  // Update assessment with report key
+  // Generate branded PDF for download.
+  const pdfBytes = await renderValueReportPDF({
+    prospectName,
+    config,
+    summary,
+    findings,
+    dqRecords,
+    timingRecords,
+  });
+  const pdfKey = `assessments/${assessmentId}/value-report.pdf`;
+  await storage.put(pdfKey, pdfBytes, {
+    httpMetadata: { contentType: 'application/pdf' },
+  });
+
+  // Point business_report_key at the PDF so the Download Report button
+  // serves a real .pdf file with Atheon branding.
   await db.prepare(
     `UPDATE assessments SET business_report_key = ? WHERE id = ?`
-  ).bind(reportKey, assessmentId).run();
+  ).bind(pdfKey, assessmentId).run();
 
-  return reportKey;
+  return pdfKey;
+}
+
+interface RenderPDFArgs {
+  prospectName: string;
+  config: ValueAssessmentConfig;
+  summary: Record<string, unknown>;
+  findings: Array<Record<string, unknown>>;
+  dqRecords: Array<Record<string, unknown>>;
+  timingRecords: Array<Record<string, unknown>>;
+}
+
+async function renderValueReportPDF(args: RenderPDFArgs): Promise<Uint8Array> {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // Atheon brand palette (matches src/index.css)
+  const NAVY = [10, 14, 42] as const;       // #0a0e2a
+  const NAVY_2 = [20, 26, 61] as const;     // #141a3d
+  const SAGE = [163, 177, 138] as const;    // #A3B18A
+  const SAGE_DEEP = [93, 138, 111] as const; // #5d8a6f
+  const BRONZE = [205, 163, 126] as const;  // #CDA37E
+  const TEXT = [26, 26, 46] as const;       // #1a1a2e
+  const MUTED = [100, 116, 139] as const;   // #64748b
+  const BORDER = [226, 232, 240] as const;  // #e2e8f0
+  const BG_CARD = [248, 250, 252] as const; // #f8fafc
+  const WHITE = [255, 255, 255] as const;
+
+  // Severity colors
+  const SEV: Record<string, readonly [number, number, number]> = {
+    critical: [220, 38, 38],
+    high: [234, 88, 12],
+    medium: [217, 119, 6],
+    low: [101, 163, 13],
+  };
+
+  const summary = args.summary;
+  const totalImmediate = Number(summary.total_immediate_value) || 0;
+  const totalOngoingMonthly = Number(summary.total_ongoing_monthly_value) || 0;
+  const totalOngoingAnnual = Number(summary.total_ongoing_annual_value) || 0;
+  const totalFindings = Number(summary.total_findings) || 0;
+  const paybackDays = Number(summary.payback_days) || 0;
+  const outcomeFee = Number(summary.outcome_based_monthly_fee) || 0;
+  const outcomePct = Number(summary.outcome_based_fee_pct) || 20;
+  const narrative = String(summary.executive_narrative || '');
+  const valueByDomain = JSON.parse(String(summary.value_by_domain || '{}')) as Record<
+    string,
+    { immediate: number; ongoing: number; findings: number }
+  >;
+
+  function setFill(c: readonly [number, number, number]) { doc.setFillColor(c[0], c[1], c[2]); }
+  function setText(c: readonly [number, number, number]) { doc.setTextColor(c[0], c[1], c[2]); }
+  function setDraw(c: readonly [number, number, number]) { doc.setDrawColor(c[0], c[1], c[2]); }
+
+  // ── Atheon "A" letterform — drawn as a stylized monogram ──
+  function drawAMark(cx: number, cy: number, size: number, lightOnDark: boolean) {
+    const half = size / 2;
+    // Outer "A" triangle outline
+    setFill(lightOnDark ? SAGE : NAVY);
+    doc.triangle(
+      cx, cy - half,
+      cx - half * 0.85, cy + half,
+      cx + half * 0.85, cy + half,
+      'F',
+    );
+    // Inner cut-out
+    setFill(lightOnDark ? NAVY : WHITE);
+    doc.triangle(
+      cx, cy - half * 0.45,
+      cx - half * 0.45, cy + half * 0.6,
+      cx + half * 0.45, cy + half * 0.6,
+      'F',
+    );
+    // Crossbar
+    setFill(lightOnDark ? BRONZE : SAGE_DEEP);
+    doc.rect(cx - half * 0.55, cy + half * 0.2, half * 1.1, size * 0.07, 'F');
+  }
+
+  function pageHeader(title: string, pageNum: number) {
+    setFill(NAVY);
+    doc.rect(0, 0, pageW, 16, 'F');
+    setFill(SAGE);
+    doc.rect(0, 16, pageW, 1, 'F');
+    setText(WHITE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(title, 14, 10.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`${args.prospectName} · Confidential`, pageW - 14, 10.5, { align: 'right' });
+    setText(TEXT);
+    // Page number bottom
+    setText(MUTED);
+    doc.setFontSize(7);
+    doc.text(`${pageNum}`, pageW - 14, pageH - 6, { align: 'right' });
+    doc.text('Atheon Intelligence Platform · Value Assessment', 14, pageH - 6);
+    setText(TEXT);
+  }
+
+  // Wrap helper: write paragraph text at (x,y) with maxWidth, return y after last line.
+  function paragraph(text: string, x: number, y: number, maxW: number, size = 9, color: readonly [number, number, number] = TEXT, lh = 4): number {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(size);
+    setText(color);
+    const lines = doc.splitTextToSize(text, maxW) as string[];
+    lines.forEach((line, i) => doc.text(line, x, y + i * lh));
+    return y + lines.length * lh;
+  }
+
+  function severityBadge(sev: string, x: number, y: number) {
+    const c = SEV[sev] || SEV.medium;
+    const label = sev.toUpperCase();
+    doc.setFontSize(7);
+    const w = doc.getTextWidth(label) + 4;
+    setFill(c);
+    doc.roundedRect(x, y - 3.2, w, 4.2, 1, 1, 'F');
+    setText(WHITE);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label, x + 2, y);
+    doc.setFont('helvetica', 'normal');
+    setText(TEXT);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // PAGE 1 — COVER
+  // ════════════════════════════════════════════════════════════════
+  setFill(NAVY);
+  doc.rect(0, 0, pageW, pageH, 'F');
+
+  // Subtle navy-2 panel for depth
+  setFill(NAVY_2);
+  doc.rect(0, 0, pageW, pageH / 2, 'F');
+
+  // Atheon A mark
+  drawAMark(pageW / 2, 70, 38, true);
+
+  // Wordmark
+  setText(WHITE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(28);
+  doc.text('ATHEON', pageW / 2, 110, { align: 'center' });
+
+  setText(SAGE);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('INTELLIGENCE PLATFORM', pageW / 2, 117, { align: 'center', charSpace: 2 });
+
+  // Sage divider
+  setFill(SAGE);
+  doc.rect(pageW / 2 - 25, 124, 50, 0.6, 'F');
+
+  // Report title
+  setText(WHITE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Value Discovery Report', pageW / 2, 142, { align: 'center' });
+
+  setText([180, 200, 220]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text('Prepared for', pageW / 2, 158, { align: 'center' });
+
+  // Client name (large)
+  setText(WHITE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.text(args.prospectName, pageW / 2, 170, { align: 'center' });
+
+  // Date + currency
+  const reportDate = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+  setText([180, 200, 220]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(reportDate, pageW / 2, 184, { align: 'center' });
+  doc.text(`Currency: ${args.config.currency}`, pageW / 2, 190, { align: 'center' });
+
+  // Sage "live data" pill
+  setFill(SAGE_DEEP);
+  doc.roundedRect(pageW / 2 - 50, 210, 100, 8, 2, 2, 'F');
+  setText(WHITE);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BASED ON LIVE ANALYSIS OF YOUR ACTUAL TRANSACTION DATA', pageW / 2, 215.5, { align: 'center' });
+
+  // Confidential bottom band
+  setFill(BRONZE);
+  doc.rect(0, pageH - 14, pageW, 14, 'F');
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('CONFIDENTIAL — FOR AUTHORISED RECIPIENTS ONLY', pageW / 2, pageH - 8.5, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text('GONXT Technology · info@gonxt.tech · atheon.vantax.co.za', pageW / 2, pageH - 4, { align: 'center' });
+
+  let pg = 1;
+
+  // ════════════════════════════════════════════════════════════════
+  // PAGE 2 — EXECUTIVE SUMMARY
+  // ════════════════════════════════════════════════════════════════
+  doc.addPage(); pg++;
+  pageHeader('Executive Summary', pg);
+
+  let y = 28;
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('The Headline Numbers', 14, y);
+
+  // KPI grid: 2x2
+  y += 6;
+  const kpiW = (pageW - 28 - 6) / 2;
+  const kpiH = 22;
+  const kpis = [
+    { label: 'Issues Identified', value: `${totalFindings}`, accent: SAGE },
+    { label: 'Immediate Recovery', value: `R${formatZAR(Math.round(totalImmediate))}`, accent: BRONZE, highlight: true },
+    { label: 'Ongoing Monthly Value', value: `R${formatZAR(Math.round(totalOngoingMonthly))}/mo`, accent: BRONZE, highlight: true },
+    { label: 'Payback Period', value: `${paybackDays} days`, accent: SAGE_DEEP },
+  ];
+  kpis.forEach((k, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = 14 + col * (kpiW + 6);
+    const ky = y + row * (kpiH + 4);
+    setFill(k.highlight ? NAVY : BG_CARD);
+    doc.roundedRect(x, ky, kpiW, kpiH, 2, 2, 'F');
+    setFill(k.accent);
+    doc.rect(x, ky, 2.5, kpiH, 'F');
+    setText(k.highlight ? WHITE : MUTED);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(k.label.toUpperCase(), x + 6, ky + 6, { charSpace: 0.5 });
+    setText(k.highlight ? WHITE : NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text(k.value, x + 6, ky + 16);
+  });
+
+  y += 2 * (kpiH + 4) + 4;
+
+  // Executive narrative
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Executive Narrative', 14, y);
+  y += 5;
+  setFill([248, 250, 245]);
+  setDraw(SAGE);
+  doc.setLineWidth(0.3);
+  const narrW = pageW - 28;
+  const narrLines = (doc.splitTextToSize(narrative, narrW - 6) as string[]).length;
+  const narrH = Math.max(20, narrLines * 4 + 6);
+  doc.roundedRect(14, y, narrW, narrH, 1.5, 1.5, 'FD');
+  setFill(SAGE_DEEP);
+  doc.rect(14, y, 1.5, narrH, 'F');
+  paragraph(narrative, 18, y + 5, narrW - 8, 9, TEXT, 4);
+
+  y += narrH + 8;
+
+  // 3-year projection block
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('3-Year Projection', 14, y);
+  y += 5;
+  setFill(NAVY);
+  doc.roundedRect(14, y, pageW - 28, 22, 2, 2, 'F');
+  setText(WHITE);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const threeYrTotal = totalImmediate + totalOngoingAnnual * 3;
+  const threeYrFee = outcomeFee * 36;
+  const threeYrNet = threeYrTotal - threeYrFee;
+  doc.text(`Total Value Delivered: R${formatZAR(Math.round(threeYrTotal))}`, 18, y + 7);
+  doc.text(`Outcome-Based Fee (${outcomePct}%): R${formatZAR(Math.round(threeYrFee))}`, 18, y + 13);
+  setText(SAGE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(`Net Benefit: R${formatZAR(Math.round(threeYrNet))}`, 18, y + 19);
+
+  // ════════════════════════════════════════════════════════════════
+  // PAGE 3 — VALUE WATERFALL BY DOMAIN
+  // ════════════════════════════════════════════════════════════════
+  doc.addPage(); pg++;
+  pageHeader('Value by Domain', pg);
+
+  y = 28;
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Value Waterfall', 14, y);
+  y += 4;
+  setText(MUTED);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Where the value comes from — across your operational domains.', 14, y);
+  y += 8;
+
+  const domainEntries = Object.entries(valueByDomain).sort((a, b) => {
+    return (b[1].immediate + b[1].ongoing * 12) - (a[1].immediate + a[1].ongoing * 12);
+  });
+  const maxDomainTotal = Math.max(1, ...domainEntries.map(([, v]) => v.immediate + v.ongoing * 12));
+  const barMaxW = pageW - 28 - 40 - 30;
+  domainEntries.forEach(([domain, v]) => {
+    const total = v.immediate + v.ongoing * 12;
+    const pct = total / maxDomainTotal;
+    const barW = Math.max(2, pct * barMaxW);
+    // Label
+    setText(NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(capitalise(domain), 14, y);
+    setText(MUTED);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`${v.findings} findings`, 14, y + 4);
+    // Bar
+    setFill(SAGE);
+    doc.roundedRect(54, y - 3, barW, 5, 0.8, 0.8, 'F');
+    setFill(BRONZE);
+    const immPct = v.immediate / Math.max(1, total);
+    doc.roundedRect(54, y - 3, Math.max(0.5, barW * immPct), 5, 0.8, 0.8, 'F');
+    // Value
+    setText(NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`R${formatZAR(Math.round(total))}`, pageW - 14, y + 1, { align: 'right' });
+    y += 13;
+  });
+
+  // Legend
+  y += 4;
+  setFill(BRONZE);
+  doc.rect(14, y - 2, 3, 3, 'F');
+  setText(TEXT);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Immediate Recovery', 19, y);
+  setFill(SAGE);
+  doc.rect(60, y - 2, 3, 3, 'F');
+  doc.text('Ongoing Annual Value', 65, y);
+
+  // Domain detail blocks
+  y += 10;
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Domain Breakdown', 14, y);
+  y += 6;
+
+  domainEntries.forEach(([domain, v]) => {
+    if (y > pageH - 30) { doc.addPage(); pg++; pageHeader('Value by Domain', pg); y = 28; }
+    setFill(BG_CARD);
+    setDraw(BORDER);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(14, y, pageW - 28, 16, 1.5, 1.5, 'FD');
+    setFill(SAGE_DEEP);
+    doc.rect(14, y, 1.5, 16, 'F');
+    setText(NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(capitalise(domain), 18, y + 5);
+    setText(TEXT);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Immediate: R${formatZAR(Math.round(v.immediate))}`, 18, y + 10.5);
+    doc.text(`Ongoing: R${formatZAR(Math.round(v.ongoing))}/mo`, 75, y + 10.5);
+    doc.text(`Findings: ${v.findings}`, 130, y + 10.5);
+    setText(BRONZE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`R${formatZAR(Math.round(v.immediate + v.ongoing * 12))}/yr`, pageW - 18, y + 9, { align: 'right' });
+    y += 20;
+  });
+
+  // ════════════════════════════════════════════════════════════════
+  // PAGES — PER-FINDING DETAIL (2 per page)
+  // ════════════════════════════════════════════════════════════════
+  const sortedFindings = [...args.findings].sort((a, b) => Number(b.financial_impact) - Number(a.financial_impact));
+
+  for (let i = 0; i < sortedFindings.length; i++) {
+    if (i % 2 === 0) {
+      doc.addPage(); pg++;
+      pageHeader('Findings Detail', pg);
+      y = 22;
+    }
+    const f = sortedFindings[i];
+    const cardTop = y + 4;
+    const cardH = 115;
+
+    setFill(BG_CARD);
+    setDraw(BORDER);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(14, cardTop, pageW - 28, cardH, 2, 2, 'FD');
+
+    // Severity stripe on left
+    const sevColor = SEV[String(f.severity)] || SEV.medium;
+    setFill(sevColor);
+    doc.rect(14, cardTop, 2, cardH, 'F');
+
+    // Title
+    setText(NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    const titleLines = doc.splitTextToSize(String(f.title), pageW - 80) as string[];
+    titleLines.slice(0, 2).forEach((ln, j) => doc.text(ln, 20, cardTop + 6 + j * 5));
+    let cy = cardTop + 6 + Math.min(2, titleLines.length) * 5 + 1;
+
+    // Severity badge + finding number
+    severityBadge(String(f.severity), 20, cy + 2);
+    setText(MUTED);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`Finding ${i + 1} of ${sortedFindings.length} · ${capitalise(String(f.domain))} · ${String(f.category).replace(/_/g, ' ')}`, 42, cy + 2);
+
+    // Financial impact (right column)
+    setText(NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`R${formatZAR(Math.round(Number(f.financial_impact)))}`, pageW - 18, cardTop + 9, { align: 'right' });
+    setText(MUTED);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`${Number(f.affected_records).toLocaleString()} affected records`, pageW - 18, cardTop + 13, { align: 'right' });
+    setText(BRONZE);
+    doc.setFontSize(8);
+    doc.text(`Immediate: R${formatZAR(Math.round(Number(f.immediate_value)))}`, pageW - 18, cardTop + 18, { align: 'right' });
+    doc.text(`Ongoing: R${formatZAR(Math.round(Number(f.ongoing_monthly_value)))}/mo`, pageW - 18, cardTop + 22, { align: 'right' });
+
+    cy += 8;
+
+    // Description
+    setText(MUTED);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('FINDING', 20, cy);
+    cy = paragraph(String(f.description || ''), 20, cy + 4, pageW - 40, 9, TEXT, 3.8);
+    cy += 3;
+
+    // Root Cause
+    setText(SAGE_DEEP);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('ROOT CAUSE', 20, cy);
+    cy = paragraph(String(f.root_cause || ''), 20, cy + 4, pageW - 40, 9, TEXT, 3.8);
+    cy += 3;
+
+    // Prescription
+    setText(BRONZE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('PRESCRIPTION', 20, cy);
+    cy = paragraph(String(f.prescription || ''), 20, cy + 4, pageW - 40, 9, TEXT, 3.8);
+    cy += 3;
+
+    // Evidence (sample record)
+    try {
+      const ev = typeof f.evidence === 'string' ? JSON.parse(f.evidence as string) : f.evidence;
+      const sample = ev?.sample_records?.[0];
+      if (sample) {
+        setText(NAVY);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('EVIDENCE', 20, cy);
+        setText(MUTED);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const evLine = `Ref: ${sample.ref || '—'}  ·  ${sample.source_value || '—'}  →  ${sample.target_value || '—'}  ·  Δ ${sample.difference || '—'}`;
+        const wrapped = doc.splitTextToSize(evLine, pageW - 40) as string[];
+        wrapped.slice(0, 2).forEach((ln, j) => doc.text(ln, 20, cy + 4 + j * 3.6));
+      }
+    } catch { /* evidence parse failed — skip */ }
+
+    y = cardTop + cardH + 6;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // PRICING PAGE
+  // ════════════════════════════════════════════════════════════════
+  doc.addPage(); pg++;
+  pageHeader('Outcome-Based Pricing', pg);
+
+  y = 28;
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Pricing Proposal', 14, y);
+  y += 4;
+  setText(MUTED);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('You only pay when Atheon delivers measurable value.', 14, y);
+  y += 8;
+
+  setFill([248, 250, 245]);
+  setDraw(SAGE);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(14, y, pageW - 28, 18, 1.5, 1.5, 'FD');
+  setText(TEXT);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const tagline = `Based on R${formatZAR(Math.round(totalOngoingMonthly))}/month of value Atheon will deliver, we propose an outcome-based model where you only pay when measurable value is delivered. If we don't find discrepancies, you don't pay.`;
+  paragraph(tagline, 18, y + 6, pageW - 36, 9, TEXT, 4);
+  y += 24;
+
+  // Pricing table
+  const rows: Array<[string, string, boolean?]> = [
+    ['Ongoing Value Delivered', `R${formatZAR(Math.round(totalOngoingMonthly))}/month`],
+    [`Atheon Outcome Fee (${outcomePct}%)`, `R${formatZAR(Math.round(outcomeFee))}/month`],
+    ['Immediate Recovery Value', `R${formatZAR(Math.round(totalImmediate))} (one-time)`],
+    ['Your Net Monthly Benefit', `R${formatZAR(Math.round(totalOngoingMonthly - outcomeFee))}/month`],
+    ['Payback from Immediate Value', `${paybackDays} days`],
+    ['3-Year Total Value', `R${formatZAR(Math.round(totalImmediate + totalOngoingAnnual * 3))}`, true],
+    ['3-Year Total Fee', `R${formatZAR(Math.round(outcomeFee * 36))}`],
+    ['3-Year Net Benefit', `R${formatZAR(Math.round(totalImmediate + totalOngoingAnnual * 3 - outcomeFee * 36))}`, true],
+  ];
+  rows.forEach(([label, value, emph], idx) => {
+    if (idx % 2 === 0) { setFill(BG_CARD); doc.rect(14, y, pageW - 28, 8, 'F'); }
+    setText(emph ? NAVY : TEXT);
+    doc.setFont('helvetica', emph ? 'bold' : 'normal');
+    doc.setFontSize(emph ? 10 : 9);
+    doc.text(label, 18, y + 5.5);
+    setText(emph ? BRONZE : NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(value, pageW - 18, y + 5.5, { align: 'right' });
+    y += 8;
+  });
+
+  // ════════════════════════════════════════════════════════════════
+  // NEXT STEPS PAGE
+  // ════════════════════════════════════════════════════════════════
+  doc.addPage(); pg++;
+  pageHeader('Next Steps', pg);
+
+  y = 28;
+  setText(NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Your Path to Value', 14, y);
+  y += 10;
+
+  const topDomains = domainEntries.slice(0, 2).map(([d]) => capitalise(d)).join(' and ');
+  const steps = [
+    { num: '01', title: 'Review with your CFO and operations team', body: 'Walk through findings, validate priorities, and confirm the financial baseline.' },
+    { num: '02', title: `Activate high-value domains first: ${topDomains}`, body: 'These domains together represent the largest immediate and ongoing value opportunity.' },
+    { num: '03', title: 'Atheon deploys in 5 days', body: 'First measurable value delivered within 48 hours of go-live. No infrastructure setup required.' },
+    { num: '04', title: 'Monthly value reports prove ongoing delivery', body: 'Each month, Atheon provides an evidence-backed report of value delivered, with line-level traceability to your ERP.' },
+    { num: '05', title: 'Pay only on verified, measurable outcomes', body: 'Outcome fees are charged exclusively against value Atheon has identified and your team has verified.' },
+  ];
+  steps.forEach(s => {
+    if (y > pageH - 30) { doc.addPage(); pg++; pageHeader('Next Steps', pg); y = 28; }
+    setText(BRONZE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text(s.num, 14, y + 6);
+    setText(NAVY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(s.title, 36, y + 3);
+    setText(TEXT);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const wrapped = doc.splitTextToSize(s.body, pageW - 50) as string[];
+    wrapped.forEach((ln, i) => doc.text(ln, 36, y + 8 + i * 4));
+    y += 8 + wrapped.length * 4 + 6;
+  });
+
+  // Contact block
+  y += 6;
+  setFill(NAVY);
+  doc.roundedRect(14, y, pageW - 28, 32, 2, 2, 'F');
+  setText(WHITE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('GONXT Technology', 20, y + 9);
+  setText(SAGE);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Vanta X Holdings (Pty) Ltd', 20, y + 14.5);
+  setText(WHITE);
+  doc.text('info@gonxt.tech', 20, y + 22);
+  doc.text('atheon.vantax.co.za', 20, y + 27);
+
+  setText(BRONZE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('CONFIDENTIAL', pageW - 20, y + 9, { align: 'right' });
+  setText(WHITE);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text(`Report generated: ${reportDate}`, pageW - 20, y + 14.5, { align: 'right' });
+  doc.text(`Prepared for: ${args.prospectName}`, pageW - 20, y + 19, { align: 'right' });
+
+  const arrBuf = doc.output('arraybuffer') as ArrayBuffer;
+  return new Uint8Array(arrBuf);
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
