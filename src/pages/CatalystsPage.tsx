@@ -21,8 +21,9 @@ import {
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
  Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2, AlertCircle,
  ScrollText, ArrowUpRight, MessageSquare, Cog, Link2, Sparkles, BarChart3, Activity, Users,
- Brain, TrendingUp, TrendingDown, GitBranch, RefreshCw, Target, MoreHorizontal
+ Brain, TrendingUp, TrendingDown, GitBranch, RefreshCw, Target, MoreHorizontal, Wallet
 } from "lucide-react";
+import { ValueLedgerPanel } from "@/pages/catalysts/ValueLedgerPanel";
 import type { AutonomyTier } from "@/types";
 import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
 import { SubCatalystOpsPanel } from "@/components/SubCatalystOpsPanel";
@@ -977,6 +978,7 @@ export function CatalystsPage() {
 
  const tabs = [
  { id: 'clusters', label: 'Catalyst Clusters', icon: <Bot size={14} /> },
+ { id: 'value-ledger', label: 'Value Ledger', icon: <Wallet size={14} /> },
  { id: 'intelligence', label: 'Intelligence', icon: <Brain size={14} />, count: intellOverview?.summary?.criticalPatterns || undefined },
  { id: 'success-stories', label: 'Peer Insights', icon: <Sparkles size={14} />, count: successStories?.stories?.length || undefined },
  { id: 'actions', label: 'Action Log', icon: <Zap size={14} />, count: actions.length },
@@ -1377,6 +1379,12 @@ export function CatalystsPage() {
  );
  })}
  </div>
+ </TabPanel>
+ )}
+
+ {activeTab === 'value-ledger' && (
+ <TabPanel>
+ <ValueLedgerPanel />
  </TabPanel>
  )}
 

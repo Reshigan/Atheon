@@ -784,6 +784,53 @@ export const api = {
       request<{ templates: CatalystIndustryTemplate[] }>('/api/catalysts/templates'),
     deployTemplate: (data: { tenant_id: string; industry: string; clusters?: Array<{ name: string; domain: string; description: string; autonomy_tier: string; sub_catalysts: Array<{ name: string; enabled: boolean; description: string }> }> }) =>
       request<{ success: boolean; industry: string; clustersCreated: number; clusterIds: string[]; existingClusters: number }>('/api/catalysts/deploy-template', { method: 'POST', body: JSON.stringify(data) }),
+    // Wave 5: Catalyst Value Ledger — realized savings per catalyst with audit trail
+    valueLedger: (period: 'last_30d' | 'last_90d' | 'last_180d' | 'ytd' = 'last_90d', companyId?: string) =>
+      request<{
+        period: string;
+        summary: {
+          totalRealizedSavingsZar: number;
+          totalValueProcessedZar: number;
+          totalRuns: number;
+          avgRoiPct: number;
+          atheonSharePct: number;
+          atheonRevenueZar: number;
+          catalystsCount: number;
+        };
+        catalysts: Array<{
+          clusterId: string;
+          clusterName: string;
+          subCatalystName: string;
+          domain: string;
+          runsCount: number;
+          valueProcessedZar: number;
+          realizedSavingsZar: number;
+          successRatePct: number;
+          matchRatePct: number;
+          roiEstimatePct: number;
+          exceptionsCount: number;
+          improvementTrendPct: number;
+        }>;
+        lineItems: Array<{
+          id: string;
+          rcaId: string;
+          metricName: string;
+          attributedSavingsZar: number;
+          confidence: number;
+          evidence: Record<string, unknown>;
+          createdAt: string;
+        }>;
+        billingPeriods: Array<{
+          id: string;
+          periodStart: string;
+          periodEnd: string;
+          totalRealisedSavingsZar: number;
+          atheonSharePct: number;
+          atheonRevenueZar: number;
+          status: string;
+          generatedAt: string;
+        }>;
+      }>(`/api/catalysts/value-ledger${qs({ period, company_id: companyId })}`),
     manualExecute: async (data: FormData): Promise<ManualExecuteResult> => {
       const requestId = generateRequestId();
       const headers: Record<string, string> = { 'X-Request-ID': requestId };

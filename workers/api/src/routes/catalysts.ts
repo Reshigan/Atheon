@@ -5570,5 +5570,159 @@ catalysts.get('/calibrations/summary', async (c) => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Catalyst Value Ledger (Wave 5 — Catalyst depth)
+// Single auditable view of realized savings per catalyst, derived from
+// catalyst_effectiveness aggregates and billable_line_items audit trail.
+// ---------------------------------------------------------------------------
+catalysts.get('/value-ledger', async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
+
+  const periodParam = (c.req.query('period') || 'last_90d').toLowerCase();
+  const today = new Date();
+  let startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+  if (periodParam === 'last_30d') startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  if (periodParam === 'last_180d') startDate = new Date(today.getTime() - 180 * 24 * 60 * 60 * 1000);
+  if (periodParam === 'ytd') startDate = new Date(today.getFullYear(), 0, 1);
+  const startISO = startDate.toISOString().slice(0, 10);
+
+  type EffRow = {
+    id: string; cluster_id: string; sub_catalyst_name: string;
+    period_start: string; period_end: string;
+    runs_count: number; success_rate: number; avg_match_rate: number;
+    avg_duration_ms: number; total_value_processed: number; total_exceptions: number;
+    improvement_trend: number; roi_estimate: number;
+  };
+  type ClusterRow = { id: string; cluster_name: string; domain: string };
+  type LineItemRow = {
+    id: string; period_id: string; rca_id: string; metric_name: string;
+    attributed_savings: number; confidence: number; evidence: string; created_at: string;
+  };
+  type PeriodRow = {
+    id: string; period_start: string; period_end: string;
+    total_realised_savings: number; atheon_share_pct: number; atheon_revenue: number;
+    status: string; generated_at: string;
+  };
+
+  const [effRes, clusterRes, lineRes, periodRes] = await Promise.all([
+    c.env.DB.prepare(
+      `SELECT id, cluster_id, sub_catalyst_name, period_start, period_end, runs_count, success_rate, avg_match_rate, avg_duration_ms, total_value_processed, total_exceptions, improvement_trend, roi_estimate FROM catalyst_effectiveness WHERE tenant_id = ? AND period_end >= ? ORDER BY total_value_processed DESC`
+    ).bind(tenantId, startISO).all<EffRow>(),
+    c.env.DB.prepare(`SELECT id, cluster_name, domain FROM catalyst_clusters WHERE tenant_id = ?`).bind(tenantId).all<ClusterRow>(),
+    c.env.DB.prepare(
+      `SELECT id, period_id, rca_id, metric_name, attributed_savings, confidence, evidence, created_at FROM billable_line_items WHERE tenant_id = ? AND created_at >= ? ORDER BY attributed_savings DESC LIMIT 100`
+    ).bind(tenantId, startISO).all<LineItemRow>(),
+    c.env.DB.prepare(
+      `SELECT id, period_start, period_end, total_realised_savings, atheon_share_pct, atheon_revenue, status, generated_at FROM billable_periods WHERE tenant_id = ? AND period_end >= ? ORDER BY period_start DESC`
+    ).bind(tenantId, startISO).all<PeriodRow>(),
+  ]);
+
+  const clusterMap = new Map<string, ClusterRow>();
+  for (const cl of clusterRes.results) clusterMap.set(cl.id, cl);
+
+  // Group effectiveness by (cluster_id, sub_catalyst_name) and sum
+  type Aggregate = {
+    clusterId: string; clusterName: string; subCatalystName: string; domain: string;
+    runsCount: number; valueProcessed: number; successRate: number;
+    matchRate: number; roiAvg: number; exceptions: number; improvementTrend: number;
+    periodsCount: number;
+  };
+  const aggMap = new Map<string, Aggregate>();
+  for (const e of effRes.results) {
+    const key = `${e.cluster_id}::${e.sub_catalyst_name}`;
+    const cluster = clusterMap.get(e.cluster_id);
+    const existing = aggMap.get(key);
+    if (existing) {
+      existing.runsCount += e.runs_count;
+      existing.valueProcessed += e.total_value_processed;
+      existing.successRate += e.success_rate;
+      existing.matchRate += e.avg_match_rate;
+      existing.roiAvg += e.roi_estimate;
+      existing.exceptions += e.total_exceptions;
+      existing.improvementTrend += e.improvement_trend;
+      existing.periodsCount += 1;
+    } else {
+      aggMap.set(key, {
+        clusterId: e.cluster_id,
+        clusterName: cluster?.cluster_name || e.cluster_id,
+        subCatalystName: e.sub_catalyst_name,
+        domain: cluster?.domain || 'general',
+        runsCount: e.runs_count,
+        valueProcessed: e.total_value_processed,
+        successRate: e.success_rate,
+        matchRate: e.avg_match_rate,
+        roiAvg: e.roi_estimate,
+        exceptions: e.total_exceptions,
+        improvementTrend: e.improvement_trend,
+        periodsCount: 1,
+      });
+    }
+  }
+
+  const catalysts = Array.from(aggMap.values()).map((a) => ({
+    clusterId: a.clusterId,
+    clusterName: a.clusterName,
+    subCatalystName: a.subCatalystName,
+    domain: a.domain,
+    runsCount: a.runsCount,
+    valueProcessedZar: Math.round(a.valueProcessed),
+    realizedSavingsZar: Math.round(a.valueProcessed * (a.successRate / a.periodsCount) / 100),
+    successRatePct: +(a.successRate / a.periodsCount).toFixed(1),
+    matchRatePct: +(a.matchRate / a.periodsCount).toFixed(1),
+    roiEstimatePct: +(a.roiAvg / a.periodsCount).toFixed(1),
+    exceptionsCount: a.exceptions,
+    improvementTrendPct: +(a.improvementTrend / a.periodsCount).toFixed(1),
+  })).sort((a, b) => b.realizedSavingsZar - a.realizedSavingsZar);
+
+  const totalRealizedSavings = catalysts.reduce((s, c) => s + c.realizedSavingsZar, 0);
+  const totalValueProcessed = catalysts.reduce((s, c) => s + c.valueProcessedZar, 0);
+  const totalRuns = catalysts.reduce((s, c) => s + c.runsCount, 0);
+  const avgRoi = catalysts.length > 0 ? +(catalysts.reduce((s, c) => s + c.roiEstimatePct, 0) / catalysts.length).toFixed(1) : 0;
+  const atheonSharePct = periodRes.results[0]?.atheon_share_pct ?? 0.2;
+  const atheonRevenue = Math.round(totalRealizedSavings * atheonSharePct);
+
+  const lineItems = lineRes.results.map((li) => {
+    let evidenceObj: Record<string, unknown> = {};
+    try { evidenceObj = JSON.parse(li.evidence || '{}'); } catch { evidenceObj = {}; }
+    return {
+      id: li.id,
+      rcaId: li.rca_id,
+      metricName: li.metric_name,
+      attributedSavingsZar: Math.round(li.attributed_savings),
+      confidence: +(+li.confidence).toFixed(2),
+      evidence: evidenceObj,
+      createdAt: li.created_at,
+    };
+  });
+
+  const billingPeriods = periodRes.results.map((p) => ({
+    id: p.id,
+    periodStart: p.period_start,
+    periodEnd: p.period_end,
+    totalRealisedSavingsZar: Math.round(p.total_realised_savings),
+    atheonSharePct: p.atheon_share_pct,
+    atheonRevenueZar: Math.round(p.atheon_revenue),
+    status: p.status,
+    generatedAt: p.generated_at,
+  }));
+
+  return c.json({
+    period: periodParam,
+    summary: {
+      totalRealizedSavingsZar: totalRealizedSavings,
+      totalValueProcessedZar: totalValueProcessed,
+      totalRuns,
+      avgRoiPct: avgRoi,
+      atheonSharePct,
+      atheonRevenueZar: atheonRevenue,
+      catalystsCount: catalysts.length,
+    },
+    catalysts,
+    lineItems,
+    billingPeriods,
+  });
+});
+
 export { sendHitlNotification, sendRunResultsEmail };
 export default catalysts;
