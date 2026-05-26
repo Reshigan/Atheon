@@ -76,7 +76,7 @@
 // v74-enterprise-scim-saml-status: Phase AX/AY/AZ. Adds scim_tokens,
 // system_incidents tables; adds external_id/updated_at/given_name/
 // family_name to users; adds workos_connection_id to sso_configs.
-export const MIGRATION_VERSION = 'v75-audit-share-tokens';
+export const MIGRATION_VERSION = 'v76-apex-okrs-portfolio';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -193,6 +193,9 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS canonical_endpoints (id TEXT PRIMARY KEY, domain TEXT NOT NULL, path TEXT NOT NULL, method TEXT NOT NULL DEFAULT 'GET', description TEXT, request_schema TEXT, response_schema TEXT, rate_limit INTEGER NOT NULL DEFAULT 100, version TEXT NOT NULL DEFAULT 'v1');
     CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT, action TEXT NOT NULL, layer TEXT NOT NULL, resource TEXT, details TEXT, outcome TEXT NOT NULL DEFAULT 'success', ip_address TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS audit_share_tokens (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), token TEXT NOT NULL UNIQUE, created_by_user_id TEXT NOT NULL, label TEXT, expires_at TEXT NOT NULL, revoked_at TEXT, access_count INTEGER NOT NULL DEFAULT 0, last_accessed_at TEXT, last_accessed_ip TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS strategic_objectives (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), title TEXT NOT NULL, description TEXT, owner TEXT, status TEXT NOT NULL DEFAULT 'on_track', priority TEXT NOT NULL DEFAULT 'normal', quarter TEXT NOT NULL, progress_pct REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS strategic_key_results (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), objective_id TEXT NOT NULL REFERENCES strategic_objectives(id), description TEXT NOT NULL, metric TEXT, target_value REAL, current_value REAL, unit TEXT, status TEXT NOT NULL DEFAULT 'on_track', due_date TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS strategic_initiatives (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), name TEXT NOT NULL, description TEXT, sponsor TEXT, owner TEXT, gate TEXT NOT NULL DEFAULT 'discovery', status TEXT NOT NULL DEFAULT 'green', planned_value_zar REAL NOT NULL DEFAULT 0, actual_value_zar REAL NOT NULL DEFAULT 0, spend_to_date_zar REAL NOT NULL DEFAULT 0, budget_zar REAL NOT NULL DEFAULT 0, start_date TEXT, target_completion_date TEXT, business_unit TEXT, linked_objective_id TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS mind_queries (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT, query TEXT NOT NULL, response TEXT, tier TEXT NOT NULL DEFAULT 'tier-1', tokens_in INTEGER NOT NULL DEFAULT 0, tokens_out INTEGER NOT NULL DEFAULT 0, latency_ms INTEGER NOT NULL DEFAULT 0, citations TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS notifications (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), type TEXT NOT NULL DEFAULT 'system', title TEXT NOT NULL, message TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'info', action_url TEXT, metadata TEXT, read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS webhooks (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), url TEXT NOT NULL, secret TEXT NOT NULL, events TEXT NOT NULL DEFAULT '["*"]', active INTEGER NOT NULL DEFAULT 1, retry_count INTEGER NOT NULL DEFAULT 0, last_triggered TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -302,6 +305,11 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at)',
     'CREATE INDEX IF NOT EXISTS idx_audit_share_tokens_tenant ON audit_share_tokens(tenant_id)',
     'CREATE INDEX IF NOT EXISTS idx_audit_share_tokens_token ON audit_share_tokens(token)',
+    'CREATE INDEX IF NOT EXISTS idx_strategic_objectives_tenant ON strategic_objectives(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_strategic_objectives_quarter ON strategic_objectives(tenant_id, quarter)',
+    'CREATE INDEX IF NOT EXISTS idx_strategic_key_results_objective ON strategic_key_results(objective_id)',
+    'CREATE INDEX IF NOT EXISTS idx_strategic_initiatives_tenant ON strategic_initiatives(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_strategic_initiatives_status ON strategic_initiatives(tenant_id, status)',
     'CREATE INDEX IF NOT EXISTS idx_mind_queries_tenant ON mind_queries(tenant_id)',
     'CREATE INDEX IF NOT EXISTS idx_notifications_tenant ON notifications(tenant_id)',
     'CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(tenant_id, read)',

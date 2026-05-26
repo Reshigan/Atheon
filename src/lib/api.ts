@@ -504,6 +504,108 @@ export const api = {
     // Dashboard intelligence: unified summary
     dashboardIntelligence: (tenantId?: string, companyId?: string) =>
       request<DashboardIntelligenceResponse>(`/api/apex/dashboard-intelligence${qs({ tenant_id: tenantId, company_id: companyId })}`),
+
+    // ── Wave 2: Strategic Management ─────────────────────────────────────
+    okrs: {
+      list: (quarter?: string, tenantId?: string) =>
+        request<{
+          objectives: Array<{
+            id: string;
+            tenant_id: string;
+            title: string;
+            description: string | null;
+            owner: string | null;
+            status: 'on_track' | 'at_risk' | 'off_track' | 'achieved';
+            priority: 'p1' | 'p2' | 'normal';
+            quarter: string;
+            progress_pct: number;
+            created_at: string;
+            updated_at: string;
+            key_results: Array<{
+              id: string;
+              objective_id: string;
+              description: string;
+              metric: string | null;
+              target_value: number | null;
+              current_value: number | null;
+              unit: string | null;
+              status: 'on_track' | 'at_risk' | 'off_track' | 'achieved';
+              due_date: string | null;
+            }>;
+          }>;
+          summary: {
+            total: number;
+            on_track: number;
+            at_risk: number;
+            off_track: number;
+            achieved: number;
+            avg_progress: number;
+          };
+        }>(`/api/v1/apex/okrs${qs({ quarter, tenant_id: tenantId })}`),
+      create: (data: Record<string, unknown>) =>
+        request<{ id: string }>(`/api/v1/apex/okrs`, { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: Record<string, unknown>) =>
+        request<{ ok: true }>(`/api/v1/apex/okrs/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      remove: (id: string) =>
+        request<{ ok: true }>(`/api/v1/apex/okrs/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      addKeyResult: (objectiveId: string, data: Record<string, unknown>) =>
+        request<{ id: string }>(`/api/v1/apex/okrs/${encodeURIComponent(objectiveId)}/key-results`, { method: 'POST', body: JSON.stringify(data) }),
+      updateKeyResult: (krId: string, data: Record<string, unknown>) =>
+        request<{ ok: true }>(`/api/v1/apex/okrs/key-results/${encodeURIComponent(krId)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      removeKeyResult: (krId: string) =>
+        request<{ ok: true }>(`/api/v1/apex/okrs/key-results/${encodeURIComponent(krId)}`, { method: 'DELETE' }),
+    },
+
+    portfolio: {
+      list: (tenantId?: string) =>
+        request<{
+          initiatives: Array<{
+            id: string;
+            tenant_id: string;
+            name: string;
+            description: string | null;
+            sponsor: string | null;
+            owner: string | null;
+            gate: 'discovery' | 'build' | 'scale' | 'done' | 'killed';
+            status: 'green' | 'amber' | 'red';
+            planned_value_zar: number;
+            actual_value_zar: number;
+            spend_to_date_zar: number;
+            budget_zar: number;
+            start_date: string | null;
+            target_completion_date: string | null;
+            business_unit: string | null;
+            linked_objective_id: string | null;
+            created_at: string;
+            updated_at: string;
+          }>;
+          summary: {
+            total: number;
+            active: number;
+            green: number;
+            amber: number;
+            red: number;
+            total_planned_value: number;
+            total_actual_value: number;
+            total_budget: number;
+            total_spend_to_date: number;
+            capital_allocation: Array<{
+              unit: string;
+              planned_value: number;
+              actual_value: number;
+              budget: number;
+              spend_to_date: number;
+              count: number;
+            }>;
+          };
+        }>(`/api/v1/apex/portfolio${qs({ tenant_id: tenantId })}`),
+      create: (data: Record<string, unknown>) =>
+        request<{ id: string }>(`/api/v1/apex/portfolio`, { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: Record<string, unknown>) =>
+        request<{ ok: true }>(`/api/v1/apex/portfolio/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      remove: (id: string) =>
+        request<{ ok: true }>(`/api/v1/apex/portfolio/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    },
   },
 
   pulse: {

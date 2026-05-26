@@ -28,8 +28,10 @@ import {
  Crown, TrendingUp, TrendingDown, Minus, AlertTriangle, FileText,
  Play, BarChart3, Shield, Lightbulb, Loader2, AlertCircle, X,
  Plus, ChevronRight, ChevronLeft, Trash2, Link2, ArrowRight, Eye,
- Radar, Globe, Zap, RefreshCw, PinOff, Pin, Sparkles
+ Radar, Globe, Zap, RefreshCw, PinOff, Pin, Sparkles, Target, Briefcase
 } from "lucide-react";
+import { OKRsPanel } from "@/components/apex/OKRsPanel";
+import { PortfolioPanel } from "@/components/apex/PortfolioPanel";
 import { CSVExportButton } from "@/components/common/CSVExportButton";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { RiskMatrix } from "./apex/RiskMatrix";
@@ -561,6 +563,8 @@ export function ApexPage() {
  { id: 'health', label: 'Business Health', icon: <Crown size={14} /> },
  { id: 'briefing', label: 'Leadership Summary', icon: <FileText size={14} /> },
  { id: 'risks', label: 'Risk Overview', icon: <AlertTriangle size={14} />, count: risks.length },
+ { id: 'okrs', label: 'OKRs', icon: <Target size={14} /> },
+ { id: 'portfolio', label: 'Portfolio', icon: <Briefcase size={14} /> },
  { id: 'scenarios', label: 'What-If Analysis', icon: <BarChart3 size={14} /> },
  { id: 'strategic-context', label: 'Strategic Context', icon: <Radar size={14} />, count: radarContext?.summary?.activeSignals },
  { id: 'peer-benchmarks', label: 'Peer Benchmarks', icon: <Globe size={14} />, count: peerBenchmarks?.benchmarks?.length || undefined },
@@ -1400,6 +1404,22 @@ export function ApexPage() {
  </div>
  ))}
  </div></TabPanel>
+ )}
+
+ {/* OKRs Tab — Wave 2: strategic-management depth.
+     Tenant-scoped objectives + key results with admin+ mutations. */}
+ {activeTab === 'okrs' && (
+  <TabPanel>
+    <OKRsPanel />
+  </TabPanel>
+ )}
+
+ {/* Initiative Portfolio Tab — Wave 2: strategic-management depth.
+     Cross-BU capital allocation, RAG status, gate progression. */}
+ {activeTab === 'portfolio' && (
+  <TabPanel>
+    <PortfolioPanel />
+  </TabPanel>
  )}
 
  {/* Scenario Modelling Tab */}

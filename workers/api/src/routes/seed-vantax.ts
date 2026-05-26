@@ -2531,6 +2531,316 @@ seed.post('/seed-vantax', async (c) => {
     }
     console.log(`[VantaX Seeder] Seeded ${scenarioSeeds.length} Apex scenarios`);
 
+    // ── STEP: Seed Strategic OKRs ──
+    // Wave 2: strategic-management depth on Apex. Without seed the OKRs
+    // tab is empty for new tenants. Computes the current quarter so
+    // demos are always year-current.
+    console.log('[VantaX Seeder] Seeding strategic OKRs...');
+    const nowQ = new Date();
+    const currentQuarter = `${nowQ.getFullYear()}-Q${Math.floor(nowQ.getMonth() / 3) + 1}`;
+    const okrSeeds: Array<{
+      title: string;
+      description: string;
+      owner: string;
+      status: 'on_track' | 'at_risk' | 'off_track' | 'achieved';
+      priority: 'p1' | 'p2' | 'normal';
+      progress_pct: number;
+      key_results: Array<{
+        description: string;
+        metric: string;
+        target_value: number;
+        current_value: number;
+        unit: string;
+        status: 'on_track' | 'at_risk' | 'off_track' | 'achieved';
+      }>;
+    }> = [
+      {
+        title: 'Recover R 5M in working capital through receivables discipline',
+        description: 'Tighten AR collections cadence and reduce DSO to free cash for the Q4 inventory build-out.',
+        owner: 'CFO',
+        status: 'at_risk',
+        priority: 'p1',
+        progress_pct: 58,
+        key_results: [
+          { description: 'Reduce DSO from 52 to 38 days', metric: 'DSO', target_value: 38, current_value: 44, unit: 'days', status: 'at_risk' },
+          { description: 'Cut invoices > 60 days from 124 to 30', metric: 'Aged invoices', target_value: 30, current_value: 62, unit: 'invoices', status: 'at_risk' },
+          { description: 'Recover R 5M of overdue receivables', metric: 'Cash recovered', target_value: 5_000_000, current_value: 2_900_000, unit: 'ZAR', status: 'on_track' },
+        ],
+      },
+      {
+        title: 'Achieve clean external audit with zero material findings',
+        description: 'Position the business for an unqualified Big-4 audit opinion. Auditor sign-off required by 30 September.',
+        owner: 'CFO + Internal Audit',
+        status: 'on_track',
+        priority: 'p1',
+        progress_pct: 72,
+        key_results: [
+          { description: 'Close all 14 internal audit findings', metric: 'Open findings', target_value: 0, current_value: 4, unit: 'findings', status: 'on_track' },
+          { description: 'Reconcile GL → ERP source for top-25 accounts (>=99.9% match rate)', metric: 'Match rate', target_value: 99.9, current_value: 99.4, unit: '%', status: 'on_track' },
+          { description: 'Refresh SOC 2 evidence pack quarterly', metric: 'Pack refreshes', target_value: 4, current_value: 3, unit: 'refreshes', status: 'on_track' },
+        ],
+      },
+      {
+        title: 'Lift Atheon Health score from 65 to 80',
+        description: 'Move every dimension to green by end of quarter. Currently 7 green / 3 amber / 2 red.',
+        owner: 'COO',
+        status: 'on_track',
+        priority: 'p1',
+        progress_pct: 64,
+        key_results: [
+          { description: 'Atheon Score 65 → 80', metric: 'Atheon Score', target_value: 80, current_value: 73, unit: 'points', status: 'on_track' },
+          { description: 'Zero red dimensions', metric: 'Red dimensions', target_value: 0, current_value: 1, unit: 'dimensions', status: 'at_risk' },
+          { description: 'Anomaly resolution SLA < 4 hours median', metric: 'Median resolution', target_value: 4, current_value: 5.3, unit: 'hours', status: 'at_risk' },
+        ],
+      },
+      {
+        title: 'Activate 3 new ERP integrations by end of quarter',
+        description: 'Expand the addressable market by certifying SAP S/4HANA Cloud, NetSuite, and Oracle Fusion adapters.',
+        owner: 'CTO',
+        status: 'at_risk',
+        priority: 'p2',
+        progress_pct: 45,
+        key_results: [
+          { description: 'SAP S/4HANA Cloud adapter — production-ready', metric: 'Cert status', target_value: 100, current_value: 80, unit: '% complete', status: 'on_track' },
+          { description: 'NetSuite SuiteApp listing approved', metric: 'Listing status', target_value: 100, current_value: 40, unit: '% complete', status: 'at_risk' },
+          { description: 'Oracle Fusion adapter — production-ready', metric: 'Cert status', target_value: 100, current_value: 15, unit: '% complete', status: 'off_track' },
+        ],
+      },
+      {
+        title: 'Drive shared-savings revenue to R 12M annualised run rate',
+        description: 'Realise R 1M / month of billable savings across the customer base. Tied directly to the share-of-savings revenue model.',
+        owner: 'CRO + CFO',
+        status: 'on_track',
+        priority: 'p1',
+        progress_pct: 81,
+        key_results: [
+          { description: 'Realise R 12M ARR from shared-savings billing', metric: 'ARR', target_value: 12_000_000, current_value: 9_700_000, unit: 'ZAR', status: 'on_track' },
+          { description: 'Maintain ≥ 95% traceable-savings audit pass rate', metric: 'Traceability', target_value: 95, current_value: 97, unit: '%', status: 'achieved' },
+          { description: 'Onboard 8 new enterprise tenants', metric: 'Tenants', target_value: 8, current_value: 6, unit: 'tenants', status: 'on_track' },
+        ],
+      },
+    ];
+
+    let okrCount = 0;
+    let krCount = 0;
+    for (const obj of okrSeeds) {
+      const objId = crypto.randomUUID();
+      seedBatch.push(c.env.DB.prepare(
+        `INSERT INTO strategic_objectives (id, tenant_id, title, description, owner, status, priority, quarter, progress_pct)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        objId, tenantId, obj.title, obj.description, obj.owner,
+        obj.status, obj.priority, currentQuarter, obj.progress_pct
+      ));
+      okrCount += 1;
+      for (const kr of obj.key_results) {
+        seedBatch.push(c.env.DB.prepare(
+          `INSERT INTO strategic_key_results (id, tenant_id, objective_id, description, metric, target_value, current_value, unit, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          crypto.randomUUID(), tenantId, objId, kr.description, kr.metric,
+          kr.target_value, kr.current_value, kr.unit, kr.status
+        ));
+        krCount += 1;
+      }
+    }
+    console.log(`[VantaX Seeder] Seeded ${okrCount} objectives + ${krCount} key results`);
+
+    // ── STEP: Seed Initiative Portfolio ──
+    // Wave 2: capital allocation rollup needs > 1 business unit so the
+    // by-unit bar chart has shape. Mix of gates (discovery → done) and
+    // RAG states so the portfolio strip + table both have signal.
+    console.log('[VantaX Seeder] Seeding initiative portfolio...');
+    const today = new Date();
+    const daysFromNow = (days: number) => {
+      const d = new Date(today); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10);
+    };
+    const initiativeSeeds: Array<{
+      name: string;
+      description: string;
+      sponsor: string;
+      owner: string;
+      business_unit: string;
+      gate: 'discovery' | 'build' | 'scale' | 'done' | 'killed';
+      status: 'green' | 'amber' | 'red';
+      planned_value_zar: number;
+      actual_value_zar: number;
+      budget_zar: number;
+      spend_to_date_zar: number;
+      start_offset_days: number;
+      target_offset_days: number;
+    }> = [
+      {
+        name: 'GR/IR Reconciliation Automation',
+        description: 'Auto-match goods receipts to invoices for top-12 vendors using Atheon catalysts. Targets a 60% reduction in exception-handling effort.',
+        sponsor: 'CFO',
+        owner: 'AP Manager',
+        business_unit: 'Finance',
+        gate: 'scale',
+        status: 'green',
+        planned_value_zar: 4_500_000,
+        actual_value_zar: 2_650_000,
+        budget_zar: 240_000,
+        spend_to_date_zar: 198_000,
+        start_offset_days: -120,
+        target_offset_days: 60,
+      },
+      {
+        name: 'JHB-DC Inventory Accuracy Programme',
+        description: 'Cycle-count cadence redesign + bin-location relabelling at Johannesburg DC. Closes the R 2.2M inventory variance flagged in the Q1 audit.',
+        sponsor: 'COO',
+        owner: 'DC Manager',
+        business_unit: 'Operations',
+        gate: 'build',
+        status: 'amber',
+        planned_value_zar: 2_200_000,
+        actual_value_zar: 380_000,
+        budget_zar: 410_000,
+        spend_to_date_zar: 295_000,
+        start_offset_days: -75,
+        target_offset_days: 90,
+      },
+      {
+        name: 'SAP S/4HANA Cloud Adapter Certification',
+        description: 'Achieve SAP certification for the Atheon connector to unlock the S/4HANA Cloud enterprise tier addressable market.',
+        sponsor: 'CTO',
+        owner: 'Head of Integrations',
+        business_unit: 'Product & Engineering',
+        gate: 'build',
+        status: 'green',
+        planned_value_zar: 6_000_000,
+        actual_value_zar: 0,
+        budget_zar: 850_000,
+        spend_to_date_zar: 690_000,
+        start_offset_days: -160,
+        target_offset_days: 45,
+      },
+      {
+        name: 'NetSuite SuiteApp Listing',
+        description: 'List Atheon on the NetSuite SuiteApp marketplace to capture the mid-market segment.',
+        sponsor: 'CTO',
+        owner: 'Integrations Lead',
+        business_unit: 'Product & Engineering',
+        gate: 'discovery',
+        status: 'amber',
+        planned_value_zar: 3_400_000,
+        actual_value_zar: 0,
+        budget_zar: 380_000,
+        spend_to_date_zar: 145_000,
+        start_offset_days: -45,
+        target_offset_days: 120,
+      },
+      {
+        name: 'Oracle Fusion Connector',
+        description: 'Certify the Oracle Fusion adapter. Two enterprise prospects in the South African banking sector are contingent on this adapter.',
+        sponsor: 'CTO',
+        owner: 'Senior Integrations Engineer',
+        business_unit: 'Product & Engineering',
+        gate: 'discovery',
+        status: 'red',
+        planned_value_zar: 5_200_000,
+        actual_value_zar: 0,
+        budget_zar: 720_000,
+        spend_to_date_zar: 110_000,
+        start_offset_days: -30,
+        target_offset_days: 150,
+      },
+      {
+        name: 'AR Collections Cadence Redesign',
+        description: 'Six-touch automated collections cadence with manager escalation. Targets DSO 52 → 38.',
+        sponsor: 'CFO',
+        owner: 'AR Manager',
+        business_unit: 'Finance',
+        gate: 'scale',
+        status: 'amber',
+        planned_value_zar: 5_000_000,
+        actual_value_zar: 2_900_000,
+        budget_zar: 180_000,
+        spend_to_date_zar: 132_000,
+        start_offset_days: -95,
+        target_offset_days: 30,
+      },
+      {
+        name: 'SOC 2 Type II Continuous Evidence',
+        description: 'Always-on evidence collection so the SOC 2 audit becomes a one-click pack rather than a one-month scramble.',
+        sponsor: 'CISO',
+        owner: 'GRC Lead',
+        business_unit: 'Security & Compliance',
+        gate: 'done',
+        status: 'green',
+        planned_value_zar: 1_500_000,
+        actual_value_zar: 1_500_000,
+        budget_zar: 220_000,
+        spend_to_date_zar: 215_000,
+        start_offset_days: -210,
+        target_offset_days: -15,
+      },
+      {
+        name: 'FX Hedge Programme Expansion',
+        description: 'Raise FX hedge coverage from 35% to 70% across forward order book. Mitigates ZAR weakening exposure flagged on Apex Radar.',
+        sponsor: 'CFO',
+        owner: 'Treasury Lead',
+        business_unit: 'Finance',
+        gate: 'build',
+        status: 'green',
+        planned_value_zar: 1_800_000,
+        actual_value_zar: 420_000,
+        budget_zar: 95_000,
+        spend_to_date_zar: 64_000,
+        start_offset_days: -55,
+        target_offset_days: 90,
+      },
+      {
+        name: 'Backup Generator Capacity Audit',
+        description: 'Verify generator + UPS coverage for Stage 6 load-shedding scenarios at JHB and CPT sites.',
+        sponsor: 'COO',
+        owner: 'Facilities Lead',
+        business_unit: 'Operations',
+        gate: 'done',
+        status: 'green',
+        planned_value_zar: 800_000,
+        actual_value_zar: 800_000,
+        budget_zar: 145_000,
+        spend_to_date_zar: 138_000,
+        start_offset_days: -90,
+        target_offset_days: -10,
+      },
+      {
+        name: 'Voice-First Customer Portal',
+        description: 'Explore a voice-first interface for customer-facing AR portal. Killed after user research showed low adoption signal.',
+        sponsor: 'CPO',
+        owner: 'Product Manager',
+        business_unit: 'Product & Engineering',
+        gate: 'killed',
+        status: 'red',
+        planned_value_zar: 2_000_000,
+        actual_value_zar: 0,
+        budget_zar: 320_000,
+        spend_to_date_zar: 78_000,
+        start_offset_days: -180,
+        target_offset_days: -60,
+      },
+    ];
+
+    for (const init of initiativeSeeds) {
+      seedBatch.push(c.env.DB.prepare(
+        `INSERT INTO strategic_initiatives (
+          id, tenant_id, name, description, sponsor, owner, gate, status,
+          planned_value_zar, actual_value_zar, spend_to_date_zar, budget_zar,
+          start_date, target_completion_date, business_unit
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        crypto.randomUUID(), tenantId, init.name, init.description,
+        init.sponsor, init.owner, init.gate, init.status,
+        init.planned_value_zar, init.actual_value_zar,
+        init.spend_to_date_zar, init.budget_zar,
+        daysFromNow(init.start_offset_days),
+        daysFromNow(init.target_offset_days),
+        init.business_unit
+      ));
+    }
+    console.log(`[VantaX Seeder] Seeded ${initiativeSeeds.length} portfolio initiatives`);
+
     // ── STEP: Seed Board Reports ──
     // Apex → Board Reports tab needs at least one of each report_type to render.
     console.log('[VantaX Seeder] Seeding board reports...');
@@ -2911,6 +3221,12 @@ seed.post('/seed-vantax', async (c) => {
           boardReports: boardReports.length,
           notifications: notificationSeeds.length,
           supportTickets: userRows.length > 0 ? 8 : 0,
+        },
+        strategicManagement: {
+          objectives: okrCount,
+          keyResults: krCount,
+          initiatives: initiativeSeeds.length,
+          quarter: currentQuarter,
         },
         billing: billingDemo,
         valueAssessmentReport: {

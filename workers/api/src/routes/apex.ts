@@ -940,4 +940,335 @@ apex.get('/dashboard-intelligence', async (c) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Strategic management — OKRs + Initiative Portfolio
+// ═══
+//
+// OKRs:
+//   GET    /api/v1/apex/okrs                 — list objectives + nested KRs
+//   POST   /api/v1/apex/okrs                 — create objective
+//   PATCH  /api/v1/apex/okrs/:id             — update objective
+//   DELETE /api/v1/apex/okrs/:id             — delete objective (cascades KRs)
+//   POST   /api/v1/apex/okrs/:id/key-results — add KR to objective
+//   PATCH  /api/v1/apex/okrs/key-results/:krId
+//   DELETE /api/v1/apex/okrs/key-results/:krId
+//
+// Portfolio (strategic initiatives + capital allocation rollup):
+//   GET    /api/v1/apex/portfolio            — list + summary (rollup by BU)
+//   POST   /api/v1/apex/portfolio            — create initiative
+//   PATCH  /api/v1/apex/portfolio/:id        — update gate/status/actuals
+//   DELETE /api/v1/apex/portfolio/:id
+//
+// Admin+ for mutations; any authenticated tenant user for reads.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const OBJECTIVE_STATUSES = new Set(['on_track', 'at_risk', 'off_track', 'achieved']);
+const KR_STATUSES = OBJECTIVE_STATUSES;
+const INIT_GATES = new Set(['discovery', 'build', 'scale', 'done', 'killed']);
+const INIT_STATUSES = new Set(['green', 'amber', 'red']);
+
+function isAdminPlus(role: string | undefined): boolean {
+  return role === 'superadmin' || role === 'support_admin' || role === 'admin' || role === 'executive';
+}
+
+apex.get('/okrs', async (c) => {
+  const tenantId = getTenantId(c);
+  const quarter = c.req.query('quarter');
+  const params: unknown[] = [tenantId];
+  let where = 'tenant_id = ?';
+  if (quarter) {
+    where += ' AND quarter = ?';
+    params.push(quarter);
+  }
+  const [objectives, keyResults] = await Promise.all([
+    c.env.DB.prepare(
+      `SELECT * FROM strategic_objectives WHERE ${where} ORDER BY priority = 'p1' DESC, status = 'off_track' DESC, status = 'at_risk' DESC, created_at DESC`
+    ).bind(...params).all<Record<string, unknown>>(),
+    c.env.DB.prepare(
+      `SELECT kr.* FROM strategic_key_results kr WHERE kr.tenant_id = ? ORDER BY kr.created_at ASC`
+    ).bind(tenantId).all<Record<string, unknown>>(),
+  ]);
+
+  const krsByObjective = new Map<string, Record<string, unknown>[]>();
+  for (const kr of (keyResults.results || [])) {
+    const oid = kr.objective_id as string;
+    if (!krsByObjective.has(oid)) krsByObjective.set(oid, []);
+    krsByObjective.get(oid)!.push(kr);
+  }
+
+  const items: Array<Record<string, unknown> & { key_results: Record<string, unknown>[] }> =
+    (objectives.results || []).map((obj) => ({
+      ...obj,
+      key_results: krsByObjective.get(obj.id as string) || [],
+    }));
+
+  const summary = {
+    total: items.length,
+    on_track: items.filter((o) => (o.status as string) === 'on_track').length,
+    at_risk: items.filter((o) => (o.status as string) === 'at_risk').length,
+    off_track: items.filter((o) => (o.status as string) === 'off_track').length,
+    achieved: items.filter((o) => (o.status as string) === 'achieved').length,
+    avg_progress: items.length
+      ? Math.round(items.reduce((s, o) => s + ((o.progress_pct as number) || 0), 0) / items.length)
+      : 0,
+  };
+  return c.json({ objectives: items, summary });
+});
+
+apex.post('/okrs', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<Record<string, unknown>>(c, []);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  const quarter = typeof body.quarter === 'string' ? body.quarter.trim() : '';
+  if (!title || !quarter) return c.json({ error: 'title and quarter required' }, 400);
+
+  const status = typeof body.status === 'string' && OBJECTIVE_STATUSES.has(body.status) ? body.status : 'on_track';
+  const priority = body.priority === 'p1' || body.priority === 'p2' ? body.priority : 'normal';
+
+  const id = crypto.randomUUID();
+  await c.env.DB.prepare(
+    `INSERT INTO strategic_objectives (id, tenant_id, title, description, owner, status, priority, quarter, progress_pct)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id, tenantId, title,
+    typeof body.description === 'string' ? body.description : null,
+    typeof body.owner === 'string' ? body.owner : null,
+    status, priority, quarter,
+    typeof body.progress_pct === 'number' ? body.progress_pct : 0,
+  ).run();
+  return c.json({ id }, 201);
+});
+
+apex.patch('/okrs/:id', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const { data: body, errors: vErrors } = await getValidatedJsonBody<Record<string, unknown>>(c, []);
+  if (!body || vErrors.length > 0) return c.json({ error: 'Invalid input', details: vErrors }, 400);
+
+  const updates: string[] = [];
+  const params: unknown[] = [];
+  if (typeof body.title === 'string') { updates.push('title = ?'); params.push(body.title); }
+  if (typeof body.description === 'string') { updates.push('description = ?'); params.push(body.description); }
+  if (typeof body.owner === 'string') { updates.push('owner = ?'); params.push(body.owner); }
+  if (typeof body.status === 'string' && OBJECTIVE_STATUSES.has(body.status)) { updates.push('status = ?'); params.push(body.status); }
+  if (body.priority === 'p1' || body.priority === 'p2' || body.priority === 'normal') { updates.push('priority = ?'); params.push(body.priority); }
+  if (typeof body.quarter === 'string') { updates.push('quarter = ?'); params.push(body.quarter); }
+  if (typeof body.progress_pct === 'number') { updates.push('progress_pct = ?'); params.push(Math.max(0, Math.min(100, body.progress_pct))); }
+  if (!updates.length) return c.json({ error: 'no fields to update' }, 400);
+  updates.push("updated_at = datetime('now')");
+  params.push(id, tenantId);
+
+  const res = await c.env.DB.prepare(
+    `UPDATE strategic_objectives SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`
+  ).bind(...params).run();
+  if (!res.meta.changes) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});
+
+apex.delete('/okrs/:id', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  await c.env.DB.prepare('DELETE FROM strategic_key_results WHERE objective_id = ? AND tenant_id = ?').bind(id, tenantId).run();
+  const res = await c.env.DB.prepare('DELETE FROM strategic_objectives WHERE id = ? AND tenant_id = ?').bind(id, tenantId).run();
+  if (!res.meta.changes) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});
+
+apex.post('/okrs/:id/key-results', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const objectiveId = c.req.param('id');
+  const { data: body, errors: vErrors } = await getValidatedJsonBody<Record<string, unknown>>(c, []);
+  if (!body || vErrors.length > 0) return c.json({ error: 'Invalid input', details: vErrors }, 400);
+  const description = typeof body.description === 'string' ? body.description.trim() : '';
+  if (!description) return c.json({ error: 'description required' }, 400);
+
+  // Verify objective belongs to tenant
+  const obj = await c.env.DB.prepare('SELECT id FROM strategic_objectives WHERE id = ? AND tenant_id = ?').bind(objectiveId, tenantId).first();
+  if (!obj) return c.json({ error: 'objective not found' }, 404);
+
+  const status = typeof body.status === 'string' && KR_STATUSES.has(body.status) ? body.status : 'on_track';
+  const id = crypto.randomUUID();
+  await c.env.DB.prepare(
+    `INSERT INTO strategic_key_results (id, tenant_id, objective_id, description, metric, target_value, current_value, unit, status, due_date)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id, tenantId, objectiveId, description,
+    typeof body.metric === 'string' ? body.metric : null,
+    typeof body.target_value === 'number' ? body.target_value : null,
+    typeof body.current_value === 'number' ? body.current_value : null,
+    typeof body.unit === 'string' ? body.unit : null,
+    status,
+    typeof body.due_date === 'string' ? body.due_date : null,
+  ).run();
+  return c.json({ id }, 201);
+});
+
+apex.patch('/okrs/key-results/:krId', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const krId = c.req.param('krId');
+  const { data: body, errors: vErrors } = await getValidatedJsonBody<Record<string, unknown>>(c, []);
+  if (!body || vErrors.length > 0) return c.json({ error: 'Invalid input', details: vErrors }, 400);
+
+  const updates: string[] = [];
+  const params: unknown[] = [];
+  if (typeof body.description === 'string') { updates.push('description = ?'); params.push(body.description); }
+  if (typeof body.metric === 'string') { updates.push('metric = ?'); params.push(body.metric); }
+  if (typeof body.target_value === 'number') { updates.push('target_value = ?'); params.push(body.target_value); }
+  if (typeof body.current_value === 'number') { updates.push('current_value = ?'); params.push(body.current_value); }
+  if (typeof body.unit === 'string') { updates.push('unit = ?'); params.push(body.unit); }
+  if (typeof body.status === 'string' && KR_STATUSES.has(body.status)) { updates.push('status = ?'); params.push(body.status); }
+  if (typeof body.due_date === 'string') { updates.push('due_date = ?'); params.push(body.due_date); }
+  if (!updates.length) return c.json({ error: 'no fields to update' }, 400);
+  updates.push("updated_at = datetime('now')");
+  params.push(krId, tenantId);
+
+  const res = await c.env.DB.prepare(
+    `UPDATE strategic_key_results SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`
+  ).bind(...params).run();
+  if (!res.meta.changes) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});
+
+apex.delete('/okrs/key-results/:krId', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const krId = c.req.param('krId');
+  const res = await c.env.DB.prepare('DELETE FROM strategic_key_results WHERE id = ? AND tenant_id = ?').bind(krId, tenantId).run();
+  if (!res.meta.changes) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});
+
+// ── Initiative Portfolio ─────────────────────────────────────────────────────
+
+apex.get('/portfolio', async (c) => {
+  const tenantId = getTenantId(c);
+  const rows = await c.env.DB.prepare(
+    `SELECT * FROM strategic_initiatives
+     WHERE tenant_id = ?
+     ORDER BY
+       CASE status WHEN 'red' THEN 0 WHEN 'amber' THEN 1 ELSE 2 END,
+       CASE gate WHEN 'killed' THEN 9 WHEN 'done' THEN 8 ELSE 0 END,
+       created_at DESC`
+  ).bind(tenantId).all<Record<string, unknown>>();
+  const items = rows.results || [];
+
+  // Capital allocation rollup by business unit (active initiatives only).
+  const byBu = new Map<string, { unit: string; planned_value: number; actual_value: number; budget: number; spend_to_date: number; count: number }>();
+  for (const it of items) {
+    if (it.gate === 'killed') continue;
+    const unit = (it.business_unit as string) || 'Unassigned';
+    const slot = byBu.get(unit) || { unit, planned_value: 0, actual_value: 0, budget: 0, spend_to_date: 0, count: 0 };
+    slot.planned_value += (it.planned_value_zar as number) || 0;
+    slot.actual_value += (it.actual_value_zar as number) || 0;
+    slot.budget += (it.budget_zar as number) || 0;
+    slot.spend_to_date += (it.spend_to_date_zar as number) || 0;
+    slot.count += 1;
+    byBu.set(unit, slot);
+  }
+
+  const summary = {
+    total: items.length,
+    active: items.filter((i) => i.gate !== 'killed' && i.gate !== 'done').length,
+    green: items.filter((i) => i.status === 'green').length,
+    amber: items.filter((i) => i.status === 'amber').length,
+    red: items.filter((i) => i.status === 'red').length,
+    total_planned_value: items.reduce((s, i) => s + ((i.planned_value_zar as number) || 0), 0),
+    total_actual_value: items.reduce((s, i) => s + ((i.actual_value_zar as number) || 0), 0),
+    total_budget: items.reduce((s, i) => s + ((i.budget_zar as number) || 0), 0),
+    total_spend_to_date: items.reduce((s, i) => s + ((i.spend_to_date_zar as number) || 0), 0),
+    capital_allocation: Array.from(byBu.values()).sort((a, b) => b.budget - a.budget),
+  };
+  return c.json({ initiatives: items, summary });
+});
+
+apex.post('/portfolio', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const { data: body, errors: vErrors } = await getValidatedJsonBody<Record<string, unknown>>(c, []);
+  if (!body || vErrors.length > 0) return c.json({ error: 'Invalid input', details: vErrors }, 400);
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!name) return c.json({ error: 'name required' }, 400);
+
+  const gate = typeof body.gate === 'string' && INIT_GATES.has(body.gate) ? body.gate : 'discovery';
+  const status = typeof body.status === 'string' && INIT_STATUSES.has(body.status) ? body.status : 'green';
+
+  const id = crypto.randomUUID();
+  await c.env.DB.prepare(
+    `INSERT INTO strategic_initiatives
+       (id, tenant_id, name, description, sponsor, owner, gate, status,
+        planned_value_zar, actual_value_zar, spend_to_date_zar, budget_zar,
+        start_date, target_completion_date, business_unit, linked_objective_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id, tenantId, name,
+    typeof body.description === 'string' ? body.description : null,
+    typeof body.sponsor === 'string' ? body.sponsor : null,
+    typeof body.owner === 'string' ? body.owner : null,
+    gate, status,
+    typeof body.planned_value_zar === 'number' ? body.planned_value_zar : 0,
+    typeof body.actual_value_zar === 'number' ? body.actual_value_zar : 0,
+    typeof body.spend_to_date_zar === 'number' ? body.spend_to_date_zar : 0,
+    typeof body.budget_zar === 'number' ? body.budget_zar : 0,
+    typeof body.start_date === 'string' ? body.start_date : null,
+    typeof body.target_completion_date === 'string' ? body.target_completion_date : null,
+    typeof body.business_unit === 'string' ? body.business_unit : null,
+    typeof body.linked_objective_id === 'string' ? body.linked_objective_id : null,
+  ).run();
+  return c.json({ id }, 201);
+});
+
+apex.patch('/portfolio/:id', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const { data: body, errors: vErrors } = await getValidatedJsonBody<Record<string, unknown>>(c, []);
+  if (!body || vErrors.length > 0) return c.json({ error: 'Invalid input', details: vErrors }, 400);
+
+  const updates: string[] = [];
+  const params: unknown[] = [];
+  const stringFields = ['name', 'description', 'sponsor', 'owner', 'start_date', 'target_completion_date', 'business_unit', 'linked_objective_id'];
+  for (const f of stringFields) {
+    if (typeof body[f] === 'string') { updates.push(`${f} = ?`); params.push(body[f]); }
+  }
+  if (typeof body.gate === 'string' && INIT_GATES.has(body.gate)) { updates.push('gate = ?'); params.push(body.gate); }
+  if (typeof body.status === 'string' && INIT_STATUSES.has(body.status)) { updates.push('status = ?'); params.push(body.status); }
+  const numFields = ['planned_value_zar', 'actual_value_zar', 'spend_to_date_zar', 'budget_zar'];
+  for (const f of numFields) {
+    if (typeof body[f] === 'number') { updates.push(`${f} = ?`); params.push(body[f]); }
+  }
+  if (!updates.length) return c.json({ error: 'no fields to update' }, 400);
+  updates.push("updated_at = datetime('now')");
+  params.push(id, tenantId);
+
+  const res = await c.env.DB.prepare(
+    `UPDATE strategic_initiatives SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`
+  ).bind(...params).run();
+  if (!res.meta.changes) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});
+
+apex.delete('/portfolio/:id', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth || !isAdminPlus(auth.role)) return c.json({ error: 'Forbidden' }, 403);
+  const tenantId = getTenantId(c);
+  const id = c.req.param('id');
+  const res = await c.env.DB.prepare('DELETE FROM strategic_initiatives WHERE id = ? AND tenant_id = ?').bind(id, tenantId).run();
+  if (!res.meta.changes) return c.json({ error: 'not found' }, 404);
+  return c.json({ ok: true });
+});
+
 export default apex;
