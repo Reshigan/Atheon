@@ -513,6 +513,8 @@ export const api = {
       request<{ anomalies: AnomalyItem[]; total: number }>(`/api/pulse/anomalies${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined, company_id: companyId })}`),
     detectAnomalies: (metricId?: string, sensitivity?: 'low' | 'medium' | 'high', tenantId?: string, companyId?: string) =>
       request<{ success: boolean; statistics: { mean: number; stdDev: number; dataPoints: number; period: string }; detected: unknown[]; count: number }>(`/api/pulse/anomalies/detect${qs({ tenant_id: tenantId, company_id: companyId })}`, { method: 'POST', body: JSON.stringify({ metric_id: metricId, sensitivity }) }),
+    updateAnomalyStatus: (anomalyId: string, status: 'open' | 'investigating' | 'resolved') =>
+      request<{ ok: boolean }>(`/api/pulse/anomalies/${anomalyId}`, { method: 'PUT', body: JSON.stringify({ status }) }),
     processes: (tenantId?: string, industry?: string, companyId?: string) =>
       request<{ processes: ProcessItem[]; total: number }>(`/api/pulse/processes${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined, company_id: companyId })}`),
     correlations: (tenantId?: string, industry?: string, companyId?: string) =>

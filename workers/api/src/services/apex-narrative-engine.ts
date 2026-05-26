@@ -208,10 +208,36 @@ async function persistBriefing(
   risks: RiskBullet[], kpis: KpiMovement[], opportunities: OpportunityBullet[],
 ): Promise<boolean> {
   const symptomList = risks.map((r) => r.metric).join(', ') || 'No active symptoms';
-  const summary = risks.length > 0
-    ? `Apex narrative — ${risks.length} active causal chain${risks.length === 1 ? '' : 's'} ` +
-      `under investigation. Top symptom: ${risks[0].causal_chain}.`
-    : `Apex narrative — no active root causes; KPI surface is stable.`;
+  const summaryParts: string[] = [];
+  if (risks.length > 0) {
+    summaryParts.push(
+      `Apex is tracking ${risks.length} active causal chain${risks.length === 1 ? '' : 's'} ` +
+      `across the KPI surface. Top symptom: ${risks[0].causal_chain}.`,
+    );
+    if (risks.length > 1) {
+      const additional = risks.slice(1, 4).map((r) => r.metric).join(', ');
+      if (additional) {
+        summaryParts.push(`Additional symptoms under analysis: ${additional}.`);
+      }
+    }
+  } else {
+    summaryParts.push('Apex detects no active root causes — the KPI surface is stable.');
+  }
+  if (opportunities.length > 0) {
+    summaryParts.push(
+      `${opportunities.length} root cause${opportunities.length === 1 ? '' : 's'} recently resolved: ` +
+      `${opportunities.slice(0, 3).map((o) => o.metric).join(', ')}.`,
+    );
+  }
+  if (kpis.length > 0) {
+    const redCount = kpis.filter((k) => k.status === 'red').length;
+    const amberCount = kpis.filter((k) => k.status === 'amber').length;
+    summaryParts.push(
+      `Linked KPIs: ${kpis.length} under watch (${redCount} red, ${amberCount} amber). ` +
+      'See linked risks and recently-resolved root causes for context.',
+    );
+  }
+  const summary = summaryParts.join('\n\n');
   try {
     await db.prepare(
       `INSERT INTO executive_briefings

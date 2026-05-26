@@ -137,6 +137,7 @@ export async function cleanupVantaxTenant(
   for (const t of [
     'tenant_settings', 'audit_log', 'mind_queries',
     'chat_conversations', 'run_comments', 'notifications',
+    'support_ticket_replies', 'support_tickets',
     'onboarding_progress', 'api_keys', 'password_reset_tokens',
     'user_sessions',
   ]) {

@@ -566,6 +566,74 @@ export function PulsePage() {
       setDetectingSensitivity(null);
     }
   }
+
+  // Pulse anomaly actions — the "Recommended Next Steps" buttons on the
+  // expanded anomaly card. Every one of these must DO something real so the
+  // queue stays trustworthy on a customer demo.
+  const [anomalyActionPending, setAnomalyActionPending] = useState<string | null>(null);
+  async function handleAnomalyStatus(anomalyId: string, status: 'investigating' | 'resolved', label: string) {
+    if (anomalyActionPending) return;
+    setAnomalyActionPending(`${anomalyId}:${status}`);
+    try {
+      await api.pulse.updateAnomalyStatus(anomalyId, status);
+      const ind = industry !== 'general' ? industry : undefined;
+      const a = await api.pulse.anomalies(undefined, ind, companyId || undefined);
+      setAnomalies(a.anomalies);
+      toast.success(label, status === 'investigating'
+        ? 'Anomaly opened for investigation; tracked in the queue until resolved.'
+        : 'Anomaly closed; outcome recorded in the audit trail.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      const requestId = err instanceof ApiError ? err.requestId : null;
+      toast.error('Action failed', { message, requestId });
+    } finally {
+      setAnomalyActionPending(null);
+    }
+  }
+  async function handleAnomalyRerun(anomalyId: string) {
+    if (anomalyActionPending) return;
+    setAnomalyActionPending(`${anomalyId}:rerun`);
+    try {
+      const result = await api.pulse.detectAnomalies(undefined, 'high', undefined, companyId || undefined);
+      const ind = industry !== 'general' ? industry : undefined;
+      const a = await api.pulse.anomalies(undefined, ind, companyId || undefined);
+      setAnomalies(a.anomalies);
+      const count = typeof result?.count === 'number' ? result.count : 0;
+      toast.success('Data quality re-checked', `Z-score sweep at high sensitivity completed; ${count} anomal${count === 1 ? 'y' : 'ies'} flagged.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      const requestId = err instanceof ApiError ? err.requestId : null;
+      toast.error('Re-check failed', { message, requestId });
+    } finally {
+      setAnomalyActionPending(null);
+    }
+  }
+
+  // Red-metric "Run Catalyst" — triggers the Pulse refresh which fans out
+  // catalysts across all clusters and re-evaluates the metric status.
+  const [refreshingMetric, setRefreshingMetric] = useState<string | null>(null);
+  async function handleRefreshForMetric(metricId: string, metricName: string) {
+    if (refreshingMetric) return;
+    setRefreshingMetric(metricId);
+    try {
+      await api.pulse.refresh(undefined, companyId || undefined);
+      const ind = industry !== 'general' ? industry : undefined;
+      const [m, s] = await Promise.all([
+        api.pulse.metrics(undefined, ind, companyId || undefined),
+        api.pulse.summary(undefined, ind, companyId || undefined),
+      ]);
+      setMetrics(m.metrics);
+      setSummary(s);
+      toast.success(`Catalysts run for ${metricName}`, 'Process flows + metrics refreshed; check the trace popover for new evidence.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      const requestId = err instanceof ApiError ? err.requestId : null;
+      toast.error('Catalyst run failed', { message, requestId });
+    } finally {
+      setRefreshingMetric(null);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -1272,7 +1340,9 @@ export function PulsePage() {
                         )}
                       </div>
 
-                      {/* What This Means */}
+                      {/* What This Means — for red/amber metrics, surfaces a
+                          Run Catalyst button that triggers the full pulse
+                          refresh (catalysts re-run, metrics re-evaluated). */}
                       <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-2">
                           <Lightbulb className="w-4 h-4 text-accent" />
@@ -1285,6 +1355,33 @@ export function PulsePage() {
                           {metric.status === 'amber' && '. This is approaching warning levels — consider proactive investigation to prevent escalation to critical status.'}
                           {metric.status === 'red' && '. This has breached the critical threshold and requires immediate attention. Investigate root cause and implement corrective action.'}
                         </p>
+                        {(metric.status === 'red' || metric.status === 'amber') && (
+                          <div className="mt-3 flex items-center gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              disabled={refreshingMetric !== null}
+                              onClick={(e) => { e.stopPropagation(); handleRefreshForMetric(metric.id, metric.name); }}
+                              aria-label={`Run catalyst for ${metric.name}`}
+                            >
+                              {refreshingMetric === metric.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Play size={12} />
+                              )}
+                              {refreshingMetric === metric.id ? 'Running…' : 'Run Catalyst'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => { e.stopPropagation(); handleOpenMetricTrace(metric.id); }}
+                              aria-label={`Open trace for ${metric.name}`}
+                            >
+                              <Eye size={12} />
+                              Open Trace
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1443,46 +1540,82 @@ export function PulsePage() {
                             </div>
                           </div>
 
-                          {/* Recommended Actions */}
+                          {/* Recommended Actions — every step is a live button.
+                              Dead static text on a finance demo erodes trust faster
+                              than an empty card; the operator must be able to act
+                              from the same surface where they triaged. */}
                           <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                             <div className="flex items-center gap-2 mb-3">
                               <Shield className="w-4 h-4 text-accent" />
                               <h4 className="text-sm font-semibold t-primary">Recommended Next Steps</h4>
                             </div>
                             <div className="space-y-2.5">
-                              <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleAnomalyStatus(anom.id, 'investigating', 'Investigation opened'); }}
+                                disabled={anomalyActionPending === `${anom.id}:investigating` || anom.status === 'investigating' || anom.status === 'resolved'}
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                aria-label={`Investigate ${anom.metric}`}
+                              >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>1</div>
                                 <div className="flex-1">
-                                  <span className="text-sm t-primary">Investigate root cause: {anom.hypothesis}</span>
+                                  <span className="text-sm t-primary">
+                                    {anomalyActionPending === `${anom.id}:investigating` ? 'Opening investigation…' : `Investigate root cause: ${anom.hypothesis}`}
+                                  </span>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-caption t-muted">Priority: {anom.severity === 'critical' ? 'Immediate' : 'Short-term'}</span>
                                     <span className="text-caption t-muted">|</span>
                                     <span className="text-caption t-muted">Owner: Operations Team</span>
+                                    {anom.status === 'investigating' && <Badge variant="info" size="sm">Open</Badge>}
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                                <ArrowRight size={14} className="t-muted self-center flex-shrink-0" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleAnomalyRerun(anom.id); }}
+                                disabled={anomalyActionPending === `${anom.id}:rerun`}
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                aria-label="Re-check data quality"
+                              >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>2</div>
                                 <div className="flex-1">
-                                  <span className="text-sm t-primary">Verify data quality and check for upstream system changes</span>
+                                  <span className="text-sm t-primary">
+                                    {anomalyActionPending === `${anom.id}:rerun` ? 'Re-running Z-score sweep…' : 'Verify data quality (re-run detection at high sensitivity)'}
+                                  </span>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-caption t-muted">Priority: Short-term</span>
                                     <span className="text-caption t-muted">|</span>
                                     <span className="text-caption t-muted">Owner: Data Engineering</span>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                                <ArrowRight size={14} className="t-muted self-center flex-shrink-0" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleAnomalyStatus(anom.id, 'resolved', deviationPct >= 50 ? 'Anomaly escalated + closed' : 'Anomaly resolved'); }}
+                                disabled={anomalyActionPending === `${anom.id}:resolved` || anom.status === 'resolved'}
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                aria-label={deviationPct >= 50 ? 'Escalate to management' : 'Mark resolved'}
+                              >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>3</div>
                                 <div className="flex-1">
-                                  <span className="text-sm t-primary">{deviationPct >= 50 ? 'Escalate to management and implement corrective action plan' : 'Monitor for recurrence and adjust thresholds if necessary'}</span>
+                                  <span className="text-sm t-primary">
+                                    {anomalyActionPending === `${anom.id}:resolved`
+                                      ? 'Closing…'
+                                      : deviationPct >= 50
+                                        ? 'Escalate to management and close anomaly (records audit trail)'
+                                        : 'Mark resolved and close anomaly (records audit trail)'}
+                                  </span>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-caption t-muted">Priority: {deviationPct >= 50 ? 'Immediate' : 'Medium-term'}</span>
                                     <span className="text-caption t-muted">|</span>
                                     <span className="text-caption t-muted">Owner: {deviationPct >= 50 ? 'Management' : 'Operations Team'}</span>
+                                    {anom.status === 'resolved' && <Badge variant="success" size="sm">Closed</Badge>}
                                   </div>
                                 </div>
-                              </div>
+                                <ArrowRight size={14} className="t-muted self-center flex-shrink-0" />
+                              </button>
                             </div>
                           </div>
 

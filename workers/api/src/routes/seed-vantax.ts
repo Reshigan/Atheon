@@ -1248,14 +1248,179 @@ seed.post('/seed-vantax', async (c) => {
     console.log(`[VantaX Seeder] Seeded ${anomaliesData.length} anomalies`);
 
     // STEP 12g: Catalyst Actions
-    const catalystActionsData = [
-      { clusterId: financeClusterId, catalystName: 'GR/IR Reconciliation', action: 'Auto-matched 45 of 55 GR/IR items with 87.2% confidence', status: 'completed', confidence: 0.872, reasoning: 'High match rates on PO-invoice pairs with exact quantity and within 1% price tolerance.' },
-      { clusterId: financeClusterId, catalystName: 'AP Invoice Validation', action: 'Flagged 3 potential duplicate invoices totalling R52,400', status: 'pending', confidence: 0.78, reasoning: 'Vendor reference patterns suggest possible duplicate submissions. Manual review recommended.' },
-      { clusterId: financeClusterId, catalystName: 'Bank Reconciliation', action: 'Reconciled 55 of 80 bank transactions automatically', status: 'completed', confidence: 0.845, reasoning: 'EFT payments matched using reference and amount. 15 items require manual matching due to new reference format.' },
-      { clusterId: supplyChainClusterId, catalystName: 'Inventory Reconciliation', action: 'Identified 4 high-value items with >10% count variance', status: 'in_progress', confidence: 0.91, reasoning: 'Systematic shortage pattern in Warehouse B — possible receiving process breakdown.' },
-      { clusterId: revenueClusterId, catalystName: 'Sales Order Matching', action: 'Matched 55 of 80 billing documents to AR postings', status: 'completed', confidence: 0.82, reasoning: 'Primary match on document number and amount. 10 items show amount variances within tolerance.' },
-      { clusterId: supplyChainClusterId, catalystName: 'Demand Forecasting', action: 'Generated Q3 demand forecast — 12% volume increase projected', status: 'completed', confidence: 0.74, reasoning: 'Seasonal patterns and order pipeline analysis suggest Q3 uptick. Load shedding impact factored in as 8% production constraint.' },
-      { clusterId: financeClusterId, catalystName: 'AP Invoice Validation', action: 'Processing R1.2M in pending invoice approvals', status: 'in_progress', confidence: 0.85, reasoning: 'Batch of 12 invoices from 3 major suppliers awaiting 3-way match verification.' },
+    // ────────────────────────────────────────────────────────────────────
+    // Action queue is the operator's daily work surface (Pulse → Action Queue).
+    // The panel only renders Approve/Reject buttons when status='pending_approval'
+    // AND connection_id is set. Without both, the queue looks dead. We mix:
+    //   - 8 pending_approval (the demo focus — operator approves on stage)
+    //   - 4 completed/verified (track record visible in queue history)
+    //   - 2 in_progress + 1 rejected (status diversity for filter UI)
+    // Every row carries: connection_id, value_zar, action_type, idempotency_key,
+    // source_finding_id, and output_data with mode + reasoning so the queue
+    // panel light up with values, mode pills, and traceable drill-through.
+    // ────────────────────────────────────────────────────────────────────
+    const catalystActionsData: Array<{
+      clusterId: string;
+      catalystName: string;
+      action: string;
+      actionType: string;
+      status: string;
+      confidence: number;
+      reasoning: string;
+      valueZar: number;
+      vendor: string | null;
+      sourceFindingId: string | null;
+      outputMode: 'live' | 'stub' | 'preview' | null;
+      outputSummary: string | null;
+    }> = [
+      // ── PENDING APPROVAL (8) — the demo bread & butter ─────────────────
+      {
+        clusterId: financeClusterId, catalystName: 'GR/IR Reconciliation',
+        action: 'Post GR/IR clearing entry for PO 4500-PO-10013 (Sasol Chemical Industries)',
+        actionType: 'erp_post_clearing', status: 'pending_approval', confidence: 0.94,
+        reasoning: 'PO-invoice pair matched on quantity + value within 0.3% tolerance. Vendor LIFNR 100013 historical conformance 97%. Safe to auto-post but threshold > R100k requires CFO sign-off.',
+        valueZar: 184_500, vendor: 'Sasol Chemical Industries',
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will post FB05 clearing document; SAP impact: clears R 184,500 in GR/IR holding account 191100',
+      },
+      {
+        clusterId: financeClusterId, catalystName: 'AP Invoice Validation',
+        action: 'Block duplicate invoice INV-AECI-2026-0184 against existing INV-AECI-2026-0177',
+        actionType: 'erp_block_duplicate', status: 'pending_approval', confidence: 0.91,
+        reasoning: 'Vendor reference, amount (R 78,200), and invoice date all match within 0.5%. SAP MIRO duplicate-check window expired before second post. Recommend payment block code R + AP review.',
+        valueZar: 78_200, vendor: 'AECI Mining Explosives',
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will apply payment block "R" on document 5100482918; AP team notified for review',
+      },
+      {
+        clusterId: financeClusterId, catalystName: 'Bank Reconciliation',
+        action: 'Auto-allocate 10 unmatched bank fees totalling R 24,840 to GL 477100 (Bank Charges)',
+        actionType: 'erp_post_journal', status: 'pending_approval', confidence: 0.89,
+        reasoning: 'Pattern signature "bank_fee_unallocated" matches 8 prior resolutions in this tenant (avg confidence 0.88). All 10 line items match the FNB monthly-fee pattern (description contains "FEE" or "CHARGE", amount < R 5,000).',
+        valueZar: 24_840, vendor: null,
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will post FB50 journal: DR 477100 / CR 110100 R 24,840 across 10 line items',
+      },
+      {
+        clusterId: supplyChainClusterId, catalystName: 'Inventory Reconciliation',
+        action: 'Open 4 physical-count investigations at JHB-DC (category FG-104, value R 320,400)',
+        actionType: 'workflow_open_investigation', status: 'pending_approval', confidence: 0.86,
+        reasoning: 'Cycle-count variance of 21.7% concentrated in finished-goods FG-104. Either receiving error (4 items recently inbound) or shrinkage. Investigation workflow auto-creates 4 tasks assigned to warehouse manager + opens stock-take scope.',
+        valueZar: 320_400, vendor: null,
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will create 4 SAP-ServiceDesk tickets + freeze inventory movement on affected SKUs until count complete',
+      },
+      {
+        clusterId: revenueClusterId, catalystName: 'Sales Order Matching',
+        action: 'Reverse + re-book R 1.42M of Q1 invoices misallocated to wrong accounting period (IFRS 15)',
+        actionType: 'erp_period_reallocation', status: 'pending_approval', confidence: 0.83,
+        reasoning: '12 invoices (Pick n Pay + Woolworths long-term service contracts) booked in Jan 2026 against milestone billing that contractually defers to Feb/Mar 2026. External auditor agreed treatment in 2026-Q1 review. This action reverses + re-books with correct period.',
+        valueZar: 1_420_000, vendor: 'Pick n Pay + Woolworths',
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will reverse 12 SD billing docs + re-book in correct periods; external auditor notified',
+      },
+      {
+        clusterId: financeClusterId, catalystName: 'AP Invoice Validation',
+        action: 'Apply 2% early-payment discount on R 850k Sasol invoice (terms allow but missed cutoff)',
+        actionType: 'erp_apply_discount', status: 'pending_approval', confidence: 0.78,
+        reasoning: 'Vendor terms = Net 30 / 2% 10. Invoice dated 2026-05-18, paid 2026-05-26 (8 days). System missed discount because terms code mis-mapped. Recovery of R 17,000 by post-credit memo.',
+        valueZar: 17_000, vendor: 'Sasol Chemical Industries',
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will post FB75 credit memo R 17,000 against vendor 100013; terms-code mapping flagged for fix',
+      },
+      {
+        clusterId: financeClusterId, catalystName: 'GR/IR Reconciliation',
+        action: 'Tighten PO-tolerance group for LIFNR 100027 from ±5% to ±1% (35 exceptions in 90 days)',
+        actionType: 'config_update', status: 'pending_approval', confidence: 0.81,
+        reasoning: 'Vendor 100027 (Bidvest Industrial) generated 35 GR/IR exceptions in the last 90 days, all clustered at ±2-4% price drift. Tolerance group change prevents auto-match and forces buyer review for any future PO with that drift.',
+        valueZar: 0, vendor: 'Bidvest Industrial',
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will update vendor master tolerance group from B100 to B005 in SAP (transaction XK02)',
+      },
+      {
+        clusterId: supplyChainClusterId, catalystName: 'Inventory Reconciliation',
+        action: 'Trigger cycle-count for 18 high-value SKUs at JHB-DC (R 4.2M value-at-risk)',
+        actionType: 'workflow_trigger_count', status: 'pending_approval', confidence: 0.92,
+        reasoning: 'ABC-class A SKUs with > 30 days since last count + shrinkage pattern detected in adjacent category. Standard SOX practice. Auto-creates SAP MI04 count documents.',
+        valueZar: 4_200_000, vendor: null,
+        sourceFindingId: crypto.randomUUID(),
+        outputMode: 'preview',
+        outputSummary: 'Will create 18 SAP MI04 count documents; assigns to warehouse team for next-day execution',
+      },
+      // ── COMPLETED (3) — shows the queue’s recent activity ───────────────
+      {
+        clusterId: financeClusterId, catalystName: 'GR/IR Reconciliation',
+        action: 'Auto-matched 45 of 55 GR/IR items with 87.2% confidence',
+        actionType: 'erp_post_clearing', status: 'completed', confidence: 0.872,
+        reasoning: 'High match rates on PO-invoice pairs with exact quantity and within 1% price tolerance.',
+        valueZar: 2_840_000, vendor: null, sourceFindingId: null,
+        outputMode: 'live',
+        outputSummary: '45 FB05 clearing docs posted; total cleared R 2.84M; 10 items escalated for manual review',
+      },
+      {
+        clusterId: financeClusterId, catalystName: 'Bank Reconciliation',
+        action: 'Reconciled 55 of 80 bank transactions automatically',
+        actionType: 'erp_match_bank', status: 'completed', confidence: 0.845,
+        reasoning: 'EFT payments matched using reference and amount. 15 items require manual matching due to new reference format.',
+        valueZar: 6_120_000, vendor: null, sourceFindingId: null,
+        outputMode: 'live',
+        outputSummary: '55 bank line items cleared in SAP FF67; 10 fees auto-allocated; 15 escalated for manual review',
+      },
+      {
+        clusterId: revenueClusterId, catalystName: 'Sales Order Matching',
+        action: 'Matched 55 of 80 billing documents to AR postings',
+        actionType: 'erp_match_ar', status: 'completed', confidence: 0.82,
+        reasoning: 'Primary match on document number and amount. 10 items show amount variances within tolerance.',
+        valueZar: 4_680_000, vendor: null, sourceFindingId: null,
+        outputMode: 'live',
+        outputSummary: '55 SD-to-AR document links posted; 10 variances flagged for review; 7 status mismatches deferred',
+      },
+      // ── VERIFIED (1) — billing artefact ───────────────────────────────────
+      {
+        clusterId: financeClusterId, catalystName: 'AP Invoice Validation',
+        action: 'Flagged + blocked 3 duplicate invoices (R 52,400 recovered)',
+        actionType: 'erp_block_duplicate', status: 'verified', confidence: 0.96,
+        reasoning: 'AP team confirmed 3 of 3 flagged items were genuine duplicates submitted by vendors after payment delay queries. Recovery realised.',
+        valueZar: 52_400, vendor: null, sourceFindingId: null,
+        outputMode: 'live',
+        outputSummary: '3 payment blocks confirmed by AP lead; vendor education email sent; R 52,400 recovered',
+      },
+      // ── IN PROGRESS (2) ───────────────────────────────────────────────
+      {
+        clusterId: supplyChainClusterId, catalystName: 'Demand Forecasting',
+        action: 'Generating Q3 demand forecast — Eskom load-shedding impact modelled',
+        actionType: 'forecast_generate', status: 'in_progress', confidence: 0.74,
+        reasoning: 'Seasonal patterns and order pipeline analysis suggest Q3 uptick. Load shedding impact factored in as 8% production constraint.',
+        valueZar: 0, vendor: null, sourceFindingId: null,
+        outputMode: null,
+        outputSummary: null,
+      },
+      {
+        clusterId: financeClusterId, catalystName: 'AP Invoice Validation',
+        action: 'Processing R1.2M in pending invoice approvals (12 invoices)',
+        actionType: 'erp_validate_batch', status: 'in_progress', confidence: 0.85,
+        reasoning: 'Batch of 12 invoices from 3 major suppliers awaiting 3-way match verification.',
+        valueZar: 1_200_000, vendor: null, sourceFindingId: null,
+        outputMode: null,
+        outputSummary: null,
+      },
+      // ── REJECTED (1) — shows the queue’s audit trail ────────────────────
+      {
+        clusterId: revenueClusterId, catalystName: 'Sales Order Matching',
+        action: 'Proposed write-off of R 38,400 AR ageing > 180 days (Customer KNA1 200015)',
+        actionType: 'erp_write_off', status: 'rejected', confidence: 0.62,
+        reasoning: 'Confidence below 70% threshold for auto-execution. CFO opted to keep AR active pending legal review.',
+        valueZar: 38_400, vendor: null, sourceFindingId: null,
+        outputMode: null,
+        outputSummary: null,
+      },
     ];
     // Per-action created_at / completed_at offsets so that the Process
     // Mining sweep (services/scheduled.ts refreshProcessMining) computes
@@ -1279,10 +1444,21 @@ seed.post('/seed-vantax', async (c) => {
       const completedAt = (ca.status === 'completed' || ca.status === 'verified')
         ? `datetime('now', '-${startHoursAgo} hours', '+${elapsedMin} minutes')`
         : `NULL`;
+      const outputData = (ca.outputMode || ca.outputSummary)
+        ? JSON.stringify({ mode: ca.outputMode, summary: ca.outputSummary })
+        : null;
       await c.env.DB.prepare(
-        `INSERT INTO catalyst_actions (id, tenant_id, cluster_id, catalyst_name, action, status, confidence, reasoning, created_at, completed_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-${startHoursAgo} hours'), ${completedAt})`
-      ).bind(crypto.randomUUID(), tenantId, ca.clusterId, ca.catalystName, ca.action, ca.status, ca.confidence, ca.reasoning).run();
+        `INSERT INTO catalyst_actions (
+          id, tenant_id, cluster_id, catalyst_name, action, status, confidence, reasoning,
+          connection_id, action_type, value_zar, source_finding_id, idempotency_key, vendor, output_data,
+          created_at, completed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-${startHoursAgo} hours'), ${completedAt})`
+      ).bind(
+        crypto.randomUUID(), tenantId, ca.clusterId, ca.catalystName, ca.action,
+        ca.status, ca.confidence, ca.reasoning,
+        connectionId, ca.actionType, ca.valueZar, ca.sourceFindingId,
+        crypto.randomUUID(), ca.vendor, outputData,
+      ).run();
     }
     console.log(`[VantaX Seeder] Seeded ${catalystActionsData.length} catalyst actions (with elapsed-time data)`);
 
@@ -1307,27 +1483,37 @@ seed.post('/seed-vantax', async (c) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       crypto.randomUUID(), tenantId,
-      'Daily Executive Briefing - ' + new Date().toLocaleDateString(),
-      'VantaX SAP operations showing mixed performance. Critical attention needed in Supply Chain (inventory variance 21.7%) and Revenue Recognition (26.3% timing differences).',
+      'Daily Executive Briefing — ' + new Date().toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }),
+      [
+        'VantaX SAP operations show mixed performance heading into mid-2026. The Atheon Score moved from 65 to 69 over the past month, with three structural issues now actively under management.',
+        '',
+        'Top exposures: GR/IR exception rate is running at 14.8% against an 8% target — R 8.4M of unmatched receipts concentrated across three vendors (LIFNR 100013, 100027, 100089). At JHB-DC, a 21.7% cycle-count variance on finished goods category FG-104 points to either receiving errors or shrinkage, with a R 320k value exposure. Revenue recognition timing is the most urgent: 26.3% of Q1 2026 invoices were booked outside the correct period under IFRS 15, which is now under external-auditor review.',
+        '',
+        'Tailwinds: cumulative discrepancy recovery hit R 3.2M (ROI 5.5x against Atheon licence cost), the GR/IR automation pilot is approved with a projected 3.8-month payback, and the FX hedging programme has been accelerated to 50% coverage following the Rand breaching R19/USD. CFO and COO decisions on inventory audit budget and revenue recognition policy are needed within the next two weeks to keep the recovery trajectory intact.',
+      ].join('\n'),
       JSON.stringify([
-        'High GR/IR Discrepancy Rate — 17% exceeds 10% threshold (Financial)',
-        'Inventory Shrinkage Detected — 21.7% variance indicates potential issues (Operational)',
-        'Revenue Recognition Delay — 26.3% not recognized in correct period (Compliance)',
-        'Duplicate Payment Risk — AP validation detected duplicates (Financial)',
+        { title: 'High GR/IR Discrepancy Rate', detail: '17% exceeds 10% threshold; R 8.4M exposure across LIFNR 100013, 100027, 100089', dimension: 'Financial', severity: 'high', owner: 'CFO' },
+        { title: 'Inventory Shrinkage Detected', detail: '21.7% cycle-count variance at JHB-DC; concentrated in finished goods category FG-104', dimension: 'Operational', severity: 'high', owner: 'COO' },
+        { title: 'Revenue Recognition Delay', detail: '26.3% of Q1 invoices booked in wrong period under IFRS 15; potential audit finding', dimension: 'Compliance', severity: 'critical', owner: 'CFO + External Auditor' },
+        { title: 'Duplicate Payment Risk', detail: 'AP validation flagged 7 potential duplicates totalling R 320k pending review', dimension: 'Financial', severity: 'medium', owner: 'AP Manager' },
       ]),
       JSON.stringify([
-        'Process Automation — estimated R 2.5M savings by Q2 2025',
-        'System Integration — estimated R 1.8M savings by Q3 2025',
+        { title: 'Process Automation — GR/IR Self-Heal', detail: 'Automated 3-way match for vendors with conformance > 92% (12 of 47 active vendors)', estimated_savings: 2_500_000, currency: 'ZAR', timeframe: 'by Q3 2026', confidence: 0.78 },
+        { title: 'System Integration — Bank-to-Book Auto-Reconciliation', detail: 'Direct MT940 → FF67 feed eliminates 18hrs/week of manual fee allocation', estimated_savings: 1_800_000, currency: 'ZAR', timeframe: 'by Q4 2026', confidence: 0.84 },
+        { title: 'Vendor Master Cleanup', detail: 'Deduplicate 142 duplicate LIFNR records identified by AP Validation Agent', estimated_savings: 650_000, currency: 'ZAR', timeframe: 'by Q3 2026', confidence: 0.91 },
       ]),
       JSON.stringify([
-        { kpi: 'Match Rate', movement: '-5.2%', period: 'vs last month' },
-        { kpi: 'Exception Rate', movement: '+3.1%', period: 'vs last month' },
-        { kpi: 'Processing Time', movement: '-12s', period: 'vs last month' },
+        { kpi: 'Match Rate', current: 82.4, previous: 87.6, movement: '-5.2%', direction: 'down', period: 'vs last month', target: 92.0 },
+        { kpi: 'Exception Rate', current: 14.8, previous: 11.7, movement: '+3.1%', direction: 'up', period: 'vs last month', target: 8.0 },
+        { kpi: 'Avg Processing Time', current: 38, previous: 50, movement: '-12s', direction: 'down', period: 'vs last month', target: 30, unit: 'seconds' },
+        { kpi: 'Recovered Discrepancies', current: 3_200_000, previous: 2_450_000, movement: '+R 750k', direction: 'up', period: 'vs last month', target: 4_000_000, unit: 'ZAR' },
+        { kpi: 'Atheon Score', current: 73, previous: 69, movement: '+4', direction: 'up', period: 'vs last month', target: 85 },
       ]),
       JSON.stringify([
-        'Approve inventory audit budget (R 500K)',
-        'Review revenue recognition policy with CFO',
-        'Prioritize GR/IR process improvement',
+        { decision: 'Approve inventory audit budget', amount: 500_000, currency: 'ZAR', owner: 'COO', deadline: '2026-06-15', urgency: 'high', context: 'Required to investigate 21.7% shrinkage variance at JHB-DC' },
+        { decision: 'Review revenue recognition policy with CFO', owner: 'CFO + Controller', deadline: '2026-06-30', urgency: 'critical', context: '26.3% of Q1 invoices misallocated; potential IFRS 15 restatement risk' },
+        { decision: 'Prioritise GR/IR process improvement initiative', owner: 'CFO + AP Lead', deadline: '2026-07-15', urgency: 'high', context: 'R 8.4M exposure across top 3 vendors; automation candidate identified' },
+        { decision: 'Activate FX hedging programme', owner: 'Treasurer', deadline: '2026-06-10', urgency: 'critical', context: 'Rand breached R19/USD; import cost exposure on R 24M of forward orders' },
       ]),
       now,
       -1.2,  // health_delta
@@ -1626,58 +1812,220 @@ seed.post('/seed-vantax', async (c) => {
     }
     console.log(`[VantaX Seeder] Seeded ${catalystPrescriptions.length} catalyst prescriptions`);
 
-    // ── STEP: Seed Run Analytics ──
-    console.log('[VantaX Seeder] Seeding catalyst run analytics...');
-    const runAnalyticsData = [
+    // ── STEP: Seed Catalyst Runs + Items + Run Analytics ──
+    // Five sub-catalyst types × six runs spread over 30 days = 30 runs total.
+    // Each run gets a matching sub_catalyst_runs row (drill-through target),
+    // ~10 sub_catalyst_run_items, and a catalyst_run_analytics row joined by
+    // run_id. Reasoning + recommendations populated so the run-detail page
+    // has substance.
+    console.log('[VantaX Seeder] Seeding catalyst runs, items, and analytics (staggered over 30 days)...');
+    const runArchetypes = [
       {
         clusterId: financeClusterId, subCatalystName: 'GR/IR Reconciliation',
-        totalItems: 55, completed: 45, exceptions: 7, escalated: 2, pending: 1, autoApproved: 38,
-        avgConf: 0.872, minConf: 0.34, maxConf: 0.99, durationMs: 45200,
-        insights: ['High overall confidence — most items processed automatically.', '87% auto-approved — high automation rate.', '2 item(s) escalated for human review.'],
+        mode: 'reconciliation',
+        baseItems: 55, baseAvgConf: 0.872, baseDurationMs: 45200,
+        sourceTotalValue: 8_450_000,
+        reasoning: 'Reconciled GR documents (MIGO) against invoice receipts (MIRO). 87% of items matched on 3-way agreement (PO + GR + IR amounts within 2% tolerance). 7 items raised as exceptions — 5 had GR qty < ordered qty (typical short-shipment), 2 had unit-price drift > tolerance. 2 items escalated for buyer review.',
+        recommendations: [
+          'Tighten PO-tolerance group for vendor LIFNR 100013 (consistent +3% price drift over last 4 runs)',
+          'Investigate short-shipment pattern from logistics partner — 5 of 7 exceptions trace to same GR clerk shift',
+          'Approve auto-post for items with confidence ≥0.85 (would cover 38 of the 45 matched items)',
+        ],
+        sapTransactions: ['MIGO', 'MIRO', 'MR11'],
+        itemMaker: (i: number, _conf: number) => ({
+          category: i < 3 ? 'GR_qty_mismatch' : 'matched',
+          sourceRef: `4500-PO-${10000 + i}`, targetRef: `5100-IR-${20000 + i}`,
+          sourceEntity: ['Sasol Limited','Bidvest Group','Pick n Pay','MTN Group'][i % 4],
+          sourceAmount: 45000 + i * 1250, targetAmount: 45000 + i * 1250 + (i < 3 ? -2300 : 0),
+          discrepancyAmount: i < 3 ? -2300 : 0,
+          discrepancyReason: i < 3 ? 'Goods received quantity below PO quantity' : null,
+        }),
       },
       {
         clusterId: financeClusterId, subCatalystName: 'AP Invoice Validation',
-        totalItems: 40, completed: 34, exceptions: 4, escalated: 1, pending: 1, autoApproved: 30,
-        avgConf: 0.91, minConf: 0.42, maxConf: 0.98, durationMs: 28400,
-        insights: ['High overall confidence — most items processed automatically.', '88% auto-approved — high automation rate.', 'Wide confidence spread — some items may need manual review while others auto-process.'],
+        mode: 'validation',
+        baseItems: 40, baseAvgConf: 0.91, baseDurationMs: 28400,
+        sourceTotalValue: 6_120_000,
+        reasoning: 'Validated 40 AP invoices against PO + GR. 30 auto-approved (3-way match within tolerance, no duplicate signature, vendor in good standing). 4 raised: 3 duplicate-payment alerts (same vendor + amount + reference within 7 days), 1 vendor with expired BBBEE certificate. 1 escalated.',
+        recommendations: [
+          'Block vendor STCD1=8930012345 pending BBBEE re-cert (carbon tax / compliance impact)',
+          'Send duplicate-detection alert to AP lead; 3 candidates require disposition before payment run',
+          'Adjust auto-approve threshold from 0.90 → 0.85 to capture 4 more invoices per run',
+        ],
+        sapTransactions: ['FB60', 'FBL1N', 'F-44'],
+        itemMaker: (i: number, _conf: number) => ({
+          category: i === 2 || i === 5 ? 'duplicate_payment_risk' : 'matched',
+          sourceRef: `INV-${30000 + i}`, targetRef: `4500-PO-${11000 + i}`,
+          sourceEntity: ['Sasol Limited','Engen Petroleum','Discovery Health','Vodacom'][i % 4],
+          sourceAmount: 28000 + i * 950, targetAmount: 28000 + i * 950,
+          discrepancyAmount: 0,
+          discrepancyReason: (i === 2 || i === 5) ? 'Possible duplicate: same vendor + amount within 7-day window' : null,
+        }),
       },
       {
         clusterId: financeClusterId, subCatalystName: 'Bank Reconciliation',
-        totalItems: 80, completed: 55, exceptions: 18, escalated: 4, pending: 3, autoApproved: 42,
-        avgConf: 0.685, minConf: 0.18, maxConf: 0.97, durationMs: 62100,
-        insights: ['Exception rate is high (23%). Review exception patterns for automation opportunities.', '4 item(s) escalated for human review.', 'Wide confidence spread — some items may need manual review while others auto-process.'],
+        mode: 'reconciliation',
+        baseItems: 80, baseAvgConf: 0.685, baseDurationMs: 62100,
+        sourceTotalValue: 11_800_000,
+        reasoning: 'Reconciled 80 bank statement lines (FEBEP) against open AP/AR items. 55 matched on reference + amount. 18 exceptions: 10 unmatched EFT receipts (no corresponding customer in BSID), 5 bank fees not yet posted to GL, 3 forex re-valuation differences > 2%. 4 escalated to treasury.',
+        recommendations: [
+          'Set up auto-matching rule for recurring EFT from "Pick n Pay Group Treasury" (8 of 10 unmatched receipts)',
+          'Create journal-entry template for bank fees (expense GL 645100) to auto-clear monthly bank charges',
+          'Apply FX-tolerance group to USD-denominated facility — 3 exceptions all < R12K but currently route to manual review',
+        ],
+        sapTransactions: ['FF67', 'F-03', 'FAGL_FC_VAL'],
+        itemMaker: (i: number, _conf: number) => ({
+          category: i % 7 === 0 ? 'unmatched_receipt' : i % 11 === 0 ? 'bank_fee_pending' : 'matched',
+          sourceRef: `BS-2026-${40000 + i}`, targetRef: i % 7 === 0 ? null : `BSID-${50000 + i}`,
+          sourceEntity: ['ABSA','Standard Bank','Nedbank','FNB'][i % 4],
+          sourceAmount: 12000 + i * 480, targetAmount: i % 7 === 0 ? 0 : 12000 + i * 480,
+          discrepancyAmount: i % 7 === 0 ? 12000 + i * 480 : 0,
+          discrepancyReason: i % 7 === 0 ? 'Unmatched bank receipt — no open AR item' : null,
+        }),
       },
       {
         clusterId: supplyChainClusterId, subCatalystName: 'Inventory Reconciliation',
-        totalItems: 45, completed: 25, exceptions: 15, escalated: 3, pending: 2, autoApproved: 18,
-        avgConf: 0.556, minConf: 0.12, maxConf: 0.95, durationMs: 38700,
-        insights: ['Exception rate is high (33%). Review exception patterns for automation opportunities.', 'Low overall confidence — consider reviewing data quality or mappings.', '3 item(s) escalated for human review.'],
+        mode: 'reconciliation',
+        baseItems: 45, baseAvgConf: 0.556, baseDurationMs: 38700,
+        sourceTotalValue: 4_280_000,
+        reasoning: 'Compared SAP MARD warehouse stock against ISEG physical count. Material variance detected on 15 of 45 SKUs — 10 shortages (combined R 2.45M shrinkage), 5 surpluses (likely receiving over-posting). Items 38-45 show systematic location-misposting between WH-01 and WH-02.',
+        recommendations: [
+          'Launch focused recount on the 10 short SKUs (combined value > R 2.4M)',
+          'Audit WH-01 / WH-02 movement transfers — 5 surplus items all have transfer-in postings without matching transfer-out',
+          'Tighten cycle count cadence on ABC-A items from quarterly → monthly (cost: ~16 person-hours/month)',
+        ],
+        sapTransactions: ['MI04', 'MI21', 'MMBE'],
+        itemMaker: (i: number, _conf: number) => ({
+          category: i < 4 ? 'shortage' : i < 7 ? 'surplus' : 'matched',
+          sourceRef: `MAT-${60000 + i}`, targetRef: `COUNT-2026Q2-${i + 1}`,
+          sourceEntity: 'WH-01 Cape Town',
+          sourceAmount: 95000 + i * 2200, targetAmount: i < 4 ? (95000 + i * 2200) * 0.78 : i < 7 ? (95000 + i * 2200) * 1.06 : (95000 + i * 2200),
+          discrepancyAmount: i < 4 ? -(95000 + i * 2200) * 0.22 : i < 7 ? (95000 + i * 2200) * 0.06 : 0,
+          discrepancyReason: i < 4 ? 'Physical count below system quantity (potential shrinkage)' : i < 7 ? 'Physical count above system quantity (likely receiving over-post)' : null,
+        }),
       },
       {
         clusterId: revenueClusterId, subCatalystName: 'Sales Order Matching',
-        totalItems: 32, completed: 22, exceptions: 7, escalated: 2, pending: 1, autoApproved: 17,
-        avgConf: 0.745, minConf: 0.28, maxConf: 0.96, durationMs: 52300,
-        insights: ['Exception rate is high (22%). Review exception patterns for automation opportunities.', '2 item(s) escalated for human review.'],
+        mode: 'reconciliation',
+        baseItems: 32, baseAvgConf: 0.745, baseDurationMs: 52300,
+        sourceTotalValue: 5_640_000,
+        reasoning: 'Matched 32 sales orders (VBAK) to billing documents (VBRK) and customer receipts. 22 fully reconciled. 7 exceptions: 4 SO billed but not yet collected (within terms), 3 amount variances between SO line and bill doc > 2% (typically promotional discount applied post-creation). 2 escalated to controller.',
+        recommendations: [
+          'Confirm credit-note approval workflow on the 3 amount-variance items (R 142K aggregate)',
+          'Customer "Pick n Pay" carries 4 of the 7 exceptions — pattern suggests their PO-amendment process is outpacing our SO updates',
+          'Auto-route post-creation discounts through SD condition record VK11 to prevent VBAK/VBRK drift',
+        ],
+        sapTransactions: ['VA02', 'VF03', 'VK11'],
+        itemMaker: (i: number, _conf: number) => ({
+          category: i < 2 ? 'amount_variance' : i < 5 ? 'pending_collection' : 'matched',
+          sourceRef: `SO-${70000 + i}`, targetRef: `VBRK-${80000 + i}`,
+          sourceEntity: ['Pick n Pay','Shoprite','Clicks','Woolworths'][i % 4],
+          sourceAmount: 86000 + i * 3100, targetAmount: i < 2 ? (86000 + i * 3100) * 0.97 : (86000 + i * 3100),
+          discrepancyAmount: i < 2 ? -(86000 + i * 3100) * 0.03 : 0,
+          discrepancyReason: i < 2 ? 'Bill doc amount lower than SO line — likely post-creation discount' : i < 5 ? 'Awaiting customer payment (within credit terms)' : null,
+        }),
       },
     ];
-    for (const ra of runAnalyticsData) {
-      const runId = crypto.randomUUID();
-      const dist: Record<string, number> = { '0-20': 0, '20-40': 0, '40-60': 0, '60-80': 0, '80-100': 0 };
-      // Simulate confidence distribution from avgConf
-      const total = ra.totalItems;
-      if (ra.avgConf > 0.8) { dist['80-100'] = Math.round(total * 0.6); dist['60-80'] = Math.round(total * 0.25); dist['40-60'] = Math.round(total * 0.1); dist['20-40'] = Math.round(total * 0.03); dist['0-20'] = Math.round(total * 0.02); }
-      else if (ra.avgConf > 0.6) { dist['80-100'] = Math.round(total * 0.3); dist['60-80'] = Math.round(total * 0.35); dist['40-60'] = Math.round(total * 0.2); dist['20-40'] = Math.round(total * 0.1); dist['0-20'] = Math.round(total * 0.05); }
-      else { dist['80-100'] = Math.round(total * 0.15); dist['60-80'] = Math.round(total * 0.2); dist['40-60'] = Math.round(total * 0.3); dist['20-40'] = Math.round(total * 0.2); dist['0-20'] = Math.round(total * 0.15); }
 
-      await c.env.DB.prepare(
-        `INSERT INTO catalyst_run_analytics (id, tenant_id, cluster_id, sub_catalyst_name, run_id, completed_at, duration_ms, total_items, completed_items, exception_items, escalated_items, pending_items, auto_approved_items, avg_confidence, min_confidence, max_confidence, confidence_distribution, status, insights) VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`
-      ).bind(
-        crypto.randomUUID(), tenantId, ra.clusterId, ra.subCatalystName, runId,
-        ra.durationMs, ra.totalItems, ra.completed, ra.exceptions, ra.escalated, ra.pending, ra.autoApproved,
-        ra.avgConf, ra.minConf, ra.maxConf, JSON.stringify(dist), JSON.stringify(ra.insights),
-      ).run();
+    let totalRunsSeeded = 0;
+    let totalItemsSeeded = 0;
+    // Six runs per archetype at day offsets -25, -20, -15, -10, -5, 0.
+    // Older runs have slightly lower match-rates so trend visualisation shows
+    // the gradual improvement from baseline (48) → today (73) seen elsewhere.
+    const dayOffsets = [-25, -20, -15, -10, -5, 0];
+    for (const ra of runArchetypes) {
+      for (let runIdx = 0; runIdx < dayOffsets.length; runIdx++) {
+        const offset = dayOffsets[runIdx];
+        const completedAt = new Date(Date.now() + offset * 86400000).toISOString();
+        const startedAt = new Date(Date.now() + offset * 86400000 - ra.baseDurationMs).toISOString();
+        // Older runs slightly worse (drift -3% per 5 days back)
+        const ageFactor = 1 - (Math.abs(offset) / 25) * 0.06;
+        const avgConf = Math.max(0.45, Math.min(0.99, ra.baseAvgConf * ageFactor));
+        const totalItems = ra.baseItems + (runIdx * 2 - 5);  // small drift in volume
+        const matched = Math.round(totalItems * avgConf);
+        const exceptions = Math.max(1, Math.round(totalItems * (1 - avgConf) * 0.7));
+        const escalated = Math.max(0, Math.round(exceptions * 0.3));
+        const pending = totalItems - matched - exceptions - escalated;
+        const autoApproved = Math.round(matched * 0.85);
+        const durationMs = Math.round(ra.baseDurationMs * (1 + (Math.random() - 0.5) * 0.15));
+        const minConf = Math.max(0.1, avgConf - 0.4);
+        const maxConf = Math.min(0.99, avgConf + 0.08);
+
+        const runId = crypto.randomUUID();
+        const itemsInRun = Math.min(12, Math.max(5, Math.round(totalItems / 5)));
+        let discrepancyTotal = 0;
+        let matchedTotal = 0;
+
+        // sub_catalyst_runs row first (FK target for items + analytics)
+        // Insert with placeholder values, then we'll UPDATE totals after items inserted.
+        await c.env.DB.prepare(
+          `INSERT INTO sub_catalyst_runs (id, tenant_id, cluster_id, sub_catalyst_name, run_number, triggered_by, started_at, completed_at, duration_ms, data_sources_used, source_record_count, target_record_count, status, mode, matched, unmatched_source, unmatched_target, discrepancies, exceptions_raised, avg_confidence, min_confidence, max_confidence, reasoning, recommendations, total_source_value, total_matched_value, total_discrepancy_value, total_exception_value, items_total, sign_off_status, created_at)
+           VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          runId, tenantId, ra.clusterId, ra.subCatalystName, runIdx + 1,
+          startedAt, completedAt, durationMs,
+          JSON.stringify(ra.sapTransactions), totalItems, totalItems,
+          ra.mode, matched, totalItems - matched, 0, exceptions, exceptions,
+          avgConf, minConf, maxConf,
+          ra.reasoning, JSON.stringify(ra.recommendations),
+          ra.sourceTotalValue, ra.sourceTotalValue * avgConf, ra.sourceTotalValue * 0.05, ra.sourceTotalValue * 0.02,
+          itemsInRun,
+          runIdx === dayOffsets.length - 1 ? 'open' : 'signed_off',
+          completedAt,
+        ).run();
+        totalRunsSeeded += 1;
+
+        // sub_catalyst_run_items — synthesise itemsInRun records mixing
+        // matched / exception / discrepancy statuses so the detail table has
+        // shape across multiple categories.
+        for (let i = 0; i < itemsInRun; i++) {
+          const itemConf = Math.max(0.1, Math.min(0.99, avgConf + (Math.random() - 0.5) * 0.3));
+          const built = ra.itemMaker(i, itemConf);
+          const isException = built.category !== 'matched';
+          discrepancyTotal += Math.abs(built.discrepancyAmount || 0);
+          matchedTotal += (built.sourceAmount || 0);
+          await c.env.DB.prepare(
+            `INSERT INTO sub_catalyst_run_items (id, run_id, tenant_id, item_number, item_status, category, source_ref, source_date, source_entity, source_amount, source_currency, target_ref, target_date, target_entity, target_amount, target_currency, match_confidence, match_method, discrepancy_amount, discrepancy_reason, exception_type, exception_severity, review_status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, ?, 'ZAR', ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            crypto.randomUUID(), runId, tenantId, i + 1,
+            isException ? 'exception' : 'matched',
+            built.category,
+            built.sourceRef, completedAt, built.sourceEntity, built.sourceAmount,
+            built.targetRef, completedAt, built.sourceEntity, built.targetAmount,
+            itemConf,
+            isException ? 'fuzzy_match' : 'exact_match',
+            built.discrepancyAmount, built.discrepancyReason,
+            isException ? built.category : null,
+            isException ? (Math.abs(built.discrepancyAmount || 0) > 50000 ? 'high' : 'medium') : null,
+            'pending',
+            completedAt,
+          ).run();
+          totalItemsSeeded += 1;
+        }
+
+        // catalyst_run_analytics row joined by run_id
+        const dist: Record<string, number> = { '0-20': 0, '20-40': 0, '40-60': 0, '60-80': 0, '80-100': 0 };
+        if (avgConf > 0.8) { dist['80-100'] = Math.round(totalItems * 0.6); dist['60-80'] = Math.round(totalItems * 0.25); dist['40-60'] = Math.round(totalItems * 0.1); dist['20-40'] = Math.round(totalItems * 0.03); dist['0-20'] = Math.round(totalItems * 0.02); }
+        else if (avgConf > 0.6) { dist['80-100'] = Math.round(totalItems * 0.3); dist['60-80'] = Math.round(totalItems * 0.35); dist['40-60'] = Math.round(totalItems * 0.2); dist['20-40'] = Math.round(totalItems * 0.1); dist['0-20'] = Math.round(totalItems * 0.05); }
+        else { dist['80-100'] = Math.round(totalItems * 0.15); dist['60-80'] = Math.round(totalItems * 0.2); dist['40-60'] = Math.round(totalItems * 0.3); dist['20-40'] = Math.round(totalItems * 0.2); dist['0-20'] = Math.round(totalItems * 0.15); }
+
+        const insights = [
+          avgConf >= 0.8 ? `High overall confidence (${(avgConf * 100).toFixed(0)}%) — most items processed automatically.` : avgConf >= 0.6 ? `Moderate confidence (${(avgConf * 100).toFixed(0)}%) — review exception patterns for automation opportunities.` : `Low overall confidence (${(avgConf * 100).toFixed(0)}%) — consider reviewing data quality or mappings.`,
+          `${Math.round((autoApproved / totalItems) * 100)}% auto-approved.`,
+          escalated > 0 ? `${escalated} item(s) escalated for human review.` : 'No items escalated.',
+        ];
+
+        await c.env.DB.prepare(
+          `INSERT INTO catalyst_run_analytics (id, tenant_id, cluster_id, sub_catalyst_name, run_id, started_at, completed_at, duration_ms, total_items, completed_items, exception_items, escalated_items, pending_items, auto_approved_items, avg_confidence, min_confidence, max_confidence, confidence_distribution, status, insights) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`
+        ).bind(
+          crypto.randomUUID(), tenantId, ra.clusterId, ra.subCatalystName, runId,
+          startedAt, completedAt, durationMs, totalItems, matched, exceptions, escalated, pending, autoApproved,
+          avgConf, minConf, maxConf, JSON.stringify(dist), JSON.stringify(insights),
+        ).run();
+      }
     }
-    console.log(`[VantaX Seeder] Seeded ${runAnalyticsData.length} run analytics records`);
+    console.log(`[VantaX Seeder] Seeded ${totalRunsSeeded} catalyst runs with ${totalItemsSeeded} items across 30 days`);
 
     // ── STEP: Seed §11.7 Atheon Score History ──
     console.log('[VantaX Seeder] Seeding §11 Atheon Score history...');
@@ -1998,6 +2346,441 @@ seed.post('/seed-vantax', async (c) => {
       console.error('[VantaX Seeder] Billing demo materialise failed:', e);
     }
 
+    // ── STEP: Seed Apex Scenarios ──
+    // What-if scenarios shown on /apex page; without seed the tab is empty.
+    console.log('[VantaX Seeder] Seeding Apex scenarios...');
+    const scenarioSeeds = [
+      {
+        title: 'What if Rand weakens to R20/USD?',
+        description: 'Impact analysis of further ZAR depreciation on import-heavy SKUs and forward order book',
+        inputQuery: 'Model the financial impact of ZAR weakening from R19 to R20/USD over the next quarter, focusing on raw material import costs and gross margin compression',
+        variables: [
+          { name: 'fx_rate_usd_zar', current: 19.0, hypothetical: 20.0, unit: 'ZAR/USD' },
+          { name: 'import_dependent_revenue', value: 24_000_000, unit: 'ZAR' },
+          { name: 'fx_hedge_coverage', value: 0.35, unit: 'fraction' },
+        ],
+        results: {
+          recommendation: 'Increase FX hedging coverage from 35% to 70% before end of June 2026 and reprice import-linked SKUs by 4.2%',
+          analysis_points: [
+            'Unhedged import cost increase of R 1.8M over 90 days at R20/USD',
+            'Gross margin compression of 220bps on top-5 import-linked SKUs',
+            'Forward contracts at R19.30 mid-rate available for Q3 2026',
+            'Repricing window closes when competitor X passes through cost increase (estimated 14 days)',
+          ],
+          npv_impact: -1_650_000,
+          npv_currency: 'ZAR',
+          confidence: 0.78,
+          downside_case: { npv: -3_200_000, probability: 0.18 },
+          upside_case: { npv: -650_000, probability: 0.32 },
+        },
+        status: 'complete',
+        daysAgo: 3,
+      },
+      {
+        title: 'What if we automate GR/IR for top-12 vendors?',
+        description: 'ROI projection for automated 3-way match across high-conformance vendors',
+        inputQuery: 'Project annualised savings, payback period, and risk profile from extending automated GR/IR matching to the 12 vendors with conformance > 92%',
+        variables: [
+          { name: 'vendors_in_scope', value: 12, unit: 'count' },
+          { name: 'baseline_manual_hours_per_month', value: 180, unit: 'hours' },
+          { name: 'automation_investment', value: 240_000, unit: 'ZAR' },
+          { name: 'vendor_conformance_threshold', value: 0.92, unit: 'fraction' },
+        ],
+        results: {
+          recommendation: 'Proceed with automation pilot covering 12 vendors; expected payback in 3.8 months with 6.2x ROI in year one',
+          analysis_points: [
+            'Annualised labour savings: R 1.48M (180 hrs/mo × R 685/hr fully-loaded)',
+            'Discrepancy reduction: 42% fewer GR/IR exceptions expected based on conformance baseline',
+            'Payback period: 3.8 months (investment R 240k vs savings R 123k/mo)',
+            'Risk: 4 vendors require master-data cleanup before automation can safely match',
+          ],
+          npv_impact: 2_840_000,
+          npv_currency: 'ZAR',
+          confidence: 0.84,
+          downside_case: { npv: 1_200_000, probability: 0.22 },
+          upside_case: { npv: 4_100_000, probability: 0.28 },
+        },
+        status: 'complete',
+        daysAgo: 8,
+      },
+      {
+        title: 'What if SARB raises rates another 75bps?',
+        description: 'Stress-test of debt service costs and working-capital facility utilisation',
+        inputQuery: 'Calculate incremental annualised debt service cost and breach probability on existing covenants if SARB raises the repo rate by an additional 75 basis points',
+        variables: [
+          { name: 'rate_change_bps', value: 75, unit: 'basis_points' },
+          { name: 'variable_rate_debt', value: 85_000_000, unit: 'ZAR' },
+          { name: 'debt_service_coverage_ratio_current', value: 2.4, unit: 'ratio' },
+          { name: 'covenant_threshold', value: 1.8, unit: 'ratio' },
+        ],
+        results: {
+          recommendation: 'Convert R 35M of variable-rate debt to fixed before rate decision (probability of hike 62%); DSCR remains above covenant but margin narrows to 0.4x',
+          analysis_points: [
+            'Incremental annual interest cost: R 638k (75bps × R 85M variable debt)',
+            'DSCR moves from 2.4 to 2.2 — still above 1.8 covenant but reduces margin of safety',
+            'Fixed-rate swap available at R-JIBAR + 285bps (12-month forward)',
+            'Capital allocation: defer R 12M of non-critical CapEx to preserve liquidity',
+          ],
+          npv_impact: -1_240_000,
+          npv_currency: 'ZAR',
+          confidence: 0.71,
+          downside_case: { npv: -2_850_000, probability: 0.24 },
+          upside_case: { npv: -420_000, probability: 0.30 },
+        },
+        status: 'complete',
+        daysAgo: 12,
+      },
+      {
+        title: 'What if Eskom load-shedding extends to Stage 6?',
+        description: 'Production capacity and OEE impact under prolonged Stage 6 load-shedding',
+        inputQuery: 'Project monthly production output, OEE deterioration, and diesel generator cost if Stage 6 load-shedding persists for 60 days',
+        variables: [
+          { name: 'loadshedding_stage', current: 4, hypothetical: 6, unit: 'stage' },
+          { name: 'duration_days', value: 60, unit: 'days' },
+          { name: 'production_capacity_baseline', value: 100, unit: 'percent' },
+          { name: 'backup_genset_capacity', value: 65, unit: 'percent' },
+        ],
+        results: {
+          recommendation: 'Activate Tier-2 contingency: dual-shift production, accelerate solar PV commissioning (currently scheduled Q4 2026), and pre-position 3 weeks of diesel inventory',
+          analysis_points: [
+            'Production output drop: 32% (from 100% to 68%) under Stage 6 without intervention',
+            'Diesel cost surge: R 2.1M over 60 days at current generator runtime',
+            'OEE deterioration: 71% → 58% on machine utilisation',
+            'Solar PV acceleration saves R 720k/quarter but requires R 1.4M front-loaded CapEx',
+          ],
+          npv_impact: -3_450_000,
+          npv_currency: 'ZAR',
+          confidence: 0.82,
+          downside_case: { npv: -5_800_000, probability: 0.28 },
+          upside_case: { npv: -1_900_000, probability: 0.22 },
+        },
+        status: 'complete',
+        daysAgo: 18,
+      },
+      {
+        title: 'What if we expand JHB-DC capacity by 40%?',
+        description: 'CapEx scenario for warehouse expansion to support FMCG retail channel growth',
+        inputQuery: 'Evaluate the business case for expanding JHB-DC throughput capacity by 40% to support projected retail channel growth and reduce stockout risk',
+        variables: [
+          { name: 'capacity_expansion_percent', value: 40, unit: 'percent' },
+          { name: 'capex_required', value: 18_500_000, unit: 'ZAR' },
+          { name: 'projected_revenue_lift', value: 32_000_000, unit: 'ZAR' },
+          { name: 'projected_margin', value: 0.18, unit: 'fraction' },
+        ],
+        results: {
+          recommendation: 'Defer full expansion; pursue Phase 1 (R 6.5M, 18% capacity uplift) with optionality to expand to Phase 2 if Pick n Pay contract renewal confirms 2027 volume commitments',
+          analysis_points: [
+            'Phase 1 NPV: R 4.2M (R 6.5M CapEx, 18% capacity, 24-month payback)',
+            'Full expansion NPV: R 6.8M but with R 12M downside if PnP volume commitments do not materialise',
+            'Phase 1 preserves capital for FX-vulnerable working capital needs',
+            'Real-option value of staged investment: R 1.6M (Black-Scholes valuation)',
+          ],
+          npv_impact: 4_200_000,
+          npv_currency: 'ZAR',
+          confidence: 0.69,
+          downside_case: { npv: -2_400_000, probability: 0.26 },
+          upside_case: { npv: 7_800_000, probability: 0.31 },
+        },
+        status: 'complete',
+        daysAgo: 25,
+      },
+    ];
+    for (const sc of scenarioSeeds) {
+      const d = new Date(); d.setDate(d.getDate() - sc.daysAgo);
+      await c.env.DB.prepare(
+        `INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        crypto.randomUUID(), tenantId, sc.title, sc.description, sc.inputQuery,
+        JSON.stringify(sc.variables), JSON.stringify(sc.results), sc.status, d.toISOString()
+      ).run();
+    }
+    console.log(`[VantaX Seeder] Seeded ${scenarioSeeds.length} Apex scenarios`);
+
+    // ── STEP: Seed Board Reports ──
+    // Apex → Board Reports tab needs at least one of each report_type to render.
+    console.log('[VantaX Seeder] Seeding board reports...');
+    const boardReports = [
+      {
+        title: 'Monthly Board Report — April 2026',
+        report_type: 'monthly',
+        daysAgo: 26,
+        content: {
+          executive_summary: 'Operational momentum continues: Atheon Score rose from 65 to 69 in April. R 750k of additional discrepancy value recovered. Inventory variance at JHB-DC remains the largest open item.',
+          highlights: [
+            'Atheon Score: 65 → 69 (+4 points)',
+            'Discrepancy recovered: R 2.45M cumulative (R 750k added in April)',
+            'Process metrics: 7 green, 3 amber, 2 red (vs 4 green / 5 amber / 4 red at baseline)',
+            'GR/IR exception rate dropped from 17% to 12.4%',
+          ],
+          key_decisions: [
+            'Approved automation pilot for GR/IR top-12 vendors (R 240k CapEx)',
+            'Deferred JHB-DC Phase 2 expansion pending Q4 contract renewals',
+          ],
+          risks_under_management: [
+            'Rand weakening past R19/USD — FX hedging accelerated to 50% coverage',
+            'Stage 4 load-shedding extension — backup capacity verified',
+            'Revenue recognition timing — external auditor engaged for Q1 review',
+          ],
+          next_period_focus: [
+            'Complete GR/IR automation rollout (target end June)',
+            'Investigate JHB-DC shrinkage variance (audit budget R 500k approved)',
+            'VAT 16% configuration changes (effective July 2026)',
+          ],
+          financial_highlights: {
+            revenue_recovered_ytd: 3_200_000,
+            atheon_cost_ytd: 580_000,
+            roi_multiple: 5.5,
+            currency: 'ZAR',
+          },
+        },
+      },
+      {
+        title: 'Quarterly Board Report — Q1 2026',
+        report_type: 'quarterly',
+        daysAgo: 55,
+        content: {
+          executive_summary: 'Q1 2026 marked a step-change in operational visibility. Atheon Score rose 17 points (baseline 52 → 69 by quarter end). R 4.85M of discrepancy value identified, R 3.2M recovered. Three structural issues now have remediation plans with named owners.',
+          highlights: [
+            'Atheon Score trajectory: 52 → 56 → 61 → 65 → 69 (5-month trend)',
+            'Discrepancy identified: R 4.85M total; R 3.2M recovered (66% recovery rate)',
+            'Person-hours saved: 2,400 hours equivalent across Finance + Operations teams',
+            'Risk count: 12 critical risks at baseline → 4 critical at quarter-end',
+          ],
+          key_decisions: [
+            'Approved Atheon Phase 2 deployment (Supply Chain + Revenue clusters)',
+            'Allocated R 500k inventory audit budget',
+            'Engaged external auditor for IFRS 15 revenue recognition review',
+            'Activated FX hedging programme covering 50% of import exposure',
+          ],
+          risks_under_management: [
+            'IFRS 15 revenue recognition — external review in progress, expected resolution June 2026',
+            'GR/IR exception rate — declining trend (17% → 12.4%); automation pilot underway',
+            'Inventory shrinkage 21.7% at JHB-DC — audit budgeted, investigation begins Q2',
+          ],
+          next_period_focus: [
+            'Q2 2026 priorities: VAT 16% changeover, GR/IR automation rollout, JHB-DC audit',
+            'Target Atheon Score: 80 by end of Q2 (+11 points from current)',
+            'Target recovered value: R 5.5M cumulative by end of Q2',
+          ],
+          financial_highlights: {
+            revenue_recovered_q1: 3_200_000,
+            downstream_losses_prevented: 1_800_000,
+            atheon_cost_q1: 580_000,
+            roi_multiple: 8.3,
+            currency: 'ZAR',
+          },
+        },
+      },
+      {
+        title: 'Ad-Hoc Board Brief — Rand at R19/USD',
+        report_type: 'adhoc',
+        daysAgo: 8,
+        content: {
+          executive_summary: 'The Rand has breached R19/USD amid global risk-off sentiment. Atheon Apex projects R 1.65M NPV impact at R20/USD and R 3.2M at R21/USD. Hedging accelerated to 50% coverage; further escalation contingency outlined.',
+          trigger: 'Apex Radar — Reuters signal "Rand Weakens Past R19/USD" (severity: critical, relevance: 92%)',
+          immediate_actions_taken: [
+            'FX hedging coverage increased from 35% to 50% within 48 hours of signal',
+            'Forward contracts locked for R 18M of confirmed import orders',
+            'Supplier renegotiation initiated for ZAR escalation clauses on top-5 import contracts',
+          ],
+          scenario_outcomes: [
+            { scenario: 'R20/USD', npv_impact_zar: -1_650_000, probability: 0.45 },
+            { scenario: 'R21/USD', npv_impact_zar: -3_200_000, probability: 0.18 },
+            { scenario: 'Reversion to R18.50/USD', npv_impact_zar: 280_000, probability: 0.37 },
+          ],
+          decisions_required: [
+            'Approve next tranche of FX hedging (R 12M, 6-month forward)',
+            'Endorse repricing of import-linked SKUs (proposed +4.2% effective 15 June 2026)',
+          ],
+          owner: 'Treasurer',
+          deadline: '2026-06-10',
+        },
+      },
+    ];
+    for (const br of boardReports) {
+      const d = new Date(); d.setDate(d.getDate() - br.daysAgo);
+      await c.env.DB.prepare(
+        `INSERT INTO board_reports (id, tenant_id, title, report_type, content, generated_by, generated_at)
+         VALUES (?, ?, ?, ?, ?, 'Atheon Apex', ?)`
+      ).bind(
+        crypto.randomUUID(), tenantId, br.title, br.report_type,
+        JSON.stringify(br.content), d.toISOString()
+      ).run();
+    }
+    console.log(`[VantaX Seeder] Seeded ${boardReports.length} board reports`);
+
+    // ── STEP: Seed Notifications ──
+    // Activity feed renders empty without these; spans recent + older entries.
+    console.log('[VantaX Seeder] Seeding notifications...');
+    const notificationSeeds = [
+      { type: 'catalyst', severity: 'success', title: 'GR/IR Reconciliation completed', message: 'Run 9b2 matched 49/55 items (89.1% match rate, R 8.2M recovered). 4 exceptions flagged for review.', actionUrl: '/catalysts', hoursAgo: 2 },
+      { type: 'signal', severity: 'critical', title: 'Apex Radar: Rand breached R19/USD', message: 'Reuters signal received. Estimated import cost impact R 1.65M over 90 days. FX hedging recommendation active.', actionUrl: '/apex', hoursAgo: 4 },
+      { type: 'threshold', severity: 'warning', title: 'GR/IR exception rate above threshold', message: 'Exception rate hit 14.8% (target ≤ 8%). Top contributors: LIFNR 100013 (5 items), 100027 (3 items).', actionUrl: '/diagnostics', hoursAgo: 7 },
+      { type: 'catalyst', severity: 'success', title: 'Bank Reconciliation completed', message: 'Run 6f4 reconciled 56/72 transactions (77.8%). 10 unallocated bank fees auto-categorised.', actionUrl: '/catalysts', hoursAgo: 14 },
+      { type: 'anomaly', severity: 'high', title: 'Inventory shrinkage detected at JHB-DC', message: 'Cycle-count variance of 21.7% on FG-104 category. R 320k value exposure. Audit recommended.', actionUrl: '/diagnostics', hoursAgo: 22 },
+      { type: 'briefing', severity: 'info', title: 'Daily Executive Briefing generated', message: 'Health delta -1.2 points. 4 risks, 3 opportunities, 4 decisions surfaced.', actionUrl: '/dashboard', hoursAgo: 26 },
+      { type: 'scenario', severity: 'info', title: 'Apex scenario complete: GR/IR automation', message: 'Projected R 2.84M NPV, 3.8-month payback, 6.2x year-one ROI. Recommendation: proceed with pilot.', actionUrl: '/apex', hoursAgo: 30 },
+      { type: 'catalyst', severity: 'warning', title: 'Sales Order Matching exceptions elevated', message: 'Run 0e5 found 10 amount variances and 7 status mismatches. Possible IFRS 15 timing issue.', actionUrl: '/catalysts', hoursAgo: 38 },
+      { type: 'agent', severity: 'success', title: 'AP Validation Agent deployed v2.3.8', message: '2,034 invoices validated this cycle. Health score 96%, uptime 99.9%.', actionUrl: '/agents', hoursAgo: 48 },
+      { type: 'signal', severity: 'high', title: 'Apex Radar: SARS confirms VAT increase', message: 'VAT moves to 16% effective July 2026. All SAP tax codes and pricing masters require update.', actionUrl: '/apex', hoursAgo: 60 },
+      { type: 'catalyst', severity: 'success', title: 'Inventory Reconciliation completed', message: 'Run b73 matched 10/18 products exactly. 4 shrinkage and 4 surplus items isolated.', actionUrl: '/catalysts', hoursAgo: 72 },
+      { type: 'roi', severity: 'success', title: 'ROI milestone: 5x return crossed', message: 'Q1 cumulative ROI hit 5.5x (R 3.2M recovered against R 580k Atheon spend).', actionUrl: '/roi-dashboard', hoursAgo: 96 },
+      { type: 'threshold', severity: 'warning', title: 'Match Rate below target', message: 'Aggregate match rate 82.4% (target 92%). Down -5.2% vs last month. Drill-through available.', actionUrl: '/diagnostics', hoursAgo: 120 },
+      { type: 'briefing', severity: 'info', title: 'Quarterly Board Report ready', message: 'Q1 2026 board report generated. Atheon Score +17 points; R 4.85M discrepancy identified.', actionUrl: '/apex', hoursAgo: 168 },
+      { type: 'system', severity: 'info', title: 'SAP S/4HANA connector synced', message: 'Hourly sync completed: 2,847 records refreshed across FI/CO/MM/SD/PP/QM modules.', actionUrl: '/connectors', hoursAgo: 240 },
+    ];
+    for (const n of notificationSeeds) {
+      const d = new Date(); d.setHours(d.getHours() - n.hoursAgo);
+      await c.env.DB.prepare(
+        `INSERT INTO notifications (id, tenant_id, type, title, message, severity, action_url, read, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        crypto.randomUUID(), tenantId, n.type, n.title, n.message, n.severity,
+        n.actionUrl, n.hoursAgo > 48 ? 1 : 0, d.toISOString()
+      ).run();
+    }
+    console.log(`[VantaX Seeder] Seeded ${notificationSeeds.length} notifications`);
+
+    // ── STEP: Seed Support Tickets + Replies ──
+    // Support Console renders empty without these. Use an existing tenant user
+    // as raiser/assignee — fall back to skipping the seed if no users exist.
+    console.log('[VantaX Seeder] Seeding support tickets...');
+    const tenantUsers = await c.env.DB.prepare(
+      `SELECT id, email, role FROM users WHERE tenant_id = ? ORDER BY created_at ASC LIMIT 5`
+    ).bind(tenantId).all<{ id: string; email: string; role: string }>();
+    const userRows = (tenantUsers.results || []) as { id: string; email: string; role: string }[];
+    if (userRows.length === 0) {
+      console.log('[VantaX Seeder] No tenant users — skipping support_tickets seed');
+    } else {
+      const primaryUserId = userRows[0].id;
+      const supportAdminId = userRows.find(u => u.role === 'support_admin' || u.role === 'admin' || u.role === 'superadmin')?.id || primaryUserId;
+      const ticketSeeds = [
+        {
+          subject: 'GR/IR matching tolerance question',
+          body: 'Our procurement team flagged that the new 2% PO-tolerance rule is auto-matching invoices for vendor LIFNR 100013 that we previously held for manual review. Can we configure tighter tolerance for this vendor specifically?',
+          category: 'configuration',
+          priority: 'normal',
+          status: 'resolved',
+          daysAgo: 18,
+          replies: [
+            { fromAdmin: true, daysAgo: 17, body: 'Yes — vendor-specific tolerance overrides are supported under Settings → Connectors → SAP → Tolerance Rules. I can walk you through it if helpful.' },
+            { fromAdmin: false, daysAgo: 16, body: 'Thanks, found it. Configured 0.5% for 100013. Closing.' },
+            { fromAdmin: true, daysAgo: 16, body: 'Marking resolved. Reach out if discrepancies persist.' },
+          ],
+        },
+        {
+          subject: 'Export executive briefing to PDF',
+          body: 'Is there a way to export the daily Executive Briefing as a PDF for distribution to our board? Currently I am copy-pasting from the UI.',
+          category: 'feature_request',
+          priority: 'low',
+          status: 'in_progress',
+          daysAgo: 12,
+          replies: [
+            { fromAdmin: true, daysAgo: 11, body: 'PDF export is on the Q3 roadmap (BD-4). In the meantime, you can use the “Board Reports” section which generates a board-ready format. Would that work?' },
+            { fromAdmin: false, daysAgo: 10, body: 'Board Reports works for the quarterly cadence, but I need the daily briefing in PDF for our exec sync. Will wait for BD-4.' },
+          ],
+        },
+        {
+          subject: 'IFRS 15 revenue recognition flag — false positive?',
+          body: 'The Revenue Cycle Agent flagged 26.3% of Q1 invoices as “booked in wrong period under IFRS 15”. After review, ~40% of these appear to be legitimate timing differences allowed under the contract terms. Can we tune the threshold?',
+          category: 'tuning',
+          priority: 'high',
+          status: 'in_progress',
+          daysAgo: 9,
+          replies: [
+            { fromAdmin: true, daysAgo: 8, body: 'Good catch — this is a known sensitivity in the IFRS 15 detection model. We can add contract-type exclusions. Can you share a sample of the false positives so we can validate the tuning before it goes live?' },
+            { fromAdmin: false, daysAgo: 7, body: 'Sample attached (12 invoices, all under long-term service contracts where milestone billing is contractually deferred). Let me know if you need more.' },
+            { fromAdmin: true, daysAgo: 6, body: 'Received. Engineering will deploy contract-type exclusion logic next sprint. Will keep this open until validated against your Q1 dataset.' },
+          ],
+        },
+        {
+          subject: 'Atheon Score weighting — can we customise?',
+          body: 'We would prefer to weight Catalyst Effectiveness higher than the default 15% given how heavily we lean on automated catalysts. Is custom weighting supported?',
+          category: 'configuration',
+          priority: 'normal',
+          status: 'resolved',
+          daysAgo: 7,
+          replies: [
+            { fromAdmin: true, daysAgo: 6, body: 'Custom score weighting is available under Settings → Health → Scoring Model. Note that customised scores cannot be compared to the industry benchmark (which uses the default weighting).' },
+            { fromAdmin: false, daysAgo: 6, body: 'That trade-off is fine for us — we will keep the default for benchmark comparison and use a custom view internally. Closing.' },
+          ],
+        },
+        {
+          subject: 'New user onboarding for our auditors',
+          body: 'We have 2 external auditors starting next week. What is the recommended role for read-only access scoped to financial dimensions only?',
+          category: 'access',
+          priority: 'normal',
+          status: 'open',
+          daysAgo: 3,
+          replies: [
+            { fromAdmin: true, daysAgo: 2, body: 'For external auditors I would recommend the `auditor` role — read-only across finance + compliance dimensions with full audit-log visibility. Should I provision two seats?' },
+          ],
+        },
+        {
+          subject: 'Apex Radar — too many low-relevance signals',
+          body: 'The Radar is surfacing 40+ signals per week, but only ~10 are actually relevant to us. Is there a way to filter by relevance score or category before they appear in the feed?',
+          category: 'tuning',
+          priority: 'normal',
+          status: 'open',
+          daysAgo: 2,
+          replies: [
+            { fromAdmin: true, daysAgo: 1, body: 'You can set a minimum relevance threshold under Apex → Settings (currently defaults to 50%). Try raising to 70% and we can iterate from there. Industry-specific tuning is also rolling out next month.' },
+          ],
+        },
+        {
+          subject: 'How does shared-savings billing reconcile?',
+          body: 'Our CFO asked how the “R0 until you save R1” calculation works in practice. Can you point me at documentation or walk through one month with us?',
+          category: 'billing',
+          priority: 'high',
+          status: 'in_progress',
+          daysAgo: 5,
+          replies: [
+            { fromAdmin: true, daysAgo: 4, body: 'Absolutely — every billed dollar traces to a specific recovered discrepancy with the source ERP record + confidence score. I can set up a 30-min walkthrough with your CFO. Tuesday or Wednesday work?' },
+            { fromAdmin: false, daysAgo: 4, body: 'Wednesday 10am SAST works. Looping in CFO.' },
+            { fromAdmin: true, daysAgo: 3, body: 'Confirmed for Wed 10am SAST. Will share the April reconciliation artefact beforehand.' },
+          ],
+        },
+        {
+          subject: 'Connector sync failure (intermittent)',
+          body: 'Saw 2 SAP sync failures yesterday at 02:00 and 14:00 SAST. Errors auto-recovered but I want to understand the root cause.',
+          category: 'incident',
+          priority: 'high',
+          status: 'resolved',
+          daysAgo: 4,
+          replies: [
+            { fromAdmin: true, daysAgo: 3, body: 'Investigated — both failures correlated with brief OAuth token refresh latency on the SAP side. We have added retry-with-backoff (3 attempts) and improved error reporting. No data loss; subsequent sync recovered all delta records.' },
+            { fromAdmin: false, daysAgo: 3, body: 'Thanks for the quick turnaround. Marking resolved.' },
+          ],
+        },
+      ];
+      for (const t of ticketSeeds) {
+        const ticketId = crypto.randomUUID();
+        const td = new Date(); td.setDate(td.getDate() - t.daysAgo);
+        const tu = new Date(); tu.setDate(tu.getDate() - Math.max(0, t.daysAgo - t.replies.length));
+        await c.env.DB.prepare(
+          `INSERT INTO support_tickets (id, tenant_id, user_id, assignee_user_id, subject, body, category, priority, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          ticketId, tenantId, primaryUserId, supportAdminId,
+          t.subject, t.body, t.category, t.priority, t.status,
+          td.toISOString(), tu.toISOString()
+        ).run();
+        for (const r of t.replies) {
+          const rd = new Date(); rd.setDate(rd.getDate() - r.daysAgo);
+          await c.env.DB.prepare(
+            `INSERT INTO support_ticket_replies (id, ticket_id, tenant_id, user_id, body, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          ).bind(
+            crypto.randomUUID(), ticketId, tenantId,
+            r.fromAdmin ? supportAdminId : primaryUserId,
+            r.body, rd.toISOString()
+          ).run();
+        }
+      }
+      console.log(`[VantaX Seeder] Seeded ${ticketSeeds.length} support tickets with replies`);
+    }
+
     // Summary
     // Products: SAP (18) + PHYSICAL_COUNT (18) = 36; Invoices: SAP (80) + SAP-AR (72) = 152
     const totalErpRecords = SA_SUPPLIERS.length + SA_CUSTOMERS.length + (SA_PRODUCTS.length * 2) + 80 + 72 + 80 + 80 + GL_ACCOUNTS.length + 40;
@@ -2059,6 +2842,12 @@ seed.post('/seed-vantax', async (c) => {
           catalystPrescriptions: catalystPrescriptions.length,
           roiTracking: 1,
           industrySeeds: industrySeeds.length,
+        },
+        consoleSurfaces: {
+          scenarios: scenarioSeeds.length,
+          boardReports: boardReports.length,
+          notifications: notificationSeeds.length,
+          supportTickets: userRows.length > 0 ? 8 : 0,
         },
         billing: billingDemo,
       },
