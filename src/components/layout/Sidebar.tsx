@@ -229,15 +229,20 @@ function AtheonSidebarLogo() {
     <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id="sbBg" x1="0" y1="0" x2="36" y2="36">
-          <stop offset="0%" stopColor="#06090d" />
-          <stop offset="100%" stopColor="#0e151c" />
+          <stop offset="0%" stopColor="#0A0E2A" />
+          <stop offset="100%" stopColor="#11163A" />
+        </linearGradient>
+        <linearGradient id="sbStroke" x1="0" y1="0" x2="36" y2="36">
+          <stop offset="0%" stopColor="#A3B18A" />
+          <stop offset="100%" stopColor="#CDA37E" />
         </linearGradient>
       </defs>
       <rect width="36" height="36" rx="9" fill="url(#sbBg)" />
-      <path d="M18 6L28 29H8L18 6Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
-      <line x1="11" y1="22" x2="25" y2="22" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
-      <line x1="13" y1="16.5" x2="23" y2="16.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
-      <circle cx="18" cy="9.5" r="1.8" fill="#CDA37E" />
+      <rect x="0.5" y="0.5" width="35" height="35" rx="8.5" fill="none" stroke="rgba(163, 177, 138, 0.18)" />
+      <path d="M18 6L28 29H8L18 6Z" fill="none" stroke="url(#sbStroke)" strokeWidth="1.6" strokeLinejoin="round" />
+      <line x1="11" y1="22" x2="25" y2="22" stroke="#A3B18A" strokeWidth=".8" opacity=".7" />
+      <line x1="13" y1="16.5" x2="23" y2="16.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".55" />
+      <circle cx="18" cy="9.5" r="1.9" fill="#CDA37E" />
     </svg>
   );
 }

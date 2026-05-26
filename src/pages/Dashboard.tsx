@@ -19,10 +19,11 @@ import {
   TrendingUp, TrendingDown, Minus,
   ChevronRight, AlertTriangle, RefreshCw, Eye, Lightbulb, X,
   CheckCircle2, XCircle, Gauge, Shield, Radar, Stethoscope, Coins, ArrowRight,
+  LayoutDashboard,
 } from "lucide-react";
 import { chartPalette, chartAccentB, chartLight } from "@/lib/chart-theme";
-import { OnboardingChecklist } from "@/components/common/OnboardingChecklist";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
+import { HeroHeader } from "@/components/ui/hero-header";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
@@ -246,17 +247,15 @@ export function Dashboard() {
           realised savings yet; dismissible per session. */}
       <SharedSavingsStrip />
 
-      {/* §9.2 Onboarding Checklist */}
-      <OnboardingChecklist />
-
-      {/* HEADER — matches Apex/Pulse layout */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <h1 className="text-headline-xl sm:text-display font-bold t-primary tracking-tight leading-tight">{getGreeting(user?.name)}</h1>
-            <SectionFreshness section="Health" />
-          </div>
+      {/* HEADER — v2 HeroHeader for consistent brand identity across modules */}
+      <HeroHeader
+        icon={LayoutDashboard}
+        title={getGreeting(user?.name)}
+        subtitle="Atheon Command Center — your real-time operating picture"
+        accent="sage"
+        trailing={
           <div className="flex items-center gap-2">
+            <SectionFreshness section="Health" />
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as TimeRange)}
@@ -282,8 +281,8 @@ export function Dashboard() {
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {mfaEnforcementWarning && (
         <div

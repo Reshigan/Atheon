@@ -307,8 +307,22 @@
     border-radius: 1rem;
     box-shadow: var(--shadow-glass);
     transition: all 0.2s ease;
+    position: relative;
   }
   .card-glass:hover { box-shadow: var(--shadow-card-hover); }
+  /* v2: hairline sage glow at the top edge — a subtle but unmistakable
+     brand signature that visually anchors every card to the Atheon palette
+     without competing with content. Light theme uses the same accent at
+     reduced alpha for legibility on the soft slate field. */
+  .atheon-dark .card-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: 1rem 1rem 0 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(163, 177, 138, 0.45) 50%, transparent 100%);
+    pointer-events: none;
+  }
 
   .card-dark {
     background: var(--bg-card);
