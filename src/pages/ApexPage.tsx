@@ -629,7 +629,7 @@ export function ApexPage() {
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
  <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
  <p className="text-sm text-red-400 flex-1">{actionError}</p>
- <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300" title="Dismiss error"><X size={14} /></button>
+ <button type="button" onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/50 rounded p-0.5" aria-label="Dismiss error message" title="Dismiss error"><X size={14} aria-hidden="true" /></button>
  </div>
  )}
 
@@ -848,20 +848,24 @@ export function ApexPage() {
          </div>
          <Sparkline data={dim.sparkline} width={60} height={20} color={dim.score >= 80 ? '#10b981' : dim.score >= 60 ? '#f59e0b' : '#ef4444'} />
          <button
+          type="button"
           onClick={() => toggleDimensionCompare(dim.key)}
-          className={`text-caption flex items-center gap-0.5 transition-all ml-2 ${selectedDimensions.includes(dim.key) ? 'text-accent opacity-100' : 'opacity-0 group-hover:opacity-100 text-accent hover:text-accent/80'}`}
+          className={`text-caption flex items-center gap-0.5 transition-all ml-2 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5 ${selectedDimensions.includes(dim.key) ? 'text-accent opacity-100' : 'md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 text-accent hover:text-accent/80'}`}
           title={selectedDimensions.includes(dim.key) ? `Remove ${dim.name} from comparison` : `Compare ${dim.name}`}
           aria-pressed={selectedDimensions.includes(dim.key)}
+          aria-label={selectedDimensions.includes(dim.key) ? `Remove ${dim.name} from comparison` : `Compare ${dim.name}`}
          >
-          {selectedDimensions.includes(dim.key) ? <PinOff size={10} /> : <Pin size={10} />}
+          {selectedDimensions.includes(dim.key) ? <PinOff size={12} aria-hidden="true" /> : <Pin size={12} aria-hidden="true" />}
           <span className="hidden sm:inline">{selectedDimensions.includes(dim.key) ? 'Unpin' : 'Compare'}</span>
          </button>
          <button
+          type="button"
           onClick={() => handleOpenDimensionTrace(dim.key)}
-          className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all ml-1"
+          className="md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all ml-1 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5"
           title={`Trace ${dim.name}`}
+          aria-label={`Open trace for ${dim.name}`}
          >
-          <Eye size={10} />
+          <Eye size={12} aria-hidden="true" />
          </button>
         </div>
        </div>
@@ -959,7 +963,9 @@ export function ApexPage() {
   </div>
   <span className="text-caption font-mono t-muted flex items-center gap-1.5">
    <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34D399' }} aria-hidden="true" />
-   Generated 08:00 AM
+   {briefing?.generatedAt
+     ? `Generated ${new Date(briefing.generatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`
+     : 'Generating…'}
   </span>
  </div>
  {briefing?.summary ? (
@@ -1549,7 +1555,7 @@ export function ApexPage() {
  <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
  <BarChart3 size={18} className="text-accent" /> Scenario Builder
  </h3>
- <button onClick={() => setShowScenarioBuilder(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ <button type="button" onClick={() => setShowScenarioBuilder(false)} className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-1" aria-label="Close scenario builder"><X size={18} aria-hidden="true" /></button>
  </div>
 
  {/* Step Indicator */}
@@ -1760,8 +1766,8 @@ export function ApexPage() {
           </div>
           <div className="flex items-center gap-2">
            <span className="text-caption t-muted">{new Date(report.generatedAt).toLocaleDateString()}</span>
-           {report.pdfUrl && <button onClick={() => api.boardReport.downloadPdf(report.id, report.title)} className="text-caption text-accent hover:underline flex items-center gap-0.5"><FileText size={10} />PDF</button>}
-           {report.contentMarkdown && <button onClick={() => setShowBoardReport(showBoardReport === report.id ? null : report.id)} className="text-caption text-accent hover:underline">View</button>}
+           {report.pdfUrl && <button type="button" onClick={() => api.boardReport.downloadPdf(report.id, report.title)} className="text-caption text-accent hover:underline flex items-center gap-0.5 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded px-1" aria-label={`Download PDF of ${report.title || 'board report'}`}><FileText size={12} aria-hidden="true" />PDF</button>}
+           {report.contentMarkdown && <button type="button" onClick={() => setShowBoardReport(showBoardReport === report.id ? null : report.id)} className="text-caption text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded px-1" aria-label={`${showBoardReport === report.id ? 'Hide' : 'View'} ${report.title || 'board report'}`}>{showBoardReport === report.id ? 'Hide' : 'View'}</button>}
           </div>
          </div>
         ))}
@@ -1842,7 +1848,7 @@ export function ApexPage() {
          {expandedSignal === signal.id && (
           <div className="mt-3 pt-3 border-t border-[var(--border-card)]">
            <p className="text-xs t-secondary mb-2">{signal.description}</p>
-           {signal.url && <a href={signal.url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:underline flex items-center gap-1"><Link2 size={10} />{signal.url}</a>}
+           {signal.url && <a href={signal.url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:underline flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded px-0.5" aria-label={`Open source for ${signal.title || 'signal'} in a new tab`}><Link2 size={12} aria-hidden="true" />{signal.url}</a>}
            <p className="text-caption t-muted mt-2">Detected: {new Date(signal.detectedAt).toLocaleDateString()} · Relevance: {Math.round(signal.relevanceScore)}%</p>
           </div>
          )}

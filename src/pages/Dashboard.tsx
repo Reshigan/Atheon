@@ -321,7 +321,7 @@ export function Dashboard() {
         <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
           <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
           <p className="text-sm text-amber-400 flex-1">{actionError}</p>
-          <button onClick={() => setActionError(null)} className="text-amber-400 hover:text-amber-300" title="Dismiss"><X size={14} /></button>
+          <button type="button" onClick={() => setActionError(null)} className="text-amber-400 hover:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400/50 rounded p-0.5" aria-label="Dismiss error message" title="Dismiss"><X size={14} aria-hidden="true" /></button>
         </div>
       )}
 
@@ -448,11 +448,13 @@ export function Dashboard() {
                       </span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleOpenDimensionTrace(dim.key)}
-                      className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all"
+                      className="md:opacity-0 md:group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all focus:outline-none focus:opacity-100 focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5"
                       title={`Trace ${dim.name}`}
+                      aria-label={`Open trace for ${dim.name}`}
                     >
-                      <Eye size={10} />
+                      <Eye size={12} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
