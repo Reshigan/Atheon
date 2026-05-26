@@ -75,6 +75,8 @@ export const VANTAX_TENANT_TABLES = new Set([
   'strategic_key_results', 'strategic_objectives', 'strategic_initiatives',
   // Wave 3: dashboard depth (CFO morning view)
   'dashboard_close_tasks', 'dashboard_close_cycles', 'dashboard_working_capital',
+  // Wave 4: pulse depth (SLA adherence)
+  'pulse_sla_measurements', 'pulse_sla_definitions',
 ]);
 
 /**

@@ -2983,6 +2983,61 @@ seed.post('/seed-vantax', async (c) => {
     }
     console.log(`[VantaX Seeder] Seeded period-close cycle ${periodLabel} with ${closeTasks.length} tasks (${completedCount} done, ${blockingCount} blocking)`);
 
+    // ── STEP: Seed Pulse SLA Adherence (Wave 4 — Pulse depth) ──
+    // Six representative operational processes with 30 days of daily measurements.
+    // Each process has a baseline adherence + small daily noise so the trend
+    // sparklines look like real ops data rather than a flat line.
+    console.log('[VantaX Seeder] Seeding pulse SLA adherence...');
+    const slaDefs = [
+      { key: 'ap_invoice_processing',   name: 'AP Invoice Processing', domain: 'AP',        target_hours: 24,  threshold: 95, owner: 'Lerato Mokoena',     description: '3-way match + post within 24h of receipt', baseAdherence: 96 },
+      { key: 'ar_collection_cycle',     name: 'AR Collection Cycle',   domain: 'AR',        target_hours: 720, threshold: 90, owner: 'Sipho Dlamini',      description: 'Days from invoice to cash collected (target 30d)', baseAdherence: 78 },
+      { key: 'bank_reconciliation',     name: 'Bank Reconciliation',   domain: 'Treasury',  target_hours: 4,   threshold: 98, owner: 'Anita Patel',        description: 'Daily bank rec posted within 4h of statement', baseAdherence: 99 },
+      { key: 'gr_ir_matching',          name: 'GR/IR Matching',        domain: 'Procurement', target_hours: 48, threshold: 92, owner: 'Themba Ndlovu',      description: 'GR matched to IR within 48h of receipt', baseAdherence: 84 },
+      { key: 'sales_order_to_cash',     name: 'Sales Order to Cash',   domain: 'Sales',     target_hours: 168, threshold: 90, owner: 'Naledi van Rensburg', description: 'Order accepted → cash applied within 7 days', baseAdherence: 92 },
+      { key: 'inventory_cycle_count',   name: 'Inventory Cycle Count', domain: 'Inventory', target_hours: 8,   threshold: 95, owner: 'Kabelo Mahlangu',     description: 'Adjustment post within 8h of count completion', baseAdherence: 97 },
+    ];
+
+    // Clear prior data for idempotency (re-seed should refresh, not duplicate)
+    await c.env.DB.prepare('DELETE FROM pulse_sla_measurements WHERE tenant_id = ?').bind(tenantId).run();
+    await c.env.DB.prepare('DELETE FROM pulse_sla_definitions WHERE tenant_id = ?').bind(tenantId).run();
+
+    const slaInsertedIds: string[] = [];
+    for (const def of slaDefs) {
+      const slaId = `sla_${tenantId.slice(0, 6)}_${def.key}`;
+      slaInsertedIds.push(slaId);
+      await c.env.DB.prepare(
+        `INSERT INTO pulse_sla_definitions (id, tenant_id, process_key, process_name, domain, target_hours, threshold_pct, owner, description, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
+      ).bind(slaId, tenantId, def.key, def.name, def.domain, def.target_hours, def.threshold, def.owner, def.description).run();
+
+      // 30 days of measurements with small variance + slight trend
+      const now = new Date();
+      for (let day = 29; day >= 0; day--) {
+        const measuredAt = new Date(now.getTime() - day * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        // adherence drift: AP slowly improving, AR slowly degrading, others stable
+        let drift = 0;
+        if (def.key === 'ap_invoice_processing') drift = (29 - day) * 0.05;
+        if (def.key === 'ar_collection_cycle') drift = -(29 - day) * 0.12;
+        if (def.key === 'gr_ir_matching') drift = (29 - day) * 0.08;
+        const noise = (Math.sin(day * 1.13 + def.key.length) + Math.cos(day * 0.7)) * 1.5;
+        const adherencePct = Math.max(0, Math.min(100, def.baseAdherence + drift + noise));
+        const totalItems = Math.floor(40 + Math.abs(Math.sin(day * 0.9 + def.key.length)) * 60);
+        const breachedCount = Math.round(totalItems * (1 - adherencePct / 100));
+        const metCount = totalItems - breachedCount;
+        // avg_hours: target * (1 + breach pressure)
+        const breachPressure = breachedCount / Math.max(1, totalItems);
+        const avgHours = def.target_hours * (0.85 + breachPressure * 0.6 + Math.abs(noise) * 0.02);
+        const p95Hours = avgHours * 1.4;
+        await c.env.DB.prepare(
+          `INSERT INTO pulse_sla_measurements (id, tenant_id, sla_id, measured_at, total_items, met_count, breached_count, avg_hours, p95_hours, adherence_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          crypto.randomUUID(), tenantId, slaId, measuredAt,
+          totalItems, metCount, breachedCount,
+          +avgHours.toFixed(2), +p95Hours.toFixed(2), +adherencePct.toFixed(2)
+        ).run();
+      }
+    }
+    console.log(`[VantaX Seeder] Seeded ${slaDefs.length} SLA definitions with 30d of measurements`);
+
     // ── STEP: Seed Board Reports ──
     // Apex → Board Reports tab needs at least one of each report_type to render.
     console.log('[VantaX Seeder] Seeding board reports...');
@@ -3376,6 +3431,11 @@ seed.post('/seed-vantax', async (c) => {
           closeTasksTotal: closeTasks.length,
           closeTasksCompleted: completedCount,
           closeTasksBlocking: blockingCount,
+        },
+        pulseDepth: {
+          slaDefinitions: slaDefs.length,
+          slaMeasurementsPerSla: 30,
+          totalSlaMeasurements: slaDefs.length * 30,
         },
         billing: billingDemo,
         valueAssessmentReport: {

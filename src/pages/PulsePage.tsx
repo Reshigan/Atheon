@@ -29,12 +29,13 @@ import {
   TrendingUp, TrendingDown, Minus, Shield, Lightbulb, ChevronDown,
   ChevronUp, Clock, Zap, Target, Eye, CheckCircle2, XCircle,
   BarChart3, Gauge, Filter, AlertCircle, Workflow, Play,
-  UserCheck, FileWarning, RefreshCw, List, Stethoscope, ChevronRight, Wrench, X, DollarSign
+  UserCheck, FileWarning, RefreshCw, List, Stethoscope, ChevronRight, Wrench, X, DollarSign, Timer
 } from "lucide-react";
 import { CSVExportButton } from "@/components/common/CSVExportButton";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { MetricsGrid } from "./pulse/MetricsGrid";
 import { AnomalyList } from "./pulse/AnomalyList";
+import { SLAAdherencePanel } from "./pulse/SLAAdherencePanel";
 // FlipCard removed per UI cleanup spec
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -766,6 +767,7 @@ export function PulsePage() {
     { id: 'diagnostics', label: 'Diagnostics', icon: <Stethoscope size={14} />, count: diagSummary?.criticalFindings || undefined },
     { id: 'anomalies', label: 'Anomalies', icon: <AlertTriangle size={14} />, count: anomalies.filter(a => a.severity === 'critical' || a.severity === 'high').length || undefined },
     { id: 'processes', label: 'Processes', icon: <GitBranch size={14} /> },
+    { id: 'sla', label: 'SLA Adherence', icon: <Timer size={14} /> },
     { id: 'correlations', label: 'Correlations', icon: <Link2 size={14} /> },
     { id: 'cost-of-inaction', label: 'Cost of Inaction', icon: <DollarSign size={14} /> },
   ];
@@ -1898,6 +1900,15 @@ export function PulsePage() {
               );
             })}
           </div>
+        </TabPanel>
+      )}
+
+      {/* ══════════════════════════════════════════════════════
+          TAB: SLA Adherence (Wave 4 — Pulse depth)
+          ══════════════════════════════════════════════════════ */}
+      {activeTab === 'sla' && (
+        <TabPanel>
+          <SLAAdherencePanel />
         </TabPanel>
       )}
 

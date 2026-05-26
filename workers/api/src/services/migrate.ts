@@ -81,7 +81,7 @@
 // per day. dashboard_close_cycles tracks the current period close (status,
 // total/completed/blocking task counts); dashboard_close_tasks holds the
 // individual task list. Pulled into Dashboard.tsx as two new cards.
-export const MIGRATION_VERSION = 'v77-dashboard-depth';
+export const MIGRATION_VERSION = 'v78-pulse-sla';
 
 /** Result of a migration run */
 export interface MigrationResult {
@@ -204,6 +204,8 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     CREATE TABLE IF NOT EXISTS dashboard_working_capital (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), snapshot_date TEXT NOT NULL, cash_position_zar REAL NOT NULL DEFAULT 0, ar_total_zar REAL NOT NULL DEFAULT 0, ar_current_zar REAL NOT NULL DEFAULT 0, ar_30_zar REAL NOT NULL DEFAULT 0, ar_60_zar REAL NOT NULL DEFAULT 0, ar_90_plus_zar REAL NOT NULL DEFAULT 0, ap_total_zar REAL NOT NULL DEFAULT 0, dso_days REAL NOT NULL DEFAULT 0, dpo_days REAL NOT NULL DEFAULT 0, dsi_days REAL NOT NULL DEFAULT 0, working_capital_zar REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, snapshot_date));
     CREATE TABLE IF NOT EXISTS dashboard_close_cycles (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), period_label TEXT NOT NULL, start_date TEXT NOT NULL, target_close_date TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'in_progress', total_tasks INTEGER NOT NULL DEFAULT 0, completed_tasks INTEGER NOT NULL DEFAULT 0, blocking_tasks INTEGER NOT NULL DEFAULT 0, on_schedule INTEGER NOT NULL DEFAULT 1, notes TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, period_label));
     CREATE TABLE IF NOT EXISTS dashboard_close_tasks (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), cycle_id TEXT NOT NULL REFERENCES dashboard_close_cycles(id), task_name TEXT NOT NULL, owner TEXT, status TEXT NOT NULL DEFAULT 'pending', due_date TEXT, blocking INTEGER NOT NULL DEFAULT 0, completed_at TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS pulse_sla_definitions (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), process_key TEXT NOT NULL, process_name TEXT NOT NULL, domain TEXT NOT NULL DEFAULT 'general', target_hours REAL NOT NULL DEFAULT 24, threshold_pct REAL NOT NULL DEFAULT 95, owner TEXT, description TEXT, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, process_key));
+    CREATE TABLE IF NOT EXISTS pulse_sla_measurements (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), sla_id TEXT NOT NULL REFERENCES pulse_sla_definitions(id), measured_at TEXT NOT NULL, total_items INTEGER NOT NULL DEFAULT 0, met_count INTEGER NOT NULL DEFAULT 0, breached_count INTEGER NOT NULL DEFAULT 0, avg_hours REAL NOT NULL DEFAULT 0, p95_hours REAL, adherence_pct REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(tenant_id, sla_id, measured_at));
     CREATE TABLE IF NOT EXISTS mind_queries (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT, query TEXT NOT NULL, response TEXT, tier TEXT NOT NULL DEFAULT 'tier-1', tokens_in INTEGER NOT NULL DEFAULT 0, tokens_out INTEGER NOT NULL DEFAULT 0, latency_ms INTEGER NOT NULL DEFAULT 0, citations TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS notifications (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), type TEXT NOT NULL DEFAULT 'system', title TEXT NOT NULL, message TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'info', action_url TEXT, metadata TEXT, read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS webhooks (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), url TEXT NOT NULL, secret TEXT NOT NULL, events TEXT NOT NULL DEFAULT '["*"]', active INTEGER NOT NULL DEFAULT 1, retry_count INTEGER NOT NULL DEFAULT 0, last_triggered TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -321,6 +323,8 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     'CREATE INDEX IF NOT EXISTS idx_dashboard_wc_tenant_date ON dashboard_working_capital(tenant_id, snapshot_date DESC)',
     'CREATE INDEX IF NOT EXISTS idx_dashboard_close_cycles_tenant ON dashboard_close_cycles(tenant_id, target_close_date DESC)',
     'CREATE INDEX IF NOT EXISTS idx_dashboard_close_tasks_cycle ON dashboard_close_tasks(cycle_id)',
+    'CREATE INDEX IF NOT EXISTS idx_pulse_sla_definitions_tenant ON pulse_sla_definitions(tenant_id, active)',
+    'CREATE INDEX IF NOT EXISTS idx_pulse_sla_measurements_sla_date ON pulse_sla_measurements(sla_id, measured_at DESC)',
     'CREATE INDEX IF NOT EXISTS idx_mind_queries_tenant ON mind_queries(tenant_id)',
     'CREATE INDEX IF NOT EXISTS idx_notifications_tenant ON notifications(tenant_id)',
     'CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(tenant_id, read)',

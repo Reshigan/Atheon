@@ -708,6 +708,34 @@ export const api = {
     // Department domains available for filtering
     domains: (tenantId?: string, companyId?: string) =>
       request<{ domains: string[] }>(`/api/pulse/domains${qs({ tenant_id: tenantId, company_id: companyId })}`),
+    // Wave 4: SLA adherence
+    sla: (companyId?: string) =>
+      request<{
+        items: Array<{
+          id: string;
+          processKey: string;
+          processName: string;
+          domain: string;
+          targetHours: number;
+          thresholdPct: number;
+          owner: string | null;
+          description: string | null;
+          latest: {
+            measuredAt: string;
+            totalItems: number;
+            metCount: number;
+            breachedCount: number;
+            avgHours: number;
+            p95Hours: number | null;
+            adherencePct: number;
+          } | null;
+          status: 'green' | 'amber' | 'red';
+          trend: Array<{ measuredAt: string; adherencePct: number; avgHours: number }>;
+        }>;
+        summary: { totalSlas: number; breachingSlas: number; avgAdherencePct: number };
+      }>(`/api/pulse/sla${qs({ company_id: companyId })}`),
+    updateSla: (id: string, body: { targetHours?: number; thresholdPct?: number; active?: boolean; owner?: string }) =>
+      request<{ updated: boolean }>(`/api/pulse/sla/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   },
 
   catalysts: {

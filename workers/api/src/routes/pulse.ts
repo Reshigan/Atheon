@@ -797,4 +797,195 @@ pulse.post('/anomalies/detect', async (c) => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// SLA Adherence (Wave 4 - Pulse depth)
+// ---------------------------------------------------------------------------
+
+type SLADefRow = {
+  id: string;
+  process_key: string;
+  process_name: string;
+  domain: string;
+  target_hours: number;
+  threshold_pct: number;
+  owner: string | null;
+  description: string | null;
+  active: number;
+  updated_at: string;
+};
+
+type SLAMeasurementRow = {
+  measured_at: string;
+  total_items: number;
+  met_count: number;
+  breached_count: number;
+  avg_hours: number;
+  p95_hours: number | null;
+  adherence_pct: number;
+};
+
+function statusForSla(adherencePct: number | null, threshold: number): 'green' | 'amber' | 'red' {
+  if (adherencePct === null) return 'amber';
+  if (adherencePct >= threshold) return 'green';
+  if (adherencePct >= threshold - 10) return 'amber';
+  return 'red';
+}
+
+// GET /api/pulse/sla — list SLA definitions with latest measurement + 30d trend
+pulse.get('/sla', async (c) => {
+  const tenantId = getTenantId(c);
+  const defs = await c.env.DB.prepare(
+    'SELECT id, process_key, process_name, domain, target_hours, threshold_pct, owner, description, active, updated_at FROM pulse_sla_definitions WHERE tenant_id = ? AND active = 1 ORDER BY domain, process_name'
+  ).bind(tenantId).all<SLADefRow>();
+
+  const items = [] as Array<Record<string, unknown>>;
+  let breachedCount = 0;
+  let totalCount = 0;
+  let totalAdherenceSum = 0;
+  let totalAdherenceN = 0;
+
+  for (const d of defs.results) {
+    const recent = await c.env.DB.prepare(
+      'SELECT measured_at, total_items, met_count, breached_count, avg_hours, p95_hours, adherence_pct FROM pulse_sla_measurements WHERE tenant_id = ? AND sla_id = ? ORDER BY measured_at DESC LIMIT 30'
+    ).bind(tenantId, d.id).all<SLAMeasurementRow>();
+
+    const trend = recent.results.slice().reverse();
+    const latest = recent.results[0] || null;
+    const status = statusForSla(latest?.adherence_pct ?? null, d.threshold_pct);
+    if (status === 'red') breachedCount += 1;
+    totalCount += 1;
+    if (latest) {
+      totalAdherenceSum += latest.adherence_pct;
+      totalAdherenceN += 1;
+    }
+
+    items.push({
+      id: d.id,
+      processKey: d.process_key,
+      processName: d.process_name,
+      domain: d.domain,
+      targetHours: d.target_hours,
+      thresholdPct: d.threshold_pct,
+      owner: d.owner,
+      description: d.description,
+      latest: latest ? {
+        measuredAt: latest.measured_at,
+        totalItems: latest.total_items,
+        metCount: latest.met_count,
+        breachedCount: latest.breached_count,
+        avgHours: latest.avg_hours,
+        p95Hours: latest.p95_hours,
+        adherencePct: latest.adherence_pct,
+      } : null,
+      status,
+      trend: trend.map((m) => ({
+        measuredAt: m.measured_at,
+        adherencePct: m.adherence_pct,
+        avgHours: m.avg_hours,
+      })),
+    });
+  }
+
+  return c.json({
+    items,
+    summary: {
+      totalSlas: totalCount,
+      breachingSlas: breachedCount,
+      avgAdherencePct: totalAdherenceN > 0 ? +(totalAdherenceSum / totalAdherenceN).toFixed(1) : 0,
+    },
+  });
+});
+
+// POST /api/pulse/sla — upsert SLA definition (admin+)
+pulse.post('/sla', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!isAdminRole(auth?.role)) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{
+    processKey: string;
+    processName: string;
+    domain?: string;
+    targetHours: number;
+    thresholdPct?: number;
+    owner?: string;
+    description?: string;
+  }>(c, [
+    { field: 'processKey', type: 'string', required: true, maxLength: 100 },
+    { field: 'processName', type: 'string', required: true, maxLength: 200 },
+    { field: 'targetHours', type: 'number', required: true, min: 0 },
+  ]);
+  if (errors.length || !body) return c.json({ error: 'Invalid payload', details: errors }, 400);
+
+  const existing = await c.env.DB.prepare(
+    'SELECT id FROM pulse_sla_definitions WHERE tenant_id = ? AND process_key = ?'
+  ).bind(tenantId, body.processKey).first<{ id: string }>();
+
+  const now = new Date().toISOString();
+  if (existing) {
+    await c.env.DB.prepare(
+      `UPDATE pulse_sla_definitions SET process_name = ?, domain = ?, target_hours = ?, threshold_pct = ?, owner = ?, description = ?, updated_at = ? WHERE id = ?`
+    ).bind(
+      body.processName,
+      body.domain || 'general',
+      body.targetHours,
+      body.thresholdPct ?? 95,
+      body.owner ?? null,
+      body.description ?? null,
+      now,
+      existing.id,
+    ).run();
+    return c.json({ id: existing.id, updated: true });
+  }
+
+  const id = `sla_${tenantId.slice(0, 6)}_${Date.now()}`;
+  await c.env.DB.prepare(
+    `INSERT INTO pulse_sla_definitions (id, tenant_id, process_key, process_name, domain, target_hours, threshold_pct, owner, description, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+  ).bind(
+    id,
+    tenantId,
+    body.processKey,
+    body.processName,
+    body.domain || 'general',
+    body.targetHours,
+    body.thresholdPct ?? 95,
+    body.owner ?? null,
+    body.description ?? null,
+    now,
+    now,
+  ).run();
+  return c.json({ id, created: true });
+});
+
+// PATCH /api/pulse/sla/:id — toggle active / adjust target / threshold (admin+)
+pulse.patch('/sla/:id', async (c) => {
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!isAdminRole(auth?.role)) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+  const tenantId = getTenantId(c);
+  const slaId = c.req.param('id');
+  const { data: body, errors } = await getValidatedJsonBody<{
+    targetHours?: number;
+    thresholdPct?: number;
+    active?: boolean;
+    owner?: string;
+  }>(c, []);
+  if (errors.length || !body) return c.json({ error: 'Invalid payload', details: errors }, 400);
+
+  const sets: string[] = [];
+  const binds: unknown[] = [];
+  if (typeof body.targetHours === 'number') { sets.push('target_hours = ?'); binds.push(body.targetHours); }
+  if (typeof body.thresholdPct === 'number') { sets.push('threshold_pct = ?'); binds.push(body.thresholdPct); }
+  if (typeof body.active === 'boolean') { sets.push('active = ?'); binds.push(body.active ? 1 : 0); }
+  if (typeof body.owner === 'string') { sets.push('owner = ?'); binds.push(body.owner); }
+  if (!sets.length) return c.json({ error: 'No changes' }, 400);
+  sets.push('updated_at = ?');
+  binds.push(new Date().toISOString());
+  binds.push(slaId, tenantId);
+  await c.env.DB.prepare(`UPDATE pulse_sla_definitions SET ${sets.join(', ')} WHERE id = ? AND tenant_id = ?`).bind(...binds).run();
+  return c.json({ updated: true });
+});
+
 export default pulse;
