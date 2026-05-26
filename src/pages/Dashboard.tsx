@@ -28,6 +28,8 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
+import { WorkingCapitalCard } from "@/components/dashboard/WorkingCapitalCard";
+import { CloseCycleCard } from "@/components/dashboard/CloseCycleCard";
 import { KpiGrid } from "./dashboard/KpiCards";
 import { HealthDimensions } from "./dashboard/HealthDimensions";
 import { IntelligencePanel } from "./dashboard/IntelligencePanel";
@@ -339,6 +341,18 @@ export function Dashboard() {
 
       {/* Dashboard Intelligence Panel — uses decomposed sub-component (TASK-002) */}
       {dashIntel && <IntelligencePanel data={dashIntel} />}
+
+      {/* Wave 3 — CFO morning view: cash + working capital + period close.
+          These two cards answer the first two questions a CFO has each
+          morning: "where's our cash + working capital trending?" and
+          "are we closing on time?". They drill into ERP-grounded data
+          but never duplicate the Apex tabs (which are quarterly), the
+          KpiGrid (which is operational), or the SharedSavingsStrip
+          (which is cumulative billing). */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <WorkingCapitalCard />
+        <CloseCycleCard />
+      </div>
 
       {/* §11.7 Atheon Score + §11.2 Journey Card */}
       <>

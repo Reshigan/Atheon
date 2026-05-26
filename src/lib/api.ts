@@ -608,6 +608,78 @@ export const api = {
     },
   },
 
+  dashboard: {
+    workingCapital: (tenantId?: string) =>
+      request<{
+        latest: {
+          snapshotDate: string;
+          cashPositionZar: number;
+          arTotalZar: number;
+          arCurrentZar: number;
+          ar30Zar: number;
+          ar60Zar: number;
+          ar90PlusZar: number;
+          apTotalZar: number;
+          dsoDays: number;
+          dpoDays: number;
+          dsiDays: number;
+          workingCapitalZar: number;
+        } | null;
+        buckets: {
+          currentPct: number;
+          days30Pct: number;
+          days60Pct: number;
+          days90PlusPct: number;
+        };
+        delta: {
+          cash: number;
+          dsoDays: number;
+          workingCapital: number;
+        };
+        sparklines: {
+          cash: number[];
+          dso: number[];
+          dpo: number[];
+          wc: number[];
+        };
+        history: Array<Record<string, unknown>>;
+      }>(`/api/v1/dashboard/working-capital${qs({ tenant_id: tenantId })}`),
+    closeCycle: (tenantId?: string) =>
+      request<{
+        cycle: {
+          id: string;
+          periodLabel: string;
+          startDate: string;
+          targetCloseDate: string;
+          status: string;
+          totalTasks: number;
+          completedTasks: number;
+          blockingTasks: number;
+          onSchedule: boolean;
+          notes: string | null;
+        } | null;
+        tasks: Array<{
+          id: string;
+          taskName: string;
+          owner: string | null;
+          status: string;
+          dueDate: string | null;
+          blocking: boolean;
+          completedAt: string | null;
+        }>;
+        summary: {
+          progressPct: number;
+          daysRemaining: number;
+          blockingCount: number;
+          onSchedule: boolean;
+        } | null;
+      }>(`/api/v1/dashboard/close-cycle${qs({ tenant_id: tenantId })}`),
+    updateCloseTask: (taskId: string, status: 'pending' | 'in_progress' | 'completed' | 'blocked') =>
+      request<{ ok: true }>(`/api/v1/dashboard/close-tasks/${encodeURIComponent(taskId)}`, {
+        method: 'PATCH', body: JSON.stringify({ status }),
+      }),
+  },
+
   pulse: {
     metrics: (tenantId?: string, industry?: string, companyId?: string) =>
       request<{ metrics: Metric[]; total: number }>(`/api/pulse/metrics${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined, company_id: companyId })}`),

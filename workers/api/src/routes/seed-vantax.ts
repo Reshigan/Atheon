@@ -2841,6 +2841,148 @@ seed.post('/seed-vantax', async (c) => {
     }
     console.log(`[VantaX Seeder] Seeded ${initiativeSeeds.length} portfolio initiatives`);
 
+    // ── Wave 3: Dashboard depth — working capital + period close ──
+    // 30 days of working-capital snapshots showing a steady improvement:
+    // DSO 48d → 36d, AR aging shifts toward current, cash position rises
+    // R 12.4M → R 14.8M. Each day's snapshot is idempotent on (tenant, date).
+    console.log('[VantaX Seeder] Seeding working-capital history...');
+    const wcSeeds: Array<{
+      dayOffset: number;
+      cash: number; arTotal: number; arCurrentPct: number; ar30Pct: number; ar60Pct: number; ar90Pct: number;
+      ap: number; dso: number; dpo: number; dsi: number;
+    }> = [];
+    for (let i = 29; i >= 0; i--) {
+      const t = (29 - i) / 29; // 0 → 1 (older → newer)
+      wcSeeds.push({
+        dayOffset: -i,
+        cash: 12_400_000 + t * 2_400_000 + (Math.sin(i * 0.7) * 80_000),
+        arTotal: 18_600_000 - t * 1_200_000 + (Math.cos(i * 0.4) * 120_000),
+        arCurrentPct: 0.52 + t * 0.10,
+        ar30Pct: 0.24 - t * 0.04,
+        ar60Pct: 0.14 - t * 0.03,
+        ar90Pct: 0.10 - t * 0.03,
+        ap: 9_200_000 + t * 600_000,
+        dso: 48 - t * 12 + (Math.sin(i * 0.5) * 0.6),
+        dpo: 38 + t * 4,
+        dsi: 31 - t * 5,
+      });
+    }
+    for (const s of wcSeeds) {
+      const dateStr = daysFromNow(s.dayOffset);
+      const arCurrent = s.arTotal * s.arCurrentPct;
+      const ar30 = s.arTotal * s.ar30Pct;
+      const ar60 = s.arTotal * s.ar60Pct;
+      const ar90 = s.arTotal * s.ar90Pct;
+      const wc = s.cash + s.arTotal - s.ap; // simplified working capital
+      seedBatch.push(c.env.DB.prepare(
+        `INSERT INTO dashboard_working_capital (
+          id, tenant_id, snapshot_date, cash_position_zar, ar_total_zar,
+          ar_current_zar, ar_30_zar, ar_60_zar, ar_90_plus_zar, ap_total_zar,
+          dso_days, dpo_days, dsi_days, working_capital_zar
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(tenant_id, snapshot_date) DO UPDATE SET
+           cash_position_zar = excluded.cash_position_zar,
+           ar_total_zar = excluded.ar_total_zar,
+           ar_current_zar = excluded.ar_current_zar,
+           ar_30_zar = excluded.ar_30_zar,
+           ar_60_zar = excluded.ar_60_zar,
+           ar_90_plus_zar = excluded.ar_90_plus_zar,
+           ap_total_zar = excluded.ap_total_zar,
+           dso_days = excluded.dso_days,
+           dpo_days = excluded.dpo_days,
+           dsi_days = excluded.dsi_days,
+           working_capital_zar = excluded.working_capital_zar`
+      ).bind(
+        `dwc_${dateStr}_vantax`, tenantId, dateStr,
+        Math.round(s.cash), Math.round(s.arTotal),
+        Math.round(arCurrent), Math.round(ar30), Math.round(ar60), Math.round(ar90),
+        Math.round(s.ap),
+        Number(s.dso.toFixed(1)), Number(s.dpo.toFixed(1)), Number(s.dsi.toFixed(1)),
+        Math.round(wc)
+      ));
+    }
+    console.log(`[VantaX Seeder] Seeded ${wcSeeds.length} working-capital snapshots`);
+
+    // Period-close cycle: current month-end close in progress, target = 5
+    // business days after the first of the month. Mix of completed / in-
+    // progress / blocked tasks so the CloseCycleCard has real signal.
+    console.log('[VantaX Seeder] Seeding period-close cycle...');
+    const nowDate = new Date();
+    const periodYear = nowDate.getUTCFullYear();
+    const periodMonth = nowDate.getUTCMonth() + 1; // 1-12
+    const periodLabel = `${periodYear}-${String(periodMonth).padStart(2, '0')}`;
+    const cycleStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
+    const targetCloseOffset = 5; // 5 business days from start
+    const targetCloseDate = (() => {
+      const d = new Date(`${cycleStart}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + targetCloseOffset);
+      return d.toISOString().slice(0, 10);
+    })();
+    const closeCycleId = `dcc_${periodLabel}_vantax`;
+
+    const closeTasks: Array<{ name: string; owner: string; status: 'pending' | 'in_progress' | 'completed' | 'blocked'; dueOffset: number; blocking: boolean }> = [
+      { name: 'Bank reconciliation — all accounts',        owner: 'AR Clerk',        status: 'completed',   dueOffset: 1, blocking: false },
+      { name: 'GR/IR sweep — close out open items',         owner: 'AP Manager',      status: 'completed',   dueOffset: 1, blocking: false },
+      { name: 'Inventory count adjustments — JHB-DC',       owner: 'Ops Manager',     status: 'in_progress', dueOffset: 2, blocking: true  },
+      { name: 'AP invoice posting cut-off',                 owner: 'AP Clerk',        status: 'completed',   dueOffset: 2, blocking: false },
+      { name: 'Accruals — utilities + comms + payroll',     owner: 'Financial Analyst', status: 'in_progress', dueOffset: 3, blocking: false },
+      { name: 'Inter-company eliminations',                 owner: 'Group Controller', status: 'pending',     dueOffset: 3, blocking: false },
+      { name: 'Revenue cut-off review (SOX control 4.2)',   owner: 'CFO',             status: 'pending',     dueOffset: 4, blocking: false },
+      { name: 'Lease & FX revaluation entries',             owner: 'Treasury',        status: 'blocked',     dueOffset: 4, blocking: true  },
+      { name: 'Management pack drafting',                   owner: 'FP&A Lead',       status: 'pending',     dueOffset: 5, blocking: false },
+      { name: 'External auditor evidence pack hand-off',    owner: 'CFO',             status: 'pending',     dueOffset: 5, blocking: false },
+    ];
+
+    const completedCount = closeTasks.filter((t) => t.status === 'completed').length;
+    const blockingCount = closeTasks.filter((t) => t.blocking && t.status !== 'completed').length;
+
+    seedBatch.push(c.env.DB.prepare(
+      `INSERT INTO dashboard_close_cycles (
+        id, tenant_id, period_label, start_date, target_close_date, status,
+        total_tasks, completed_tasks, blocking_tasks, on_schedule, notes
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(tenant_id, period_label) DO UPDATE SET
+         start_date = excluded.start_date,
+         target_close_date = excluded.target_close_date,
+         status = excluded.status,
+         total_tasks = excluded.total_tasks,
+         completed_tasks = excluded.completed_tasks,
+         blocking_tasks = excluded.blocking_tasks,
+         on_schedule = excluded.on_schedule,
+         notes = excluded.notes,
+         updated_at = datetime('now')`
+    ).bind(
+      closeCycleId, tenantId, periodLabel, cycleStart, targetCloseDate, 'in_progress',
+      closeTasks.length, completedCount, blockingCount,
+      blockingCount > 1 ? 0 : 1,
+      'Inventory count adjustments at JHB-DC are the critical-path item; FX reval blocked on Treasury sign-off from Group.'
+    ));
+
+    // Clear existing tasks for this cycle so re-seeding doesn't duplicate
+    seedBatch.push(c.env.DB.prepare(
+      'DELETE FROM dashboard_close_tasks WHERE tenant_id = ? AND cycle_id = ?'
+    ).bind(tenantId, closeCycleId));
+
+    for (const task of closeTasks) {
+      const due = (() => {
+        const d = new Date(`${cycleStart}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() + task.dueOffset);
+        return d.toISOString().slice(0, 10);
+      })();
+      const completedAt = task.status === 'completed'
+        ? new Date(`${cycleStart}T12:00:00Z`).toISOString()
+        : null;
+      seedBatch.push(c.env.DB.prepare(
+        `INSERT INTO dashboard_close_tasks (
+          id, tenant_id, cycle_id, task_name, owner, status, due_date, blocking, completed_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        crypto.randomUUID(), tenantId, closeCycleId, task.name, task.owner,
+        task.status, due, task.blocking ? 1 : 0, completedAt
+      ));
+    }
+    console.log(`[VantaX Seeder] Seeded period-close cycle ${periodLabel} with ${closeTasks.length} tasks (${completedCount} done, ${blockingCount} blocking)`);
+
     // ── STEP: Seed Board Reports ──
     // Apex → Board Reports tab needs at least one of each report_type to render.
     console.log('[VantaX Seeder] Seeding board reports...');
@@ -3227,6 +3369,13 @@ seed.post('/seed-vantax', async (c) => {
           keyResults: krCount,
           initiatives: initiativeSeeds.length,
           quarter: currentQuarter,
+        },
+        dashboardDepth: {
+          workingCapitalSnapshots: wcSeeds.length,
+          closeCyclePeriod: periodLabel,
+          closeTasksTotal: closeTasks.length,
+          closeTasksCompleted: completedCount,
+          closeTasksBlocking: blockingCount,
         },
         billing: billingDemo,
         valueAssessmentReport: {

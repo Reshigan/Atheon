@@ -21,6 +21,7 @@ import scim from './routes/scim';
 import statusPublic from './routes/status';
 import statusAdmin from './routes/status-admin';
 import apex from './routes/apex';
+import dashboard from './routes/dashboard';
 import pulse from './routes/pulse';
 import catalysts from './routes/catalysts';
 import memory from './routes/memory';
@@ -431,7 +432,7 @@ app.get('/healthz', async (c) => {
 
 // Tenant isolation middleware for protected routes (supports both /api/ and /api/v1/ prefixes)
 // Auth routes are excluded (login/register don't have JWT yet)
-const protectedPrefixes = ['tenants', 'iam', 'apex', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments', 'ai-costs', 'radar', 'diagnostics', 'catalyst-intelligence', 'roi', 'board-report', 'onboarding', 'freshness', 'atheon-score', 'baseline', 'targets', 'executive-summary', 'webhooks', 'system-alerts', 'support', 'inferences', 'billing', 'dsar', 'orchestration', 'insights-stats'];
+const protectedPrefixes = ['tenants', 'iam', 'apex', 'dashboard', 'pulse', 'catalysts', 'memory', 'mind', 'erp', 'controlplane', 'audit', 'connectivity', 'notifications', 'storage', 'realtime', 'assessments', 'deployments', 'ai-costs', 'radar', 'diagnostics', 'catalyst-intelligence', 'roi', 'board-report', 'onboarding', 'freshness', 'atheon-score', 'baseline', 'targets', 'executive-summary', 'webhooks', 'system-alerts', 'support', 'inferences', 'billing', 'dsar', 'orchestration', 'insights-stats'];
 for (const prefix of protectedPrefixes) {
   app.use(`/api/${prefix}/*`, tenantIsolation());
   app.use(`/api/v1/${prefix}/*`, tenantIsolation());
@@ -467,7 +468,7 @@ for (const p of ['/api/system-alerts/*', '/api/v1/system-alerts/*']) {
 
 // Mount route modules (both /api/ and /api/v1/ for backward compatibility)
 const routeModules: [string, typeof auth][] = [
-  ['auth', auth], ['tenants', tenants], ['iam', iam], ['apex', apex],
+  ['auth', auth], ['tenants', tenants], ['iam', iam], ['apex', apex], ['dashboard', dashboard],
   ['pulse', pulse], ['catalysts', catalysts], ['memory', memory], ['mind', mind],
   ['erp', erp], ['controlplane', controlplane], ['audit', audit],
   ['connectivity', connectivity], ['notifications', notifications],

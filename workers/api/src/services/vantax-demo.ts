@@ -71,6 +71,10 @@ export const VANTAX_TENANT_TABLES = new Set([
   'sap_ekko', 'sap_ekpo', 'sap_ekbe', 'sap_mard', 'sap_iseg',
   'sap_vbak', 'sap_vbap', 'sap_vbrk', 'sap_vbrp',
   'sap_lfa1', 'sap_lfb1', 'sap_kna1', 'sap_knb1',
+  // Wave 2: strategic management
+  'strategic_key_results', 'strategic_objectives', 'strategic_initiatives',
+  // Wave 3: dashboard depth (CFO morning view)
+  'dashboard_close_tasks', 'dashboard_close_cycles', 'dashboard_working_capital',
 ]);
 
 /**
