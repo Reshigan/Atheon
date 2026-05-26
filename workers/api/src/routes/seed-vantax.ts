@@ -1832,7 +1832,7 @@ seed.post('/seed-vantax', async (c) => {
           'Approve auto-post for items with confidence ≥0.85 (would cover 38 of the 45 matched items)',
         ],
         sapTransactions: ['MIGO', 'MIRO', 'MR11'],
-        itemMaker: (i: number, _conf: number) => ({
+        itemMaker: (i: number) => ({
           category: i < 3 ? 'GR_qty_mismatch' : 'matched',
           sourceRef: `4500-PO-${10000 + i}`, targetRef: `5100-IR-${20000 + i}`,
           sourceEntity: ['Sasol Limited','Bidvest Group','Pick n Pay','MTN Group'][i % 4],
@@ -1853,7 +1853,7 @@ seed.post('/seed-vantax', async (c) => {
           'Adjust auto-approve threshold from 0.90 → 0.85 to capture 4 more invoices per run',
         ],
         sapTransactions: ['FB60', 'FBL1N', 'F-44'],
-        itemMaker: (i: number, _conf: number) => ({
+        itemMaker: (i: number) => ({
           category: i === 2 || i === 5 ? 'duplicate_payment_risk' : 'matched',
           sourceRef: `INV-${30000 + i}`, targetRef: `4500-PO-${11000 + i}`,
           sourceEntity: ['Sasol Limited','Engen Petroleum','Discovery Health','Vodacom'][i % 4],
@@ -1874,7 +1874,7 @@ seed.post('/seed-vantax', async (c) => {
           'Apply FX-tolerance group to USD-denominated facility — 3 exceptions all < R12K but currently route to manual review',
         ],
         sapTransactions: ['FF67', 'F-03', 'FAGL_FC_VAL'],
-        itemMaker: (i: number, _conf: number) => ({
+        itemMaker: (i: number) => ({
           category: i % 7 === 0 ? 'unmatched_receipt' : i % 11 === 0 ? 'bank_fee_pending' : 'matched',
           sourceRef: `BS-2026-${40000 + i}`, targetRef: i % 7 === 0 ? null : `BSID-${50000 + i}`,
           sourceEntity: ['ABSA','Standard Bank','Nedbank','FNB'][i % 4],
@@ -1895,7 +1895,7 @@ seed.post('/seed-vantax', async (c) => {
           'Tighten cycle count cadence on ABC-A items from quarterly → monthly (cost: ~16 person-hours/month)',
         ],
         sapTransactions: ['MI04', 'MI21', 'MMBE'],
-        itemMaker: (i: number, _conf: number) => ({
+        itemMaker: (i: number) => ({
           category: i < 4 ? 'shortage' : i < 7 ? 'surplus' : 'matched',
           sourceRef: `MAT-${60000 + i}`, targetRef: `COUNT-2026Q2-${i + 1}`,
           sourceEntity: 'WH-01 Cape Town',
@@ -1916,7 +1916,7 @@ seed.post('/seed-vantax', async (c) => {
           'Auto-route post-creation discounts through SD condition record VK11 to prevent VBAK/VBRK drift',
         ],
         sapTransactions: ['VA02', 'VF03', 'VK11'],
-        itemMaker: (i: number, _conf: number) => ({
+        itemMaker: (i: number) => ({
           category: i < 2 ? 'amount_variance' : i < 5 ? 'pending_collection' : 'matched',
           sourceRef: `SO-${70000 + i}`, targetRef: `VBRK-${80000 + i}`,
           sourceEntity: ['Pick n Pay','Shoprite','Clicks','Woolworths'][i % 4],
@@ -1953,11 +1953,11 @@ seed.post('/seed-vantax', async (c) => {
 
         const runId = crypto.randomUUID();
         const itemsInRun = Math.min(12, Math.max(5, Math.round(totalItems / 5)));
-        let discrepancyTotal = 0;
-        let matchedTotal = 0;
 
-        // sub_catalyst_runs row first (FK target for items + analytics)
-        // Insert with placeholder values, then we'll UPDATE totals after items inserted.
+        // sub_catalyst_runs row first (FK target for items + analytics).
+        // Totals on the run are derived from baseItems + the avgConf curve,
+        // not summed from inserted items — keeps the seed deterministic for
+        // demo screenshots without a follow-up UPDATE.
         await c.env.DB.prepare(
           `INSERT INTO sub_catalyst_runs (id, tenant_id, cluster_id, sub_catalyst_name, run_number, triggered_by, started_at, completed_at, duration_ms, data_sources_used, source_record_count, target_record_count, status, mode, matched, unmatched_source, unmatched_target, discrepancies, exceptions_raised, avg_confidence, min_confidence, max_confidence, reasoning, recommendations, total_source_value, total_matched_value, total_discrepancy_value, total_exception_value, items_total, sign_off_status, created_at)
            VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -1980,10 +1980,8 @@ seed.post('/seed-vantax', async (c) => {
         // shape across multiple categories.
         for (let i = 0; i < itemsInRun; i++) {
           const itemConf = Math.max(0.1, Math.min(0.99, avgConf + (Math.random() - 0.5) * 0.3));
-          const built = ra.itemMaker(i, itemConf);
+          const built = ra.itemMaker(i);
           const isException = built.category !== 'matched';
-          discrepancyTotal += Math.abs(built.discrepancyAmount || 0);
-          matchedTotal += (built.sourceAmount || 0);
           await c.env.DB.prepare(
             `INSERT INTO sub_catalyst_run_items (id, run_id, tenant_id, item_number, item_status, category, source_ref, source_date, source_entity, source_amount, source_currency, target_ref, target_date, target_entity, target_amount, target_currency, match_confidence, match_method, discrepancy_amount, discrepancy_reason, exception_type, exception_severity, review_status, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ZAR', ?, ?, ?, ?, 'ZAR', ?, ?, ?, ?, ?, ?, ?, ?)`
