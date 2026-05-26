@@ -17,6 +17,10 @@ import {
   cleanupVantaxTenant,
   materialiseDemoBilling,
 } from '../services/vantax-demo';
+import {
+  generateValueReportPDF,
+  DEFAULT_VALUE_ASSESSMENT_CONFIG,
+} from '../services/value-assessment-engine';
 
 const seed = new Hono<AppBindings>();
 seed.use('/*', cors());
@@ -2795,6 +2799,25 @@ seed.post('/seed-vantax', async (c) => {
     }
 
     await flushSeed('final');
+
+    // Generate the HTML value-assessment report and set business_report_key
+    // so the "Download Report" button works on the Value Assessment page.
+    // Must run after flushSeed('final') so the assessment + sub-tables are
+    // committed and visible to generateValueReportPDF().
+    let vaReportKey: string | null = null;
+    try {
+      vaReportKey = await generateValueReportPDF(
+        c.env.DB,
+        c.env.STORAGE,
+        tenantId,
+        vaAssessmentId,
+        'VantaX (Pty) Ltd',
+        DEFAULT_VALUE_ASSESSMENT_CONFIG,
+      );
+      console.log(`[VantaX Seeder] Generated value-assessment report: ${vaReportKey}`);
+    } catch (err) {
+      console.warn('[VantaX Seeder] Failed to generate value report:', (err as Error).message);
+    }
 
     // Summary
     // Products: SAP (18) + PHYSICAL_COUNT (18) = 36; Invoices: SAP (80) + SAP-AR (72) = 152

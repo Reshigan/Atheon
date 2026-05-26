@@ -1120,6 +1120,15 @@ export const api = {
             URL.revokeObjectURL(url);
             return;
           }
+          if (contentType.includes('text/html')) {
+            // Server-rendered A4-styled report — open in a new tab so the
+            // user can review and print-to-PDF from the browser.
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank', 'noopener,noreferrer');
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+            return;
+          }
         }
       } catch { /* backend unavailable, fall through */ }
       // Client-side PDF generation — prefer Value Assessment PDF if findings exist

@@ -173,27 +173,35 @@ assessments.get('/:id/report/business', async (c) => {
     return c.json({ error: 'Report not available' }, 404);
   }
 
-  // Only serve if the stored object is actually a PDF (not HTML from the value assessment engine)
   const key = assessment.business_report_key as string;
-  if (key.endsWith('.html')) {
-    return c.json({ error: 'No PDF report available — use client-side generation' }, 404);
-  }
-
   const obj = await c.env.STORAGE.get(key);
   if (!obj) return c.json({ error: 'Report file not found' }, 404);
 
-  // Peek at the first few bytes to verify it's actually a PDF
+  const filenameBase = sanitizeFilename(assessment.prospect_name as string);
   const arrayBuf = await obj.arrayBuffer();
+
+  // HTML report: serve inline so the browser opens it (print-to-PDF available
+  // from there). The Value Assessment engine produces A4-styled HTML.
+  if (key.endsWith('.html')) {
+    return new Response(arrayBuf, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Disposition': `inline; filename="${filenameBase}-business-case.html"`,
+      },
+    });
+  }
+
+  // PDF path: validate magic bytes before serving.
   const header = new Uint8Array(arrayBuf.slice(0, 5));
   const isPdf = header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46; // %PDF
   if (!isPdf) {
-    return c.json({ error: 'Stored report is not a PDF — use client-side generation' }, 404);
+    return c.json({ error: 'Stored report is not a recognised format' }, 415);
   }
 
   return new Response(arrayBuf, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${sanitizeFilename(assessment.prospect_name as string)}-business-case.pdf"`,
+      'Content-Disposition': `attachment; filename="${filenameBase}-business-case.pdf"`,
     },
   });
 });
