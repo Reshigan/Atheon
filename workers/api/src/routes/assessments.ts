@@ -397,7 +397,7 @@ assessments.get('/:id/value-summary', async (c) => {
   });
 });
 
-// ── GET /api/assessments/:id/report/value — download Value Assessment HTML report ──
+// ── GET /api/assessments/:id/report/value — download Value Assessment report ──
 assessments.get('/:id/report/value', async (c) => {
   const auth = c.get('auth') as AuthContext | undefined;
   if (!requireSuperAdmin(auth)) return c.json({ error: 'Forbidden' }, 403);
@@ -410,13 +410,32 @@ assessments.get('/:id/report/value', async (c) => {
     return c.json({ error: 'Value report not available' }, 404);
   }
 
-  const obj = await c.env.STORAGE.get(assessment.business_report_key as string);
+  const key = assessment.business_report_key as string;
+  const obj = await c.env.STORAGE.get(key);
   if (!obj) return c.json({ error: 'Report file not found' }, 404);
 
-  return new Response(obj.body, {
+  const filenameBase = sanitizeFilename(assessment.prospect_name as string);
+  const arrayBuf = await obj.arrayBuffer();
+
+  if (key.endsWith('.html')) {
+    return new Response(arrayBuf, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Disposition': `inline; filename="${filenameBase}-value-assessment.html"`,
+      },
+    });
+  }
+
+  const header = new Uint8Array(arrayBuf.slice(0, 5));
+  const isPdf = header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46;
+  if (!isPdf) {
+    return c.json({ error: 'Stored report is not a recognised format' }, 415);
+  }
+
+  return new Response(arrayBuf, {
     headers: {
-      'Content-Type': 'text/html',
-      'Content-Disposition': `inline; filename="${sanitizeFilename(assessment.prospect_name as string)}-value-assessment.html"`,
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filenameBase}-value-assessment.pdf"`,
     },
   });
 });
