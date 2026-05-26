@@ -30,6 +30,7 @@ const StatusPage = lazyWithRetry(() => import("@/pages/StatusPage"));
 const SecurityPage = lazyWithRetry(() => import("@/pages/SecurityPage"));
 const ConnectorsPage = lazyWithRetry(() => import("@/pages/ConnectorsPage"));
 const PerformancePage = lazyWithRetry(() => import("@/pages/PerformancePage"));
+const AuditSharePage = lazyWithRetry(() => import("@/pages/AuditSharePage"));
 const StatusIncidentsAdminPage = lazyWithRetry(() => import("@/pages/admin/StatusIncidentsAdminPage"));
 // ApexBriefPage retired 2026-05-12 — duplicated ExecutiveSummaryPage with
 // a slimmer LLM-only layout. /apex/brief now redirects to /executive-summary.
@@ -164,6 +165,11 @@ export default function App() {
               regressions caught & fixed during the load-test pass. */}
           <Route path="/legal/performance" element={<PerformancePage />} />
           <Route path="/performance" element={<PerformancePage />} />
+          {/* Public auditor-facing read-only SOC 2 evidence pack.
+              Token in URL is the credential — no login. Issued via
+              "Share with auditor" on /compliance. 7-day expiry,
+              revocable, access-logged on every fetch. */}
+          <Route path="/audit-share/:token" element={<AuditSharePage />} />
           <Route element={<AppLayout />}>
             {/* Operational dashboard — open to every role except the
                 scoped read-only ones (auditor, board_member), which get

@@ -64,6 +64,7 @@ import featureFlagsRoutes from './routes/feature-flags';
 import supportRoutes from './routes/support';
 import openapi from './routes/openapi';
 import compliance from './routes/compliance';
+import auditShare from './routes/audit-share';
 
 // Export Durable Object class for Cloudflare runtime
 export { DashboardRoom };
@@ -554,6 +555,12 @@ app.route('/api/v1/governance', governance);
 // for cross-tenant. Role enforcement inside the handler.
 app.use('/api/v1/compliance/*', tenantIsolation());
 app.route('/api/v1/compliance', compliance);
+
+// Audit-share magic links — PUBLIC token lookup. NOT under tenantIsolation;
+// the token in the URL is the credential. Tokens expire after 7 days and can
+// be revoked from /compliance. See src/routes/audit-share.ts.
+app.route('/api/v1/audit-share', auditShare);
+app.route('/api/audit-share', auditShare);
 
 // Feature Flags (v47-platform) — admin CRUD gated by role inside handler, evaluate endpoint
 // requires only auth. tenantIsolation runs first to populate c.get('auth').

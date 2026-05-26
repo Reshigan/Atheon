@@ -21,6 +21,7 @@ import { HeroHeader } from "@/components/ui/hero-header";
 import {
   ShieldCheck, KeyRound, ClipboardList, AlertTriangle, UserMinus,
   Lock, FileArchive, Download, RefreshCw, FileText, Database,
+  Share2, Link as LinkIcon, Copy, Check, X, Trash2,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAppStore } from "@/stores/appStore";
@@ -97,6 +98,7 @@ function ComplianceEvidence(): JSX.Element {
   const [pack, setPack] = useState<EvidencePack | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   // ISO timestamp of last evidence-pack load, fuels freshness rows on each
   // StatChip's MetricSource popover.
   const [loadedAt, setLoadedAt] = useState<string | null>(null);
@@ -165,12 +167,17 @@ function ComplianceEvidence(): JSX.Element {
             <RefreshCw size={14} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          <Button onClick={() => setShareOpen(true)} variant="ghost" size="sm">
+            <Share2 size={14} className="mr-2" />
+            Share with auditor
+          </Button>
           <Button onClick={downloadJson} variant="primary" size="sm">
             <Download size={14} className="mr-2" />
             Download JSON
           </Button>
         </div>
       </div>
+      <ShareWithAuditorModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       {/* Access reviews */}
       <Card className="p-5">
@@ -351,6 +358,235 @@ function ComplianceEvidence(): JSX.Element {
       <div className="text-caption t-muted text-center pt-2">
         This report is read-only over existing tables. SOC 2 controls not surfaced here (change
         management, vulnerability management, DR) live in the runbook + GitHub Actions history.
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// "Share with auditor" — admin mints a 7-day read-only URL, copies it, and
+// hands it to an external auditor. The auditor opens the link without a
+// login. Every access is logged with IP + timestamp; admin can revoke from
+// the same modal.
+// ─────────────────────────────────────────────────────────────────────────────
+interface ShareLink {
+  id: string;
+  label: string | null;
+  expires_at: string;
+  revoked_at: string | null;
+  access_count: number;
+  last_accessed_at: string | null;
+  last_accessed_ip: string | null;
+  created_at: string;
+  created_by_user_id: string;
+  status: 'active' | 'expired' | 'revoked';
+}
+
+function ShareWithAuditorModal({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element | null {
+  const toast = useToast();
+  const [label, setLabel] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [freshToken, setFreshToken] = useState<{ token: string; expires_at: string; label: string | null } | null>(null);
+  const [links, setLinks] = useState<ShareLink[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    api.compliance.listShareLinks()
+      .then(r => setLinks(r.links as ShareLink[]))
+      .catch(err => toast.error('Failed to load share links', {
+        message: err instanceof Error ? err.message : undefined,
+        requestId: err instanceof ApiError ? err.requestId : null,
+      }))
+      .finally(() => setLoading(false));
+  }, [open, toast]);
+
+  async function createLink() {
+    if (creating) return;
+    setCreating(true);
+    try {
+      const r = await api.compliance.createShareLink(label.trim() || undefined);
+      setFreshToken({ token: r.token, expires_at: r.expires_at, label: r.label });
+      setLabel('');
+      const refreshed = await api.compliance.listShareLinks();
+      setLinks(refreshed.links as ShareLink[]);
+      toast.success('Audit-share link created', { message: 'Valid for 7 days. Copy the URL now — it is shown only once.' });
+    } catch (err) {
+      toast.error('Failed to create share link', {
+        message: err instanceof Error ? err.message : undefined,
+        requestId: err instanceof ApiError ? err.requestId : null,
+      });
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function revoke(id: string) {
+    try {
+      await api.compliance.revokeShareLink(id);
+      const refreshed = await api.compliance.listShareLinks();
+      setLinks(refreshed.links as ShareLink[]);
+      toast.success('Share link revoked');
+    } catch (err) {
+      toast.error('Failed to revoke', {
+        message: err instanceof Error ? err.message : undefined,
+        requestId: err instanceof ApiError ? err.requestId : null,
+      });
+    }
+  }
+
+  const shareUrl = freshToken
+    ? `${window.location.origin}/audit-share/${freshToken.token}`
+    : null;
+
+  async function copy() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error('Copy failed — select the URL manually');
+    }
+  }
+
+  function close() {
+    setFreshToken(null);
+    setLabel('');
+    setCopied(false);
+    onClose();
+  }
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+      style={{ background: 'rgba(15, 23, 31, 0.55)', backdropFilter: 'blur(8px)' }}
+      onClick={close}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Share with auditor"
+    >
+      <div
+        className="w-full max-w-2xl rounded-xl border bg-[var(--bg-primary)] border-[var(--border-card)] shadow-2xl overflow-hidden"
+        style={{ animation: 'auditShareEnter 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <style>{`@keyframes auditShareEnter { from { transform: scale(0.96); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>
+
+        <div className="flex items-center justify-between p-5 border-b border-[var(--border-card)]">
+          <div className="flex items-center gap-2">
+            <Share2 className="w-4 h-4 text-accent" />
+            <h2 className="text-sm font-semibold t-primary">Share evidence pack with an auditor</h2>
+          </div>
+          <button
+            onClick={close}
+            className="t-muted hover:t-primary transition-colors active:scale-[0.96]"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {freshToken && shareUrl ? (
+            <div className="space-y-3">
+              <div className="text-caption t-muted">
+                Send this URL to your auditor. <span className="t-primary font-medium">It is shown only once.</span>
+                {freshToken.label ? ` Label: ${freshToken.label}.` : ''}
+                {' '}Expires {new Date(freshToken.expires_at).toLocaleString()}.
+              </div>
+              <div className="flex items-stretch gap-2">
+                <div className="flex-1 px-3 py-2 rounded-lg border bg-[var(--bg-secondary)] border-[var(--border-card)] font-mono text-xs t-primary break-all">
+                  {shareUrl}
+                </div>
+                <Button onClick={copy} variant={copied ? 'ghost' : 'primary'} size="sm">
+                  {copied ? <Check size={14} className="mr-2" /> : <Copy size={14} className="mr-2" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+              <div className="text-caption t-muted">
+                The auditor opens the link in a browser — no login required. We log every access (IP + timestamp).
+                You can revoke from the list below at any time.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label className="block">
+                <span className="text-label">Label (optional)</span>
+                <input
+                  type="text"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value.slice(0, 120))}
+                  placeholder="e.g. PwC Q2 review, Deloitte SOC 2 evidence"
+                  className="mt-1 w-full px-3 py-2 rounded-lg border bg-[var(--bg-secondary)] border-[var(--border-card)] t-primary text-sm focus:outline-none focus:border-accent transition-colors"
+                />
+              </label>
+              <Button onClick={createLink} variant="primary" size="sm" disabled={creating}>
+                <LinkIcon size={14} className="mr-2" />
+                {creating ? 'Generating…' : 'Generate 7-day link'}
+              </Button>
+            </div>
+          )}
+
+          <div className="pt-2">
+            <div className="text-label mb-2">Recent links</div>
+            {loading && <div className="text-caption t-muted">Loading…</div>}
+            {!loading && links && links.length === 0 && (
+              <div className="text-caption t-muted">No links yet.</div>
+            )}
+            {!loading && links && links.length > 0 && (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {links.map((lk) => {
+                  const expires = new Date(lk.expires_at);
+                  const accessedLabel = lk.last_accessed_at
+                    ? `Accessed ${lk.access_count}× · last ${new Date(lk.last_accessed_at).toLocaleString()}`
+                    : 'Not yet accessed';
+                  return (
+                    <div
+                      key={lk.id}
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border bg-[var(--bg-secondary)] border-[var(--border-card)]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm t-primary truncate">
+                            {lk.label || <span className="t-muted italic">Unlabeled</span>}
+                          </span>
+                          <Badge
+                            variant={lk.status === 'active' ? 'success' : lk.status === 'expired' ? 'warning' : 'info'}
+                            size="sm"
+                          >
+                            {lk.status}
+                          </Badge>
+                        </div>
+                        <div className="text-caption t-muted truncate">
+                          Expires {expires.toLocaleDateString()} · {accessedLabel}
+                        </div>
+                      </div>
+                      {lk.status === 'active' && (
+                        <button
+                          onClick={() => revoke(lk.id)}
+                          className="px-2 py-1 rounded-md text-xs t-muted hover:t-primary hover:bg-[var(--bg-tertiary)] transition-colors active:scale-[0.96]"
+                          aria-label="Revoke link"
+                        >
+                          <Trash2 size={12} className="inline mr-1" />
+                          Revoke
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-5 py-3 border-t border-[var(--border-card)] flex justify-end">
+          <Button onClick={close} variant="ghost" size="sm">Close</Button>
+        </div>
       </div>
     </div>
   );

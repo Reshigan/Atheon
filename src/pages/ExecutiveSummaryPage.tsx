@@ -25,6 +25,7 @@ import { StatusPill } from '@/components/ui/status-pill';
 import { HeroHeader } from '@/components/ui/hero-header';
 import { ScoreRing } from '@/components/ui/score-ring';
 import { Sparkline } from '@/components/ui/sparkline';
+import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
 import type { ExecutiveSummaryResponse } from '@/lib/api';
 import {
   Crown, Loader2, AlertTriangle, AlertCircle, TrendingUp,
@@ -115,6 +116,8 @@ export function ExecutiveSummaryPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <SharedSavingsStrip />
+
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <HeroHeader

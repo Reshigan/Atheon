@@ -1801,6 +1801,63 @@ export const api = {
           provenanceChainLength: number;
         };
       }>(`/api/v1/compliance/evidence-pack${qs({ tenant_id: tenantId })}`),
+
+    /**
+     * Mint a 7-day read-only audit-share token. Admin+ only. The returned
+     * `token` should be embedded in a /audit-share/:token URL the customer
+     * sends to their external auditor. We only return the token once.
+     */
+    createShareLink: (label?: string) =>
+      request<{
+        id: string;
+        token: string;
+        label: string | null;
+        expires_at: string;
+        ttl_days: number;
+      }>(`/api/v1/compliance/share`, {
+        method: 'POST',
+        body: JSON.stringify({ label: label ?? null }),
+      }),
+
+    /** List active + expired + revoked share links for the current tenant. */
+    listShareLinks: () =>
+      request<{
+        links: Array<{
+          id: string;
+          label: string | null;
+          expires_at: string;
+          revoked_at: string | null;
+          access_count: number;
+          last_accessed_at: string | null;
+          last_accessed_ip: string | null;
+          created_at: string;
+          created_by_user_id: string;
+          status: 'active' | 'expired' | 'revoked';
+        }>;
+      }>(`/api/v1/compliance/share`),
+
+    /** Revoke an active share link by id. Idempotent. */
+    revokeShareLink: (id: string) =>
+      request<{ ok: true }>(`/api/v1/compliance/share/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  // ── Audit-share public lookup (no JWT — token IS the credential) ──────
+  auditShare: {
+    /**
+     * Fetch a shared evidence pack by its 7-day token. PUBLIC.
+     * `pack` is typed as `unknown` here because referencing the inline
+     * evidence-pack shape inside the same `api` literal would create a
+     * circular type. Consumers cast via `as EvidencePack` (see
+     * src/pages/AuditSharePage.tsx).
+     */
+    fetchPack: (token: string) =>
+      request<{
+        label: string | null;
+        expires_at: string;
+        pack: unknown;
+      }>(`/api/v1/audit-share/${encodeURIComponent(token)}`),
   },
 
   // ── Billing (self-service trial → paid Stripe Checkout) ───────────
