@@ -94,8 +94,8 @@ function ModalRoot({
         role="presentation"
         aria-hidden="true"
         onClick={() => { if (dismissible) onClose(); }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: 'rgba(10, 14, 22, 0.55)', backdropFilter: 'blur(2px)' }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-backdropIn"
+        style={{ background: 'rgba(10, 14, 22, 0.55)', backdropFilter: 'blur(4px)' }}
       >
         <div
           role="dialog"
@@ -106,7 +106,7 @@ function ModalRoot({
           // trap would tab-cycle within the modal; that's a follow-up.
           tabIndex={-1}
           autoFocus
-          className={`w-full ${sizeClass[size]} rounded-2xl overflow-hidden flex flex-col animate-fadeIn ${className}`}
+          className={`w-full ${sizeClass[size]} rounded-2xl overflow-hidden flex flex-col animate-modalIn ${className}`}
           style={{
             background: 'var(--bg-modal)',
             border: '1px solid var(--border-card)',

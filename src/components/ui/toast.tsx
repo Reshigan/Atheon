@@ -152,8 +152,14 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className={`flex items-start gap-3 p-3 rounded-lg border ${BG[toast.type]} shadow-lg animate-slideIn`}
-      style={{ background: 'var(--bg-card-solid)', minWidth: 280, maxWidth: 400 }}
+      className={`flex items-start gap-3 p-3 rounded-xl border ${BG[toast.type]} animate-toastIn`}
+      style={{
+        background: 'var(--bg-card-solid)',
+        minWidth: 280,
+        maxWidth: 400,
+        boxShadow: 'var(--shadow-dropdown)',
+        transformOrigin: 'bottom right',
+      }}
       role="alert"
       aria-live="polite"
     >
@@ -165,7 +171,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="text-gray-400 hover:text-gray-300 transition-colors"
+        className="text-gray-400 hover:text-gray-200 transition-[color,transform] duration-150 [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
         aria-label="Dismiss notification"
       >
         <X size={14} />

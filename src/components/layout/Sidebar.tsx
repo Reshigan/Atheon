@@ -177,7 +177,9 @@ function SidebarSection({ section, visible, isExpanded, isActiveSection, onToggl
         type="button"
         onClick={onToggle}
         className={cn(
-          'w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors duration-150',
+          'w-full flex items-center justify-between px-3 py-2 rounded-md',
+          'transition-[background-color,color,transform] duration-[var(--dur-press)]',
+          '[transition-timing-function:var(--ease-out)] active:scale-[0.98]',
           isActiveSection ? 't-primary' : 't-secondary hover:t-primary hover:bg-[var(--bg-secondary)]',
         )}
         style={isActiveSection ? { background: 'var(--accent-subtle)' } : undefined}
@@ -204,7 +206,9 @@ function SidebarSection({ section, visible, isExpanded, isActiveSection, onToggl
                   to={leaf.path}
                   onClick={closeMobile}
                   className={cn(
-                    'flex items-center gap-2.5 pl-3 pr-2 py-1.5 rounded-md text-body-sm transition-colors duration-150',
+                    'flex items-center gap-2.5 pl-3 pr-2 py-1.5 rounded-md text-body-sm',
+                    'transition-[background-color,color,transform] duration-[var(--dur-press)]',
+                    '[transition-timing-function:var(--ease-out)] active:scale-[0.98]',
                     isActive
                       ? 'font-medium text-accent border-r-2 border-accent'
                       : 't-secondary hover:t-primary hover:bg-[var(--bg-secondary)]',
@@ -359,7 +363,9 @@ export function Sidebar() {
                 to={leaf.path}
                 onClick={closeMobile}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-body-sm transition-colors duration-150',
+                  'flex items-center gap-3 px-3 py-2 rounded-md text-body-sm',
+                  'transition-[background-color,color,transform] duration-[var(--dur-press)]',
+                  '[transition-timing-function:var(--ease-out)] active:scale-[0.98]',
                   isActive
                     ? 'font-semibold text-accent'
                     : 't-secondary hover:t-primary hover:bg-[var(--bg-secondary)]',

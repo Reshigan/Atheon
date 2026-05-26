@@ -12,6 +12,22 @@
 
 @layer base {
   :root {
+    /* ───────────────────────────────────────────────────────────
+     * MOTION SYSTEM — durations + easings.
+     * Custom curves over the built-in CSS easings; the defaults are
+     * too weak for production UI. ease-out is the workhorse for
+     * UI affordances (enters fast, settles quietly). ease-in is
+     * deliberately absent — it makes interactions feel sluggish.
+     * --ease-drawer mirrors iOS's drawer curve (lifted from Ionic).
+     * ─────────────────────────────────────────────────────────── */
+    --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --dur-press:    120ms;   /* button :active feedback */
+    --dur-instant:  160ms;   /* tooltips, small popovers */
+    --dur-quick:    200ms;   /* dropdowns, selects, color */
+    --dur-medium:   260ms;   /* modal/sheet enter */
+    --dur-slow:     360ms;   /* drawer enter, page reveals */
     --radius: 0.75rem;
     --bg-primary: #f0f4f8;
     --bg-secondary: #e8edf5;
@@ -433,6 +449,26 @@
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+/* Modal / sheet enter — scales from 0.96 (never from 0), pairs with backdrop fade */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);  }
+}
+@keyframes backdropIn {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; backdrop-filter: blur(4px); }
+}
+/* Stagger reveal — children enter with a small offset, then settle. */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+/* Toast enter — slides up + in from the bottom-right corner (Sonner-style).
+   Pairs with transform-origin: bottom right on the toast item. */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
 @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
 @keyframes shimmer { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
 @keyframes orbit { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -449,6 +485,24 @@
 }
 .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
 .animate-slideIn { animation: slideIn 0.3s ease-out forwards; }
+.animate-modalIn { animation: modalIn var(--dur-medium, 260ms) var(--ease-out) forwards; transform-origin: center; }
+.animate-backdropIn { animation: backdropIn var(--dur-quick, 200ms) var(--ease-out) forwards; }
+.animate-riseIn { animation: riseIn var(--dur-medium, 260ms) var(--ease-out) both; }
+.animate-toastIn { animation: toastIn var(--dur-medium, 260ms) var(--ease-out) forwards; }
+/* Stagger — apply to a parent; children animate sequentially with 40ms beats. */
+.stagger > * { animation: riseIn var(--dur-medium, 260ms) var(--ease-out) both; }
+.stagger > *:nth-child(1)  { animation-delay:   0ms; }
+.stagger > *:nth-child(2)  { animation-delay:  40ms; }
+.stagger > *:nth-child(3)  { animation-delay:  80ms; }
+.stagger > *:nth-child(4)  { animation-delay: 120ms; }
+.stagger > *:nth-child(5)  { animation-delay: 160ms; }
+.stagger > *:nth-child(6)  { animation-delay: 200ms; }
+.stagger > *:nth-child(7)  { animation-delay: 240ms; }
+.stagger > *:nth-child(8)  { animation-delay: 280ms; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeIn, .animate-slideIn, .animate-modalIn, .animate-backdropIn, .animate-riseIn, .animate-toastIn,
+  .stagger > * { animation: none !important; }
+}
 .animate-float { animation: float 6s ease-in-out infinite; }
 .animate-shimmer { animation: shimmer 3s ease-in-out infinite; }
 .animate-orbit { animation: orbit 20s linear infinite; }

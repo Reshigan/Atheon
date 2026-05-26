@@ -190,7 +190,7 @@ export function Header() {
       <div className="flex items-center gap-2.5 flex-1">
         <button
           onClick={() => setMobileSidebarOpen(true)}
-          className="lg:hidden p-1.5 -ml-1 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+          className="lg:hidden p-1.5 -ml-1 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
           title="Open navigation menu"
           aria-label="Open navigation menu"
         >
@@ -204,7 +204,7 @@ export function Header() {
           <div className="relative" ref={companyDropdownRef}>
             <button
               onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
               style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
               title="Switch company"
             >
@@ -237,7 +237,7 @@ export function Header() {
                       <button
                         key={t.id}
                         onClick={() => handleSelectTenant(t)}
-                        className="w-full text-left px-3 py-2 transition-all hover:bg-[var(--bg-secondary)] flex items-center gap-2.5"
+                        className="w-full text-left px-3 py-2 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5"
                         style={isActive ? { background: 'var(--accent-subtle)' } : undefined}
                       >
                         <Building2 size={13} className={isActive ? 'text-accent flex-shrink-0' : 't-muted flex-shrink-0'} />
@@ -280,7 +280,7 @@ export function Header() {
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value as IndustryVertical)}
-              className="appearance-none rounded-md pl-2.5 pr-6 py-1 text-caption t-secondary cursor-pointer focus:outline-none transition-all"
+              className="appearance-none rounded-md pl-2.5 pr-6 py-1 text-caption t-secondary cursor-pointer focus:outline-none transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
               style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
               title="Filter analytics by industry vertical"
             >
@@ -330,7 +330,7 @@ export function Header() {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={openNotifications}
-            className="relative p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+            className="relative p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
             title="Notifications"
             aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           >
@@ -356,7 +356,7 @@ export function Header() {
                       <Check size={11} /> Mark all read
                     </button>
                   )}
-                  <button onClick={() => setShowNotifications(false)} className="p-0.5 rounded t-muted hover:t-primary transition-all" title="Close notifications">
+                  <button onClick={() => setShowNotifications(false)} className="p-0.5 rounded t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" title="Close notifications">
                     <X size={13} />
                   </button>
                 </div>
@@ -383,7 +383,7 @@ export function Header() {
                         }
                         setShowNotifications(false);
                       }}
-                      className="w-full text-left px-3.5 py-2.5 transition-all hover:bg-[var(--bg-secondary)]"
+                      className="w-full text-left px-3.5 py-2.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)]"
                       style={{ borderBottom: '1px solid var(--divider)', background: !n.read ? 'var(--accent-subtle)' : 'transparent' }}
                       title={n.actionUrl ? 'Open related page' : 'Notification'}
                     >
@@ -418,7 +418,7 @@ export function Header() {
 
         <button
           onClick={toggleTheme}
-          className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+          className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
           title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
@@ -427,7 +427,7 @@ export function Header() {
 
         <button
           onClick={() => navigate('/settings')}
-          className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+          className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
           title="Settings"
           aria-label="Open settings"
         >
@@ -444,7 +444,7 @@ export function Header() {
           <button
             onClick={handleLogout}
             title="Sign out"
-            className="p-1 rounded-md t-muted hover:text-red-500 hover:bg-red-500/10 transition-all"
+            className="p-1 rounded-md t-muted hover:text-red-500 hover:bg-red-500/10 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
           >
             <LogOut size={13} />
           </button>
