@@ -9,6 +9,7 @@ import {
 } from '../services/assessment-engine';
 import {
   runValueAssessment,
+  generateValueReportPDF,
   DEFAULT_VALUE_ASSESSMENT_CONFIG,
   type ValueAssessmentConfig,
 } from '../services/value-assessment-engine';
@@ -165,15 +166,40 @@ assessments.get('/:id/report/business', async (c) => {
   const auth = c.get('auth') as AuthContext | undefined;
   if (!requireSuperAdmin(auth)) return c.json({ error: 'Forbidden' }, 403);
 
+  const assessmentId = c.req.param('id');
   const assessment = await c.env.DB.prepare(
-    'SELECT business_report_key, prospect_name FROM assessments WHERE id = ?'
-  ).bind(c.req.param('id')).first<Record<string, unknown>>();
+    'SELECT id, tenant_id, business_report_key, prospect_name FROM assessments WHERE id = ?'
+  ).bind(assessmentId).first<Record<string, unknown>>();
 
-  if (!assessment || !assessment.business_report_key) {
+  if (!assessment) {
     return c.json({ error: 'Report not available' }, 404);
   }
 
-  const key = assessment.business_report_key as string;
+  let key = assessment.business_report_key as string | null;
+
+  // Fallback: if the key was never set (e.g. seeder failed to generate during
+  // bulk insert), regenerate it on demand from the value-summary row. This
+  // means the Download Report button works even if seeding had a hiccup.
+  if (!key) {
+    try {
+      const generated = await generateValueReportPDF(
+        c.env.DB,
+        c.env.STORAGE,
+        assessment.tenant_id as string,
+        assessment.id as string,
+        (assessment.prospect_name as string) || 'Prospect',
+        DEFAULT_VALUE_ASSESSMENT_CONFIG,
+      );
+      if (generated) key = generated;
+    } catch (err) {
+      console.warn('[Assessments] On-demand report regen failed:', (err as Error).message);
+    }
+  }
+
+  if (!key) {
+    return c.json({ error: 'Report not available' }, 404);
+  }
+
   const obj = await c.env.STORAGE.get(key);
   if (!obj) return c.json({ error: 'Report file not found' }, 404);
 

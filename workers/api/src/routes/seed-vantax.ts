@@ -2805,6 +2805,7 @@ seed.post('/seed-vantax', async (c) => {
     // Must run after flushSeed('final') so the assessment + sub-tables are
     // committed and visible to generateValueReportPDF().
     let vaReportKey: string | null = null;
+    let vaReportError: string | null = null;
     try {
       vaReportKey = await generateValueReportPDF(
         c.env.DB,
@@ -2815,8 +2816,14 @@ seed.post('/seed-vantax', async (c) => {
         DEFAULT_VALUE_ASSESSMENT_CONFIG,
       );
       console.log(`[VantaX Seeder] Generated value-assessment report: ${vaReportKey}`);
+      // generateValueReportPDF returns '' when assessment_value_summary is missing.
+      // Treat that as a failure so the API surfaces it instead of pretending success.
+      if (!vaReportKey) {
+        vaReportError = 'assessment_value_summary row missing — report not generated';
+      }
     } catch (err) {
-      console.warn('[VantaX Seeder] Failed to generate value report:', (err as Error).message);
+      vaReportError = (err as Error).message;
+      console.warn('[VantaX Seeder] Failed to generate value report:', vaReportError);
     }
 
     // Summary
@@ -2888,6 +2895,11 @@ seed.post('/seed-vantax', async (c) => {
           supportTickets: userRows.length > 0 ? 8 : 0,
         },
         billing: billingDemo,
+        valueAssessmentReport: {
+          assessmentId: vaAssessmentId,
+          reportKey: vaReportKey,
+          error: vaReportError,
+        },
       },
       nextSteps: [
         'Go to Catalysts page and execute any sub-catalyst',
