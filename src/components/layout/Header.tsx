@@ -1,5 +1,5 @@
 import { useAppStore } from "@/stores/appStore";
-import { Bell, ChevronDown, Menu, LogOut, MessageCircle, Settings, X, Check, Sun, Moon, Building2, Factory } from "lucide-react";
+import { Bell, ChevronDown, Menu, LogOut, Settings, X, Check, Sun, Moon, Building2, Factory } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, setToken, setTenantOverride } from "@/lib/api";
 import type { NotificationItem, Tenant } from "@/lib/api";
@@ -311,16 +311,7 @@ export function Header() {
         {/* §9.3 Global freshness indicator */}
         <FreshnessDot />
 
-        <button
-          onClick={() => navigate('/chat')}
-          className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
-          title="Messages"
-          aria-label="Open chat messages"
-        >
-          <MessageCircle size={15} />
-        </button>
-
-        {/* Platform totals chip — lifetime savings + runs at a glance.
+{/* Platform totals chip — lifetime savings + runs at a glance.
             Hidden when nothing has run yet (cold-start tenant). Pair with
             CalibrationChip below: this is the "what has Atheon done?"
             metric; CalibrationChip is the "how well does it do it?" one. */}

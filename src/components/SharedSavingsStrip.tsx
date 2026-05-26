@@ -1,34 +1,20 @@
 /**
  * SharedSavingsStrip — persistent CFO-facing "R0 until you save R1" banner.
  *
- * Phase AV sales-unblocker: the shared-savings revenue model IS the entire
- * no-brainer purchase decision, but today it lives only on /roi-dashboard.
+ * The shared-savings revenue model IS the entire no-brainer purchase decision.
  * Executives (CFO, COO) land on /dashboard and rarely visit /roi-dashboard
- * voluntarily — so the headline financial proof is invisible at the moment
- * they're framing the program internally.
+ * voluntarily, so the headline financial proof must be visible on every
+ * executive surface (Dashboard, Apex, ROI) — without a dismiss escape hatch,
+ * because losing the framing loses the deal.
  *
- * This component renders a slim, dismissible-per-session strip with three
- * facts: cumulative recovered, billed to date, ROI multiple. It sits at the
- * very top of the executive surfaces (Dashboard, Apex, ROI) and quietly
- * reinforces the framing on every glance.
- *
- * Design choices:
- *   - Sage accent-subtle background (same token used elsewhere for
- *     positive-affirmation surfaces), keeps it on-brand
- *   - Dismissible via sessionStorage so it stays out of the way once the
- *     exec acknowledges it (per-session, not per-account — they should see
- *     it fresh each working day)
- *   - Drill-through link → /roi-dashboard for the auditable detail
- *   - Hidden entirely if no billing data exists yet (fresh tenants don't
- *     need a "you've recovered R0" banner — that's noise)
+ * Hidden only when there's nothing to show (no realised savings yet on a
+ * fresh tenant — a "you've recovered R0" banner is noise, not signal).
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, X, TrendingUp } from 'lucide-react';
+import { ArrowRight, TrendingUp } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { BillingSummary } from '@/lib/api';
-
-const DISMISS_KEY = 'atheon:savings-strip-dismissed';
 
 function formatCurrency(value: number, currency: string): string {
   try {
@@ -42,9 +28,6 @@ function formatCurrency(value: number, currency: string): string {
 
 export function SharedSavingsStrip(): JSX.Element | null {
   const [billing, setBilling] = useState<BillingSummary | null>(null);
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    try { return sessionStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
-  });
 
   useEffect(() => {
     let cancelled = false;
@@ -54,9 +37,6 @@ export function SharedSavingsStrip(): JSX.Element | null {
     return () => { cancelled = true; };
   }, []);
 
-  // Skip rendering for fresh tenants (no realised savings yet) and for users
-  // who've dismissed it this session.
-  if (dismissed) return null;
   if (!billing) return null;
   if ((billing.total_realised_savings ?? 0) <= 0) return null;
 
@@ -64,11 +44,6 @@ export function SharedSavingsStrip(): JSX.Element | null {
   const billed = billing.total_atheon_revenue ?? 0;
   const multiple = billed > 0 ? recovered / billed : 0;
   const currency = billing.currency || 'ZAR';
-
-  const handleDismiss = () => {
-    try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch { /* private browsing */ }
-    setDismissed(true);
-  };
 
   return (
     <div
@@ -99,23 +74,12 @@ export function SharedSavingsStrip(): JSX.Element | null {
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Link
-          to="/roi-dashboard"
-          className="text-caption text-accent hover:underline inline-flex items-center gap-1 font-medium"
-        >
-          Detail <ArrowRight size={11} />
-        </Link>
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="t-muted hover:t-primary p-0.5 rounded transition-colors"
-          aria-label="Dismiss savings summary for this session"
-          title="Dismiss for this session"
-        >
-          <X size={12} />
-        </button>
-      </div>
+      <Link
+        to="/roi-dashboard"
+        className="text-caption text-accent hover:underline inline-flex items-center gap-1 font-medium"
+      >
+        Detail <ArrowRight size={11} />
+      </Link>
     </div>
   );
 }

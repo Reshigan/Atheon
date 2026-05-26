@@ -661,7 +661,13 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
                       <td className="p-1 text-right">{item.source_amount?.toFixed(2) || '-'}</td>
                       <td className="p-1">{item.target_ref || '-'}</td>
                       <td className="p-1 text-right">{item.target_amount?.toFixed(2) || '-'}</td>
-                      <td className="p-1 text-right">{item.match_confidence ? `${(item.match_confidence * 100).toFixed(0)}%` : '-'}</td>
+                      <td className="p-1 text-right">
+                        {typeof item.match_confidence === 'number' ? (
+                          <span className={item.match_confidence >= 0.7 ? 'text-emerald-400' : item.match_confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'} title={`Match method: ${item.match_method ?? 'unknown'}`}>
+                            {(item.match_confidence * 100).toFixed(0)}%
+                          </span>
+                        ) : '-'}
+                      </td>
                       <td className="p-1">
                         {item.discrepancy_amount ? (
                           <span className="text-amber-400">{item.discrepancy_amount.toFixed(2)} ({item.discrepancy_pct?.toFixed(1)}%)</span>

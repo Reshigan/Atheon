@@ -45,7 +45,6 @@ const ROUTES: RouteHit[] = [
   { section: 'Intelligence', label: 'Apex',          path: '/apex',              haystack: 'apex executive intelligence briefing risks scenarios', symbol: 'workspace_premium', roles: EXECUTIVE_ROLES },
   { section: 'Intelligence', label: 'Pulse',         path: '/pulse',             haystack: 'pulse process intelligence anomalies metrics', symbol: 'monitor_heart', roles: STANDARD_ROLES },
   { section: 'Intelligence', label: 'Catalysts',     path: '/catalysts',         haystack: 'catalysts autonomous execution clusters', symbol: 'bolt', roles: OPERATOR_ROLES },
-  { section: 'Intelligence', label: 'Chat',          path: '/chat',              haystack: 'chat conversational ai mind memory', symbol: 'forum', roles: STANDARD_ROLES },
   { section: 'Intelligence', label: 'Mind',          path: '/mind',              haystack: 'mind ai model governance configuration', symbol: 'psychology', roles: PLATFORM_ADMIN_ROLES },
   { section: 'Intelligence', label: 'Memory',        path: '/memory',            haystack: 'memory knowledge graph entities relationships', symbol: 'memory', roles: MANAGER_ROLES },
   { section: 'Intelligence', label: 'Trust',         path: '/trust',             haystack: 'trust calibration provenance peers', symbol: 'verified', roles: STANDARD_ROLES },

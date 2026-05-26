@@ -75,7 +75,6 @@ const SECTIONS: NavSection[] = [
       { path: '/apex',              label: 'Apex',          symbol: 'workspace_premium', roles: EXECUTIVE_ROLES },
       { path: '/pulse',             label: 'Pulse',         symbol: 'monitor_heart',     roles: STANDARD_ROLES },
       { path: '/catalysts',         label: 'Catalysts',     symbol: 'bolt',              roles: OPERATOR_ROLES },
-      { path: '/chat',              label: 'Chat',          symbol: 'forum',             roles: STANDARD_ROLES },
       { path: '/mind',              label: 'Mind',          symbol: 'psychology',        roles: PLATFORM_ADMIN_ROLES },
       { path: '/memory',            label: 'Memory',        symbol: 'memory',            roles: MANAGER_ROLES },
       { path: '/trust',             label: 'Trust',         symbol: 'verified',          roles: STANDARD_ROLES },

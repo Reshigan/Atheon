@@ -658,6 +658,7 @@ export function CatalystRunDetailPage() {
                     <th className="py-2 px-2 t-muted font-medium text-right">Source Amt</th>
                     <th className="py-2 px-2 t-muted font-medium text-left">Target</th>
                     <th className="py-2 px-2 t-muted font-medium text-right">Target Amt</th>
+                    <th className="py-2 px-2 t-muted font-medium text-right" title="Match confidence (0–100%). Per platform spec, claims rely on ≥70% confidence and ≥25 sample matches.">Conf.</th>
                     <th className="py-2 px-2 t-muted font-medium text-left">Discrepancy</th>
                     <th className="py-2 px-2 t-muted font-medium text-left">Review</th>
                     <th className="py-2 px-2 t-muted font-medium text-left">Actions</th>
@@ -707,6 +708,15 @@ export function CatalystRunDetailPage() {
                         </td>
                         <td className="py-2 px-2 text-right t-primary font-mono">
                           {typeof item.target_amount === 'number' ? item.target_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                        </td>
+                        <td className="py-2 px-2 text-right font-mono">
+                          {typeof item.match_confidence === 'number' ? (
+                            <span className={item.match_confidence >= 0.7 ? 'text-emerald-400' : item.match_confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'} title={`Match method: ${item.match_method ?? 'unknown'}`}>
+                              {Math.round(item.match_confidence * 100)}%
+                            </span>
+                          ) : (
+                            <span className="t-muted">—</span>
+                          )}
                         </td>
                         <td className="py-2 px-2">
                           {typeof item.discrepancy_amount === 'number' && item.discrepancy_amount !== 0 ? (

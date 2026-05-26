@@ -38,7 +38,6 @@ const CatalystsPage = lazyWithRetry(() => import("@/pages/CatalystsPage").then(m
 const CatalystRunDetailPage = lazyWithRetry(() => import("@/pages/CatalystRunDetailPage").then(m => ({ default: m.CatalystRunDetailPage })));
 const MindPage = lazyWithRetry(() => import("@/pages/MindPage").then(m => ({ default: m.MindPage })));
 const MemoryPage = lazyWithRetry(() => import("@/pages/MemoryPage").then(m => ({ default: m.MemoryPage })));
-const ChatPage = lazyWithRetry(() => import("@/pages/ChatPage").then(m => ({ default: m.ChatPage })));
 const ConnectivityPage = lazyWithRetry(() => import("@/pages/ConnectivityPage").then(m => ({ default: m.ConnectivityPage })));
 // AuditPage no longer lazy-loaded here — CompliancePage imports it directly
 // and renders it inside the "Audit Log" tab (May 2026 merge).
@@ -192,7 +191,6 @@ export default function App() {
             <Route path="/catalysts/runs/:runId" element={<ProtectedRoute allowedRoles={OPERATOR_ROLES}><CatalystRunDetailPage /></ProtectedRoute>} />
             <Route path="/mind" element={<ProtectedRoute allowedRoles={PLATFORM_ADMIN_ROLES}><MindPage /></ProtectedRoute>} />
             <Route path="/memory" element={<ProtectedRoute allowedRoles={MANAGER_ROLES}><MemoryPage /></ProtectedRoute>} />
-            <Route path="/chat" element={<ProtectedRoute allowedRoles={STANDARD_ROLES}><ChatPage /></ProtectedRoute>} />
             {/* Backend gates /api/v1/connectivity to superadmin + support_admin + admin
                 (workers/api/src/index.ts platformAdminRoutePrefixes); aligning the
                 frontend guard so support_admin can reach the page. */}

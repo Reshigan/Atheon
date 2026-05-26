@@ -27,7 +27,7 @@ import {
   TrendingUp, TrendingDown, Minus, Shield, Lightbulb, ChevronDown,
   ChevronUp, Clock, Zap, Target, Eye, CheckCircle2, XCircle,
   BarChart3, Gauge, Filter, AlertCircle, Workflow, Play,
-  UserCheck, FileWarning, RefreshCw, List, Stethoscope, ChevronRight, Wrench, X
+  UserCheck, FileWarning, RefreshCw, List, Stethoscope, ChevronRight, Wrench, X, DollarSign
 } from "lucide-react";
 import { CSVExportButton } from "@/components/common/CSVExportButton";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
@@ -697,6 +697,7 @@ export function PulsePage() {
     { id: 'anomalies', label: 'Anomalies', icon: <AlertTriangle size={14} />, count: anomalies.filter(a => a.severity === 'critical' || a.severity === 'high').length || undefined },
     { id: 'processes', label: 'Processes', icon: <GitBranch size={14} /> },
     { id: 'correlations', label: 'Correlations', icon: <Link2 size={14} /> },
+    { id: 'cost-of-inaction', label: 'Cost of Inaction', icon: <DollarSign size={14} /> },
   ];
 
   const pageHeader = (
