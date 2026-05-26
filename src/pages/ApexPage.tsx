@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -620,10 +620,22 @@ export function ApexPage() {
  </div>
  </div>
 
- {/* v63 — executive view of pending high-value write-back actions.
-     Shows the actions awaiting CFO/CEO approval that move the savings
-     numbers reported in the assessment from "advisory" to "realized". */}
- <ActionQueuePanel variant="executive" allowApprove limit={10} title="Actions awaiting your approval" />
+ {/* Apex is the executive surface. Transaction-level resolutions live on Pulse;
+     here we expose only the summary so an exec sees the value-at-stake without
+     having to act on individual rows. The "Review in Pulse" link routes to the
+     full operational queue. */}
+ <div className="flex items-center gap-3">
+   <div className="flex-1">
+     <ActionQueuePanel variant="compact" />
+   </div>
+   <Link
+     to="/pulse"
+     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-all shadow-sm flex-shrink-0"
+     aria-label="Open the operational action queue in Pulse"
+   >
+     Review in Pulse <ChevronRight size={14} />
+   </Link>
+ </div>
 
  {actionError && (
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">

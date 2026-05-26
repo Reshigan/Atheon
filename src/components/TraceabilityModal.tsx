@@ -4,8 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
 import { Portal } from "@/components/ui/portal";
-import { X, ChevronRight, Link2, AlertTriangle, BarChart3, TrendingUp, TrendingDown, Minus, FileText, ChevronDown, ChevronUp, Crown } from "lucide-react";
+import { X, ChevronRight, Link2, AlertTriangle, BarChart3, TrendingUp, TrendingDown, Minus, FileText, ChevronDown, ChevronUp, Crown, Database } from "lucide-react";
 import type { HealthDimensionTraceResponse, RiskTraceResponse, MetricTraceResponse } from "@/lib/api";
+
+function formatZAR(n: number): string {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(n);
+}
+function formatRunStarted(iso: string): string {
+  try { return new Date(iso).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; }
+}
 
 interface TraceabilityModalProps {
   data: HealthDimensionTraceResponse | RiskTraceResponse | MetricTraceResponse;
@@ -185,41 +192,123 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
 
           {/* Expandable Sections */}
           <div className="space-y-2">
-            {/* Source Attribution */}
-            <div className="border border-[var(--border-card)] rounded-lg">
-              <button 
-                onClick={() => toggleSection('source')}
-                className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
-              >
-                <span className="text-sm font-medium t-primary flex items-center gap-2">
-                  <Link2 size={14} className="text-accent" /> Source Attribution
-                </span>
-                {expandedSection === 'source' ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
-              </button>
-              {expandedSection === 'source' && (
-                <div className="p-3 pt-0 border-t border-[var(--border-card)] space-y-2">
-                  {type === 'dimension' ? (
-                    <div className="space-y-1">
-                      <p className="text-xs t-muted">Source Run: {(data as HealthDimensionTraceResponse).sourceRunId || 'N/A'}</p>
-                      <p className="text-xs t-muted">Catalyst: {(data as HealthDimensionTraceResponse).catalystName || 'N/A'}</p>
-                      <p className="text-xs t-muted">Contributors: {(data as HealthDimensionTraceResponse).contributors.join(', ') || 'None'}</p>
-                    </div>
-                  ) : type === 'risk' ? (
-                    <div className="space-y-1">
-                      <p className="text-xs t-muted">Source Run: {(data as RiskTraceResponse).sourceAttribution.sourceRunId || 'N/A'}</p>
-                      <p className="text-xs t-muted">Cluster: {(data as RiskTraceResponse).sourceAttribution.clusterId || 'N/A'}</p>
-                      <p className="text-xs t-muted">Sub-Catalyst: {(data as RiskTraceResponse).sourceAttribution.subCataulystName || 'N/A'}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="text-xs t-muted">Source Run: {(data as MetricTraceResponse).sourceAttribution.sourceRunId || 'N/A'}</p>
-                      <p className="text-xs t-muted">Sub-Catalyst: {(data as MetricTraceResponse).sourceAttribution.subCataulystName || 'N/A'}</p>
-                      <p className="text-xs t-muted">Cluster: {(data as MetricTraceResponse).sourceAttribution.clusterId || 'N/A'}</p>
+            {/* Batch Runs — the actual sub-catalyst runs that fed this metric/dimension/risk */}
+            {(() => {
+              const runs: Array<{ runId: string; subCataulystName: string; status: string; matched: number; discrepancies: number; exceptions: number; totalValue: number; startedAt: string }> =
+                type === 'dimension'
+                  ? (data as HealthDimensionTraceResponse).traceability?.recentRuns ?? []
+                  : type === 'risk' && (data as RiskTraceResponse).sourceRun
+                    ? [(data as RiskTraceResponse).sourceRun!]
+                    : type === 'metric' && (data as MetricTraceResponse).sourceRun
+                      ? [(data as MetricTraceResponse).sourceRun!]
+                      : [];
+              if (runs.length === 0) return null;
+              return (
+                <div className="border border-[var(--border-card)] rounded-lg">
+                  <button
+                    onClick={() => toggleSection('source')}
+                    className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
+                  >
+                    <span className="text-sm font-medium t-primary flex items-center gap-2">
+                      <Database size={14} className="text-accent" /> Batch Runs ({runs.length})
+                    </span>
+                    {expandedSection === 'source' ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
+                  </button>
+                  {expandedSection === 'source' && (
+                    <div className="p-3 pt-0 border-t border-[var(--border-card)]">
+                      <div className="space-y-2">
+                        {runs.slice(0, 8).map(r => {
+                          const total = (r.matched || 0) + (r.discrepancies || 0);
+                          return (
+                            <button
+                              key={r.runId}
+                              onClick={() => navigateToRun(r.runId)}
+                              className="w-full text-left p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--accent)] hover:shadow-sm transition-all group"
+                            >
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-sm font-medium t-primary truncate pr-2">{r.subCataulystName}</span>
+                                <span className="flex items-center gap-1 text-caption t-muted shrink-0">
+                                  {formatRunStarted(r.startedAt)}
+                                  <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-caption">
+                                <span className="t-muted">Records: <span className="t-primary font-medium tabular-nums">{total}</span></span>
+                                <span className="text-emerald-500">Matched <span className="font-medium tabular-nums">{r.matched}</span></span>
+                                <span className="text-amber-500">Discrepancies <span className="font-medium tabular-nums">{r.discrepancies}</span></span>
+                                {r.exceptions > 0 && <span className="text-red-500">Exceptions <span className="font-medium tabular-nums">{r.exceptions}</span></span>}
+                                {typeof r.totalValue === 'number' && r.totalValue > 0 && (
+                                  <span className="ml-auto t-primary font-medium tabular-nums">{formatZAR(r.totalValue)}</span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-caption t-muted mt-2 italic">Click a run to inspect every record that was processed.</p>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
+
+            {/* Source Attribution — kept compact, only shown when there's a single source */}
+            {(type === 'risk' || type === 'metric') && (
+              <div className="border border-[var(--border-card)] rounded-lg">
+                <button
+                  onClick={() => toggleSection('attribution')}
+                  className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
+                >
+                  <span className="text-sm font-medium t-primary flex items-center gap-2">
+                    <Link2 size={14} className="text-accent" /> Source Attribution
+                  </span>
+                  {expandedSection === 'attribution' ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
+                </button>
+                {expandedSection === 'attribution' && (
+                  <div className="p-3 pt-0 border-t border-[var(--border-card)] space-y-1">
+                    {type === 'risk' ? (
+                      <>
+                        <p className="text-xs t-muted">Sub-Catalyst: <span className="t-primary">{(data as RiskTraceResponse).sourceAttribution.subCataulystName || '—'}</span></p>
+                        <p className="text-xs t-muted">Cluster: <span className="t-primary">{(data as RiskTraceResponse).cluster?.clusterName || (data as RiskTraceResponse).sourceAttribution.clusterId || '—'}</span></p>
+                        <p className="text-xs t-muted">Source Run: <span className="t-primary font-mono">{(data as RiskTraceResponse).sourceAttribution.sourceRunId || '—'}</span></p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs t-muted">Sub-Catalyst: <span className="t-primary">{(data as MetricTraceResponse).sourceAttribution.subCataulystName || '—'}</span></p>
+                        <p className="text-xs t-muted">Cluster: <span className="t-primary">{(data as MetricTraceResponse).cluster?.clusterName || (data as MetricTraceResponse).sourceAttribution.clusterId || '—'}</span></p>
+                        <p className="text-xs t-muted">Source Run: <span className="t-primary font-mono">{(data as MetricTraceResponse).sourceAttribution.sourceRunId || '—'}</span></p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {type === 'dimension' && (data as HealthDimensionTraceResponse).traceability?.contributingClusters?.length > 0 && (
+              <div className="border border-[var(--border-card)] rounded-lg">
+                <button
+                  onClick={() => toggleSection('clusters')}
+                  className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
+                >
+                  <span className="text-sm font-medium t-primary flex items-center gap-2">
+                    <BarChart3 size={14} className="text-accent" /> Contributing Clusters ({(data as HealthDimensionTraceResponse).traceability.contributingClusters.length})
+                  </span>
+                  {expandedSection === 'clusters' ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
+                </button>
+                {expandedSection === 'clusters' && (
+                  <div className="p-3 pt-0 border-t border-[var(--border-card)] space-y-1.5">
+                    {(data as HealthDimensionTraceResponse).traceability.contributingClusters.map((cl) => (
+                      <div key={cl.clusterId} className="flex items-center justify-between p-2 rounded bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                        <div>
+                          <p className="text-sm t-primary font-medium">{cl.clusterName}</p>
+                          <p className="text-caption t-muted">{cl.domain} · {cl.subCataulysts.length} sub-catalysts</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Contributors/Items */}
             <div className="border border-[var(--border-card)] rounded-lg">
@@ -239,36 +328,6 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
               )}
             </div>
 
-            {/* Cluster Info (for risk/metric) */}
-            {type !== 'dimension' && (
-              <div className="border border-[var(--border-card)] rounded-lg">
-                <button 
-                  onClick={() => toggleSection('cluster')}
-                  className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
-                >
-                  <span className="text-sm font-medium t-primary flex items-center gap-2">
-                    <BarChart3 size={14} className="text-accent" /> Cluster Information
-                  </span>
-                  {expandedSection === 'cluster' ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
-                </button>
-                {expandedSection === 'cluster' && (
-                  <div className="p-3 pt-0 border-t border-[var(--border-card)] space-y-1">
-                    {type === 'risk' ? (
-                      <>
-                        <p className="text-xs t-muted">Cluster: {(data as RiskTraceResponse).cluster?.clusterName || 'N/A'}</p>
-                        <p className="text-xs t-muted">Domain: {(data as RiskTraceResponse).cluster?.domain || 'N/A'}</p>
-                        <p className="text-xs t-muted">Autonomy Tier: {(data as RiskTraceResponse).cluster?.autonomyTier || 'N/A'}</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-xs t-muted">Cluster: {(data as MetricTraceResponse).cluster?.clusterName || 'N/A'}</p>
-                        <p className="text-xs t-muted">Domain: {(data as MetricTraceResponse).cluster?.domain || 'N/A'}</p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}
