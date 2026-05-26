@@ -1792,10 +1792,13 @@ seed.post('/seed-vantax', async (c) => {
       { subCatalystName: 'AP Invoice Validation', matchRate: 85.0, exceptionRate: 15.0, avgProcessingTime: 28, trend: [82.0, 83.1, 83.8, 84.5, 85.0], period: 'monthly' },
     ];
     for (const eff of effectivenessData) {
+      // recovery_rate is the 0..1 fraction consumed by atheon-score and
+      // executive-summary (both multiply by 100). matchRate is 0..100 so divide.
+      const recoveryRate = eff.matchRate / 100;
       seedBatch.push(c.env.DB.prepare(
-        `INSERT OR REPLACE INTO catalyst_effectiveness (id, tenant_id, cluster_id, sub_catalyst_name, period_start, period_end, runs_count, success_rate, avg_match_rate, avg_duration_ms, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 10, ?, ?, ?, ?)`
-      ).bind(crypto.randomUUID(), tenantId, financeClusterId, eff.subCatalystName, new Date(Date.now() - 30*86400000).toISOString(), now, eff.matchRate, eff.matchRate, eff.avgProcessingTime * 1000, now));
+        `INSERT OR REPLACE INTO catalyst_effectiveness (id, tenant_id, cluster_id, sub_catalyst_name, period_start, period_end, runs_count, success_rate, avg_match_rate, avg_duration_ms, recovery_rate, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 10, ?, ?, ?, ?, ?)`
+      ).bind(crypto.randomUUID(), tenantId, financeClusterId, eff.subCatalystName, new Date(Date.now() - 30*86400000).toISOString(), now, eff.matchRate, eff.matchRate, eff.avgProcessingTime * 1000, recoveryRate, now));
     }
     console.log(`[VantaX Seeder] Seeded ${effectivenessData.length} catalyst effectiveness records`);
 
