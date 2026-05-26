@@ -16,7 +16,7 @@ export function ClusterList({ clusters, selectedCluster, onSelect, onCreate }: C
         <h3 className="text-sm font-semibold t-primary">Clusters</h3>
         <button
           onClick={onCreate}
-          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-all"
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 active:scale-[0.96] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
         >
           <Plus size={12} /> New
         </button>
@@ -28,7 +28,7 @@ export function ClusterList({ clusters, selectedCluster, onSelect, onCreate }: C
           <button
             key={cluster.id}
             onClick={() => onSelect(cluster.id)}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
+            className={`w-full flex items-center gap-3 p-3 rounded-xl active:scale-[0.98] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] text-left ${
               selectedCluster === cluster.id
                 ? 'bg-accent/10 border border-accent/20'
                 : 'hover:bg-[var(--bg-secondary)] border border-transparent'

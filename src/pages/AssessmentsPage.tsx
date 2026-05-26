@@ -892,7 +892,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                 {tiles.map(m => (
                   <div
                     key={m.label}
-                    className="rounded-xl p-4 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.20)]"
+                    className="rounded-xl p-4 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.20)] active:scale-[0.97]"
                     style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
                   >
                     <div className="flex items-center justify-between">
@@ -1034,7 +1034,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                             <span className="text-lg font-bold" style={{ color: scoreColor }}>{Math.round(dq.overall_quality_score)}%</span>
                           </div>
                           <div className="h-2 rounded-full overflow-hidden mb-2" style={{ background: 'var(--bg-card)' }}>
-                            <div className="h-full rounded-full transition-all" style={{ width: `${dq.overall_quality_score}%`, background: scoreColor }} />
+                            <div className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" style={{ width: `${dq.overall_quality_score}%`, background: scoreColor }} />
                           </div>
                           <div className="grid grid-cols-2 gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
                             <span>{dq.total_records.toLocaleString()} records</span>

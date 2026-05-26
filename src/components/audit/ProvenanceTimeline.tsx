@@ -118,7 +118,7 @@ export function ProvenanceTimeline({ entries, className = '' }: ProvenanceTimeli
                       }}
                     />
                     <div
-                      className="rounded-xl px-4 py-3 transition-colors hover:bg-[var(--bg-secondary)]"
+                      className="rounded-xl px-4 py-3 transition-colors hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
                       style={{
                         background: 'var(--bg-card-solid)',
                         border: '1px solid var(--border-card)',

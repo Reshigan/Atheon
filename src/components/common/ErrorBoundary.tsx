@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                       window.location.reload();
                     }
                   }}
-                  className="px-4 py-2 rounded-lg text-body-sm font-medium text-white transition-colors hover:opacity-90"
+                  className="px-4 py-2 rounded-lg text-body-sm font-medium text-white transition-colors hover:opacity-90 active:scale-[0.97]"
                   style={{ background: 'var(--accent)' }}
                 >
                   {isChunkError ? 'Reload now' : 'Reload page'}
@@ -116,7 +116,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   <button
                     type="button"
                     onClick={() => this.setState({ hasError: false, error: null })}
-                    className="px-4 py-2 rounded-lg text-body-sm font-medium t-secondary transition-colors hover:t-primary hover:bg-[var(--bg-secondary)] border border-[var(--border-card)]"
+                    className="px-4 py-2 rounded-lg text-body-sm font-medium t-secondary transition-colors hover:t-primary hover:bg-[var(--bg-secondary)] border border-[var(--border-card)] active:scale-[0.97]"
                   >
                     Try again
                   </button>

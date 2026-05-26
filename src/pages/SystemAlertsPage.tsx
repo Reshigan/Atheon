@@ -380,24 +380,24 @@ export function SystemAlertsPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => { setTestingRule(r); setTestResult(null); setTestPayload(JSON.stringify({ [r.condition?.field || 'severity']: r.condition?.value ?? 'high' }, null, 2)); }}
-                      className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors"
+                      className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors active:scale-[0.97]"
                       title="Test rule"
                     >
                       <Play size={14} />
                     </button>
                     {r.silenced ? (
-                      <button onClick={() => clearSilence(r)} className="p-1.5 rounded-md hover:bg-emerald-500/10 t-muted hover:text-emerald-400 transition-colors" title="Clear silence">
+                      <button onClick={() => clearSilence(r)} className="p-1.5 rounded-md hover:bg-emerald-500/10 t-muted hover:text-emerald-400 transition-colors active:scale-[0.97]" title="Clear silence">
                         <VolumeX size={14} />
                       </button>
                     ) : (
-                      <button onClick={() => setSilencingRule(r)} className="p-1.5 rounded-md hover:bg-amber-500/10 t-muted hover:text-amber-400 transition-colors" title="Silence">
+                      <button onClick={() => setSilencingRule(r)} className="p-1.5 rounded-md hover:bg-amber-500/10 t-muted hover:text-amber-400 transition-colors active:scale-[0.97]" title="Silence">
                         <VolumeX size={14} />
                       </button>
                     )}
-                    <button onClick={() => openEditModal(r)} className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors" title="Edit">
+                    <button onClick={() => openEditModal(r)} className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors active:scale-[0.97]" title="Edit">
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => deleteRule(r)} className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors" title="Delete">
+                    <button onClick={() => deleteRule(r)} className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors active:scale-[0.97]" title="Delete">
                       <Trash2 size={14} />
                     </button>
                   </div>

@@ -320,7 +320,7 @@ export function FeatureFlagsPage() {
                   <div className="flex items-center gap-1 ml-2">
                     <button
                       onClick={() => startEdit(f)}
-                      className="p-1.5 rounded-md hover:bg-[var(--bg-secondary)] t-muted hover:t-primary transition-colors"
+                      className="p-1.5 rounded-md hover:bg-[var(--bg-secondary)] t-muted hover:t-primary transition-colors active:scale-[0.97]"
                       title="Edit"
                     >
                       <Pencil size={14} />
@@ -328,7 +328,7 @@ export function FeatureFlagsPage() {
                     <button
                       onClick={() => handleDelete(f)}
                       disabled={deletingId === f.id}
-                      className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-50 active:scale-[0.97]"
                       title="Delete"
                     >
                       {deletingId === f.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -421,7 +421,7 @@ export function FeatureFlagsPage() {
                     {tenants.length === 0 ? (
                       <p className="text-xs t-muted text-center py-2">No tenants loaded</p>
                     ) : tenants.map(t => (
-                      <label key={t.id} className="flex items-center gap-2 text-xs t-primary cursor-pointer hover:bg-[var(--bg-modal)] rounded px-2 py-1">
+                      <label key={t.id} className="flex items-center gap-2 text-xs t-primary cursor-pointer hover:bg-[var(--bg-modal)] rounded px-2 py-1 active:scale-[0.97]">
                         <input
                           type="checkbox"
                           checked={form.tenantAllowlist.includes(t.id)}

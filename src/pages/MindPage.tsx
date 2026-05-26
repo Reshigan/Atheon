@@ -152,7 +152,7 @@ export function MindPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium transition-all ${activeTab === tab.id ? "t-primary" : "t-muted hover:t-secondary"}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${activeTab === tab.id ? "t-primary" : "t-muted hover:t-secondary"}`}
             style={activeTab === tab.id ? { background: "var(--bg-card)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : undefined}
           >
             <tab.icon size={14} />

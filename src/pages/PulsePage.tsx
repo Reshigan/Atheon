@@ -132,7 +132,7 @@ function PulseActionRequired({
           <button
             key={item.key}
             onClick={() => onJumpToTab(item.tab)}
-            className={`text-left p-3 rounded-lg border transition-all hover:scale-[1.01] ${item.tone}`}
+            className={`text-left p-3 rounded-lg border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-[1.01] ${item.tone}`}
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium t-primary">{item.label}</span>
@@ -820,13 +820,13 @@ export function PulsePage() {
           <div className="flex items-center gap-1 flex-wrap">
             <button
               onClick={() => setDomainFilter('all')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${domainFilter === 'all' ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${domainFilter === 'all' ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
             >All</button>
             {availableDomains.map(d => (
               <button
                 key={d}
                 onClick={() => setDomainFilter(d)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all capitalize ${domainFilter === d ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] capitalize ${domainFilter === d ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
               >{d}</button>
             ))}
           </div>
@@ -840,7 +840,7 @@ export function PulsePage() {
         <button
           onClick={() => loadAiInsights(domainFilter)}
           disabled={aiInsightsLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
           title="Generate AI-powered operational insights"
         >
           <Lightbulb size={12} className={aiInsightsLoading ? 'animate-pulse' : ''} />
@@ -849,7 +849,7 @@ export function PulsePage() {
         <button
           onClick={handleManualRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
           {refreshing ? 'Refreshing...' : 'Refresh Mining'}
@@ -995,7 +995,7 @@ export function PulsePage() {
                         <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'improving' ? '#10b981' : dim.trend === 'declining' ? '#ef4444' : '#6b7280'} />
                         <button
                           onClick={() => handleOpenDimensionTrace(dim.key)}
-                          className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all ml-2"
+                          className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ml-2"
                           title={`Trace ${dim.name}`}
                         >
                           <Eye size={10} />
@@ -1023,8 +1023,8 @@ export function PulsePage() {
               refreshedAt: loadedAt,
             };
             return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors h-full">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 stagger">
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(163,177,138,0.22)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Total Metrics</span>
                 <div className="flex items-center gap-1">
@@ -1048,7 +1048,7 @@ export function PulsePage() {
                 ))}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors h-full">
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(16,185,129,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Healthy</span>
                 <div className="flex items-center gap-1">
@@ -1075,7 +1075,7 @@ export function PulsePage() {
                 ))}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors h-full">
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(245,158,11,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Warning</span>
                 <div className="flex items-center gap-1">
@@ -1102,7 +1102,7 @@ export function PulsePage() {
                 ))}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors h-full">
+            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(239,68,68,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
                 <div className="flex items-center gap-1">
@@ -1230,7 +1230,7 @@ export function PulsePage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleOpenMetricTrace(metric.id); }}
-                        className="opacity-0 group-hover:opacity-100 text-accent hover:text-accent/80 transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-accent hover:text-accent/80 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                         title="Trace to source"
                       >
                         <Link2 size={12} />
@@ -1424,11 +1424,11 @@ export function PulsePage() {
               <button
                 key={f}
                 onClick={() => setAnomalyFilter(f)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                   anomalyFilter === f
                     ? 'bg-accent/20 text-accent border border-accent/30'
                     : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
-                }`}
+                } active:scale-[0.97]`}
               >
                 {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
@@ -1562,7 +1562,7 @@ export function PulsePage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAnomalyStatus(anom.id, 'investigating', 'Investigation opened'); }}
                                 disabled={anomalyActionPending === `${anom.id}:investigating` || anom.status === 'investigating' || anom.status === 'resolved'}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
                                 aria-label={`Investigate ${anom.metric}`}
                               >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>1</div>
@@ -1583,7 +1583,7 @@ export function PulsePage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAnomalyRerun(anom.id); }}
                                 disabled={anomalyActionPending === `${anom.id}:rerun`}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
                                 aria-label="Re-check data quality"
                               >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>2</div>
@@ -1603,7 +1603,7 @@ export function PulsePage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAnomalyStatus(anom.id, 'resolved', deviationPct >= 50 ? 'Anomaly escalated + closed' : 'Anomaly resolved'); }}
                                 disabled={anomalyActionPending === `${anom.id}:resolved` || anom.status === 'resolved'}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
                                 aria-label={deviationPct >= 50 ? 'Escalate to management' : 'Mark resolved'}
                               >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>3</div>
@@ -1663,7 +1663,7 @@ export function PulsePage() {
             {/* Process Health Summary — Stitch hover-tint bento */}
             {processes.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Processes</span>
                     <GitBranch size={14} className="text-accent" />
@@ -1671,7 +1671,7 @@ export function PulsePage() {
                   <Numeric value={processes.length} size="lg" />
                   <p className="text-caption t-muted mt-1">Mapped & monitored</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Avg Conformance</span>
                     <Target size={14} className="text-emerald-400" />
@@ -1681,7 +1681,7 @@ export function PulsePage() {
                   }`}>{Math.round(processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length)}<span className="text-body">%</span></p>
                   <p className="text-caption t-muted mt-1">Target: 85%+</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Total Variants</span>
                     <Workflow size={14} style={{ color: 'var(--sky)' }} />
@@ -1689,7 +1689,7 @@ export function PulsePage() {
                   <Numeric value={processes.reduce((s, p) => s + p.variants, 0)} size="lg" />
                   <p className="text-caption t-muted mt-1">Across all processes</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
+                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Bottlenecks</span>
                     <AlertTriangle size={14} className="text-red-400" />
@@ -2204,7 +2204,7 @@ export function PulsePage() {
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-16 h-1.5 rounded-full overflow-hidden bg-[var(--bg-card-solid)]">
                               <div
-                                className="h-full rounded-full transition-all"
+                                className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                                 style={{
                                   width: `${cat.successRate}%`,
                                   background: cat.successRate >= 80 ? '#10b981' : cat.successRate >= 60 ? '#f59e0b' : '#ef4444',
@@ -2229,11 +2229,11 @@ export function PulsePage() {
             <Filter size={14} className="text-gray-400" />
             <button
               onClick={() => setCatalystFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                 catalystFilter === 'all'
                   ? 'bg-accent/20 text-accent border border-accent/30'
                   : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
-              }`}
+              } active:scale-[0.97]`}
             >
               All Catalysts
             </button>
@@ -2241,11 +2241,11 @@ export function PulsePage() {
               <button
                 key={cat.catalystName}
                 onClick={() => setCatalystFilter(catalystFilter === cat.catalystName ? 'all' : cat.catalystName)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                   catalystFilter === cat.catalystName
                     ? 'bg-accent/20 text-accent border border-accent/30'
                     : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
-                }`}
+                } active:scale-[0.97]`}
               >
                 {cat.catalystName}
               </button>

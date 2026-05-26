@@ -100,7 +100,7 @@ export function RevenueUsagePage() {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
           Refresh
@@ -221,7 +221,7 @@ export function RevenueUsagePage() {
                     </div>
                     <div className="h-3 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                         style={{ width: `${pct}%`, background: planColor(p.plan) }}
                       />
                     </div>
@@ -247,7 +247,7 @@ export function RevenueUsagePage() {
                     <div key={g.month} className="flex-1 flex flex-col items-center gap-1">
                       <span className="text-caption font-medium t-primary">{g.count}</span>
                       <div
-                        className="w-full rounded-t-md bg-accent/80 transition-all"
+                        className="w-full rounded-t-md bg-accent/80 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                         style={{ height: `${Math.max(heightPct, 2)}%`, minHeight: g.count > 0 ? 8 : 2 }}
                       />
                       <span className="text-caption t-muted">{g.month.slice(-2)}</span>

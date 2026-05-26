@@ -1000,7 +1000,7 @@ export function CatalystsPage() {
  key={action.id}
  hover
  onClick={() => setExpandedAction(expandedAction === action.id ? null : action.id)}
- className={isException && showExceptionHighlight ? 'ring-1 ring-red-500/40 bg-red-500/[0.03]' : ''}
+ className={`cursor-pointer hover:-translate-y-px active:scale-[0.99] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${isException && showExceptionHighlight ? 'ring-1 ring-red-500/40 bg-red-500/[0.03]' : ''}`}
  >
  <div className="flex items-start justify-between">
  <div className="flex items-start gap-3">
@@ -1158,7 +1158,7 @@ export function CatalystsPage() {
  </div>
  <div>
  <label className="text-xs t-muted">Upload File (optional)</label>
- <div className="mt-1 p-4 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-amber-500/30 transition-colors" onClick={() => fileInputRef.current?.click()}>
+ <div className="mt-1 p-4 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-amber-500/30 transition-colors active:scale-[0.97]" onClick={() => fileInputRef.current?.click()}>
  {manualFile ? (
  <div className="flex items-center justify-center gap-2">
  <FileText size={16} className="text-accent" />
@@ -1204,12 +1204,12 @@ export function CatalystsPage() {
      decomposed sub-components are kept in /pages/catalysts/* for future
      use (e.g. a dedicated /pages/catalysts/list page) — they aren't
      deleted, just unrendered here. */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
  {clusters.map((cluster) => {
  const tier = tierConfig[cluster.autonomyTier as AutonomyTier] || tierConfig['read-only'];
  const TierIcon = tier.icon;
  return (
- <Card key={cluster.id} hover>
+ <Card key={cluster.id} hover className="hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(163,177,138,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]">
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -1239,26 +1239,26 @@ export function CatalystsPage() {
      We surface tasksCompleted as the headline metric and feed agents
      / success rate / trust score into a compact strip below it. */}
  <div className="mt-4 grid grid-cols-3 gap-3">
-  <div className="col-span-1 p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+  <div className="col-span-1 p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
    <span className="text-caption uppercase tracking-wider t-muted">Tasks Completed</span>
    <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
     <Numeric value={cluster.tasksCompleted} compact size="lg" />
    </p>
   </div>
   <div className="col-span-2 grid grid-cols-3 gap-2">
-   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
+   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors active:scale-[0.97]">
     <span className="text-caption uppercase tracking-wider t-muted">Agents</span>
     <p className="text-body font-bold t-primary tabular-nums font-mono mt-1">
      <Numeric value={cluster.agentCount} size="md" />
     </p>
    </div>
-   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
     <span className="text-caption uppercase tracking-wider t-muted">Success</span>
     <p className="text-body font-bold text-emerald-400 tabular-nums font-mono mt-1">
      {Number(cluster.successRate).toFixed(1)}<span className="text-caption">%</span>
     </p>
    </div>
-   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
     <span className="text-caption uppercase tracking-wider t-muted">Trust</span>
     <p className="text-body font-bold t-primary tabular-nums font-mono mt-1">
      {Number(cluster.trustScore).toFixed(1)}<span className="text-caption">%</span>
@@ -1668,7 +1668,7 @@ export function CatalystsPage() {
              <button
                type="button"
                onClick={() => handleDeleteHitl(cluster.id, sub.name)}
-               className="h-8 w-8 flex items-center justify-center rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors"
+               className="h-8 w-8 flex items-center justify-center rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors active:scale-[0.97]"
                aria-label={`Remove custom HITL assignment for ${sub.name}`}
                title="Remove custom assignment"
              >
@@ -2013,7 +2013,7 @@ export function CatalystsPage() {
  </div>
  <div>
  <label className="text-xs t-muted">Attach file (optional)</label>
- <div className="mt-1 p-3 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-accent/30 transition-colors" onClick={() => quickRunFileRef.current?.click()}>
+ <div className="mt-1 p-3 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-accent/30 transition-colors active:scale-[0.97]" onClick={() => quickRunFileRef.current?.click()}>
  {quickRunFile ? (
  <div className="flex items-center justify-center gap-2">
  <FileText size={14} className="text-accent" />
@@ -2072,20 +2072,20 @@ export function CatalystsPage() {
  </button>
  <button
  onClick={() => { setShowDataSourceConfig(false); openScheduleConfig(configClusterId, configSub); }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-indigo-500/30 hover:text-indigo-400 transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-indigo-500/30 hover:text-indigo-400 transition-colors active:scale-[0.97]"
  >
  <Calendar size={12} /> Schedule
  </button>
  <button
  onClick={() => { setShowDataSourceConfig(false); openExecutionConfig(configClusterId, configSub); }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-orange-500/30 hover:text-orange-400 transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-orange-500/30 hover:text-orange-400 transition-colors active:scale-[0.97]"
  >
  <Activity size={12} /> Execution Mode
  </button>
  {getSubDataSources(configSub).length >= 2 && (
  <button
  onClick={() => { setShowDataSourceConfig(false); openFieldMappingConfig(configClusterId, configSub); }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-teal-500/30 hover:text-teal-400 transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-teal-500/30 hover:text-teal-400 transition-colors active:scale-[0.97]"
  >
  <Link2 size={12} /> Field Mappings
  </button>
@@ -2117,7 +2117,7 @@ export function CatalystsPage() {
  <button
    type="button"
    onClick={() => dsStartEdit(i)}
-   className="h-9 w-9 flex items-center justify-center rounded hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors"
+   className="h-9 w-9 flex items-center justify-center rounded hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors active:scale-[0.97]"
    aria-label={`Edit ${dsLabel} configuration`}
    title="Edit"
  >
@@ -2126,7 +2126,7 @@ export function CatalystsPage() {
  <button
    type="button"
    onClick={() => dsRemoveSource(i)}
-   className="h-9 w-9 flex items-center justify-center rounded hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors"
+   className="h-9 w-9 flex items-center justify-center rounded hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors active:scale-[0.97]"
    aria-label={`Remove ${dsLabel}`}
    title="Remove"
  >
@@ -2152,7 +2152,7 @@ export function CatalystsPage() {
  {dsEditIndex === null && (
  <button
  onClick={dsStartAddNew}
- className="flex items-center gap-2 w-full p-3 rounded-lg border border-dashed border-[var(--border-card)] hover:border-accent/40 hover:bg-accent/5 transition-all text-xs t-secondary"
+ className="flex items-center gap-2 w-full p-3 rounded-lg border border-dashed border-[var(--border-card)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] text-xs t-secondary active:scale-[0.97]"
  >
  <Plus size={14} className="text-accent" /> Add Data Source
  </button>
@@ -2183,11 +2183,11 @@ export function CatalystsPage() {
  <button
  key={opt.type}
  onClick={() => { setDsType(opt.type); setDsConfig({}); }}
- className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
+ className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
  selected
  ? opt.selectedBg
  : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
- }`}
+ } active:scale-[0.97]`}
  >
  <Icon size={16} className={selected ? opt.selectedText : 'text-gray-400'} />
  <span className={`text-caption font-medium ${selected ? opt.selectedText : 't-secondary'}`}>{opt.label}</span>
@@ -2491,11 +2491,11 @@ export function CatalystsPage() {
    <button
      key={opt.value}
      onClick={() => setSchedFrequency(opt.value)}
-     className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-all ${
+     className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
        schedFrequency === opt.value
          ? 'bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30'
          : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
-     }`}
+     } active:scale-[0.97]`}
    >
      <span className={`text-xs font-medium ${schedFrequency === opt.value ? 'text-indigo-400' : 't-secondary'}`}>{opt.label}</span>
      <span className="text-caption t-muted">{opt.desc}</span>
@@ -2670,7 +2670,7 @@ export function CatalystsPage() {
  <span className={`text-caption font-medium text-center ${fm.confidence >= 0.8 ? 'text-emerald-400' : fm.confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'}`}>
    {(fm.confidence * 100).toFixed(0)}%
  </span>
- <button onClick={() => handleRemoveMapping(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/10 transition-colors">
+ <button onClick={() => handleRemoveMapping(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/10 transition-colors active:scale-[0.97]">
    <Trash2 size={12} className="text-red-400" />
  </button>
  </div>
@@ -2736,7 +2736,7 @@ export function CatalystsPage() {
  <div className="w-full rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
    {hitlUsers.length === 0 && <p className="text-xs t-muted p-2">No users available</p>}
    {hitlUsers.map(u => (
-     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-emerald-500/5 cursor-pointer">
+     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-emerald-500/5 cursor-pointer active:scale-[0.97]">
        <input type="checkbox" className="rounded border-emerald-500/40 text-emerald-500" checked={hitlValidators.includes(u.id)} onChange={e => {
          if (e.target.checked) setHitlValidators(prev => [...prev, u.id]);
          else setHitlValidators(prev => prev.filter(id => id !== u.id));
@@ -2753,7 +2753,7 @@ export function CatalystsPage() {
  <div className="w-full rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
    {hitlUsers.length === 0 && <p className="text-xs t-muted p-2">No users available</p>}
    {hitlUsers.map(u => (
-     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-amber-500/5 cursor-pointer">
+     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-amber-500/5 cursor-pointer active:scale-[0.97]">
        <input type="checkbox" className="rounded border-amber-500/40 text-amber-500" checked={hitlExceptionHandlers.includes(u.id)} onChange={e => {
          if (e.target.checked) setHitlExceptionHandlers(prev => [...prev, u.id]);
          else setHitlExceptionHandlers(prev => prev.filter(id => id !== u.id));
@@ -2770,7 +2770,7 @@ export function CatalystsPage() {
  <div className="w-full rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
    {hitlUsers.length === 0 && <p className="text-xs t-muted p-2">No users available</p>}
    {hitlUsers.map(u => (
-     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-red-500/5 cursor-pointer">
+     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-red-500/5 cursor-pointer active:scale-[0.97]">
        <input type="checkbox" className="rounded border-red-500/40 text-red-500" checked={hitlEscalation.includes(u.id)} onChange={e => {
          if (e.target.checked) setHitlEscalation(prev => [...prev, u.id]);
          else setHitlEscalation(prev => prev.filter(id => id !== u.id));
@@ -2840,7 +2840,7 @@ export function CatalystsPage() {
        execMode === opt.mode
          ? 'bg-orange-500/10 border-orange-500/30 ring-1 ring-orange-500/20'
          : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-orange-500/20'
-     }`}
+     } active:scale-[0.97]`}
    >
      <div className={`mt-0.5 ${execMode === opt.mode ? 'text-orange-400' : 'text-gray-400'}`}>{opt.icon}</div>
      <div>
@@ -3001,7 +3001,7 @@ export function CatalystsPage() {
        };
        return (
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Active Patterns</span>
         <MetricSource source={{
@@ -3017,7 +3017,7 @@ export function CatalystsPage() {
         <Numeric value={intellOverview.summary.activePatterns} size="lg" />
        </p>
       </div>
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
         <MetricSource source={{
@@ -3034,7 +3034,7 @@ export function CatalystsPage() {
         <Numeric value={intellOverview.summary.criticalPatterns} size="lg" />
        </p>
       </div>
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Value Processed</span>
         <MetricSource source={{
@@ -3050,7 +3050,7 @@ export function CatalystsPage() {
         <Numeric value={intellOverview.summary.totalValueProcessed} unit="ZAR" compact size="lg" />
        </p>
       </div>
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Avg ROI</span>
         <MetricSource source={{

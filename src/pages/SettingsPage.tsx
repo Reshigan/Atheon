@@ -317,7 +317,7 @@ export function SettingsPage() {
  title={notif.enabled ? `Disable ${notif.label}` : `Enable ${notif.label}`}
  >
  <div
- className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${notif.enabled ? 'left-5' : 'left-0.5'}`}
+ className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${notif.enabled ? 'left-5' : 'left-0.5'}`}
  />
  </button>
  </div>
@@ -336,7 +336,7 @@ export function SettingsPage() {
  <div className="flex gap-3 mt-2">
  <button
  onClick={() => setTheme('dark')}
- className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-all"
+ className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
  title="Switch to dark theme"
  style={{
  background: theme === 'dark' ? 'var(--accent-subtle)' : 'var(--bg-input)',
@@ -348,7 +348,7 @@ export function SettingsPage() {
  </button>
  <button
  onClick={() => setTheme('light')}
- className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-all"
+ className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
  title="Switch to light theme"
  style={{
  background: theme === 'light' ? 'var(--accent-subtle)' : 'var(--bg-input)',
@@ -370,7 +370,7 @@ export function SettingsPage() {
  key={c.key}
  onClick={() => setAccentColor(c.key)}
  title={c.label}
- className="w-8 h-8 rounded-full transition-all"
+ className="w-8 h-8 rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
  style={{
  background: swatchColor,
  outline: c.key === accentColor ? `2px solid ${swatchColor}` : 'none',

@@ -78,7 +78,7 @@ export function PricingPage(): JSX.Element {
             <button
               key={c}
               onClick={() => setCycle(c)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] capitalize ${
                 cycle === c ? 'bg-accent text-white' : 't-secondary hover:t-primary'
               }`}
               data-testid={`cycle-${c}`}

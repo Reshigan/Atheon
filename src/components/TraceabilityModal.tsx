@@ -223,7 +223,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                             <button
                               key={r.runId}
                               onClick={() => navigateToRun(r.runId)}
-                              className="w-full text-left p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--accent)] hover:shadow-sm transition-all group"
+                              className="w-full text-left p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--accent)] hover:shadow-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
                             >
                               <div className="flex items-center justify-between mb-1.5">
                                 <span className="text-sm font-medium t-primary truncate pr-2">{r.subCataulystName}</span>

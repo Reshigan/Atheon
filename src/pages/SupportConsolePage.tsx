@@ -273,7 +273,7 @@ export function SupportConsolePage() {
         <p className="text-sm t-primary">{error}</p>
         <button
           onClick={loadTenants}
-          className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
         >
           Retry
         </button>
@@ -466,7 +466,7 @@ export function SupportConsolePage() {
         ) : (
           <div className="space-y-1">
             {activities.map((a) => (
-              <div key={a.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
+              <div key={a.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]">
                 <div className="w-6 h-6 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mt-0.5 flex-shrink-0">
                   {activityIcon(a.layer)}
                 </div>
@@ -494,7 +494,7 @@ export function SupportConsolePage() {
             <button
               key={qa.id}
               onClick={() => navigate(qa.to)}
-              className="text-left card-glass p-4 rounded-2xl hover:bg-[var(--bg-secondary)] transition-colors"
+              className="text-left card-glass p-4 rounded-2xl hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
             >
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
@@ -532,19 +532,19 @@ export function SupportConsolePage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => { setActiveTab('activity'); }}
-                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
               >
                 <Activity size={12} /> View activity
               </button>
               <button
                 onClick={() => navigate('/impersonate')}
-                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
               >
                 <Eye size={12} /> Impersonate user
               </button>
               <button
                 onClick={() => navigate('/audit')}
-                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
               >
                 <ExternalLink size={12} /> Full audit log
               </button>

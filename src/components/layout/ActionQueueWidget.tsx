@@ -117,7 +117,7 @@ export function ActionQueueWidget(): JSX.Element | null {
     <div className="relative" ref={dropdownRef} data-testid="action-queue">
       <button
         onClick={() => setOpen(o => !o)}
-        className="relative w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors"
+        className="relative w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
         title={`${total} action${total === 1 ? '' : 's'} pending`}
         aria-label={`Action queue — ${total} pending`}
       >

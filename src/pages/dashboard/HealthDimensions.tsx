@@ -26,7 +26,7 @@ export function HealthDimensions({ dimensions, onOpenTrace }: HealthDimensionsPr
           <button
             key={dim.key}
             onClick={() => onOpenTrace(dim.key)}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-all group"
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
             aria-label={`View ${dim.name} traceability`}
           >
             <ScoreRing score={dim.score} size="sm" />

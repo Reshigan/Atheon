@@ -143,7 +143,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
         >
           <RefreshCw size={14} /> Try again
         </button>
@@ -216,14 +216,14 @@ export function EmptyState({
         action.href ? (
           <a
             href={action.href}
-            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all"
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
           >
             {action.label}
           </a>
         ) : (
           <button
             onClick={action.onClick}
-            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all"
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
           >
             {action.label}
           </button>

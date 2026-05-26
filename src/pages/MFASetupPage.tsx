@@ -117,7 +117,7 @@ export function MFASetupPage() {
         <button
           type="button"
           onClick={() => navigate('/settings')}
-          className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all"
+          className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
           style={{ background: 'var(--bg-secondary)' }}
           title="Back to settings"
           aria-label="Back to settings"

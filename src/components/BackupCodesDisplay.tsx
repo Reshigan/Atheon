@@ -128,7 +128,7 @@ export function BackupCodesDisplay({
             key={code + idx}
             type="button"
             onClick={() => copyOne(code, idx)}
-            className="group flex items-center justify-between gap-2 px-3 py-2 rounded-md font-mono text-sm t-primary transition-colors hover:bg-[var(--bg-input)]"
+            className="group flex items-center justify-between gap-2 px-3 py-2 rounded-md font-mono text-sm t-primary transition-colors hover:bg-[var(--bg-input)] active:scale-[0.97]"
             style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
             title="Click to copy"
           >

@@ -210,7 +210,7 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
         return (
           <div
             key={d.id}
-            className="rounded-xl p-4 cursor-pointer hover:shadow-lg transition-shadow"
+            className="rounded-xl p-4 cursor-pointer hover:shadow-lg transition-shadow active:scale-[0.97]"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
             onClick={() => openDetail(d.id)}
           >

@@ -269,7 +269,7 @@ export function BulkUserManagementPage() {
             <h3 className="text-sm font-medium t-primary mb-1">Import Users via CSV</h3>
             <p className="text-xs t-muted mb-4">Columns: <code className="px-1 rounded bg-[var(--bg-secondary)]">email</code>, <code className="px-1 rounded bg-[var(--bg-secondary)]">name</code>, <code className="px-1 rounded bg-[var(--bg-secondary)]">role</code> (optional), <code className="px-1 rounded bg-[var(--bg-secondary)]">permissions</code> (optional)</p>
             <div
-              className={`border-2 border-dashed rounded-xl p-8 mb-4 transition-colors ${dragOver ? 'border-accent bg-accent/5' : 'border-[var(--border-card)] hover:border-accent/50'}`}
+              className={`border-2 border-dashed rounded-xl p-8 mb-4 transition-colors ${dragOver ? 'border-accent bg-accent/5' : 'border-[var(--border-card)] hover:border-accent/50'} active:scale-[0.97]`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
@@ -420,7 +420,7 @@ export function BulkUserManagementPage() {
           ) : (
             <div className="space-y-1">
               {users.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
+                <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]">
                   <input type="checkbox" checked={selectedIds.has(u.id)} onChange={() => toggleOne(u.id)} className="rounded" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

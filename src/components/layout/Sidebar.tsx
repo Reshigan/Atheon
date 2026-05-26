@@ -420,7 +420,7 @@ export function Sidebar() {
         <div className="flex items-center justify-end px-4 pt-3">
           <button
             onClick={closeMobile}
-            className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+            className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
             title="Close navigation menu"
             aria-label="Close navigation menu"
           >

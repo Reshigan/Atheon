@@ -190,7 +190,7 @@ export function Header() {
       <div className="flex items-center gap-2.5 flex-1">
         <button
           onClick={() => setMobileSidebarOpen(true)}
-          className="lg:hidden p-1.5 -ml-1 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+          className="lg:hidden p-1.5 -ml-1 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
           title="Open navigation menu"
           aria-label="Open navigation menu"
         >
@@ -204,7 +204,7 @@ export function Header() {
           <div className="relative" ref={companyDropdownRef}>
             <button
               onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
               style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
               title="Switch company"
             >
@@ -330,7 +330,7 @@ export function Header() {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={openNotifications}
-            className="relative p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+            className="relative p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
             title="Notifications"
             aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           >

@@ -92,7 +92,7 @@ export function SectionFreshness({ section }: { section: string }) {
     <div className="inline-flex items-center gap-1 text-caption t-muted" title={`Last updated: ${sectionData.lastUpdated || 'Never'}`}>
       <div className={`w-1.5 h-1.5 rounded-full ${statusDot[sectionData.status]}`} />
       <span>{ageLabel(sectionData.ageMinutes)}</span>
-      <button onClick={load} className="p-0.5 rounded hover:bg-[var(--bg-secondary)] transition-all" title="Refresh freshness">
+      <button onClick={load} className="p-0.5 rounded hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]" title="Refresh freshness">
         <RefreshCw size={9} />
       </button>
     </div>

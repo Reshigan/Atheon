@@ -54,7 +54,7 @@ export function CSVExportButton({ endpoint, filename, label = 'Export CSV', size
     <button
       onClick={handleExport}
       disabled={downloading}
-      className={`inline-flex items-center ${sizeClasses} rounded-md font-medium t-muted hover:t-primary transition-all disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center ${sizeClasses} rounded-md font-medium t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 ${className}`}
       style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
       title={label}
     >

@@ -125,7 +125,7 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
                     <button
                       type="button"
                       onClick={() => navigate(catalystDeployUrl(rec))}
-                      className="shrink-0 px-4 py-2 rounded text-body-sm font-medium transition-colors text-white hover:opacity-90"
+                      className="shrink-0 px-4 py-2 rounded text-body-sm font-medium transition-colors text-white hover:opacity-90 active:scale-[0.97]"
                       style={{ background: '#F97316' }}
                       title={`Open ${rec.catalyst} → ${rec.subCatalyst}`}
                     >
@@ -135,7 +135,7 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
                     <button
                       type="button"
                       onClick={() => onTrace?.(r.id)}
-                      className="shrink-0 px-4 py-2 rounded text-body-sm font-medium transition-colors border hover:opacity-90"
+                      className="shrink-0 px-4 py-2 rounded text-body-sm font-medium transition-colors border hover:opacity-90 active:scale-[0.97]"
                       style={{
                         borderColor: 'rgba(249, 115, 22, 0.50)',
                         color: '#F97316',

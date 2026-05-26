@@ -135,7 +135,7 @@ export function AuditPage() {
  </Button>
  <button
  onClick={() => setShowFilters(!showFilters)}
- className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${showFilters ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-400 hover:bg-[var(--bg-secondary)]'}`}
+ className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${showFilters ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-400 hover:bg-[var(--bg-secondary)]'} active:scale-[0.97]`}
  title="Toggle audit log filters"
  >
  <Filter size={14} /> Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}

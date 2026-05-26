@@ -152,7 +152,7 @@ function ModalHeader({
       {onClose && (
         <button
           onClick={onClose}
-          className="t-muted hover:t-primary p-1 rounded-md hover:bg-[var(--bg-secondary)] transition-all"
+          className="t-muted hover:t-primary p-1 rounded-md hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
           aria-label="Close dialog"
         >
           <X size={16} />

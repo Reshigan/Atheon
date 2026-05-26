@@ -131,7 +131,7 @@ export function RiskHeatMap({ risks, activeFilter, onCellClick, onClearFilter }:
                         type="button"
                         disabled={count === 0}
                         onClick={() => onCellClick(cat, sev)}
-                        className={`w-full min-h-[48px] rounded-md flex items-center justify-center text-sm font-semibold transition-all ${
+                        className={`w-full min-h-[48px] rounded-md flex items-center justify-center text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                           count === 0
                             ? "cursor-default t-muted"
                             : "cursor-pointer hover:ring-2 hover:ring-accent/40"

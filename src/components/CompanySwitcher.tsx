@@ -41,7 +41,7 @@ export function CompanySwitcher() {
     <div className="relative" ref={wrapRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
         title={selected ? `Scoped to ${selected.name}` : 'All companies (consolidated)'}
         aria-haspopup="listbox"
@@ -71,7 +71,7 @@ export function CompanySwitcher() {
                 setSelectedCompanyId(null);
                 setOpen(false);
               }}
-              className="w-full text-left px-3 py-2 transition-all hover:bg-[var(--bg-secondary)] flex items-center gap-2.5"
+              className="w-full text-left px-3 py-2 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5"
               style={selectedCompanyId === null ? { background: 'var(--accent-subtle)' } : undefined}
               role="option"
               aria-selected={selectedCompanyId === null}
@@ -96,7 +96,7 @@ export function CompanySwitcher() {
                     setSelectedCompanyId(co.id);
                     setOpen(false);
                   }}
-                  className="w-full text-left px-3 py-2 transition-all hover:bg-[var(--bg-secondary)] flex items-center gap-2.5"
+                  className="w-full text-left px-3 py-2 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5"
                   style={isActive ? { background: 'var(--accent-subtle)' } : undefined}
                   role="option"
                   aria-selected={isActive}

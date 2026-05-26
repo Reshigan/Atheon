@@ -103,7 +103,7 @@ export function TrialPage() {
         <div className="flex items-center justify-center gap-2 mb-12">
           {(['info', 'upload', 'processing', 'results'] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                 step === s ? 'bg-[#A3B18A] text-white' :
                 (['info', 'upload', 'processing', 'results'].indexOf(step) > i) ? 'bg-emerald-500/20 text-emerald-400' :
                 'bg-white/5 text-gray-500'
@@ -170,7 +170,7 @@ export function TrialPage() {
               <button
                 onClick={handleStart}
                 disabled={loading}
-                className="w-full py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.97]"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                 {loading ? 'Starting...' : 'Start Free Assessment'}
@@ -193,7 +193,7 @@ export function TrialPage() {
 
             <div className="max-w-md mx-auto">
               <div
-                className="border-2 border-dashed border-white/20 rounded-xl p-12 hover:border-[#A3B18A]/50 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-white/20 rounded-xl p-12 hover:border-[#A3B18A]/50 transition-colors cursor-pointer active:scale-[0.97]"
                 onClick={handleUpload}
               >
                 <Upload size={40} className="mx-auto mb-4 text-gray-400" />
@@ -204,7 +204,7 @@ export function TrialPage() {
               <button
                 onClick={handleUpload}
                 disabled={loading}
-                className="mt-6 w-full py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="mt-6 w-full py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.97]"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <BarChart3 size={16} />}
                 {loading ? 'Processing...' : 'Run Assessment'}
@@ -322,13 +322,13 @@ export function TrialPage() {
                     } catch { /* report generation is best-effort */ }
                   }
                 }}
-                className="px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-all inline-flex items-center gap-2"
+                className="px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] inline-flex items-center gap-2 active:scale-[0.97]"
               >
                 <FileText size={14} />
                 Download Full Report
               </button>
               <div>
-                <a href="/login" className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-all">
+                <a href="/login" className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
                   <ArrowRight size={16} />
                   Start Your Full Atheon Journey
                 </a>

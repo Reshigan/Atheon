@@ -829,7 +829,7 @@ export function TenantsPage() {
  <button
  key={tmpl.industry}
  onClick={() => selectIndustryTemplate(tmpl.industry)}
- className="text-left p-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent hover:bg-accent/5 transition-all group"
+ className="text-left p-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
  >
  <div className="flex items-center gap-2 mb-2">
  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -915,7 +915,7 @@ export function TenantsPage() {
  No clusters match the selected maturity filters.
  </div>
  ) : visibleTemplateClusters.map(({ c: cluster, originalIndex: idx }) => (
- <div key={cluster.domain + idx} className={`rounded-xl border transition-all ${
+ <div key={cluster.domain + idx} className={`rounded-xl border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
  cluster.selected ? 'border-accent/40 bg-accent/5' : 'border-[var(--border-card)] bg-[var(--bg-secondary)] opacity-60'
  }`}>
  <div className="flex items-center justify-between p-4">
@@ -1122,7 +1122,7 @@ export function TenantsPage() {
  : { type: 'erp', config: {} }
  );
  }}
- className="p-1.5 rounded-lg hover:bg-accent/10 text-gray-400 hover:text-accent transition-colors"
+ className="p-1.5 rounded-lg hover:bg-accent/10 text-gray-400 hover:text-accent transition-colors active:scale-[0.97]"
  title="Configure data source"
  >
  <Database size={14} />
@@ -1130,7 +1130,7 @@ export function TenantsPage() {
  {sub.data_source && (
  <button
  onClick={() => handleRemoveDataSource(cluster.id, sub.name)}
- className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors"
+ className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors active:scale-[0.97]"
  title="Remove data source"
  >
  <Trash2 size={14} />
@@ -1303,7 +1303,7 @@ export function TenantsPage() {
  autonomyTiers: p.autonomyTiers.includes(tier)
  ? p.autonomyTiers.filter(t => t !== tier)
  : [...p.autonomyTiers, tier]}))}
- className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-500'}`}
+ className={`px-3 py-1.5 rounded-lg text-xs border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-500'}`}
  >
  {tier}
  </button>
@@ -1322,7 +1322,7 @@ export function TenantsPage() {
  llmTiers: p.llmTiers.includes(tier)
  ? p.llmTiers.filter(t => t !== tier)
  : [...p.llmTiers, tier]}))}
- className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${entitlementForm.llmTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-500'}`}
+ className={`px-3 py-1.5 rounded-lg text-xs border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${entitlementForm.llmTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-500'}`}
  >
  {tier}
  </button>
@@ -1394,7 +1394,7 @@ export function TenantsPage() {
  <button
  onClick={handleResetCompany}
  disabled={resetting || resetConfirmText !== (tenants.find(t => t.id === showResetConfirm)?.name || '')}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600"
+ className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600 active:scale-[0.97]"
  title="Confirm and delete all insights for this company"
  >
  {resetting ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Trash2 size={14} className="inline mr-1" />}
@@ -1434,7 +1434,7 @@ export function TenantsPage() {
  <button
  onClick={handleArchiveCompany}
  disabled={archiving}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-amber-500 text-white hover:bg-amber-600"
+ className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]"
  title="Archive this company"
  >
  {archiving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Archive size={14} className="inline mr-1" />}
@@ -1502,7 +1502,7 @@ export function TenantsPage() {
  <button
  onClick={handleDeleteCompany}
  disabled={deleting || deleteConfirmText !== (tenants.find(t => t.id === showDeleteConfirm)?.name || '')}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700"
+ className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700 active:scale-[0.97]"
  title="Permanently delete this company and all data"
  >
  {deleting ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Trash2 size={14} className="inline mr-1" />}
@@ -1580,7 +1580,7 @@ export function TenantsPage() {
   <button
  onClick={handleReseedVantax}
  disabled={reseeding}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed text-white hover:opacity-90"
+ className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white hover:opacity-90 active:scale-[0.97]"
  style={{ backgroundColor: 'var(--accent)' }}
  title="Reset and re-seed VantaX demo data"
  >

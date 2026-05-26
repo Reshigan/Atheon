@@ -68,7 +68,7 @@ export function HelpButton() {
       {/* Floating help button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-accent hover:bg-accent/80 text-white shadow-lg shadow-accent/20 flex items-center justify-center transition-all hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-accent hover:bg-accent/80 text-white shadow-lg shadow-accent/20 flex items-center justify-center transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-105 active:scale-[0.97]"
         title="Help & Documentation"
       >
         <HelpCircle size={22} />
@@ -99,7 +99,7 @@ export function HelpButton() {
                 const Icon = topic.icon;
                 return (
                   <details key={i} className="group">
-                    <summary className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors list-none">
+                    <summary className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors list-none active:scale-[0.97]">
                                             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
                                               <Icon size={16} className="text-accent" />
                       </div>

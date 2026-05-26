@@ -89,7 +89,7 @@ export function PlatformTotalsChip(): JSX.Element | null {
   return (
     <button
       onClick={() => navigate('/roi-dashboard')}
-      className={`hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-md text-caption font-medium border transition-all hover:scale-[1.02] ${tone}`}
+      className={`hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-md text-caption font-medium border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-[1.02] ${tone}`}
       title={tooltipLines.join('\n')}
       data-testid="platform-totals-chip"
       aria-label={`Platform totals: ${headline} ${headlineLabel}. Click for ROI dashboard.`}

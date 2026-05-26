@@ -176,11 +176,11 @@ function PillRow({
             type="button"
             onClick={() => section.onChange(toggle(section.selected, opt.value))}
             aria-pressed={active}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-caption font-medium transition-all ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-caption font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
               active
                 ? 'bg-accent/20 text-accent border border-accent/30'
                 : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
-            }`}
+            } active:scale-[0.97]`}
           >
             {opt.dotClass && (
               <span className={`w-2 h-2 rounded-full ${opt.dotClass}`} aria-hidden="true" />

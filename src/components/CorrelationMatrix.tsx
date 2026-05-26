@@ -214,7 +214,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
                   return (
                     <td
                       key={colMetric}
-                      className={`border-b border-[var(--border-card)] cursor-default transition-all ${
+                      className={`border-b border-[var(--border-card)] cursor-default transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                         isHovered ? "ring-2 ring-accent/60 ring-inset" : ""
                       }`}
                       style={{

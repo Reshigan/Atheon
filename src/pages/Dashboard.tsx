@@ -272,7 +272,7 @@ export function Dashboard() {
               Updated: {lastRefreshed.toLocaleTimeString()}
             </span>
             <button
-              className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-all"
+              className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
               style={{ background: "var(--bg-secondary)" }}
               title={`Last refreshed: ${lastRefreshed.toLocaleTimeString()}`}
               onClick={() => loadData().then(() => { setRefreshFlash(true); setTimeout(() => setRefreshFlash(false), 2000); }).catch(() => { /* manual refresh failure handled by loadData */ })}
@@ -329,7 +329,7 @@ export function Dashboard() {
         <button
           onClick={loadDashboardIntelligence}
           disabled={dashIntelLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-all disabled:opacity-50 ml-auto"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 ml-auto active:scale-[0.97]"
           title="Generate AI-powered dashboard intelligence"
         >
           <Lightbulb size={12} className={dashIntelLoading ? 'animate-pulse' : ''} />
@@ -423,7 +423,7 @@ export function Dashboard() {
               <p className="text-xs t-muted mt-1 mb-3">Run a catalyst to start generating health data.</p>
               <Link
                 to="/catalysts"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
               >
                 Open Catalysts <ArrowRight size={12} />
               </Link>
@@ -450,7 +450,7 @@ export function Dashboard() {
                     <button
                       type="button"
                       onClick={() => handleOpenDimensionTrace(dim.key)}
-                      className="md:opacity-0 md:group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all focus:outline-none focus:opacity-100 focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5"
+                      className="md:opacity-0 md:group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] focus:outline-none focus:opacity-100 focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5 active:scale-[0.97]"
                       title={`Trace ${dim.name}`}
                       aria-label={`Open trace for ${dim.name}`}
                     >
@@ -609,10 +609,10 @@ export function Dashboard() {
       <ActionQueuePanel variant="compact" />
 
       {/* V2 Engine Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
         {/* Strategic Context Card */}
         <Link to="/apex" className="block">
-          <Card className="h-full hover:border-accent/30 transition-all cursor-pointer">
+          <Card className="h-full hover:border-accent/30 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(163,177,138,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Radar size={16} className="text-accent" />
@@ -644,7 +644,7 @@ export function Dashboard() {
 
         {/* Active Diagnostics Card */}
         <Link to="/pulse" className="block">
-          <Card className="h-full hover:border-accent/30 transition-all cursor-pointer">
+          <Card className="h-full hover:border-purple-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(168,85,247,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Stethoscope size={16} className="text-purple-400" />
@@ -681,7 +681,7 @@ export function Dashboard() {
 
         {/* ROI Card */}
         <Link to="/catalysts" className="block">
-          <Card className="h-full hover:border-accent/30 transition-all cursor-pointer">
+          <Card className="h-full hover:border-emerald-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(16,185,129,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Coins size={16} className="text-emerald-400" />
@@ -933,7 +933,7 @@ export function Dashboard() {
                 <p className="text-xs t-muted mt-1 mb-3">Run a catalyst from the Catalysts page to generate health insights.</p>
                 <Link
                   to="/catalysts"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
                 >
                   Open Catalysts <ArrowRight size={12} />
                 </Link>
@@ -1155,7 +1155,7 @@ export function Dashboard() {
       </div>
 
       {/* QUICK LINKS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger">
         {[
           { label: "Apex", desc: "Executive Intelligence", to: "/apex" },
           { label: "Pulse", desc: "Process Monitoring", to: "/pulse" },
@@ -1165,7 +1165,7 @@ export function Dashboard() {
           <Link
             key={item.label}
             to={item.to}
-            className="rounded-xl p-4 transition-all hover:-translate-y-0.5"
+            className="rounded-xl p-4 transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:-translate-y-0.5 active:scale-[0.98] hover:shadow-[0_8px_20px_-6px_rgba(163,177,138,0.22)]"
             style={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", boxShadow: "0 2px 8px rgba(100, 120, 180, 0.06)" }}
           >
             <p className="text-sm font-semibold t-primary">{item.label}</p>

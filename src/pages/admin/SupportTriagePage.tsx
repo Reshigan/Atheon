@@ -147,11 +147,11 @@ export function SupportTriagePage() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+              className={`px-2.5 py-1 rounded-md text-xs transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                 statusFilter === s
                   ? 'font-medium'
                   : 't-secondary hover:bg-[var(--bg-secondary)]'
-              }`}
+              } active:scale-[0.97]`}
               style={statusFilter === s ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : undefined}
               data-testid={`support-triage-filter-${s}`}
             >

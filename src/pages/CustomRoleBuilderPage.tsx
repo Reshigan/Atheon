@@ -313,7 +313,7 @@ export function CustomRoleBuilderPage() {
                 <div className="flex items-center gap-1 ml-2">
                   <button
                     onClick={() => startEdit(role)}
-                    className="p-1.5 rounded-md hover:bg-[var(--bg-secondary)] t-muted hover:t-primary transition-colors"
+                    className="p-1.5 rounded-md hover:bg-[var(--bg-secondary)] t-muted hover:t-primary transition-colors active:scale-[0.97]"
                     title="Edit"
                   >
                     <Pencil size={14} />
@@ -321,7 +321,7 @@ export function CustomRoleBuilderPage() {
                   <button
                     onClick={() => handleDelete(role)}
                     disabled={deletingId === role.id || role.userCount > 0}
-                    className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
                     title={role.userCount > 0 ? `${role.userCount} user(s) assigned — cannot delete` : 'Delete'}
                   >
                     {deletingId === role.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -414,7 +414,7 @@ export function CustomRoleBuilderPage() {
                                   inherited
                                     ? 'bg-[var(--accent-subtle)] cursor-not-allowed opacity-90'
                                     : 'hover:bg-[var(--bg-modal)] cursor-pointer'
-                                }`}
+                                } active:scale-[0.97]`}
                               >
                                 <input
                                   type="checkbox"

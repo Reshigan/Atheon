@@ -170,9 +170,9 @@ function ExecutiveBriefHero({
     .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))[0];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="apex-brief-hero">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger" data-testid="apex-brief-hero">
       {/* ── Health ── */}
-      <Card className="p-5 cursor-pointer hover:border-accent/40 transition-colors" onClick={() => onJumpToTab('health')}>
+      <Card className="p-5 cursor-pointer hover:border-accent/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(163,177,138,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('health')}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Crown className="w-4 h-4 text-accent" />
@@ -199,7 +199,7 @@ function ExecutiveBriefHero({
       </Card>
 
       {/* ── Top Risks ── */}
-      <Card className="p-5 cursor-pointer hover:border-accent/40 transition-colors" onClick={() => onJumpToTab('risks')}>
+      <Card className="p-5 cursor-pointer hover:border-red-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(239,68,68,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('risks')}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-400" />
@@ -239,7 +239,7 @@ function ExecutiveBriefHero({
       </Card>
 
       {/* ── Strategic Signal ── */}
-      <Card className="p-5 cursor-pointer hover:border-accent/40 transition-colors" onClick={() => onJumpToTab('strategic-context')}>
+      <Card className="p-5 cursor-pointer hover:border-sky-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(56,189,248,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('strategic-context')}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Radar className="w-4 h-4 text-accent" />
@@ -630,7 +630,7 @@ export function ApexPage() {
    </div>
    <Link
      to="/pulse"
-     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-all shadow-sm flex-shrink-0"
+     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] shadow-sm flex-shrink-0 active:scale-[0.97]"
      aria-label="Open the operational action queue in Pulse"
    >
      Review in Pulse <ChevronRight size={14} />
@@ -668,7 +668,7 @@ export function ApexPage() {
   <button
    onClick={loadExecInsights}
    disabled={execInsightsLoading}
-   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
    title="Generate AI-powered executive insights"
   >
    <Lightbulb size={12} className={execInsightsLoading ? 'animate-pulse' : ''} />
@@ -783,7 +783,7 @@ export function ApexPage() {
       <button
        key={dim.key}
        onClick={() => handleOpenDimensionTrace(dim.key)}
-       className="snap-center flex-shrink-0 w-[140px] rounded-xl p-4 text-left hover:bg-[var(--bg-secondary)] transition-colors"
+       className="snap-center flex-shrink-0 w-[140px] rounded-xl p-4 text-left hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', minHeight: 44 }}
        aria-label={`${dim.name} dimension — open traceability`}
       >
@@ -862,7 +862,7 @@ export function ApexPage() {
          <button
           type="button"
           onClick={() => toggleDimensionCompare(dim.key)}
-          className={`text-caption flex items-center gap-0.5 transition-all ml-2 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5 ${selectedDimensions.includes(dim.key) ? 'text-accent opacity-100' : 'md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 text-accent hover:text-accent/80'}`}
+          className={`text-caption flex items-center gap-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ml-2 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5 ${selectedDimensions.includes(dim.key) ? 'text-accent opacity-100' : 'md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 text-accent hover:text-accent/80'} active:scale-[0.97]`}
           title={selectedDimensions.includes(dim.key) ? `Remove ${dim.name} from comparison` : `Compare ${dim.name}`}
           aria-pressed={selectedDimensions.includes(dim.key)}
           aria-label={selectedDimensions.includes(dim.key) ? `Remove ${dim.name} from comparison` : `Compare ${dim.name}`}
@@ -873,7 +873,7 @@ export function ApexPage() {
          <button
           type="button"
           onClick={() => handleOpenDimensionTrace(dim.key)}
-          className="md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-all ml-1 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5"
+          className="md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ml-1 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5 active:scale-[0.97]"
           title={`Trace ${dim.name}`}
           aria-label={`Open trace for ${dim.name}`}
          >
@@ -993,7 +993,7 @@ export function ApexPage() {
    };
    return <>
  {briefing.healthDelta !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">Health Delta</span>
    <MetricSource source={{
@@ -1012,7 +1012,7 @@ export function ApexPage() {
  </div>
  )}
  {briefing.redMetricCount !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors">
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">RED Metrics</span>
    <MetricSource source={{
@@ -1030,7 +1030,7 @@ export function ApexPage() {
  </div>
  )}
  {briefing.anomalyCount !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">Anomalies</span>
    <MetricSource source={{
@@ -1047,7 +1047,7 @@ export function ApexPage() {
  </div>
  )}
  {briefing.activeRiskCount !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+ <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">Active Risks</span>
    <MetricSource source={{
@@ -1170,7 +1170,7 @@ export function ApexPage() {
  <div
  key={risk.id}
   onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
- className="group rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-all"
+ className="group rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
  style={{
   background: 'var(--bg-card-solid)',
   border: expandedRisk === risk.id ? '1px solid rgba(163, 177, 138, 0.20)' : '1px solid var(--border-card)',
@@ -1191,7 +1191,7 @@ export function ApexPage() {
  <div className="flex items-center gap-2 flex-shrink-0">
  <button
  onClick={(e) => { e.stopPropagation(); handleOpenRiskTrace(risk.id); }}
- className="opacity-0 group-hover:opacity-100 text-accent hover:text-accent/80 transition-all"
+ className="opacity-0 group-hover:opacity-100 text-accent hover:text-accent/80 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
  title="Trace to source"
  >
  <Link2 size={14} />
@@ -1379,7 +1379,7 @@ export function ApexPage() {
          key={t.id}
          onClick={() => runScenarioTemplate(t)}
          disabled={!!runningTemplate}
-         className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent/40 hover:bg-accent/5 transition-all disabled:opacity-50 disabled:cursor-wait"
+         className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 disabled:cursor-wait active:scale-[0.97]"
          data-testid={`scenario-template-${t.id}`}
        >
          <div className="flex items-start justify-between gap-2 mb-1">
@@ -1625,11 +1625,11 @@ export function ApexPage() {
  <button
  key={m.id}
  onClick={() => setScenarioModelType(m.id)}
- className={`p-3 rounded-lg border text-left transition-all ${
+ className={`p-3 rounded-lg border text-left transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
  scenarioModelType === m.id
  ? 'bg-accent/10 border-accent/40 ring-1 ring-accent/30'
  : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
- }`}
+ } active:scale-[0.97]`}
  >
  <span className={`text-sm font-medium ${scenarioModelType === m.id ? 'text-accent' : 't-primary'}`}>{m.label}</span>
  <p className="text-caption t-muted mt-1">{m.desc}</p>

@@ -112,7 +112,7 @@ export function DataGovernancePage() {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
           Refresh
@@ -274,7 +274,7 @@ export function DataGovernancePage() {
                 </div>
                 <div className="h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                     style={{ width: `${encryptionPct}%`, background: 'var(--accent)' }}
                   />
                 </div>

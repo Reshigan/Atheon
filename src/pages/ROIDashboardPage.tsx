@@ -128,7 +128,7 @@ export default function ROIDashboardPage(): JSX.Element {
           };
           return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
               <div className="flex items-center justify-between">
                 <div className="text-caption uppercase tracking-wider t-muted">Periods invoiced</div>
                 <MetricSource source={{
@@ -142,7 +142,7 @@ export default function ROIDashboardPage(): JSX.Element {
               </div>
               <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{billing.periods_count}</p>
             </div>
-            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors">
+            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
               <div className="flex items-center justify-between">
                 <div className="text-caption uppercase tracking-wider t-muted">Total realised savings</div>
                 <MetricSource source={{
@@ -162,7 +162,7 @@ export default function ROIDashboardPage(): JSX.Element {
                 {formatCurrency(billing.total_realised_savings, billing.currency)}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
               <div className="flex items-center justify-between">
                 <div className="text-caption uppercase tracking-wider t-muted">Atheon share</div>
                 <MetricSource source={{
@@ -201,7 +201,7 @@ export default function ROIDashboardPage(): JSX.Element {
           return (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors">
+              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors active:scale-[0.97]">
                 <div className="flex items-center justify-between">
                   <div className="text-caption uppercase tracking-wider t-muted">Graded forecasts</div>
                   <MetricSource source={{
@@ -215,7 +215,7 @@ export default function ROIDashboardPage(): JSX.Element {
                 </div>
                 <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{forecast.total_graded}</p>
               </div>
-              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors">
+              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
                 <div className="flex items-center justify-between">
                   <div className="text-caption uppercase tracking-wider t-muted">Within band</div>
                   <MetricSource source={{
@@ -233,7 +233,7 @@ export default function ROIDashboardPage(): JSX.Element {
                     : '—'}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors">
+              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
                 <div className="flex items-center justify-between">
                   <div className="text-caption uppercase tracking-wider t-muted">Median |error| %</div>
                   <MetricSource source={{

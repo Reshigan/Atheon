@@ -477,7 +477,7 @@ export function CatalystRunDetailPage() {
           };
           return (
         <div className="stagger grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(16,185,129,0.25)]">
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(16,185,129,0.25)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Matched Records</span>
               <div className="flex items-center gap-1">
@@ -495,7 +495,7 @@ export function CatalystRunDetailPage() {
             <Numeric value={run.matched ?? 0} size="lg" />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(245,158,11,0.25)]">
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(245,158,11,0.25)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Discrepancies</span>
               <div className="flex items-center gap-1">
@@ -513,7 +513,7 @@ export function CatalystRunDetailPage() {
             <Numeric value={run.discrepancies ?? 0} size="lg" />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(239,68,68,0.25)]">
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(239,68,68,0.25)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Exceptions</span>
               <div className="flex items-center gap-1">
@@ -531,7 +531,7 @@ export function CatalystRunDetailPage() {
             <Numeric value={run.exceptions ?? 0} size="lg" />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(56,189,248,0.25)]">
+          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(56,189,248,0.25)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Total Value</span>
               <div className="flex items-center gap-1">

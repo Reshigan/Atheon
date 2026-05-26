@@ -91,7 +91,7 @@ export function ExecutiveSummaryPage() {
         <p className="text-sm t-primary">{error}</p>
         <button
           onClick={() => load()}
-          className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
         >
           Retry
         </button>
@@ -216,7 +216,7 @@ export function ExecutiveSummaryPage() {
               <button
                 key={key}
                 onClick={() => navigate('/apex')}
-                className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] transition-colors"
+                className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] transition-colors active:scale-[0.97]"
               >
                 <p className="text-label">{key.replace(/[-_]/g, ' ')}</p>
                 <div className="flex items-baseline gap-1 mt-1">

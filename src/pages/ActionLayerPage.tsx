@@ -393,7 +393,7 @@ export function ActionLayerPage(): JSX.Element {
           active
             ? 'font-medium border'
             : 't-secondary hover:t-primary border border-transparent hover:bg-[var(--bg-secondary)]'
-        }`}
+        } active:scale-[0.97]`}
         style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : undefined}
         aria-pressed={active}
       >
@@ -512,7 +512,7 @@ export function ActionLayerPage(): JSX.Element {
                   key={v.id}
                   className={`group inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full text-body-sm border transition-colors ${
                     active ? 'font-medium' : 'border-transparent hover:bg-[var(--bg-secondary)]'
-                  }`}
+                  } active:scale-[0.97]`}
                   style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : { borderColor: 'var(--border-card)' }}
                 >
                   <button
@@ -526,7 +526,7 @@ export function ActionLayerPage(): JSX.Element {
                   <button
                     type="button"
                     onClick={() => deleteView(v.id)}
-                    className="p-0.5 rounded-full opacity-50 hover:opacity-100 hover:bg-[var(--bg-elevated)] transition-opacity"
+                    className="p-0.5 rounded-full opacity-50 hover:opacity-100 hover:bg-[var(--bg-elevated)] transition-opacity active:scale-[0.97]"
                     aria-label={`Delete view ${v.label}`}
                     title="Delete view"
                   >
@@ -538,7 +538,7 @@ export function ActionLayerPage(): JSX.Element {
             <button
               type="button"
               onClick={saveCurrentView}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-body-sm t-secondary hover:t-primary border border-dashed transition-colors hover:bg-[var(--bg-secondary)]"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-body-sm t-secondary hover:t-primary border border-dashed transition-colors hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
               style={{ borderColor: 'var(--border-card)' }}
               title="Save current filter + sort as a named view"
             >

@@ -209,7 +209,7 @@ export function MemoryPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-md text-xs font-medium transition-all ${activeTab === tab.id ? "t-primary" : "t-muted hover:t-secondary"}`}
+            className={`px-4 py-2 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${activeTab === tab.id ? "t-primary" : "t-muted hover:t-secondary"}`}
             style={activeTab === tab.id ? { background: "var(--bg-card)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : undefined}
           >
             {tab.label}

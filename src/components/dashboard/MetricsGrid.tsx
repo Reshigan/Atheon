@@ -39,7 +39,7 @@ export function MetricsGrid({ metrics, columns = 4, onMetricClick }: Props) {
         <button
           key={metric.id}
           onClick={() => onMetricClick?.(metric)}
-          className="p-3 rounded-xl text-left transition-all hover:bg-[var(--bg-secondary)]"
+          className="p-3 rounded-xl text-left transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
           style={{ border: '1px solid var(--border-card)' }}
         >
           <div className="flex items-center justify-between mb-1">
