@@ -2355,6 +2355,13 @@ seed.post('/seed-vantax', async (c) => {
       windowStart: string;
       windowEnd: string;
     } | null = null;
+    // materialiseDemoBilling reads root_cause_analyses + diagnostic_prescriptions,
+    // both of which were pushed to seedBatch around line 1765+ but won't actually
+    // hit the DB until the next flushSeed() — which today is `before-users-read`
+    // at line ~2665, *after* this step. Without an explicit flush here, materialise
+    // sees an empty RCA table, returns {rcasResolved: 0, ...}, and the ROI
+    // dashboard reads R 0 across the board.
+    await flushSeed('before-materialise-billing');
     try {
       billingDemo = await materialiseDemoBilling(c.env.DB, tenantId);
       console.log('[VantaX Seeder] Billing demo materialised:', billingDemo);
