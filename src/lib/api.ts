@@ -65,6 +65,18 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * True when an error is the server's "step-up MFA required" response.
+ * UI callers should prompt the user for a fresh TOTP, then retry with
+ * `{ headers: { 'X-MFA-Code': code } }` injected into the request.
+ */
+export function isStepUpRequired(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false;
+  if (err.status !== 401) return false;
+  const body = err.body as { action?: string } | undefined;
+  return body?.action === 'step_up_required';
+}
+
 export function setRememberMe(persistent: boolean) {
   // Caller decides whether the active session should survive a browser close.
   // `false` keeps the token in sessionStorage only; `true` (the default) writes

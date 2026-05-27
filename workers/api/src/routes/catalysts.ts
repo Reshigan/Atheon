@@ -16,6 +16,7 @@ import { loadLlmConfig, llmChatWithFallback, stripCodeFences, checkAndReserveBud
 import type { LlmMessage } from '../services/llm-provider';
 import { logInfo, logWarn } from '../services/logger';
 import { generateRunNarrative, NarrativeError } from '../services/catalyst-narrative';
+import { stepUpMFA } from '../middleware/step-up-mfa';
 
 const catalysts = new Hono<AppBindings>();
 
@@ -3812,7 +3813,8 @@ catalysts.get('/approvals', async (c) => {
 });
 
 // POST /api/catalysts/manual-execute - Manual catalyst execution with file upload + datetime range
-catalysts.post('/manual-execute', async (c) => {
+// Step-up MFA: writes to ERP / posts billable line items — auditor-grade SoD requires a fresh TOTP.
+catalysts.post('/manual-execute', stepUpMFA(), async (c) => {
   const tenantId = getTenantId(c);
 
   // Parse multipart form data or JSON
@@ -5002,7 +5004,8 @@ catalysts.get('/runs/:runId/export', async (c) => {
 });
 
 // POST /api/catalysts/runs/:runId/retry — Re-execute the sub-catalyst and link as retry
-catalysts.post('/runs/:runId/retry', async (c) => {
+// Step-up MFA: re-running a failed run can re-trigger ERP write-backs.
+catalysts.post('/runs/:runId/retry', stepUpMFA(), async (c) => {
   const tenantId = getTenantId(c);
   const runId = c.req.param('runId');
   const auth = c.get('auth') as AuthContext | undefined;
