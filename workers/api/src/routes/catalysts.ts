@@ -3713,7 +3713,8 @@ catalysts.post('/actions', async (c) => {
 });
 
 // PUT /api/catalysts/actions/:id/approve - Approve via execution engine
-catalysts.put('/actions/:id/approve', async (c) => {
+// Step-up MFA: approval releases an action that may post to ERP / claim shared savings.
+catalysts.put('/actions/:id/approve', stepUpMFA(), async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ approved_by?: string }>();
 
@@ -3736,7 +3737,8 @@ catalysts.put('/actions/:id/approve', async (c) => {
 });
 
 // PUT /api/catalysts/actions/:id/reject - Reject via execution engine
-catalysts.put('/actions/:id/reject', async (c) => {
+// Step-up MFA: rejection is auditable; same SoD control as approve.
+catalysts.put('/actions/:id/reject', stepUpMFA(), async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ approved_by?: string; reason?: string }>();
 

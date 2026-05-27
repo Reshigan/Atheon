@@ -782,10 +782,18 @@ export const api = {
       request<{ actions: ActionItem[]; total: number }>(`/api/catalysts/actions${qs({ tenant_id: tenantId, cluster_id: clusterId, industry: industry && industry !== 'general' ? industry : undefined, company_id: companyId })}`),
     createAction: (data: Record<string, unknown>) =>
       request<{ id: string }>('/api/catalysts/actions', { method: 'POST', body: JSON.stringify(data) }),
-    approveAction: (id: string, approvedBy?: string) =>
-      request<{ success: boolean }>(`/api/catalysts/actions/${id}/approve`, { method: 'PUT', body: JSON.stringify({ approved_by: approvedBy || 'ui' }) }),
-    rejectAction: (id: string, rejectedBy?: string, reason?: string) =>
-      request<{ success: boolean }>(`/api/catalysts/actions/${id}/reject`, { method: 'PUT', body: JSON.stringify({ approved_by: rejectedBy || 'ui', reason: reason || '' }) }),
+    approveAction: (id: string, approvedBy?: string, mfaCode?: string) =>
+      request<{ success: boolean }>(`/api/catalysts/actions/${id}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({ approved_by: approvedBy || 'ui' }),
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+      }),
+    rejectAction: (id: string, rejectedBy?: string, reason?: string, mfaCode?: string) =>
+      request<{ success: boolean }>(`/api/catalysts/actions/${id}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ approved_by: rejectedBy || 'ui', reason: reason || '' }),
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+      }),
     governance: (tenantId?: string, industry?: string, companyId?: string) =>
       request<GovernanceData>(`/api/catalysts/governance${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined, company_id: companyId })}`),
     createCluster: (data: Record<string, unknown>) =>

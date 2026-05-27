@@ -21,9 +21,10 @@ import {
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
  Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2, AlertCircle,
  ScrollText, ArrowUpRight, MessageSquare, Cog, Link2, Sparkles, BarChart3, Activity, Users,
- Brain, TrendingUp, TrendingDown, GitBranch, RefreshCw, Target, MoreHorizontal, Wallet
+ Brain, TrendingUp, TrendingDown, GitBranch, RefreshCw, Target, MoreHorizontal, Wallet, ShieldCheck
 } from "lucide-react";
 import { ValueLedgerPanel } from "@/pages/catalysts/ValueLedgerPanel";
+import { ApprovalQueuePanel } from "@/pages/catalysts/ApprovalQueuePanel";
 import type { AutonomyTier } from "@/types";
 import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
 import { SubCatalystOpsPanel } from "@/components/SubCatalystOpsPanel";
@@ -978,6 +979,7 @@ export function CatalystsPage() {
 
  const tabs = [
  { id: 'clusters', label: 'Catalyst Clusters', icon: <Bot size={14} /> },
+ { id: 'approvals', label: 'Approvals', icon: <ShieldCheck size={14} /> },
  { id: 'value-ledger', label: 'Value Ledger', icon: <Wallet size={14} /> },
  { id: 'intelligence', label: 'Intelligence', icon: <Brain size={14} />, count: intellOverview?.summary?.criticalPatterns || undefined },
  { id: 'success-stories', label: 'Peer Insights', icon: <Sparkles size={14} />, count: successStories?.stories?.length || undefined },
@@ -1379,6 +1381,12 @@ export function CatalystsPage() {
  );
  })}
  </div>
+ </TabPanel>
+ )}
+
+ {activeTab === 'approvals' && (
+ <TabPanel>
+ <ApprovalQueuePanel />
  </TabPanel>
  )}
 
