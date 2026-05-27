@@ -540,6 +540,82 @@ pulse.post('/backfill-trends', async (c) => {
   return c.json({ backfilled: updated, totalMetrics: metrics.results.length });
 });
 
+// GET /api/pulse/history — month-aggregated history for the top-2 process metrics.
+//
+// Dashboard's "Metrics Over Time" chart and the MoM-change bar chart both consume
+// this. Without it, both charts render empty (we removed the synthesized data on
+// Phase 7-8 and never wired the real source). The endpoint shapes the response
+// to match Recharts' expected `{month, value, secondary}` rows so the dashboard
+// can drop the result straight into its data props.
+//
+// Tenant-scoped; no role gate beyond the standard tenantIsolation middleware.
+pulse.get('/history', async (c) => {
+  const tenantId = getTenantId(c);
+  const months = Math.min(Math.max(parseInt(c.req.query('months') || '6', 10) || 6, 1), 24);
+
+  // Identify the top-2 metrics by id ordering (matches what Dashboard.tsx picks).
+  const top = await c.env.DB.prepare(
+    `SELECT id, name FROM process_metrics WHERE tenant_id = ? ORDER BY name ASC LIMIT 2`
+  ).bind(tenantId).all<{ id: string; name: string }>();
+  const rows = top.results || [];
+  if (rows.length === 0) {
+    return c.json({ series: [], mom_changes: [], primary_label: null, secondary_label: null });
+  }
+  const primaryId = rows[0].id;
+  const secondaryId = rows[1]?.id;
+
+  // SQLite strftime bucketing — '%Y-%m' gives an orderable month key
+  const since = `datetime('now', '-${months} months')`;
+  const primaryHistory = await c.env.DB.prepare(
+    `SELECT strftime('%Y-%m', recorded_at) AS bucket, AVG(value) AS avg_value
+       FROM process_metric_history
+      WHERE tenant_id = ? AND metric_id = ? AND recorded_at >= ${since}
+      GROUP BY bucket ORDER BY bucket ASC`
+  ).bind(tenantId, primaryId).all<{ bucket: string; avg_value: number }>();
+
+  const secondaryHistory = secondaryId
+    ? await c.env.DB.prepare(
+        `SELECT strftime('%Y-%m', recorded_at) AS bucket, AVG(value) AS avg_value
+           FROM process_metric_history
+          WHERE tenant_id = ? AND metric_id = ? AND recorded_at >= ${since}
+          GROUP BY bucket ORDER BY bucket ASC`
+      ).bind(tenantId, secondaryId).all<{ bucket: string; avg_value: number }>()
+    : { results: [] as { bucket: string; avg_value: number }[] };
+
+  // Merge into one series, indexed by the primary's bucket list (we drop
+  // secondary-only buckets — they'd render as gaps in the area chart).
+  const secByBucket = new Map(
+    (secondaryHistory.results || []).map((r) => [r.bucket, r.avg_value])
+  );
+  const formatMonth = (bucket: string): string => {
+    // 2026-05 → "May 26"
+    const [y, m] = bucket.split('-');
+    const date = new Date(Number(y), Number(m) - 1, 1);
+    return date.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+  };
+  const series = (primaryHistory.results || []).map((r) => ({
+    month: formatMonth(r.bucket),
+    value: Number(r.avg_value.toFixed(2)),
+    secondary: secByBucket.has(r.bucket) ? Number((secByBucket.get(r.bucket) as number).toFixed(2)) : null,
+  }));
+
+  // Month-over-month % change on the primary. First entry has no prior, skip it.
+  const momChanges: { month: string; change: number }[] = [];
+  for (let i = 1; i < series.length; i++) {
+    const prev = series[i - 1].value;
+    const cur = series[i].value;
+    const change = prev !== 0 ? Number((((cur - prev) / prev) * 100).toFixed(1)) : 0;
+    momChanges.push({ month: series[i].month, change });
+  }
+
+  return c.json({
+    series,
+    mom_changes: momChanges,
+    primary_label: rows[0].name,
+    secondary_label: rows[1]?.name ?? null,
+  });
+});
+
 // GET /api/pulse/summary (aggregated overview)
 pulse.get('/summary', async (c) => {
   const tenantId = getTenantId(c);

@@ -766,6 +766,13 @@ export const api = {
       }>(`/api/pulse/sla${qs({ company_id: companyId })}`),
     updateSla: (id: string, body: { targetHours?: number; thresholdPct?: number; active?: boolean; owner?: string }) =>
       request<{ updated: boolean }>(`/api/pulse/sla/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    history: (months?: number, tenantId?: string) =>
+      request<{
+        series: Array<{ month: string; value: number; secondary: number | null }>;
+        mom_changes: Array<{ month: string; change: number }>;
+        primary_label: string | null;
+        secondary_label: string | null;
+      }>(`/api/pulse/history${qs({ months, tenant_id: tenantId })}`),
   },
 
   catalysts: {

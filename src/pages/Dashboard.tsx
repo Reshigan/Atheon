@@ -103,6 +103,12 @@ export function Dashboard() {
 
   // §11.2 Baseline journey state
   const [baselineComparison, setBaselineComparison] = useState<BaselineComparisonResponse | null>(null);
+  const [history, setHistory] = useState<{
+    series: Array<{ month: string; value: number; secondary: number | null }>;
+    mom_changes: Array<{ month: string; change: number }>;
+    primary_label: string | null;
+    secondary_label: string | null;
+  } | null>(null);
 
   const loadDashboardIntelligence = async () => {
     setDashIntelLoading(true);
@@ -178,11 +184,13 @@ export function Dashboard() {
       api.diagnostics.getSummary(),
       api.roi.get(),
       api.baseline.comparison(),
-    ]).then(([rc, ds, roi, bc]) => {
+      api.pulse.history(6),
+    ]).then(([rc, ds, roi, bc, hist]) => {
       if (rc.status === 'fulfilled') setRadarCtx(rc.value);
       if (ds.status === 'fulfilled') setDiagSummary(ds.value);
       if (roi.status === 'fulfilled') setRoiData(roi.value);
       if (bc.status === 'fulfilled') setBaselineComparison(bc.value);
+      if (hist.status === 'fulfilled') setHistory(hist.value);
     }).catch(() => { /* allSettled won't reject, but guard the .then() chain */ });
   }, []);
 
@@ -224,8 +232,14 @@ export function Dashboard() {
   const primaryMetricLabel = primaryMetric ? primaryMetric.name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Health Score';
   const secondaryMetricLabel = secondaryMetric ? secondaryMetric.name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : null;
 
-  // Metrics over time — no synthesized data; left empty until real time-series data is available
-  const metricsOverTime: Record<string, string | number>[] = [];
+  // Metrics over time — sourced from /api/pulse/history (top-2 process metrics
+  // bucketed by month). Falls back to [] until the worker responds so the chart
+  // renders an empty state instead of synthesized data.
+  const metricsOverTime: Record<string, string | number>[] = (history?.series ?? []).map((row) => ({
+    month: row.month,
+    value: row.value,
+    secondary: row.secondary ?? 0,
+  }));
 
   const piePalette = [ACCENT, ACCENT_B, SKY, BRONZE, CHART_LIGHT];
   const pieData = dimensions.slice(0, 5).map((dim, i) => ({
@@ -234,8 +248,10 @@ export function Dashboard() {
     fill: piePalette[i % piePalette.length],
   }));
 
-  // Month-over-month change data — no synthesized data; left empty until real time-series data is available
-  const momData: { month: string; change: number }[] = [];
+  // Month-over-month % change on the primary metric. Same source as
+  // metricsOverTime; the worker derives change against the previous month so
+  // we don't recompute on the client.
+  const momData: { month: string; change: number }[] = history?.mom_changes ?? [];
 
   // U12: Progressive skeleton loading instead of spinner
   if (loading && !health) {
