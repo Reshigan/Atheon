@@ -460,10 +460,22 @@ export function CatalystsPage() {
 
  // Deep-link from Pulse anomalies / Apex risks: ?cluster=Foo&sub=Bar opens
  // the SubCatalystOpsPanel for that pairing as soon as clusters are loaded.
+ // Also handles ?tab=approvals (and other tab IDs) so Pulse's closed-loop
+ // "View in Approvals" link drops the user directly on the right tab.
  // Falls back to a toast if the cluster name doesn't resolve (e.g. stale
  // catalog entry on the recommendation side). The query string is consumed
  // (cleared) after handling so a back-navigation doesn't keep re-firing.
  const [searchParams, setSearchParams] = useSearchParams();
+ useEffect(() => {
+   const wantedTab = searchParams.get('tab');
+   if (wantedTab) {
+     setActiveTab(wantedTab);
+     const next = new URLSearchParams(searchParams);
+     next.delete('tab');
+     setSearchParams(next, { replace: true });
+   }
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
  useEffect(() => {
    const wantedCluster = searchParams.get('cluster');
    const wantedSub = searchParams.get('sub');

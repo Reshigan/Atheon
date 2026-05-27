@@ -879,6 +879,36 @@ export const api = {
         total: number;
       }>(`/api/catalysts/audit-packs${qs({ kind: filter?.kind, source_id: filter?.sourceId })}`),
     auditPackDownloadUrl: (packId: string) => `${API_URL}/api/catalysts/audit-packs/${packId}/download`,
+    /**
+     * B2 closed-loop: dispatch a catalyst action from a Pulse anomaly
+     * without leaving the page. Returns the actionId so the UI can deep-link
+     * the user to the Approvals queue if they want to follow through.
+     */
+    dispatchFromPulse: (params: {
+      catalystName: string;
+      subCatalystName: string;
+      anomalyMetric: string;
+      severity?: string;
+      hypothesis?: string;
+    }, mfaCode?: string) =>
+      request<{
+        actionId: string;
+        clusterId: string;
+        catalystName: string;
+        subCatalystName: string;
+        status: string;
+        message: string;
+      }>(`/api/catalysts/dispatch-from-pulse`, {
+        method: 'POST',
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+        body: JSON.stringify({
+          catalyst_name: params.catalystName,
+          sub_catalyst_name: params.subCatalystName,
+          anomaly_metric: params.anomalyMetric,
+          severity: params.severity,
+          hypothesis: params.hypothesis,
+        }),
+      }),
     manualExecute: async (data: FormData): Promise<ManualExecuteResult> => {
       const requestId = generateRequestId();
       const headers: Record<string, string> = { 'X-Request-ID': requestId };

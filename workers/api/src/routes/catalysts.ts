@@ -5833,5 +5833,98 @@ catalysts.get('/audit-packs/:packId/download', async (c) => {
   });
 });
 
+/**
+ * POST /api/catalysts/dispatch-from-pulse — closed-loop B2.
+ *
+ * Pulse surfaces an anomaly and the user clicks "Dispatch" — we record a
+ * catalyst_actions row (status='pending') without forcing the user to
+ * navigate to /catalysts, configure execution, and re-find the right
+ * sub-catalyst. This is the "observation → action with zero nav hunting"
+ * path that turns Pulse into a true command surface.
+ *
+ * Why step-up MFA: this creates an actionable row that human reviewers will
+ * approve/reject in the Approvals queue. Treat it as a write — the same
+ * way manual-execute is treated — so the audit trail includes a fresh TOTP
+ * proof of presence.
+ *
+ * Resolution: we look up the cluster by name within the caller's tenant.
+ * If multiple clusters share a name (unlikely, but possible during pilot)
+ * the most-recently-created one wins. If no cluster matches we return 404
+ * so the UI can show a clear "not configured for this tenant" message.
+ */
+catalysts.post('/dispatch-from-pulse', stepUpMFA(), async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
+
+  const body = await c.req.json<{
+    catalyst_name?: string;
+    sub_catalyst_name?: string;
+    anomaly_metric?: string;
+    severity?: string;
+    hypothesis?: string;
+  }>();
+
+  const catalystName = (body.catalyst_name || '').trim();
+  const subCatalystName = (body.sub_catalyst_name || '').trim();
+  const anomalyMetric = (body.anomaly_metric || '').trim();
+
+  if (!catalystName || !subCatalystName || !anomalyMetric) {
+    return c.json({ error: 'catalyst_name, sub_catalyst_name and anomaly_metric are required' }, 400);
+  }
+
+  const cluster = await c.env.DB.prepare(
+    `SELECT id, name, domain, sub_catalysts FROM catalyst_clusters WHERE tenant_id = ? AND name = ? ORDER BY created_at DESC LIMIT 1`,
+  ).bind(tenantId, catalystName).first<{ id: string; name: string; domain: string; sub_catalysts: string }>();
+  if (!cluster) {
+    return c.json({ error: 'cluster not found', message: `No catalyst cluster named "${catalystName}" is configured for this tenant.` }, 404);
+  }
+
+  const subs = JSON.parse(cluster.sub_catalysts || '[]') as Array<{ name: string; enabled?: boolean }>;
+  const sub = subs.find((s) => s.name === subCatalystName);
+  if (!sub) {
+    return c.json({ error: 'sub-catalyst not found', message: `Cluster "${catalystName}" has no sub-catalyst named "${subCatalystName}".` }, 404);
+  }
+  if (sub.enabled === false) {
+    return c.json({ error: 'sub-catalyst disabled', message: `Sub-catalyst "${subCatalystName}" is currently disabled.` }, 400);
+  }
+
+  const actionId = crypto.randomUUID();
+  const inputData = JSON.stringify({
+    dispatched_from: 'pulse_anomaly',
+    anomaly_metric: anomalyMetric,
+    severity: body.severity || 'unknown',
+    hypothesis: body.hypothesis || null,
+    sub_catalyst: subCatalystName,
+  });
+  const reasoning = `Dispatched from Pulse anomaly: "${anomalyMetric}"${body.hypothesis ? ` — ${body.hypothesis}` : ''}.`;
+
+  await c.env.DB.prepare(
+    `INSERT INTO catalyst_actions (id, cluster_id, tenant_id, catalyst_name, action, status, confidence, input_data, reasoning, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+  ).bind(actionId, cluster.id, tenantId, subCatalystName, 'investigate', 'pending', 0.7, inputData, reasoning).run();
+
+  try {
+    await generateInsightsForTenant(c.env.DB, tenantId, subCatalystName, cluster.domain || 'finance', actionId, undefined, cluster.id, subCatalystName);
+  } catch (err) {
+    console.error('Insight generation failed (non-critical):', err);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO audit_log (id, tenant_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(
+    crypto.randomUUID(), tenantId, 'catalyst.dispatch_from_pulse', 'pulse', cluster.id,
+    JSON.stringify({ action_id: actionId, anomaly_metric: anomalyMetric, sub_catalyst: subCatalystName, severity: body.severity || null }),
+    'success',
+  ).run().catch(() => {});
+
+  return c.json({
+    actionId,
+    clusterId: cluster.id,
+    catalystName,
+    subCatalystName,
+    status: 'pending',
+    message: `Dispatched "${subCatalystName}" — review in the Approvals queue.`,
+  }, 201);
+});
+
 export { sendHitlNotification, sendRunResultsEmail };
 export default catalysts;
