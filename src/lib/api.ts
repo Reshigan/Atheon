@@ -773,6 +773,42 @@ export const api = {
         primary_label: string | null;
         secondary_label: string | null;
       }>(`/api/pulse/history${qs({ months, tenant_id: tenantId })}`),
+    listSubscriptions: (all?: boolean) =>
+      request<{
+        subscriptions: Array<{
+          id: string;
+          metric_id: string;
+          metric_name: string | null;
+          metric_unit: string | null;
+          current_value: number | null;
+          comparator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq';
+          threshold_value: number;
+          channel: 'email' | 'in_app' | 'both';
+          cooldown_minutes: number;
+          last_triggered_at: string | null;
+          last_observed_value: number | null;
+          active: number;
+          created_at: string;
+        }>;
+      }>(`/api/pulse/subscriptions${qs({ all: all ? 1 : undefined })}`),
+    createSubscription: (body: {
+      metric_id: string;
+      comparator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq';
+      threshold_value: number;
+      channel?: 'email' | 'in_app' | 'both';
+      cooldown_minutes?: number;
+    }) =>
+      request<{ id: string; created: boolean }>(`/api/pulse/subscriptions`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    updateSubscription: (id: string, body: { active?: boolean; threshold_value?: number; comparator?: 'gt' | 'gte' | 'lt' | 'lte' | 'eq'; cooldown_minutes?: number }) =>
+      request<{ updated: boolean }>(`/api/pulse/subscriptions/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    deleteSubscription: (id: string) =>
+      request<{ deleted: boolean }>(`/api/pulse/subscriptions/${id}`, { method: 'DELETE' }),
   },
 
   catalysts: {

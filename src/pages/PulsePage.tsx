@@ -36,6 +36,7 @@ import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 import { MetricsGrid } from "./pulse/MetricsGrid";
 import { AnomalyList } from "./pulse/AnomalyList";
 import { SLAAdherencePanel } from "./pulse/SLAAdherencePanel";
+import { MetricSubscribeButton } from "@/components/pulse/MetricSubscribeButton";
 // FlipCard removed per UI cleanup spec
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -1230,6 +1231,12 @@ export function PulsePage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs t-secondary truncate flex-1">{metric.name}</span>
                     <div className="flex items-center gap-2">
+                      <MetricSubscribeButton
+                        metricId={metric.id}
+                        metricName={metric.name}
+                        metricUnit={metric.unit ?? null}
+                        currentValue={typeof metric.value === 'number' ? metric.value : 0}
+                      />
                       <button
                         onClick={(e) => { e.stopPropagation(); handleOpenMetricTrace(metric.id); }}
                         className="opacity-0 group-hover:opacity-100 text-accent hover:text-accent/80 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"

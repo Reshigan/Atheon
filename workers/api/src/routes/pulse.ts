@@ -1064,4 +1064,145 @@ pulse.patch('/sla/:id', async (c) => {
   return c.json({ updated: true });
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Pulse metric subscriptions — Wave 4 polish.
+//
+// "Email me when X breaches Y" — captured in the prior feature audit as the
+// biggest Pulse gap. We model subscriptions as a per-user row pinned to a
+// metric_id + comparator + threshold. Evaluation is best-effort, runs from
+// the existing cron (scheduled.ts wires the evaluator on a separate phase
+// follow-up), and gates on cooldown_minutes to prevent alert storms.
+// ─────────────────────────────────────────────────────────────────────────
+
+type Comparator = 'gt' | 'gte' | 'lt' | 'lte' | 'eq';
+const VALID_COMPARATORS: ReadonlySet<Comparator> = new Set(['gt', 'gte', 'lt', 'lte', 'eq']);
+type Channel = 'email' | 'in_app' | 'both';
+const VALID_CHANNELS: ReadonlySet<Channel> = new Set(['email', 'in_app', 'both']);
+
+interface SubscriptionRow {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  metric_id: string;
+  comparator: string;
+  threshold_value: number;
+  channel: string;
+  cooldown_minutes: number;
+  last_triggered_at: string | null;
+  last_observed_value: number | null;
+  active: number;
+  created_at: string;
+}
+
+pulse.get('/subscriptions', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401);
+
+  // Caller sees only their own subs unless they're an admin.
+  const showAll = isAdminRole(auth.role) && c.req.query('all') === '1';
+  const sql = showAll
+    ? `SELECT s.*, m.name AS metric_name, m.unit AS metric_unit, m.value AS current_value
+         FROM pulse_metric_subscriptions s
+         LEFT JOIN process_metrics m ON m.id = s.metric_id
+        WHERE s.tenant_id = ?
+        ORDER BY s.created_at DESC`
+    : `SELECT s.*, m.name AS metric_name, m.unit AS metric_unit, m.value AS current_value
+         FROM pulse_metric_subscriptions s
+         LEFT JOIN process_metrics m ON m.id = s.metric_id
+        WHERE s.tenant_id = ? AND s.user_id = ?
+        ORDER BY s.created_at DESC`;
+  const binds = showAll ? [tenantId] : [tenantId, auth.userId];
+  const rows = await c.env.DB.prepare(sql).bind(...binds).all<SubscriptionRow & {
+    metric_name: string | null; metric_unit: string | null; current_value: number | null;
+  }>();
+  return c.json({ subscriptions: rows.results || [] });
+});
+
+pulse.post('/subscriptions', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401);
+
+  const body = await c.req.json<{
+    metric_id?: string;
+    comparator?: string;
+    threshold_value?: number;
+    channel?: string;
+    cooldown_minutes?: number;
+  }>();
+  const metricId = (body.metric_id || '').trim();
+  const comparator = (body.comparator || 'gt').toLowerCase();
+  const threshold = Number(body.threshold_value);
+  const channel = (body.channel || 'email').toLowerCase();
+  const cooldown = Math.min(Math.max(Number(body.cooldown_minutes) || 60, 5), 1440);
+
+  if (!metricId) return c.json({ error: 'metric_id is required' }, 400);
+  if (!VALID_COMPARATORS.has(comparator as Comparator)) return c.json({ error: 'invalid comparator' }, 400);
+  if (!Number.isFinite(threshold)) return c.json({ error: 'threshold_value must be a number' }, 400);
+  if (!VALID_CHANNELS.has(channel as Channel)) return c.json({ error: 'invalid channel' }, 400);
+
+  // Verify metric belongs to this tenant — prevents enumeration via subscription
+  const metric = await c.env.DB.prepare(
+    `SELECT id FROM process_metrics WHERE id = ? AND tenant_id = ?`
+  ).bind(metricId, tenantId).first<{ id: string }>();
+  if (!metric) return c.json({ error: 'metric not found' }, 404);
+
+  const id = crypto.randomUUID();
+  await c.env.DB.prepare(
+    `INSERT INTO pulse_metric_subscriptions
+       (id, tenant_id, user_id, metric_id, comparator, threshold_value, channel, cooldown_minutes, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`
+  ).bind(id, tenantId, auth.userId, metricId, comparator, threshold, channel, cooldown).run();
+
+  return c.json({ id, created: true });
+});
+
+pulse.patch('/subscriptions/:id', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401);
+
+  const subId = c.req.param('id');
+  const body = await c.req.json<{ active?: boolean; threshold_value?: number; comparator?: string; cooldown_minutes?: number }>();
+
+  // Scope mutation to caller's own row unless admin.
+  const scopeClause = isAdminRole(auth.role) ? 'tenant_id = ?' : 'tenant_id = ? AND user_id = ?';
+  const scopeBinds = isAdminRole(auth.role) ? [tenantId] : [tenantId, auth.userId];
+
+  const sets: string[] = [];
+  const binds: unknown[] = [];
+  if (typeof body.active === 'boolean') { sets.push('active = ?'); binds.push(body.active ? 1 : 0); }
+  if (typeof body.threshold_value === 'number' && Number.isFinite(body.threshold_value)) {
+    sets.push('threshold_value = ?'); binds.push(body.threshold_value);
+  }
+  if (typeof body.comparator === 'string' && VALID_COMPARATORS.has(body.comparator.toLowerCase() as Comparator)) {
+    sets.push('comparator = ?'); binds.push(body.comparator.toLowerCase());
+  }
+  if (typeof body.cooldown_minutes === 'number') {
+    const cd = Math.min(Math.max(body.cooldown_minutes, 5), 1440);
+    sets.push('cooldown_minutes = ?'); binds.push(cd);
+  }
+  if (sets.length === 0) return c.json({ error: 'no fields to update' }, 400);
+
+  const sql = `UPDATE pulse_metric_subscriptions SET ${sets.join(', ')} WHERE id = ? AND ${scopeClause}`;
+  binds.push(subId, ...scopeBinds);
+  await c.env.DB.prepare(sql).bind(...binds).run();
+  return c.json({ updated: true });
+});
+
+pulse.delete('/subscriptions/:id', async (c) => {
+  const tenantId = getTenantId(c);
+  const auth = c.get('auth') as AuthContext | undefined;
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401);
+
+  const subId = c.req.param('id');
+  const sql = isAdminRole(auth.role)
+    ? `DELETE FROM pulse_metric_subscriptions WHERE id = ? AND tenant_id = ?`
+    : `DELETE FROM pulse_metric_subscriptions WHERE id = ? AND tenant_id = ? AND user_id = ?`;
+  const binds = isAdminRole(auth.role) ? [subId, tenantId] : [subId, tenantId, auth.userId];
+  await c.env.DB.prepare(sql).bind(...binds).run();
+  return c.json({ deleted: true });
+});
+
 export default pulse;
