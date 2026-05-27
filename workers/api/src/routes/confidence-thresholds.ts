@@ -22,7 +22,7 @@
  */
 
 import { Hono } from 'hono';
-import type { AppBindings, Env } from '../types';
+import type { AppBindings } from '../types';
 import {
   DEFAULT_THRESHOLDS,
   deleteThreshold,

@@ -772,7 +772,7 @@ export const api = {
         mom_changes: Array<{ month: string; change: number }>;
         primary_label: string | null;
         secondary_label: string | null;
-      }>(`/api/pulse/history${qs({ months, tenant_id: tenantId })}`),
+      }>(`/api/pulse/history${qs({ months: months !== undefined ? String(months) : undefined, tenant_id: tenantId })}`),
     listSubscriptions: (all?: boolean) =>
       request<{
         subscriptions: Array<{
@@ -790,7 +790,7 @@ export const api = {
           active: number;
           created_at: string;
         }>;
-      }>(`/api/pulse/subscriptions${qs({ all: all ? 1 : undefined })}`),
+      }>(`/api/pulse/subscriptions${qs({ all: all ? '1' : undefined })}`),
     createSubscription: (body: {
       metric_id: string;
       comparator: 'gt' | 'gte' | 'lt' | 'lte' | 'eq';

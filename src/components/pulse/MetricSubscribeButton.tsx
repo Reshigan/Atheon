@@ -79,11 +79,10 @@ export function MetricSubscribeButton({ metricId, metricName, metricUnit, curren
         channel,
         cooldown_minutes: cooldown,
       });
-      toast.show({
-        variant: 'success',
-        title: 'Subscription created',
-        message: `You'll be alerted when ${metricName} is ${COMPARATOR_LABELS[comparator]} ${num}${metricUnit ? ' ' + metricUnit : ''}.`,
-      });
+      toast.success(
+        'Subscription created',
+        `You'll be alerted when ${metricName} is ${COMPARATOR_LABELS[comparator]} ${num}${metricUnit ? ' ' + metricUnit : ''}.`,
+      );
       setOpen(false);
       await refreshSubState();
     } catch (err) {
@@ -99,14 +98,10 @@ export function MetricSubscribeButton({ metricId, metricName, metricUnit, curren
     setSaving(true);
     try {
       await api.pulse.deleteSubscription(hasSubscription);
-      toast.show({ variant: 'success', title: 'Unsubscribed', message: `No more alerts on ${metricName}.` });
+      toast.success('Unsubscribed', `No more alerts on ${metricName}.`);
       setHasSubscription(null);
     } catch (err) {
-      toast.show({
-        variant: 'error',
-        title: 'Unsubscribe failed',
-        message: err instanceof ApiError ? err.message : 'Try again',
-      });
+      toast.error('Unsubscribe failed', err instanceof ApiError ? err.message : 'Try again');
     } finally {
       setSaving(false);
     }

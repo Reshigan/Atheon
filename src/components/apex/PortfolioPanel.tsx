@@ -152,10 +152,11 @@ export function PortfolioPanel({ tenantId }: PortfolioPanelProps) {
     }
   };
 
+  const businessUnits = useMemoUnits(initiatives);
+
   if (loading) return <LoadingState variant="cards" count={3} />;
   if (error) return <ErrorState title="Couldn't load portfolio" error={error} onRetry={() => load({ showLoading: true })} />;
 
-  const businessUnits = useMemoUnits(initiatives);
   const filtered = initiatives.filter((i) => {
     if (gateFilter !== 'all' && i.gate !== gateFilter) return false;
     if (unitFilter !== 'all' && (i.business_unit ?? 'Unassigned') !== unitFilter) return false;
