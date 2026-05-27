@@ -851,6 +851,34 @@ export const api = {
           generatedAt: string;
         }>;
       }>(`/api/catalysts/value-ledger${qs({ period, company_id: companyId })}`),
+    // Roadmap B1: Audit pack one-click — signed, R2-stored evidence bundles
+    generatePeriodAuditPack: (periodId: string, mfaCode?: string) =>
+      request<{
+        packId: string; tenantId: string; kind: 'billable-period'; sourceId: string;
+        hash: string; signature: string; r2Key: string; sizeBytes: number;
+        generatedBy: string; generatedAt: string;
+      }>(`/api/catalysts/billable-periods/${periodId}/audit-pack`, {
+        method: 'POST',
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+      }),
+    generateLineItemAuditPack: (lineItemId: string, mfaCode?: string) =>
+      request<{
+        packId: string; tenantId: string; kind: 'billable-line-item'; sourceId: string;
+        hash: string; signature: string; r2Key: string; sizeBytes: number;
+        generatedBy: string; generatedAt: string;
+      }>(`/api/catalysts/billable-line-items/${lineItemId}/audit-pack`, {
+        method: 'POST',
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+      }),
+    listAuditPacks: (filter?: { kind?: 'billable-period' | 'billable-line-item'; sourceId?: string }) =>
+      request<{
+        packs: Array<{
+          packId: string; kind: string; sourceId: string; hash: string; signature: string;
+          r2Key: string; sizeBytes: number; generatedBy: string; generatedAt: string;
+        }>;
+        total: number;
+      }>(`/api/catalysts/audit-packs${qs({ kind: filter?.kind, source_id: filter?.sourceId })}`),
+    auditPackDownloadUrl: (packId: string) => `${API_URL}/api/catalysts/audit-packs/${packId}/download`,
     manualExecute: async (data: FormData): Promise<ManualExecuteResult> => {
       const requestId = generateRequestId();
       const headers: Record<string, string> = { 'X-Request-ID': requestId };

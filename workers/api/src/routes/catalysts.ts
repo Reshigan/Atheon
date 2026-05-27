@@ -17,6 +17,7 @@ import type { LlmMessage } from '../services/llm-provider';
 import { logInfo, logWarn } from '../services/logger';
 import { generateRunNarrative, NarrativeError } from '../services/catalyst-narrative';
 import { stepUpMFA } from '../middleware/step-up-mfa';
+import { buildPeriodPack, buildLineItemPack, signAndStorePack } from '../services/audit-pack';
 
 const catalysts = new Hono<AppBindings>();
 
@@ -5726,6 +5727,109 @@ catalysts.get('/value-ledger', async (c) => {
     catalysts,
     lineItems,
     billingPeriods,
+  });
+});
+
+/**
+ * Audit-pack routes (roadmap B1).
+ *
+ * Generates a signed, R2-stored JSON evidence pack for either a whole
+ * billable period or a single line item. Every R of shared-savings
+ * revenue must trace back to one of these — auditors verify the SHA-256
+ * hash + HMAC signature offline without needing API access.
+ *
+ * Generation is step-up MFA gated because the pack is a billing
+ * artefact. Listing and downloading historical packs is read-only.
+ */
+catalysts.post('/billable-periods/:id/audit-pack', stepUpMFA(), async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
+  const auth = c.get('auth') as AuthContext | undefined;
+  const periodId = c.req.param('id');
+
+  const body = await buildPeriodPack(c.env, tenantId, periodId);
+  if (!body) return c.json({ error: 'period not found' }, 404);
+
+  const record = await signAndStorePack(c.env, tenantId, auth?.email || auth?.userId || 'unknown', body);
+
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  ).bind(
+    crypto.randomUUID(), tenantId, auth?.userId || null, 'audit_pack_generated', 'catalysts', `billable_period:${periodId}`,
+    JSON.stringify({ packId: record.packId, hash: record.hash, sizeBytes: record.sizeBytes }), 'success',
+  ).run();
+
+  return c.json(record, 201);
+});
+
+catalysts.post('/billable-line-items/:id/audit-pack', stepUpMFA(), async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
+  const auth = c.get('auth') as AuthContext | undefined;
+  const lineItemId = c.req.param('id');
+
+  const body = await buildLineItemPack(c.env, tenantId, lineItemId);
+  if (!body) return c.json({ error: 'line item not found' }, 404);
+
+  const record = await signAndStorePack(c.env, tenantId, auth?.email || auth?.userId || 'unknown', body);
+
+  await c.env.DB.prepare(
+    'INSERT INTO audit_log (id, tenant_id, user_id, action, layer, resource, details, outcome) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  ).bind(
+    crypto.randomUUID(), tenantId, auth?.userId || null, 'audit_pack_generated', 'catalysts', `billable_line_item:${lineItemId}`,
+    JSON.stringify({ packId: record.packId, hash: record.hash, sizeBytes: record.sizeBytes }), 'success',
+  ).run();
+
+  return c.json(record, 201);
+});
+
+catalysts.get('/audit-packs', async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
+  const sourceId = c.req.query('source_id');
+  const kind = c.req.query('kind');
+
+  type Row = {
+    id: string; kind: string; source_id: string; hash: string; signature: string;
+    r2_key: string; size_bytes: number; generated_by: string; generated_at: string;
+  };
+
+  let sql = `SELECT id, kind, source_id, hash, signature, r2_key, size_bytes, generated_by, generated_at FROM audit_packs WHERE tenant_id = ?`;
+  const binds: (string | number)[] = [tenantId];
+  if (kind) { sql += ` AND kind = ?`; binds.push(kind); }
+  if (sourceId) { sql += ` AND source_id = ?`; binds.push(sourceId); }
+  sql += ` ORDER BY generated_at DESC LIMIT 100`;
+
+  const res = await c.env.DB.prepare(sql).bind(...binds).all<Row>();
+  return c.json({
+    packs: res.results.map((r) => ({
+      packId: r.id, kind: r.kind, sourceId: r.source_id, hash: r.hash, signature: r.signature,
+      r2Key: r.r2_key, sizeBytes: r.size_bytes, generatedBy: r.generated_by, generatedAt: r.generated_at,
+    })),
+    total: res.results.length,
+  });
+});
+
+catalysts.get('/audit-packs/:packId/download', async (c) => {
+  const tenantId = getTenantId(c);
+  if (!tenantId) return c.json({ error: 'tenant_id required' }, 400);
+  const packId = c.req.param('packId');
+
+  const row = await c.env.DB.prepare(
+    `SELECT r2_key, kind, source_id, hash FROM audit_packs WHERE id = ? AND tenant_id = ?`,
+  ).bind(packId, tenantId).first<{ r2_key: string; kind: string; source_id: string; hash: string }>();
+  if (!row) return c.json({ error: 'audit pack not found' }, 404);
+
+  const obj = await c.env.STORAGE.get(row.r2_key);
+  if (!obj) return c.json({ error: 'audit pack body missing from R2' }, 410);
+
+  const filename = `atheon-audit-pack-${row.kind}-${row.source_id}-${packId}.json`;
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'X-Audit-Pack-Hash': row.hash,
+    },
   });
 });
 

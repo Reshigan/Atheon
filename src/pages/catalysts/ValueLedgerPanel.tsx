@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatusPill } from '@/components/ui/status-pill';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/state';
-import { Wallet, RefreshCw, TrendingUp, TrendingDown, Minus, FileSearch, Receipt, ShieldCheck } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
+import { Wallet, RefreshCw, TrendingUp, TrendingDown, Minus, FileSearch, Receipt, ShieldCheck, FileText, Download, KeyRound, Loader2 } from 'lucide-react';
+import { api, ApiError, isStepUpRequired } from '@/lib/api';
 import { useAppStore } from '@/stores/appStore';
 
 type LedgerResp = Awaited<ReturnType<typeof api.catalysts.valueLedger>>;
@@ -54,12 +54,22 @@ function trendIcon(pct: number): React.ReactNode {
   return <Minus size={12} className="t-muted" />;
 }
 
+type PackTarget = { kind: 'period'; id: string } | { kind: 'line-item'; id: string };
+type PackToast = { hash: string; sizeBytes: number; sourceLabel: string } | null;
+
 export function ValueLedgerPanel() {
   const companyId = useAppStore((s) => s.selectedCompanyId);
   const [data, setData] = useState<LedgerResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<PeriodKey>('last_90d');
+  const [packBusy, setPackBusy] = useState<string | null>(null);
+  const [packError, setPackError] = useState<string | null>(null);
+  const [packToast, setPackToast] = useState<PackToast>(null);
+  const [stepUp, setStepUp] = useState<PackTarget | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const mfaInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,6 +85,66 @@ export function ValueLedgerPanel() {
   }, [companyId, period]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (stepUp && mfaInputRef.current) mfaInputRef.current.focus();
+  }, [stepUp]);
+
+  useEffect(() => {
+    if (!packToast) return;
+    const t = setTimeout(() => setPackToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [packToast]);
+
+  const triggerDownload = useCallback((packId: string, kindLabel: string, sourceId: string) => {
+    const url = api.catalysts.auditPackDownloadUrl(packId);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `atheon-audit-pack-${kindLabel}-${sourceId}-${packId}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, []);
+
+  const runPack = useCallback(async (target: PackTarget, code?: string): Promise<void> => {
+    setPackBusy(target.id);
+    setPackError(null);
+    setMfaError(null);
+    try {
+      const record = target.kind === 'period'
+        ? await api.catalysts.generatePeriodAuditPack(target.id, code)
+        : await api.catalysts.generateLineItemAuditPack(target.id, code);
+      setStepUp(null);
+      setMfaCode('');
+      triggerDownload(record.packId, target.kind === 'period' ? 'billable-period' : 'billable-line-item', record.sourceId);
+      setPackToast({
+        hash: record.hash,
+        sizeBytes: record.sizeBytes,
+        sourceLabel: target.kind === 'period' ? 'billing period' : 'line item',
+      });
+    } catch (e) {
+      if (isStepUpRequired(e)) {
+        setStepUp(target);
+      } else if (e instanceof ApiError && e.status === 401 && code) {
+        setMfaError('Invalid TOTP code. Try again.');
+      } else {
+        setPackError(e instanceof ApiError ? e.message : 'Audit pack generation failed');
+      }
+    } finally {
+      setPackBusy(null);
+    }
+  }, [triggerDownload]);
+
+  const onConfirmStepUp = useCallback(async () => {
+    if (!stepUp || mfaCode.length !== 6) return;
+    await runPack(stepUp, mfaCode);
+  }, [stepUp, mfaCode, runPack]);
+
+  const onCancelStepUp = useCallback(() => {
+    setStepUp(null);
+    setMfaCode('');
+    setMfaError(null);
+  }, []);
 
   const sortedCatalysts = useMemo(() => {
     if (!data) return [] as LedgerCatalyst[];
@@ -228,7 +298,13 @@ export function ValueLedgerPanel() {
             <EmptyState title="No line items" description="Catalyst-attributed savings will appear here once finalised." />
           ) : (
             <ul className="space-y-2">
-              {recentLineItems.map((li) => <LineItemRow key={li.id} item={li} />)}
+              {recentLineItems.map((li) => (
+                <LineItemRow
+                  key={li.id}
+                  item={li}
+                  onAuditPack={() => runPack({ kind: 'line-item', id: li.id })}
+                />
+              ))}
             </ul>
           )}
         </Card>
@@ -245,16 +321,103 @@ export function ValueLedgerPanel() {
             <EmptyState title="No billing periods" description="Periods are finalised at month-end and will surface here." />
           ) : (
             <ul className="space-y-2">
-              {data.billingPeriods.map((bp) => <BillingPeriodRow key={bp.id} period={bp} />)}
+              {data.billingPeriods.map((bp) => (
+                <BillingPeriodRow
+                  key={bp.id}
+                  period={bp}
+                  onAuditPack={() => runPack({ kind: 'period', id: bp.id })}
+                />
+              ))}
             </ul>
           )}
         </Card>
       </div>
+
+      {/* Audit-pack error banner */}
+      {packError && (
+        <Card>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-red-500">{packError}</p>
+            <button onClick={() => setPackError(null)} className="text-caption t-muted hover:t-primary">Dismiss</button>
+          </div>
+        </Card>
+      )}
+
+      {/* Pack-ready toast */}
+      {packToast && (
+        <div className="fixed bottom-6 right-6 z-40 w-[min(92vw,420px)] rounded-2xl border border-emerald-500/30 bg-[var(--bg-card-solid)] p-4 shadow-2xl animate-fadeIn">
+          <div className="flex items-start gap-2.5">
+            <Download size={18} className="text-emerald-500 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold t-primary">Audit pack signed &amp; downloaded</p>
+              <p className="text-caption t-muted mt-0.5">
+                {packToast.sourceLabel} · {(packToast.sizeBytes / 1024).toFixed(1)} KB · SHA-256
+              </p>
+              <p className="text-[10px] font-mono t-muted mt-1 break-all">{packToast.hash}</p>
+            </div>
+            <button onClick={() => setPackToast(null)} className="text-caption t-muted hover:t-primary">×</button>
+          </div>
+        </div>
+      )}
+
+      {/* Step-up MFA modal */}
+      {stepUp && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="audit-pack-stepup-title"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/50 backdrop-blur-sm animate-fadeIn"
+          onClick={onCancelStepUp}
+        >
+          <div
+            className="w-[min(92vw,420px)] rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-solid)] p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'pop 200ms cubic-bezier(0.23,1,0.32,1)' }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <KeyRound size={16} className="text-accent" />
+              <h3 id="audit-pack-stepup-title" className="text-base font-semibold t-primary">Re-confirm with TOTP</h3>
+            </div>
+            <p className="text-caption t-muted mb-3">
+              Generating a signed audit pack is a billing-grade action. Enter the current 6-digit code from your authenticator.
+            </p>
+            <input
+              ref={mfaInputRef}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onKeyDown={(e) => { if (e.key === 'Enter' && mfaCode.length === 6) onConfirmStepUp(); }}
+              className="w-full h-11 px-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-card-solid)] t-primary font-mono text-lg tabular-nums tracking-[0.4em] text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
+              placeholder="000000"
+              aria-label="One-time code"
+            />
+            {mfaError && <p className="text-caption text-red-500 mt-2">{mfaError}</p>}
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <button
+                onClick={onCancelStepUp}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium t-secondary hover:t-primary transition-[color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
+              >Cancel</button>
+              <button
+                disabled={mfaCode.length !== 6 || packBusy !== null}
+                onClick={onConfirmStepUp}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-white hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
+              >
+                {packBusy ? <Loader2 size={12} className="animate-spin" /> : null}
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function LineItemRow({ item }: { item: LedgerLineItem }) {
+function LineItemRow({ item, onAuditPack }: { item: LedgerLineItem; onAuditPack: () => void }) {
   return (
     <li className="flex items-start justify-between gap-3 p-2.5 rounded-md border border-[var(--border-card)] bg-[var(--bg-card-solid)] hover:bg-[var(--bg-secondary)] transition-[background-color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]">
       <div className="min-w-0 flex-1">
@@ -268,12 +431,19 @@ function LineItemRow({ item }: { item: LedgerLineItem }) {
       <div className="text-right flex-shrink-0">
         <div className="text-sm font-semibold tabular-nums font-mono" style={{ color: '#10b981' }}>{fmtZar(item.attributedSavingsZar)}</div>
         <div className="mt-1 flex justify-end">{confidencePill(item.confidence)}</div>
+        <button
+          onClick={onAuditPack}
+          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+          title="Generate signed audit pack"
+        >
+          <FileText size={10} /> Audit pack
+        </button>
       </div>
     </li>
   );
 }
 
-function BillingPeriodRow({ period }: { period: LedgerBillingPeriod }) {
+function BillingPeriodRow({ period, onAuditPack }: { period: LedgerBillingPeriod; onAuditPack: () => void }) {
   const statusVariant: 'completed' | 'amber' | 'failed' | 'pending' =
     period.status === 'finalized' || period.status === 'invoiced' ? 'completed'
     : period.status === 'pending' ? 'amber'
@@ -290,6 +460,13 @@ function BillingPeriodRow({ period }: { period: LedgerBillingPeriod }) {
         <div className="text-sm font-semibold tabular-nums font-mono t-primary">{fmtZar(period.atheonRevenueZar)}</div>
         <div className="text-caption t-muted tabular-nums font-mono">of {fmtZar(period.totalRealisedSavingsZar)}</div>
         <div className="mt-1 flex justify-end"><StatusPill status={statusVariant} label={period.status} /></div>
+        <button
+          onClick={onAuditPack}
+          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-accent text-white hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+          title="Generate signed audit pack for this billing period"
+        >
+          <FileText size={10} /> Audit pack
+        </button>
       </div>
     </li>
   );
