@@ -83,6 +83,23 @@ export interface Env {
   WORKOS_CLIENT_ID?: string;
   /** Override callback URL — defaults to https://atheon.vantax.co.za/auth/sso/saml/callback */
   WORKOS_REDIRECT_URI?: string;
+  /**
+   * Roadmap C5 — Cloudflare Analytics Engine dataset for APM telemetry.
+   *
+   * Optional so local/test environments without the binding still compile
+   * (writeDataPoint is no-op'd by services/apm.ts when undefined). Production
+   * declares this in wrangler.toml as [[analytics_engine_datasets]] with
+   * dataset name "atheon_apm".
+   */
+  APM?: AnalyticsEngineDataset;
+  /**
+   * Cloudflare account ID — used by the APM query route to call the
+   * Analytics Engine SQL API (https://api.cloudflare.com/client/v4/accounts/{id}/analytics_engine/sql).
+   * When unset, the route falls back to KV-based aggregation (lower-fidelity).
+   */
+  CF_ACCOUNT_ID?: string;
+  /** Cloudflare API token with Analytics:Read for the AE SQL API. */
+  CF_AE_READ_TOKEN?: string;
 }
 
 export interface AuthContext {

@@ -24,8 +24,9 @@ import { api, ApiError } from '@/lib/api';
 import {
   Activity, Server, Database, AlertTriangle,
   CheckCircle, XCircle, Clock, RefreshCw,
-  Users, Building2, Zap,
+  Users, Building2, Zap, Gauge,
 } from 'lucide-react';
+import { ApmPanel } from '@/components/admin/ApmPanel';
 
 // ── Response shapes (mirrors workers/api/src/routes/admin-tooling.ts) ──
 interface PlatformHealthResponse {
@@ -176,6 +177,7 @@ function SuperadminPlatformHealth() {
 
   const tabs = [
     { id: 'infrastructure', label: 'Infrastructure', icon: <Server size={14} /> },
+    { id: 'apm', label: 'APM', icon: <Gauge size={14} /> },
     { id: 'tenants', label: 'Tenant Roster', icon: <Building2 size={14} />, count: tenants.length },
     { id: 'alerts', label: 'System Alerts', icon: <AlertTriangle size={14} />, count: unacknowledgedAlerts.length },
   ];
@@ -335,6 +337,10 @@ function SuperadminPlatformHealth() {
             </Card>
           </div>
         )}
+      </TabPanel>
+
+      <TabPanel id="apm" activeTab={activeTab}>
+        <ApmPanel />
       </TabPanel>
 
       <TabPanel id="tenants" activeTab={activeTab}>

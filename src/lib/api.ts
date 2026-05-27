@@ -1890,6 +1890,30 @@ export const api = {
       request<ExecutiveSummaryResponse>('/api/executive-summary'),
   },
 
+  // ── Admin APM dashboard (Roadmap C5) ───────────────────────
+  adminApm: {
+    /**
+     * Per-route latency + error percentiles for the requested window.
+     * `source` flips to 'kv-fallback' when Analytics Engine credentials
+     * aren't configured — the UI hides percentile columns in that mode.
+     */
+    summary: (window: '15m' | '1h' | '6h' | '24h' = '1h') =>
+      request<{
+        source: 'analytics-engine' | 'kv-fallback';
+        window: string;
+        generatedAt: string;
+        routes: Array<{
+          route: string;
+          requestCount: number;
+          p50Ms: number;
+          p95Ms: number;
+          p99Ms: number;
+          errorRate: number;
+          slowRate: number;
+        }>;
+      }>(`/api/v1/admin/apm/summary?window=${window}`),
+  },
+
   // ── Admin Tooling (ADMIN-001 to ADMIN-012) ─────────────────
   adminTooling: {
     // ADMIN-001: Platform Health

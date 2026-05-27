@@ -35,6 +35,15 @@ bucket_name = "atheon-storage"
 binding = "VECTORIZE"
 index_name = "atheon-vectors"
 
+# Roadmap C5 — Cloudflare Analytics Engine for APM telemetry.
+# Every API request emits one data point (method, path bucket, status,
+# response_time_ms, request_id, tenant). Queried by /api/admin/apm/summary
+# via the AE SQL API for p50/p95/error-rate per route. The binding is
+# free up to 25M write/day in Workers Free tier — well above our SLA.
+[[analytics_engine_datasets]]
+binding = "APM"
+dataset = "atheon_apm"
+
 [durable_objects]
 bindings = [
   { name = "DASHBOARD_ROOM", class_name = "DashboardRoom" }
@@ -98,6 +107,12 @@ bucket_name = "atheon-storage-staging"
 [[env.staging.vectorize]]
 binding = "VECTORIZE"
 index_name = "atheon-vectors-staging"
+
+# C5 staging mirror of the APM dataset — keeps staging telemetry isolated
+# from production so smoke runs don't inflate prod percentiles.
+[[env.staging.analytics_engine_datasets]]
+binding = "APM"
+dataset = "atheon_apm_staging"
 
 [env.staging.durable_objects]
 bindings = [

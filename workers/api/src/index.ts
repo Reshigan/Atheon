@@ -13,6 +13,7 @@ import type { CatalystQueueMessage } from './services/scheduled';
 import { sendOrQueueEmail } from './services/email';
 import { requestIdMiddleware } from './middleware/requestid';
 import { logError, logInfo, logWarn } from './services/logger';
+import { recordRequest } from './services/apm';
 import { licenseEnforcement, getLicenseStatusForAdmin, refreshLicenseNow } from './services/license-enforcement';
 import auth, { validatePasswordStrength } from './routes/auth';
 import tenants from './routes/tenants';
@@ -58,6 +59,7 @@ import baselineRoutes from './routes/baseline';
 import targetRoutes from './routes/targets';
 import executiveSummary from './routes/executive-summary';
 import adminTooling from './routes/admin-tooling';
+import adminApm from './routes/admin-apm';
 import webhooksRoutes from './routes/webhooks';
 import governance from './routes/governance';
 import systemAlerts from './routes/system-alerts';
@@ -126,7 +128,9 @@ app.use('*', async (c, next) => {
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
 });
 
-// Spec 7 PERF-1: Response time middleware with X-Response-Time header + slow request logging
+// Spec 7 PERF-1 + Roadmap C5: response-time header, slow-request log, KV
+// rollup (legacy aggregate used by /admin/platform-health), and one APM
+// data point per request via Analytics Engine (services/apm.ts).
 app.use('*', async (c, next) => {
   const start = Date.now();
   await next();
@@ -135,7 +139,19 @@ app.use('*', async (c, next) => {
   if (duration > 500) {
     console.warn(`[SLOW] ${c.req.method} ${c.req.path} took ${duration}ms`);
   }
-  // Store metrics in KV (non-blocking, best-effort)
+  // APM: fire-and-forget data point for the dashboard query layer.
+  // No-op when env.APM binding is absent (local/test/on-prem without AE).
+  recordRequest(c.env, {
+    method: c.req.method,
+    path: c.req.path,
+    status: c.res.status,
+    durationMs: duration,
+    requestId: c.get('requestId'),
+    tenantId: c.get('auth')?.tenantId,
+  });
+  // KV-based legacy aggregate (drives /admin/platform-health hourly avg).
+  // Kept alongside AE so on-premise deploys without AE still see the
+  // platform-health card.
   try {
     const minute = Math.floor(Date.now() / 60000);
     const bucket = c.req.path.split('/').slice(0, 4).join('/');
@@ -548,6 +564,13 @@ app.use('/api/v1/admin-tooling/*', tenantIsolation());
 app.use('/api/admin-tooling/*', tenantIsolation());
 app.route('/api/v1/admin-tooling', adminTooling);
 app.route('/api/admin-tooling', adminTooling);
+
+// Roadmap C5 — APM dashboard query layer. Same auth surface as admin-tooling
+// (tenantIsolation gates the JWT; the route itself enforces superadmin/support_admin).
+app.use('/api/v1/admin/apm/*', tenantIsolation());
+app.use('/api/admin/apm/*', tenantIsolation());
+app.route('/api/v1/admin/apm', adminApm);
+app.route('/api/admin/apm', adminApm);
 
 // Data Governance aggregation (read-only). Admin+ role enforced inside handler;
 // tenantIsolation provides the JWT-backed auth context.
