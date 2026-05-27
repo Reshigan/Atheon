@@ -21,10 +21,12 @@ import {
  ChevronDown, ChevronUp, Loader2, Upload, Calendar, AlertTriangle,
  Play, X, FileText, Plus, Settings, Database, Mail, Cloud, HardDrive, Trash2, AlertCircle,
  ScrollText, ArrowUpRight, MessageSquare, Cog, Link2, Sparkles, BarChart3, Activity, Users,
- Brain, TrendingUp, TrendingDown, GitBranch, RefreshCw, Target, MoreHorizontal, Wallet, ShieldCheck
+ Brain, TrendingUp, TrendingDown, GitBranch, RefreshCw, Target, MoreHorizontal, Wallet, ShieldCheck,
+ SlidersHorizontal
 } from "lucide-react";
 import { ValueLedgerPanel } from "@/pages/catalysts/ValueLedgerPanel";
 import { ApprovalQueuePanel } from "@/pages/catalysts/ApprovalQueuePanel";
+import { ConfidenceThresholdsPanel } from "@/pages/catalysts/ConfidenceThresholdsPanel";
 import type { AutonomyTier } from "@/types";
 import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
 import { SubCatalystOpsPanel } from "@/components/SubCatalystOpsPanel";
@@ -1000,6 +1002,7 @@ export function CatalystsPage() {
  { id: 'exceptions', label: 'Exceptions', icon: <AlertTriangle size={14} />, count: exceptionCount },
   ...(isAdmin ? [{ id: 'hitl-permissions', label: 'Review Assignments', icon: <Users size={14} /> }] : []),
   { id: 'run-analytics', label: 'Run Analytics', icon: <BarChart3 size={14} /> },
+  ...(isAdmin ? [{ id: 'confidence', label: 'Confidence', icon: <SlidersHorizontal size={14} /> }] : []),
   ...(isAdmin ? [{ id: 'governance', label: 'Governance', icon: <Shield size={14} /> }] : []),
  ];
 
@@ -1925,6 +1928,12 @@ export function CatalystsPage() {
  </div>
  )}
  </div>
+ </TabPanel>
+ )}
+
+ {activeTab === 'confidence' && (
+ <TabPanel>
+   <ConfidenceThresholdsPanel />
  </TabPanel>
  )}
 

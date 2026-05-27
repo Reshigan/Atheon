@@ -63,6 +63,7 @@ import governance from './routes/governance';
 import systemAlerts from './routes/system-alerts';
 import featureFlagsRoutes from './routes/feature-flags';
 import supportRoutes from './routes/support';
+import confidenceThresholds from './routes/confidence-thresholds';
 import openapi from './routes/openapi';
 import compliance from './routes/compliance';
 import auditShare from './routes/audit-share';
@@ -489,6 +490,7 @@ const routeModules: [string, typeof auth][] = [
   ['webhooks', webhooksRoutes],
   ['system-alerts', systemAlerts],
   ['support', supportRoutes],
+  ['confidence-thresholds', confidenceThresholds],
 ];
 for (const [name, handler] of routeModules) {
   app.route(`/api/${name}`, handler);

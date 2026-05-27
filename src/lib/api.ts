@@ -2212,6 +2212,49 @@ export const api = {
       ),
   },
 
+  /**
+   * Per-tenant confidence thresholds (B3). These drive whether catalyst
+   * actions auto-approve, route to HITL, or hard-reject as weak inference.
+   * The same shape is used at every scope (tenant default → cluster →
+   * sub-catalyst); the resolver cascades for you.
+   */
+  confidenceThresholds: {
+    list: () =>
+      request<{
+        rows: Array<ConfidenceThresholdRecord>;
+        defaults: ConfidenceThresholdValues;
+        total: number;
+      }>('/api/confidence-thresholds'),
+    effective: (scope?: { clusterId?: string; subCatalystName?: string }) =>
+      request<{
+        scope: { clusterId: string | null; subCatalystName: string | null };
+        thresholds: ConfidenceThresholdValues;
+        defaults: ConfidenceThresholdValues;
+      }>(`/api/confidence-thresholds/effective${qs({ cluster_id: scope?.clusterId, sub_catalyst_name: scope?.subCatalystName })}`),
+    upsert: (
+      input: ConfidenceThresholdValues & { clusterId?: string | null; subCatalystName?: string | null },
+      mfaCode?: string,
+    ) =>
+      request<ConfidenceThresholdRecord>('/api/confidence-thresholds', {
+        method: 'PUT',
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+        body: JSON.stringify({
+          cluster_id: input.clusterId ?? null,
+          sub_catalyst_name: input.subCatalystName ?? null,
+          auto_approve_min: input.autoApproveMin,
+          require_human_below: input.requireHumanBelow,
+          hard_reject_below: input.hardRejectBelow,
+          min_sample_size: input.minSampleSize,
+          min_mode_share: input.minModeShare,
+        }),
+      }),
+    remove: (id: string, mfaCode?: string) =>
+      request<{ deleted: boolean }>(`/api/confidence-thresholds/${id}`, {
+        method: 'DELETE',
+        headers: mfaCode ? { 'X-MFA-Code': mfaCode } : undefined,
+      }),
+  },
+
   // Generic HTTP helpers for pages that call arbitrary endpoints
   get: <T = Record<string, unknown>>(path: string) => request<T>(path),
   post: <T = Record<string, unknown>>(path: string, body?: unknown) =>
@@ -4720,4 +4763,21 @@ export interface SupportTicketReply {
   user_id: string;
   body: string;
   created_at: string;
+}
+
+export interface ConfidenceThresholdValues {
+  autoApproveMin: number;
+  requireHumanBelow: number;
+  hardRejectBelow: number;
+  minSampleSize: number;
+  minModeShare: number;
+}
+
+export interface ConfidenceThresholdRecord extends ConfidenceThresholdValues {
+  id: string;
+  tenantId: string;
+  clusterId: string | null;
+  subCatalystName: string | null;
+  updatedBy: string | null;
+  updatedAt: string;
 }
