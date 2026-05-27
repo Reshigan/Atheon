@@ -4,6 +4,7 @@ import { getValidatedJsonBody } from '../middleware/validation';
 import { withLlmFallback } from '../services/ollama';
 import { generateApexInsights, generateDashboardIntelligence } from '../services/insights-engine';
 import { stripCodeFences } from '../services/llm-provider';
+import { runAgenticScenario } from '../services/agentic-scenario';
 
 const apex = new Hono<AppBindings>();
 
@@ -822,6 +823,53 @@ apex.post('/scenarios', async (c) => {
   ).bind(id, tenantId, body.title, body.description, body.input_query, JSON.stringify(body.variables || []), JSON.stringify(scenarioResults), 'completed', JSON.stringify(contextData), modelResponse).run();
 
   return c.json({ id, results: scenarioResults, context: contextData }, 201);
+});
+
+// C1: POST /api/apex/scenarios/agentic — prompt-to-scenario
+// Two-pass agentic flow: plan → targeted data gather → analysis. Persists
+// to scenarios table so the existing list view picks it up; the plan is
+// stored in context_data so an auditor can see what question the model
+// asked itself before answering.
+apex.post('/scenarios/agentic', async (c) => {
+  const tenantId = getTenantId(c);
+  const { data: body, errors } = await getValidatedJsonBody<{ prompt: string }>(c, [
+    { field: 'prompt', type: 'string', required: true, minLength: 8, maxLength: 4000 },
+  ]);
+  if (!body || errors.length > 0) return c.json({ error: 'Invalid input', details: errors }, 400);
+
+  const restriction = await checkSubCatalystRestriction(c.env.DB, tenantId, body.prompt);
+  if (restriction.restricted) {
+    return c.json(
+      {
+        error: `The sub-catalyst "${restriction.subName}" is currently disabled by your administrator. Enable it before running scenarios that reference it.`,
+        restricted: true,
+        restrictedSubCatalyst: restriction.subName,
+      },
+      403,
+    );
+  }
+
+  const { plan, planSource, analysis, analysisSource, context } = await runAgenticScenario(c.env, tenantId, body.prompt);
+  const id = crypto.randomUUID();
+  const scenarioResults = { ...analysis, source: analysisSource };
+  const contextPayload = { plan, planSource, sources: context.sources, evidence: { healthScore: context.healthScore, redMetricCount: context.redMetrics.length, riskCount: context.activeRisks.length, recentRunCount: context.recentRuns.length, insightCount: context.insights.length } };
+
+  await c.env.DB.prepare(
+    'INSERT INTO scenarios (id, tenant_id, title, description, input_query, variables, results, status, context_data, model_response) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  ).bind(
+    id,
+    tenantId,
+    plan.title,
+    plan.description,
+    body.prompt,
+    JSON.stringify(plan.variables.map((v) => v.name)),
+    JSON.stringify(scenarioResults),
+    'completed',
+    JSON.stringify(contextPayload),
+    analysisSource === 'llm' ? JSON.stringify(analysis) : null,
+  ).run();
+
+  return c.json({ id, plan, planSource, results: scenarioResults, context: contextPayload }, 201);
 });
 
 // A4-6: GET /api/apex/risks/:riskId/export — Export risk traceability report as CSV

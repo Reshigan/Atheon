@@ -497,6 +497,24 @@ export const api = {
       request<{ scenarios: ScenarioItem[]; total: number }>(`/api/apex/scenarios${qs({ tenant_id: tenantId, industry: industry && industry !== 'general' ? industry : undefined, company_id: companyId })}`),
     createScenario: (data: Record<string, unknown>) =>
       request<{ id: string; results: Record<string, unknown>; context?: Record<string, unknown> }>('/api/apex/scenarios', { method: 'POST', body: JSON.stringify(data) }),
+    // C1: prompt-to-scenario — two-pass agentic flow (plan → analysis)
+    agenticScenario: (prompt: string) =>
+      request<{
+        id: string;
+        plan: {
+          title: string;
+          description: string;
+          drivers: string[];
+          variables: Array<{ name: string; baseValue: string; proposedValue: string }>;
+          successCriteria: string[];
+          dataNeeded: string[];
+          confidence: number;
+          reasoning: string;
+        };
+        planSource: 'llm' | 'fallback';
+        results: Record<string, unknown>;
+        context?: Record<string, unknown>;
+      }>('/api/apex/scenarios/agentic', { method: 'POST', body: JSON.stringify({ prompt }) }),
     // A1-3: Health score history
     healthHistory: (tenantId?: string, limit?: number, companyId?: string) =>
       request<HealthHistoryResponse>(`/api/apex/health/history${qs({ tenant_id: tenantId, limit: limit?.toString(), company_id: companyId })}`),

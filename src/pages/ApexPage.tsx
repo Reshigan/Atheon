@@ -486,6 +486,46 @@ export function ApexPage() {
  // for the questions an exec actually asks. Closes the blank-page problem
  // on /apex What-If.
  const [runningTemplate, setRunningTemplate] = useState<string | null>(null);
+
+ // C1: prompt-to-scenario via the agentic flow. Lets an exec ask a freeform
+ // what-if instead of filling out the wizard. We surface the plan so they
+ // can see *what question Atheon asked itself* before answering.
+ const [askPrompt, setAskPrompt] = useState('');
+ const [askingApex, setAskingApex] = useState(false);
+ const [lastPlan, setLastPlan] = useState<{
+   title: string;
+   drivers: string[];
+   dataNeeded: string[];
+   confidence: number;
+   reasoning: string;
+   source: 'llm' | 'fallback';
+ } | null>(null);
+ const runAgenticPrompt = async () => {
+   const prompt = askPrompt.trim();
+   if (!prompt || askingApex) return;
+   if (prompt.length < 8) { setActionError('Ask a longer question — at least a sentence.'); return; }
+   setAskingApex(true);
+   setActionError(null);
+   try {
+     const result = await api.apex.agenticScenario(prompt);
+     setLastPlan({
+       title: result.plan.title,
+       drivers: result.plan.drivers,
+       dataNeeded: result.plan.dataNeeded,
+       confidence: result.plan.confidence,
+       reasoning: result.plan.reasoning,
+       source: result.planSource,
+     });
+     setAskPrompt('');
+     const s = await api.apex.scenarios(undefined, undefined, companyId || undefined);
+     setScenarios(s.scenarios);
+   } catch (err) {
+     setActionError(err instanceof Error ? err.message : 'Failed to run agentic scenario');
+   } finally {
+     setAskingApex(false);
+   }
+ };
+
  const runScenarioTemplate = async (template: ScenarioTemplate) => {
    if (runningTemplate) return;
    setRunningTemplate(template.id);
@@ -1436,6 +1476,58 @@ export function ApexPage() {
  <h3 className="text-lg font-semibold t-primary">What-If Analysis</h3>
  <Button variant="primary" size="sm" onClick={() => { resetScenarioBuilder(); setShowScenarioBuilder(true); }} title="Create a new what-if scenario analysis"><Plus size={14} /> New Scenario</Button>
  </div>
+
+ {/* C1: Ask Apex — prompt-to-scenario. Two-pass agentic flow exposes
+     the plan so the exec sees the reasoning, not just the answer. */}
+ <Card className="p-4">
+   <div className="flex items-center gap-2 mb-2">
+     <Sparkles className="w-4 h-4 text-accent" />
+     <h4 className="text-sm font-semibold t-primary">Ask Apex</h4>
+     <Badge variant="info" size="sm">Agentic</Badge>
+   </div>
+   <p className="text-xs t-muted mb-3">
+     Ask a freeform what-if. Apex plans which drivers and tenant data to consult, then grounds the answer in your real ERP signals.
+   </p>
+   <div className="flex flex-col gap-2">
+     <textarea
+       value={askPrompt}
+       onChange={(e) => setAskPrompt(e.target.value)}
+       disabled={askingApex}
+       placeholder="What if we cut DSO from 56 to 45 days over the next two quarters?"
+       rows={2}
+       className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary placeholder:t-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/40 transition-colors duration-150 resize-none"
+       data-testid="apex-ask-input"
+       onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runAgenticPrompt(); }}
+     />
+     <div className="flex items-center justify-between gap-2">
+       <span className="text-caption t-muted">⌘+Enter to run · grounded in your tenant data</span>
+       <Button
+         variant="primary"
+         size="sm"
+         onClick={runAgenticPrompt}
+         disabled={askingApex || askPrompt.trim().length < 8}
+         data-testid="apex-ask-run"
+       >
+         {askingApex ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+         {askingApex ? 'Planning…' : 'Run agentic scenario'}
+       </Button>
+     </div>
+     {lastPlan && (
+       <div className="mt-2 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]" data-testid="apex-ask-plan">
+         <div className="flex items-center gap-2 mb-1">
+           <span className="text-caption font-semibold t-primary">Plan</span>
+           <Badge variant={lastPlan.source === 'llm' ? 'success' : 'warning'} size="sm">
+             {lastPlan.source === 'llm' ? 'LLM' : 'Rule-based'}
+           </Badge>
+           <span className="text-caption t-muted">Confidence: {lastPlan.confidence}%</span>
+         </div>
+         <p className="text-caption t-muted mb-1"><strong className="t-primary">Drivers:</strong> {lastPlan.drivers.join(', ')}</p>
+         <p className="text-caption t-muted mb-1"><strong className="t-primary">Tenant data consulted:</strong> {lastPlan.dataNeeded.join(', ')}</p>
+         <p className="text-caption t-muted">{lastPlan.reasoning}</p>
+       </div>
+     )}
+   </div>
+ </Card>
 
  {/* Quick-start templates — solve the blank-page problem on What-If.
      Click runs the scenario end-to-end; result lands in the list below. */}
