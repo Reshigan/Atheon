@@ -15,9 +15,19 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['workers/**', 'node_modules/**'],
     coverage: {
+      provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['**/*.test.*', '**/*.d.ts', '**/index.ts'],
+      // Floor only — keeps PRs from deleting coverage. Set to roughly
+      // the current measured baseline so the gate is real today; ratchet
+      // up as we ship more unit tests (see roadmap C2). Don't lower.
+      thresholds: {
+        lines: 1,
+        functions: 0.5,
+        branches: 0.5,
+        statements: 1,
+      },
     },
   },
   resolve: {

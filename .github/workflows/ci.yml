@@ -23,7 +23,7 @@ jobs:
       - run: npm run typecheck --if-present
 
   test-frontend:
-    name: Frontend Tests
+    name: Frontend Tests + Coverage
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
     steps:
@@ -33,9 +33,16 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run test --if-present -- --run --reporter=verbose
+      - run: npm run test:coverage -- --reporter=verbose
         env:
           CI: true
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+          retention-days: 14
 
   test-backend:
     name: Backend Tests
@@ -56,7 +63,7 @@ jobs:
           CI: true
 
   build:
-    name: Build
+    name: Build + Bundle Size Gate
     runs-on: ubuntu-latest
     needs: [test-frontend, test-backend]
     steps:
@@ -67,3 +74,5 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build --if-present
+      - name: Check bundle size
+        run: npm run size:check
