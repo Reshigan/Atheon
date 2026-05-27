@@ -19,14 +19,15 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['**/*.test.*', '**/*.d.ts', '**/index.ts'],
-      // Floor only — keeps PRs from deleting coverage. Set to roughly
-      // the current measured baseline so the gate is real today; ratchet
-      // up as we ship more unit tests (see roadmap C2). Don't lower.
+      // Floor only — keeps PRs from deleting coverage. Set to just under
+      // the current measured baseline so any regression is caught but the
+      // next ratchet isn't pre-empted. Don't lower.
+      // C2 ratchet 2026-05: added lib/catalyst-recommendation + retry tests.
       thresholds: {
-        lines: 1,
-        functions: 0.5,
-        branches: 0.5,
-        statements: 1,
+        lines: 1.4,
+        functions: 1,
+        branches: 1,
+        statements: 1.4,
       },
     },
   },
