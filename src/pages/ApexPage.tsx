@@ -10,7 +10,7 @@ import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { EditorialHero } from "@/components/ui/hero-header";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 
@@ -610,18 +610,26 @@ export function ApexPage() {
  { id: 'peer-benchmarks', label: 'Peer Benchmarks', icon: <Globe size={14} />, count: peerBenchmarks?.benchmarks?.length || undefined },
  ];
 
+  const heroCriticalDims = dimensions.filter(d => d.score < 60).length;
   const pageHeader = (
     <div className="space-y-3">
       {/* CFO-facing shared-savings strip — slim banner above the
           executive intelligence header. Hidden for tenants without
           realised savings yet; dismissible per session. */}
       <SharedSavingsStrip />
-      <HeroHeader
-        icon={Crown}
-        title="Apex"
-        subtitle="Executive Intelligence & Strategic Context"
-        accent="sage"
-        trailing={<SectionFreshness section="Health" />}
+      <EditorialHero
+        kicker="Apex · Business Health"
+        figure={`${overallScore}`}
+        deck={dimensions.length > 0
+          ? `${dimensions.length} business dimensions monitored — ${heroCriticalDims} critical · ${risks.length} active risk ${risks.length === 1 ? 'alert' : 'alerts'}.`
+          : 'No business-health data yet. Run a catalyst to populate executive dimensions.'}
+        actions={
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <SectionFreshness section="Health" />
+            <CSVExportButton endpoint="/api/radar/signals" filename="apex-radar-signals.csv" label="Export Signals" />
+            <CSVExportButton endpoint="/api/board-report" filename="board-reports.csv" label="Export Reports" />
+          </div>
+        }
       />
     </div>
   );
@@ -629,7 +637,7 @@ export function ApexPage() {
   if (loading) {
     return (
       <div className="space-y-6 animate-fadeIn">
-        {pageHeader}
+        <div className="text-label">Apex · Executive Intelligence</div>
         <LoadingState variant="cards" count={4} />
       </div>
     );
@@ -657,13 +665,7 @@ export function ApexPage() {
    <RefreshCw className="w-5 h-5 text-accent animate-spin" />
   </div>
  )}
- <div className="space-y-4">
  {pageHeader}
- <div className="flex items-center gap-2 flex-shrink-0">
- <CSVExportButton endpoint="/api/radar/signals" filename="apex-radar-signals.csv" label="Export Signals" />
- <CSVExportButton endpoint="/api/board-report" filename="board-reports.csv" label="Export Reports" />
- </div>
- </div>
 
  {/* Apex is the executive surface. Transaction-level resolutions live on Pulse;
      here we expose only the summary so an exec sees the value-at-stake without
