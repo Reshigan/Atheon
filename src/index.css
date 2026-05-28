@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 /* ============================================================
-   ATHEON DESIGN SYSTEM v5.0
-   Sage / Bronze / Sky palette. Instrument Serif + Outfit typography.
-   Light mode: clean white cards. Dark mode: void/abyss backgrounds.
+   ATHEON DESIGN SYSTEM — Quiet Capital
+   Navy field. Hanken Grotesk display + Inter body + JetBrains Mono.
+   Single sage accent. Solid surfaces; glass reserved for overlays.
+   Dark-only (light mode retired).
    ============================================================ */
 
 /* L6: Font imports consolidated in index.html with font-display:swap for better performance */
@@ -165,10 +166,9 @@
   * { border-color: var(--divider); }
 
   body {
-    /* Stitch palette canonicalises on Inter; Outfit retained as fallback
-       for any component still keyed to the prior typography (until that
-       layer is fully migrated). */
-    font-family: "Inter", "Outfit", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Body copy is Inter; Hanken Grotesk is the display face (applied via
+       .font-display / .font-headline on headings and the editorial hero). */
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     background-image: var(--bg-pattern);
     background-attachment: fixed;
