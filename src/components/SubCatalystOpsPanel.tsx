@@ -333,7 +333,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
                 <div className="text-xs font-medium text-white/50 mb-2 uppercase tracking-wider">Universal KPIs</div>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                   {universalDefs.map(d => (
-                    <Card key={d.id} className={`p-3 bg-surface border-white/5 ${statusBorderClass(d.status)}`}>
+                    <Card key={d.id} className={`p-3 border-white/5 ${statusBorderClass(d.status)}`}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="text-xs text-white/50">{d.name}</div>
                         <div className={`w-2 h-2 rounded-full ${d.status === 'green' ? 'bg-emerald-400' : d.status === 'amber' ? 'bg-amber-400' : d.status === 'red' ? 'bg-red-400' : 'bg-gray-400'}`} />
@@ -355,7 +355,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
                 <div className="text-xs font-medium text-white/50 mb-2 uppercase tracking-wider">{categoryLabel(category)} KPIs</div>
                 <div className={`grid gap-3 ${catDefs.length > 8 ? 'grid-cols-2 max-h-64 overflow-y-auto' : 'grid-cols-2 lg:grid-cols-3'}`}>
                   {catDefs.map(d => (
-                    <Card key={d.id} className={`p-3 bg-surface border-white/5 ${statusBorderClass(d.status)}`}>
+                    <Card key={d.id} className={`p-3 border-white/5 ${statusBorderClass(d.status)}`}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="text-xs text-white/50 truncate" title={d.name}>{d.name}</div>
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${d.status === 'green' ? 'bg-emerald-400' : d.status === 'amber' ? 'bg-amber-400' : d.status === 'red' ? 'bg-red-400' : 'bg-gray-400'}`} />
@@ -388,7 +388,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         <Filter size={14} className="text-white/50" aria-hidden="true" />
         <select
           aria-label="Filter runs by status"
-          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs"
           value={historyFilter.status || ''}
           onChange={e => { setHistoryFilter(f => ({ ...f, status: e.target.value || undefined })); setHistoryPage(0); }}
         >
@@ -400,7 +400,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         </select>
         <select
           aria-label="Filter runs by trigger"
-          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs"
           value={historyFilter.triggered_by || ''}
           onChange={e => { setHistoryFilter(f => ({ ...f, triggered_by: e.target.value || undefined })); setHistoryPage(0); }}
         >
@@ -413,14 +413,14 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         <input
           type="date"
           aria-label="Runs from date"
-          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs"
           value={historyFilter.from || ''}
           onChange={e => { setHistoryFilter(f => ({ ...f, from: e.target.value || undefined })); setHistoryPage(0); }}
         />
         <input
           type="date"
           aria-label="Runs to date"
-          className="bg-surface border border-white/10 rounded px-2 py-1 text-xs"
+          className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs"
           value={historyFilter.to || ''}
           onChange={e => { setHistoryFilter(f => ({ ...f, to: e.target.value || undefined })); setHistoryPage(0); }}
         />
@@ -434,7 +434,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
       ) : (
         <div className="space-y-2">
           {runs.map(run => (
-            <Card key={run.id} className="p-3 bg-surface border-white/5 hover:border-accent/30 cursor-pointer transition-colors" onClick={() => loadRunDetail(run.id)}>
+            <Card key={run.id} className="p-3 border-white/5 hover:border-accent/30 cursor-pointer transition-colors" onClick={() => loadRunDetail(run.id)}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {runStatusIcon(run.status)}
@@ -504,7 +504,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         </div>
 
         {/* Financial Summary */}
-        <Card className="p-3 bg-surface border-white/5">
+        <Card className="p-3 border-white/5">
           <div className="text-xs font-medium text-white/60 mb-2">Financial Summary ({run.currency})</div>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 text-xs">
             <div><span className="text-white/40">Source Value:</span> <span className="font-medium">{fmtCurrency(run.total_source_value, run.currency)}</span></div>
@@ -517,7 +517,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
 
         {/* Step Timeline */}
         {selectedRun.steps.length > 0 && (
-          <Card className="p-3 bg-surface border-white/5">
+          <Card className="p-3 border-white/5">
             <div className="text-xs font-medium text-white/60 mb-2">Execution Steps</div>
             <div className="space-y-1">
               {selectedRun.steps.map(step => (
@@ -534,7 +534,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
 
         {/* Linked Outputs */}
         {(selectedRun.linkedOutputs.metrics.length > 0 || selectedRun.linkedOutputs.anomalies.length > 0 || selectedRun.linkedOutputs.risk_alerts.length > 0 || selectedRun.linkedOutputs.actions.length > 0) && (
-          <Card className="p-3 bg-surface border-white/5">
+          <Card className="p-3 border-white/5">
             <div className="text-xs font-medium text-white/60 mb-2">Linked Outputs</div>
             <div className="flex flex-wrap gap-2 text-xs">
               {selectedRun.linkedOutputs.metrics.map(m => <Badge key={m} variant="info" className="text-xs">Metric: {m.substring(0, 12)}...</Badge>)}
@@ -546,10 +546,10 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         )}
 
         {/* Run Comparison */}
-        <Card className="p-3 bg-surface border-white/5">
+        <Card className="p-3 border-white/5">
           <div className="text-xs font-medium text-white/60 mb-2">Compare with Another Run</div>
           <div className="flex gap-2 items-center">
-            <select className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" value={compareRunId || ''} onChange={e => e.target.value && handleCompare(e.target.value)}>
+            <select className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs flex-1" value={compareRunId || ''} onChange={e => e.target.value && handleCompare(e.target.value)}>
               <option value="">Select run to compare...</option>
               {runs.filter(r => r.id !== run.id).map(r => <option key={r.id} value={r.id}>Run #{r.run_number} ({r.status}) - {fmtDate(r.started_at)}</option>)}
             </select>
@@ -571,11 +571,11 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         </Card>
 
         {/* Items Table */}
-        <Card className="p-3 bg-surface border-white/5">
+        <Card className="p-3 border-white/5">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs font-medium text-white/60">Transaction Items</div>
             <div className="flex gap-2">
-              <select className="bg-surface border border-white/10 rounded px-2 py-1 text-xs" value={itemFilter.status || ''} onChange={e => { setItemFilter(f => ({ ...f, status: e.target.value || undefined })); handleLoadItems(0); }}>
+              <select className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs" value={itemFilter.status || ''} onChange={e => { setItemFilter(f => ({ ...f, status: e.target.value || undefined })); handleLoadItems(0); }}>
                 <option value="">All Status</option>
                 <option value="matched">Matched</option>
                 <option value="discrepancy">Discrepancy</option>
@@ -583,7 +583,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
                 <option value="unmatched_target">Unmatched Target</option>
                 <option value="exception">Exception</option>
               </select>
-              <select className="bg-surface border border-white/10 rounded px-2 py-1 text-xs" value={itemFilter.review_status || ''} onChange={e => { setItemFilter(f => ({ ...f, review_status: e.target.value || undefined })); handleLoadItems(0); }}>
+              <select className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs" value={itemFilter.review_status || ''} onChange={e => { setItemFilter(f => ({ ...f, review_status: e.target.value || undefined })); handleLoadItems(0); }}>
                 <option value="">All Review</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
@@ -716,7 +716,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         </Card>
 
         {/* Sign-off */}
-        <Card className="p-3 bg-surface border-white/5">
+        <Card className="p-3 border-white/5">
           <div className="text-xs font-medium text-white/60 mb-2">Sign-off</div>
           {run.sign_off_status === 'signed_off' ? (
             <div className="flex items-center gap-2 text-xs">
@@ -726,7 +726,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
             </div>
           ) : (
             <div className="flex gap-2 items-center">
-              <input type="text" aria-label="Sign-off notes" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Sign-off notes..." value={signOffNotes} onChange={e => setSignOffNotes(e.target.value)} />
+              <input type="text" aria-label="Sign-off notes" className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Sign-off notes..." value={signOffNotes} onChange={e => setSignOffNotes(e.target.value)} />
               <Button size="sm" variant="ghost" className="text-emerald-400 text-xs" onClick={() => handleSignOff('signed_off')}><FileCheck size={12} className="mr-1" />Sign Off</Button>
               <Button size="sm" variant="ghost" className="text-red-400 text-xs" onClick={() => handleSignOff('rejected')}>Reject</Button>
               <Button size="sm" variant="ghost" className="text-amber-400 text-xs" onClick={() => handleSignOff('deferred')}>Defer</Button>
@@ -735,7 +735,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         </Card>
 
         {/* Comments */}
-        <Card className="p-3 bg-surface border-white/5">
+        <Card className="p-3 border-white/5">
           <div className="text-xs font-medium text-white/60 mb-2">Comments ({comments.length})</div>
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {comments.map(c => (
@@ -747,14 +747,14 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
             ))}
           </div>
           <div className="flex gap-2 mt-2">
-            <input type="text" aria-label="Add a comment" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Add a comment..." value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddComment()} />
+            <input type="text" aria-label="Add a comment" className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs flex-1" placeholder="Add a comment..." value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddComment()} />
             <Button size="sm" variant="ghost" onClick={handleAddComment}><Send size={12} /></Button>
           </div>
         </Card>
 
         {/* Reasoning */}
         {run.reasoning && (
-          <Card className="p-3 bg-surface border-white/5">
+          <Card className="p-3 border-white/5">
             <div className="text-xs font-medium text-white/60 mb-1">AI Reasoning</div>
             <p className="text-xs text-white/70">{run.reasoning}</p>
           </Card>
@@ -790,7 +790,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
           <div className="text-center text-white/50 p-8">No KPI definitions found. Deploy a template to generate KPIs.</div>
         ) : (
           Array.from(groupedDefs.entries()).map(([category, catDefs]) => (
-            <Card key={category} className="bg-surface border-white/5">
+            <Card key={category} className="border-white/5">
               <div className="p-3 border-b border-white/5">
                 <span className="text-xs font-medium text-white/60 uppercase tracking-wider">{categoryLabel(category)}</span>
                 <span className="text-xs text-white/30 ml-2">({catDefs.length} KPIs)</span>
@@ -863,21 +863,21 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
         )}
 
         {/* Legacy aggregate thresholds */}
-        <Card className="p-4 bg-surface border-white/5">
+        <Card className="p-4 border-white/5">
           <div className="text-sm font-medium text-white/80 mb-3">Aggregate KPI Thresholds (Legacy)</div>
           <p className="text-xs text-white/40 mb-4">These thresholds apply to the 3 universal aggregate KPIs (Success Rate, Duration, Discrepancy Rate).</p>
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div>
               <label className="text-xs text-white/50 block mb-1">Success Green &ge;</label>
-              <input type="number" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs w-full" value={thresholds.threshold_success_green || 90} onChange={e => setThresholds(t => ({ ...t, threshold_success_green: parseFloat(e.target.value) }))} />
+              <input type="number" className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs w-full" value={thresholds.threshold_success_green || 90} onChange={e => setThresholds(t => ({ ...t, threshold_success_green: parseFloat(e.target.value) }))} />
             </div>
             <div>
               <label className="text-xs text-white/50 block mb-1">Success Amber &ge;</label>
-              <input type="number" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs w-full" value={thresholds.threshold_success_amber || 70} onChange={e => setThresholds(t => ({ ...t, threshold_success_amber: parseFloat(e.target.value) }))} />
+              <input type="number" className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs w-full" value={thresholds.threshold_success_amber || 70} onChange={e => setThresholds(t => ({ ...t, threshold_success_amber: parseFloat(e.target.value) }))} />
             </div>
             <div>
               <label className="text-xs text-white/50 block mb-1">Success Red &lt;</label>
-              <input type="number" className="bg-surface border border-white/10 rounded px-2 py-1 text-xs w-full" value={thresholds.threshold_success_red || 50} onChange={e => setThresholds(t => ({ ...t, threshold_success_red: parseFloat(e.target.value) }))} />
+              <input type="number" className="bg-[var(--bg-input)] border border-white/10 rounded px-2 py-1 text-xs w-full" value={thresholds.threshold_success_red || 50} onChange={e => setThresholds(t => ({ ...t, threshold_success_red: parseFloat(e.target.value) }))} />
             </div>
           </div>
           <Button size="sm" onClick={handleSaveThresholds} disabled={savingThresholds}>
@@ -898,7 +898,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex justify-end">
-      <div className="w-full max-w-4xl bg-background border-l border-white/10 flex flex-col overflow-hidden animate-in slide-in-from-right">
+      <div className="w-full max-w-4xl bg-[var(--bg-elevated)] border-l border-white/10 flex flex-col overflow-hidden animate-in slide-in-from-right">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div>

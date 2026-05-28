@@ -11,7 +11,7 @@ import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry, FieldMapping, ExecutionConfig, ExecutionResult, HitlConfigListItem, IAMUser, RunAnalytics, RunAnalyticsAggregate, CatalystIntelligenceOverview, ROITrackingResponse, CatalystPrescriptionItem, SuccessStoriesResponse } from "@/lib/api";
 import { SuccessStoryCard } from "@/components/ui/success-story-card";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { EditorialHero } from "@/components/ui/hero-header";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
@@ -1107,21 +1107,20 @@ export function CatalystsPage() {
  return (
  <div className="space-y-6 animate-fadeIn">
  <SharedSavingsStrip />
- <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
- <div className="space-y-4 flex-1">
- <HeroHeader
-  icon={Zap}
-  title="Catalysts"
-  subtitle="Autonomous Execution & Catalyst Orchestration"
-  accent="bronze"
-  trailing={<SectionFreshness section="Catalyst Runs" />}
+ <EditorialHero
+  kicker="Catalysts · Autonomous Execution"
+  figure={`${clusters.length}`}
+  deck={clusters.length > 0
+   ? `${clusters.length} catalyst${clusters.length === 1 ? '' : 's'} live across your close — ${actions.length} action${actions.length === 1 ? '' : 's'} logged${exceptionCount > 0 ? `, ${exceptionCount} need${exceptionCount === 1 ? 's' : ''} review` : ''}.`
+   : 'No catalysts configured yet. Connect a source system to orchestrate autonomous execution.'}
+  actions={
+   <div className="flex items-center gap-2 flex-shrink-0">
+    <SectionFreshness section="Catalyst Runs" />
+    <CSVExportButton endpoint="/api/catalyst-intelligence/patterns" filename="catalyst-patterns.csv" label="Export Patterns" />
+    <CSVExportButton endpoint="/api/roi" filename="roi-tracking.csv" label="Export ROI" />
+   </div>
+  }
  />
-  <div className="flex items-center gap-2 flex-shrink-0">
- <CSVExportButton endpoint="/api/catalyst-intelligence/patterns" filename="catalyst-patterns.csv" label="Export Patterns" />
- <CSVExportButton endpoint="/api/roi" filename="roi-tracking.csv" label="Export ROI" />
- </div>
- </div>
- </div>
 
  {actionError && (
  <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
