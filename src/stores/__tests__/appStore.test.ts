@@ -2,6 +2,27 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useAppStore } from "../appStore";
 
+describe('theme is pinned to dark (Quiet Capital)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.classList.remove('atheon-dark');
+  });
+
+  it('initial theme is dark even with no saved preference', () => {
+    expect(useAppStore.getState().theme).toBe('dark');
+  });
+
+  it('toggleTheme keeps the theme dark', () => {
+    useAppStore.getState().toggleTheme();
+    expect(useAppStore.getState().theme).toBe('dark');
+  });
+
+  it('setTheme("light") is ignored and stays dark', () => {
+    useAppStore.getState().setTheme('light');
+    expect(useAppStore.getState().theme).toBe('dark');
+  });
+});
+
 describe("appStore", () => {
   beforeEach(() => {
     useAppStore.setState({ user: null });

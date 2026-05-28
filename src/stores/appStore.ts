@@ -87,14 +87,10 @@ interface AppState {
   setSelectedCompanyId: (id: string | null) => void;
 }
 
-// Default to light mode for first-time visitors. Atheon sells into finance
-// and operations leaders inside large enterprises; dark-by-default reads as
-// "developer tool" in a CFO's browser, not "board-meeting tool". Light is
-// the no-brainer first impression; dark remains the power-user option via
-// Settings and persists once chosen (localStorage wins). The Stitch design
-// system retains its dark fidelity — see .atheon-dark variants in index.css.
-const savedTheme = (typeof window !== 'undefined' ? localStorage.getItem('atheon-theme') : null) as Theme | null;
-const initialTheme = savedTheme || 'light';
+// Quiet Capital is a dark-first design system; light mode is retired.
+// The .atheon-dark class is always applied so all dark-scoped tokens
+// in index.css are the canonical (and only) theme users see.
+const initialTheme: Theme = 'dark';
 // Migrate legacy accent values
 const rawAccent = typeof window !== 'undefined' ? localStorage.getItem('atheon-accent') : null;
 const legacyMap: Record<string, AccentColor> = { amber: 'indigo', teal: 'indigo', sky: 'blue', cyan: 'blue' };
@@ -104,13 +100,11 @@ const savedAccent = (migratedAccent && ACCENT_LIGHT[migratedAccent as AccentColo
 const savedOnboarding = typeof window !== 'undefined' ? localStorage.getItem('atheon-onboarding-dismissed') === 'true' : false;
 const savedSelectedCompanyId = typeof window !== 'undefined' ? localStorage.getItem(SELECTED_COMPANY_LS_KEY) : null;
 
-// Apply saved theme to body on initial load
+// Always apply dark theme on load — Quiet Capital is dark-only.
 if (typeof document !== 'undefined') {
-  if (initialTheme === 'dark') {
-    document.body.classList.add('atheon-dark');
-  }
+  document.body.classList.add('atheon-dark');
   if (savedAccent && ACCENT_LIGHT[savedAccent]) {
-    applyAccentColor(savedAccent, initialTheme);
+    applyAccentColor(savedAccent, 'dark');
   }
 }
 
@@ -141,24 +135,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
   setIndustry: (industry) => set({ industry }),
-  setTheme: (theme) => {
-    localStorage.setItem('atheon-theme', theme);
-    if (typeof document !== 'undefined') {
-      document.body.classList.toggle('atheon-dark', theme === 'dark');
-    }
+  setTheme: (_theme) => {
+    // Light mode retired — always dark.
+    localStorage.setItem('atheon-theme', 'dark');
+    if (typeof document !== 'undefined') document.body.classList.add('atheon-dark');
     const accent = (localStorage.getItem('atheon-accent') as AccentColor) || 'indigo';
-    applyAccentColor(accent, theme);
-    set({ theme });
+    applyAccentColor(accent, 'dark');
+    set({ theme: 'dark' });
   },
-  toggleTheme: () => set((s) => {
-    const next = s.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('atheon-theme', next);
-    if (typeof document !== 'undefined') {
-      document.body.classList.toggle('atheon-dark', next === 'dark');
-    }
-    applyAccentColor(s.accentColor, next);
-    return { theme: next };
-  }),
+  toggleTheme: () => {
+    if (typeof document !== 'undefined') document.body.classList.add('atheon-dark');
+    set({ theme: 'dark' });
+  },
   setAccentColor: (color) => {
     localStorage.setItem('atheon-accent', color);
     applyAccentColor(color);
