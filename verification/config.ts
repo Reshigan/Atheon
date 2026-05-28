@@ -26,7 +26,7 @@ export const CONFIG = {
   get adminEmail() { return requireEnv('VERIFY_ADMIN_EMAIL'); },
   get adminPassword() { return requireEnv('VERIFY_ADMIN_PASSWORD'); },
   // Optional — only needed by the second-tenant isolation enhancement.
-  superadminEmail: process.env.VERIFY_SUPERADMIN_EMAIL?.trim() || '',
-  superadminPassword: process.env.VERIFY_SUPERADMIN_PASSWORD?.trim() || '',
+  superadminEmail: optionalEnv('VERIFY_SUPERADMIN_EMAIL', ''),
+  superadminPassword: optionalEnv('VERIFY_SUPERADMIN_PASSWORD', ''),
   d1DatabaseName: optionalEnv('VERIFY_D1_DB', 'atheon-db'),
 } as const;
