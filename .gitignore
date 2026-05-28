@@ -40,3 +40,6 @@ test-results/
 playwright-report/
 .playwright/
 .superpowers/
+
+# Verification harness local state — globalSetup rebuilds this each run
+verification/.run-manifest.json

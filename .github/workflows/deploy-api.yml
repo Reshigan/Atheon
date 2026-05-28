@@ -206,6 +206,27 @@ jobs:
           API_URL: ${{ vars.STAGING_API_URL }}
 
   # ──────────────────────────────────────────────
+  # 3b. Go-Live Verification Gate (prod promotion only)
+  #    Runs the deployed-API verification suite (docs/runbooks/go-live.md):
+  #    reconciliation accuracy, tenant isolation, RBAC, load budget, and the DR
+  #    restore drill. deploy-production needs this job, so a red gate blocks the
+  #    promotion. Same prod-promotion trigger as deploy-production; skipped (with
+  #    deploy-production) on PRs and staging dispatches. secrets: inherit passes
+  #    the repo/production VERIFY_* + CLOUDFLARE_* secrets into the reusable flow.
+  # ──────────────────────────────────────────────
+  go-live-gate:
+    name: Go-Live Verification Gate
+    needs: [typecheck, test]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    uses: ./.github/workflows/go-live-gate.yml
+    with:
+      environment: production
+      run_dr: true
+    secrets: inherit
+
+  # ──────────────────────────────────────────────
   # 4. Deploy to Production
   #    Triggers: push to main, or workflow_dispatch with production
   #    Same hardening as staging plus:
@@ -215,7 +236,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [typecheck, test]
+    needs: [typecheck, test, go-live-gate]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')

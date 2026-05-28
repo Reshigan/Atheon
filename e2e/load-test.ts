@@ -10,6 +10,15 @@ const BASE_URL = process.argv[2] || 'https://atheon-api.vantax.co.za';
 const CONCURRENCY = parseInt(process.argv[3] || '10', 10);
 const DURATION_SECONDS = parseInt(process.argv[4] || '30', 10);
 
+// Creds come from the env — the gate injects real seeded users. Never hardcode a
+// password. With no creds the script degrades to public endpoints only; the
+// authenticated probes then 401, which is the correct signal that creds are absent.
+const LOGIN_EMAIL = process.env.LOAD_EMAIL ?? '';
+const LOGIN_PASSWORD = process.env.LOAD_PASSWORD ?? '';
+const LOGIN_TENANT = process.env.LOAD_TENANT || 'vantax';
+const HAS_CREDS = LOGIN_EMAIL !== '' && LOGIN_PASSWORD !== '';
+const LOGIN_BODY = { email: LOGIN_EMAIL, password: LOGIN_PASSWORD, tenant_slug: LOGIN_TENANT };
+
 interface LoadTestResult {
   endpoint: string;
   totalRequests: number;
@@ -27,10 +36,10 @@ interface LoadTestResult {
 const ENDPOINTS = [
   { method: 'GET', path: '/healthz', auth: false },
   { method: 'GET', path: '/', auth: false },
-  { method: 'POST', path: '/api/v1/auth/login', auth: false, body: { email: 'admin@vantax.co.za', password: 'Admin123' } },
+  { method: 'POST', path: '/api/v1/auth/login', auth: false, body: LOGIN_BODY },
   { method: 'GET', path: '/api/v1/apex/health', auth: true },
   { method: 'GET', path: '/api/v1/pulse/metrics', auth: true },
-  { method: 'GET', path: '/api/v1/catalysts', auth: true },
+  { method: 'GET', path: '/api/v1/catalysts/clusters', auth: true },
   { method: 'GET', path: '/api/v1/erp/adapters', auth: true },
   { method: 'GET', path: '/api/v1/notifications', auth: true },
 ];
@@ -91,21 +100,25 @@ async function runLoadTest(): Promise<void> {
   console.log(`   Duration:    ${DURATION_SECONDS}s`);
   console.log(`   Endpoints:   ${ENDPOINTS.length}\n`);
 
-  // Step 1: Get auth token
+  // Step 1: Get auth token (only when creds are supplied via env)
   let token: string | null = null;
-  try {
-    const loginResp = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@vantax.co.za', password: 'Admin123' }),
-    });
-    if (loginResp.ok) {
-      const loginData = await loginResp.json() as { token?: string };
-      token = loginData.token || null;
-      console.log(`   Auth: ${token ? 'Token acquired' : 'No token (auth endpoints will fail)'}\n`);
+  if (!HAS_CREDS) {
+    console.log('   Auth: LOAD_EMAIL/LOAD_PASSWORD unset — public endpoints only\n');
+  } else {
+    try {
+      const loginResp = await fetch(`${BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(LOGIN_BODY),
+      });
+      if (loginResp.ok) {
+        const loginData = await loginResp.json() as { token?: string };
+        token = loginData.token || null;
+        console.log(`   Auth: ${token ? 'Token acquired' : 'No token (auth endpoints will fail)'}\n`);
+      }
+    } catch {
+      console.log('   Auth: Login failed (proceeding with public endpoints only)\n');
     }
-  } catch {
-    console.log('   Auth: Login failed (proceeding with public endpoints only)\n');
   }
 
   const results: Map<string, number[]> = new Map();
@@ -205,9 +218,10 @@ async function runLoadTest(): Promise<void> {
   console.log(`   Avg RPS:        ${Math.round(avgRps * 10) / 10}`);
   console.log(`   Duration:       ${DURATION_SECONDS}s\n`);
 
-  // Pass/Fail criteria
-  const errorThreshold = 5; // 5% error rate max
-  const latencyThreshold = 5000; // 5s p99 max
+  // Pass/Fail criteria (env-overridable so the go-live gate can tighten/loosen
+  // without code changes; defaults match the original hardcoded budget).
+  const errorThreshold = parseFloat(process.env.LOAD_ERROR_THRESHOLD_PCT || '5'); // % error rate max
+  const latencyThreshold = parseInt(process.env.LOAD_P99_THRESHOLD_MS || '5000', 10); // p99 ms max
   const p99Max = Math.max(...summaryResults.map(r => r.p99LatencyMs));
 
   if (parseFloat(errorRate) > errorThreshold) {

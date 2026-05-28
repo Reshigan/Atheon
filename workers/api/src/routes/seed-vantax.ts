@@ -16,6 +16,8 @@ import {
   VANTAX_TENANT_TABLES,
   cleanupVantaxTenant,
   materialiseDemoBilling,
+  VANTAX_ORACLE,
+  formatDataQuality,
 } from '../services/vantax-demo';
 import {
   generateValueReportPDF,
@@ -3375,12 +3377,7 @@ seed.post('/seed-vantax', async (c) => {
           glAccounts: GL_ACCOUNTS.length,
           journalEntries: 40,
         },
-        dataQuality: {
-          grir: '65 of 80 POs match invoices exactly (81.25%), 7 price variances (8.75%), 8 unmatched (10%)',
-          bank: '55 of 80 bank transactions reconciled (68.75%), 10 bank fees, 15 unmatched EFTs',
-          inventory: '10 of 18 products match exactly (55.6%), 4 shortage (shrinkage), 4 surplus (receiving errors)',
-          salesOrder: '55 of 80 SD invoices match AR postings exactly (68.75%), 10 amount variances, 7 status mismatches, 8 unmatched',
-        },
+        dataQuality: formatDataQuality(VANTAX_ORACLE),
         catalysts: {
           clusters: 3,
           clusterNames: ['Finance', 'Supply Chain', 'Revenue'],

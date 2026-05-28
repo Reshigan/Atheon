@@ -71,6 +71,12 @@ jobs:
   #      - Support both API Token and Global API Key auth
   #      - Add retry logic for transient Cloudflare API failures
   #      - Separate build from deploy for cleaner logs
+  #    Go-live gating: the go-live verification suite (reconciliation, isolation,
+  #    RBAC, load, DR) is API/D1-centric and is enforced once, on the API prod
+  #    promotion (deploy-api.yml -> go-live-gate.yml). It is intentionally NOT
+  #    re-run here: this is a static-asset deploy, and re-invoking the gate would
+  #    fire its destructive tenant reseed a second time per push. PR previews +
+  #    the staging/production Playwright E2E suites cover the frontend itself.
   # ──────────────────────────────────────────────
   deploy-production:
     name: Deploy to Production

@@ -21,6 +21,47 @@
 import { computeBillablePeriod } from './billing-engine';
 
 /**
+ * VANTAX_ORACLE — the single source of truth for the seeded vantax tenant's
+ * known-good reconciliation outcomes. The seeder GENERATES data to these shapes
+ * and the seed summary DERIVES its dataQuality strings from them; the accuracy
+ * harness asserts the live run's item counts against this same constant. One
+ * source — generation, summary, and verification cannot drift apart.
+ */
+export const VANTAX_ORACLE = {
+  grir:       { total: 80, matched: 65, priceVariances: 7,  unmatched: 8 },
+  bank:       { total: 80, reconciled: 55, fees: 10, unmatchedEft: 15 },
+  inventory:  { total: 18, matched: 10, shortage: 4, surplus: 4 },
+  salesOrder: { total: 80, matched: 55, amountVariances: 10, statusMismatch: 7, unmatched: 8 },
+} as const;
+
+export type VantaxOracle = typeof VANTAX_ORACLE;
+
+/** Percentage of `n` out of `total`, to 2 dp with trailing zeros stripped ("10", "81.25"). */
+function pct(n: number, total: number): string {
+  return Number(((n / total) * 100).toFixed(2)).toString();
+}
+
+/**
+ * Render the human-readable dataQuality summary block from the oracle. Used by
+ * the seeder so the summary can never disagree with the generated data.
+ */
+export function formatDataQuality(o: VantaxOracle): {
+  grir: string; bank: string; inventory: string; salesOrder: string;
+} {
+  return {
+    grir: `${o.grir.matched} of ${o.grir.total} POs match invoices exactly (${pct(o.grir.matched, o.grir.total)}%), `
+      + `${o.grir.priceVariances} price variances (${pct(o.grir.priceVariances, o.grir.total)}%), `
+      + `${o.grir.unmatched} unmatched (${pct(o.grir.unmatched, o.grir.total)}%)`,
+    bank: `${o.bank.reconciled} of ${o.bank.total} bank transactions reconciled (${pct(o.bank.reconciled, o.bank.total)}%), `
+      + `${o.bank.fees} bank fees, ${o.bank.unmatchedEft} unmatched EFTs`,
+    inventory: `${o.inventory.matched} of ${o.inventory.total} products match exactly (${pct(o.inventory.matched, o.inventory.total)}%), `
+      + `${o.inventory.shortage} shortage (shrinkage), ${o.inventory.surplus} surplus (receiving errors)`,
+    salesOrder: `${o.salesOrder.matched} of ${o.salesOrder.total} SD invoices match AR postings exactly (${pct(o.salesOrder.matched, o.salesOrder.total)}%), `
+      + `${o.salesOrder.amountVariances} amount variances, ${o.salesOrder.statusMismatch} status mismatches, ${o.salesOrder.unmatched} unmatched`,
+  };
+}
+
+/**
  * Whitelist of allowed table names — used to prevent SQL injection in
  * the `DELETE FROM ${table}` interpolation.
  *
