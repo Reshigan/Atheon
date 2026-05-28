@@ -12,6 +12,10 @@ describe('VANTAX_ORACLE — canonical reconciliation ground truth', () => {
   it('every catalyst category sums to its total', () => {
     const g = VANTAX_ORACLE.grir;
     expect(g.matched + g.priceVariances + g.unmatched).toBe(g.total);
+    const b = VANTAX_ORACLE.bank;
+    expect(b.reconciled + b.fees + b.unmatchedEft).toBe(b.total);
+    const i = VANTAX_ORACLE.inventory;
+    expect(i.matched + i.shortage + i.surplus).toBe(i.total);
     const s = VANTAX_ORACLE.salesOrder;
     expect(s.matched + s.amountVariances + s.statusMismatch + s.unmatched).toBe(s.total);
   });
