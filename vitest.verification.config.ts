@@ -8,9 +8,10 @@ export default defineConfig({
     include: ['verification/**/*.test.ts'],
     // Reseed is destructive against the shared vantax tenant — never parallelise
     // files that reseed. One worker, serial files.
+    // fileParallelism: false forces maxWorkers=1 in Vitest 4 (singleFork was
+    // removed; the guarantee is now owned entirely by fileParallelism: false).
     fileParallelism: false,
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
     testTimeout: 120_000,
     hookTimeout: 120_000,
     retry: 0,
