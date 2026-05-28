@@ -54,8 +54,6 @@ export default {
         'mono-data':   ['13px', { lineHeight: '1.4',  fontWeight: '450' }],
         'mono-label':  ['10px', { lineHeight: '1',    fontWeight: '500' }],
         'caption':     ['11px', { lineHeight: '1',    letterSpacing: '0.05em', fontWeight: '500' }],
-        // Kept aliases — widely used across pages (swept per area)
-        'body':        ['14px', { lineHeight: '1.6',  fontWeight: '400' }],   // 159 uses; alias for body-base
       },
       spacing: {
         unit:               '4px',
