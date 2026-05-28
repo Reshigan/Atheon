@@ -510,6 +510,8 @@
 .stagger > *:nth-child(8)  { animation-delay: 280ms; }
 @media (prefers-reduced-motion: reduce) {
   .animate-fadeIn, .animate-slideIn, .animate-modalIn, .animate-backdropIn, .animate-riseIn, .animate-toastIn,
+  .animate-float, .animate-shimmer, .animate-orbit, .animate-orbit-reverse, .animate-pulse-glow,
+  .animate-particle-drift, .animate-hero-rotate, .animate-glow-pulse, .animate-float-3d,
   .stagger > * { animation: none !important; }
 }
 .animate-float { animation: float 6s ease-in-out infinite; }
