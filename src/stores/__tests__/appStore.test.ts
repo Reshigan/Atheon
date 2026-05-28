@@ -8,7 +8,9 @@ describe('theme is pinned to dark (Quiet Capital)', () => {
     document.body.classList.remove('atheon-dark');
   });
 
-  it('initial theme is dark even with no saved preference', () => {
+  // Note: the store is a singleton initialized at module load, so this asserts
+  // the hardcoded default rather than re-running init against cleared storage.
+  it('initial theme state is dark', () => {
     expect(useAppStore.getState().theme).toBe('dark');
   });
 

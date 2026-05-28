@@ -76,7 +76,9 @@ interface AppState {
   toggleSidebar: () => void;
   setMobileSidebarOpen: (open: boolean) => void;
   setIndustry: (industry: IndustryVertical) => void;
+  /** @deprecated Light mode retired — the `theme` argument is ignored; the app is permanently dark. */
   setTheme: (theme: Theme) => void;
+  /** @deprecated Light mode retired — keeps the theme dark; kept only for existing call sites. */
   toggleTheme: () => void;
   setAccentColor: (color: AccentColor) => void;
   dismissOnboarding: () => void;
@@ -143,10 +145,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     applyAccentColor(accent, 'dark');
     set({ theme: 'dark' });
   },
-  toggleTheme: () => {
-    if (typeof document !== 'undefined') document.body.classList.add('atheon-dark');
-    set({ theme: 'dark' });
-  },
+  toggleTheme: () => get().setTheme('dark'),
   setAccentColor: (color) => {
     localStorage.setItem('atheon-accent', color);
     applyAccentColor(color);
