@@ -118,7 +118,7 @@ export default function BoardDigestPage(): JSX.Element {
                 notes: [{ label: 'Currency', value: currency }],
               }} />
             </div>
-            <p className="text-display-md font-bold text-emerald-500 tabular-nums font-mono mt-1">{formatCurrency(recovered, currency)}</p>
+            <p className="text-headline-xl font-bold text-emerald-500 tabular-nums font-mono mt-1">{formatCurrency(recovered, currency)}</p>
           </div>
           <div>
             <div className="flex items-center justify-between">
@@ -133,7 +133,7 @@ export default function BoardDigestPage(): JSX.Element {
                 notes: [{ label: 'Model', value: 'shared-savings (no upfront fee)' }],
               }} />
             </div>
-            <p className="text-display-md font-bold t-primary tabular-nums font-mono mt-1">{formatCurrency(billed, currency)}</p>
+            <p className="text-headline-xl font-bold t-primary tabular-nums font-mono mt-1">{formatCurrency(billed, currency)}</p>
           </div>
           <div>
             <div className="flex items-center justify-between">
@@ -145,7 +145,7 @@ export default function BoardDigestPage(): JSX.Element {
                 query: 'total_realised_savings / NULLIF(total_atheon_revenue, 0)',
               }} />
             </div>
-            <p className="text-display-md font-bold text-emerald-500 tabular-nums font-mono mt-1">{multiple > 0 ? `${multiple.toFixed(1)}x` : '—'}</p>
+            <p className="text-headline-xl font-bold text-emerald-500 tabular-nums font-mono mt-1">{multiple > 0 ? `${multiple.toFixed(1)}x` : '—'}</p>
           </div>
         </div>
       </Card>

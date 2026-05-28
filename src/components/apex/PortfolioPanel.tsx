@@ -341,7 +341,7 @@ function MetricTile({ label, value, sublabel, tone }: { label: string; value: st
   return (
     <Card size="compact">
       <p className="text-caption t-muted">{label}</p>
-      <p className={`text-h2 font-semibold ${tone === 'accent' ? 'text-accent' : 't-primary'} mt-1 tabular-nums`}>{value}</p>
+      <p className={`text-headline-md font-semibold ${tone === 'accent' ? 'text-accent' : 't-primary'} mt-1 tabular-nums`}>{value}</p>
       {sublabel && <p className="text-caption t-muted mt-0.5">{sublabel}</p>}
     </Card>
   );

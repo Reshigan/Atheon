@@ -12,7 +12,7 @@ import type { LlmConfigResponse } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { FormError } from "@/components/ui/state";
 import {
- Settings, User, Bell, Palette, Cpu, Loader2, Check, Sun, Moon, Shield, Key, Copy, Download, Trash2, Brain, ArrowRight, AlertTriangle
+ Settings, User, Bell, Palette, Cpu, Loader2, Check, Shield, Key, Copy, Download, Trash2, Brain, ArrowRight, AlertTriangle
 } from "lucide-react";
 
 interface NotificationPref {
@@ -23,7 +23,7 @@ interface NotificationPref {
 
 export function SettingsPage() {
  const toast = useToast();
- const { user, setUser, theme, setTheme, accentColor, setAccentColor } = useAppStore();
+ const { user, setUser, accentColor, setAccentColor } = useAppStore();
  const [displayName, setDisplayName] = useState(user?.name || '');
  const [email, setEmail] = useState(user?.email || '');
  const [saving, setSaving] = useState(false);
@@ -196,12 +196,12 @@ export function SettingsPage() {
   setLlmSaving(false);
  };
 
- const accentOptions: { key: AccentColor; label: string; lightColor: string; darkColor: string }[] = [
- { key: 'indigo', label: 'Indigo', lightColor: '#4f46e5', darkColor: '#818cf8' },
- { key: 'blue', label: 'Blue', lightColor: '#2563eb', darkColor: '#3b82f6' },
- { key: 'violet', label: 'Violet', lightColor: '#7c3aed', darkColor: '#a78bfa' },
- { key: 'emerald', label: 'Emerald', lightColor: '#059669', darkColor: '#10b981' },
- { key: 'rose', label: 'Rose', lightColor: '#e11d48', darkColor: '#f43f5e' },
+ const accentOptions: { key: AccentColor; label: string; darkColor: string }[] = [
+ { key: 'indigo', label: 'Indigo', darkColor: '#818cf8' },
+ { key: 'blue', label: 'Blue', darkColor: '#3b82f6' },
+ { key: 'violet', label: 'Violet', darkColor: '#a78bfa' },
+ { key: 'emerald', label: 'Emerald', darkColor: '#10b981' },
+ { key: 'rose', label: 'Rose', darkColor: '#f43f5e' },
  ];
 
  return (
@@ -218,10 +218,10 @@ export function SettingsPage() {
      Sticks just below the global header on scroll. */}
  <nav
   aria-label="Settings sections"
-  className="sticky z-20 -mx-1 px-1 py-2 flex flex-wrap gap-2 backdrop-blur-md"
+  className="sticky z-20 -mx-1 px-1 py-2 flex flex-wrap gap-2"
   style={{
    top: 'calc(var(--header-height, 48px) + 1px)',
-   background: 'color-mix(in srgb, var(--bg-primary) 88%, transparent)',
+   background: 'var(--bg-primary)',
    borderBottom: '1px solid var(--border-card)',
   }}
  >
@@ -332,39 +332,10 @@ export function SettingsPage() {
  </h3>
  <div className="space-y-4">
  <div>
- <span className="text-sm t-muted">Theme</span>
- <div className="flex gap-3 mt-2">
- <button
- onClick={() => setTheme('dark')}
- className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
- title="Switch to dark theme"
- style={{
- background: theme === 'dark' ? 'var(--accent-subtle)' : 'var(--bg-input)',
- border: theme === 'dark' ? '2px solid var(--accent)' : '1px solid var(--border-card)',
- color: theme === 'dark' ? 'var(--accent)' : 'var(--text-muted)'}}
- >
- <Moon size={16} />
- Dark
- </button>
- <button
- onClick={() => setTheme('light')}
- className="w-20 h-14 rounded-lg flex flex-col items-center justify-center gap-1 text-xs transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
- title="Switch to light theme"
- style={{
- background: theme === 'light' ? 'var(--accent-subtle)' : 'var(--bg-input)',
- border: theme === 'light' ? '2px solid var(--accent)' : '1px solid var(--border-card)',
- color: theme === 'light' ? 'var(--accent)' : 'var(--text-muted)'}}
- >
- <Sun size={16} />
- Light
- </button>
- </div>
- </div>
- <div>
  <span className="text-sm t-muted">Accent Colour</span>
  <div className="flex gap-3 mt-2">
  {accentOptions.map(c => {
- const swatchColor = theme === 'dark' ? c.darkColor : c.lightColor;
+ const swatchColor = c.darkColor;
  return (
  <button
  key={c.key}
