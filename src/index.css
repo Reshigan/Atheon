@@ -104,63 +104,89 @@
    * the *values* are swapped to the new corporate palette.
    * ────────────────────────────────────────────────────────────── */
   .atheon-dark {
-    /* v2: brand navy primary (PDF cover + datasheets use #0A0E2A) replaces
-       the prior #06090D abyss. Brings web surface into one identity with
-       the value-assessment PDF and printed datasheets. */
+    /* ── Field ─────────────────────────────────────────── */
     --bg-primary: #0A0E2A;
     --bg-secondary: #11163A;
-    --bg-card: rgba(26, 31, 38, 0.85);
-    --bg-card-solid: #1A1F26;
-    --bg-card-hover: rgba(39, 42, 47, 0.90);
-    --bg-sidebar: #101418;
-    --bg-header: rgba(6, 9, 13, 0.85);
-    --bg-input: rgba(14, 21, 28, 0.70);
-    --bg-input-focus: rgba(28, 32, 36, 0.90);
-    --bg-modal: rgba(11, 14, 19, 0.96);
-    --bg-elevated: rgba(28, 32, 36, 0.90);
-    /* Chart theme - dark mode overrides */
-    --chart-grid: rgba(255, 255, 255, 0.06);
-    --chart-text: var(--text-secondary);
-    --border-primary: rgba(255, 255, 255, 0.16);
-    --border-subtle: rgba(255, 255, 255, 0.06);
-    --border-card: rgba(255, 255, 255, 0.10);
-    --divider: rgba(255, 255, 255, 0.06);
-    --text-primary: #F8F9F3;
-    --text-secondary: #e0e2e8;
-    --text-muted: rgba(248, 249, 243, 0.50);
-    --text-on-accent: #141F05;
-    --accent: #A3B18A;           /* sage primary */
+    --bg-pattern: var(--field-gradient);
+    --field-gradient: radial-gradient(130% 110% at 82% -12%, #141A3A 0%, #0A0E2A 60%);
+
+    /* ── Surfaces (solid graded navy — NO blur on content) ── */
+    --bg-card: #161D3A;
+    --bg-card-solid: #161D3A;
+    --bg-card-hover: #1B2344;
+    --bg-elevated: #1B2344;
+    --bg-sidebar: #0C1130;
+    --bg-header: rgba(10,14,42,.85);
+    --bg-input: #11163A;
+    --bg-input-focus: #141A3A;
+    --bg-modal: rgba(20,26,58,.72);
+
+    /* ── Borders ───────────────────────────────────────── */
+    --border-primary: #283157;
+    --border-card: #283157;
+    --border-subtle: rgba(255,255,255,.06);
+    --divider: rgba(255,255,255,.06);
+
+    /* ── Text ──────────────────────────────────────────── */
+    --text-primary: #EEF1F8;
+    --text-secondary: #AEB8D4;
+    --text-muted: #8C98B8;
+    --text-on-accent: #0E1226;
+
+    /* ── Single signal: sage is the ONLY brand accent ───── */
+    --accent: #A3B18A;
     --accent-rgb: 163, 177, 138;
-    --accent-hover: #becda4;
-    --accent-glow: rgba(163, 177, 138, 0.18);
-    --accent-subtle: rgba(163, 177, 138, 0.08);
-    --accent-dark: #F8F9F3;
+    --accent-hover: #B1BE99;
+    --accent-glow: rgba(163,177,138,.18);
+    --accent-subtle: rgba(163,177,138,.08);
+    --accent-dark: #EEF1F8;
     --sage: #A3B18A;
-    --sage-b: #becda4;
-    --bronze: #CDA37E;
+    --sage-b: #B1BE99;
     --sky: #7EB3CD;
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.03);
-    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(163, 177, 138, 0.12);
-    --shadow-dropdown: 0 12px 36px rgba(0, 0, 0, 0.50);
-    --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.60);
-    --shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255,255,255,0.03);
-    --placeholder: rgba(248, 249, 243, 0.35);
-    --option-bg: #1A1F26;
-    --scrollbar-thumb: rgba(163, 177, 138, 0.18);
-    --scrollbar-thumb-hover: rgba(163, 177, 138, 0.32);
-    --toggle-bg: rgba(163, 177, 138, 0.12);
-    --ring-focus: rgba(163, 177, 138, 0.32);
+    --bronze: #CDA37E;
+
+    /* ── Elevation (solid content) ─────────────────────── */
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-card: 0 1px 0 rgba(255,255,255,.04) inset, 0 8px 22px rgba(0,0,0,.35);
+    --shadow-card-hover: 0 1px 0 rgba(255,255,255,.05) inset, 0 14px 34px rgba(0,0,0,.42);
+    --shadow-glass: 0 8px 22px rgba(0,0,0,.35);
+    --shadow-dropdown: 0 16px 40px rgba(0,0,0,.5);
+    --shadow-modal: 0 24px 48px rgba(0,0,0,.6);
+
+    /* ── Overlay (glass) — floating layers only ────────── */
+    --overlay-bg: rgba(20,26,58,.72);
+    --overlay-blur: 14px;
+    --overlay-border: rgba(163,177,138,.28);
+    --glass-blur: 14px;
+
+    /* ── Form & interaction ────────────────────────────── */
+    --placeholder: #5F6A8C;
+    --option-bg: #161D3A;
+    --scrollbar-thumb: rgba(163,177,138,.18);
+    --scrollbar-thumb-hover: rgba(163,177,138,.32);
+    --toggle-bg: rgba(163,177,138,.12);
+    --ring-focus: rgba(163,177,138,.30);
+
+    /* ── Semantic — RESERVED for status only ───────────── */
+    --positive: #7CFFB2;
+    --warning: #FFC857;
+    --critical: #FF6B6B;
+    --info: #7EB3CD;
     --teal: #7EB3CD;
-    --teal-light: rgba(126, 179, 205, 0.08);
+    --teal-light: rgba(126,179,205,.08);
     --teal-dark: #5d92ad;
-    --glass-blur: 12px;
-    /* Subtle sage radial — exact lift from Stitch body background */
-    /* v2: layered sage + bronze atmosphere on the brand navy field —
-       creates depth without overpowering content. */
-    --bg-pattern:
-      radial-gradient(circle at 20% -5%, rgba(163, 177, 138, 0.07) 0%, transparent 55%),
-      radial-gradient(circle at 85% 10%, rgba(205, 163, 126, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 50% 100%, rgba(93, 138, 111, 0.06) 0%, transparent 70%);
+
+    /* ── Chart theme → repoint to new tokens ───────────── */
+    --chart-primary: var(--sage);
+    --chart-secondary: var(--info);
+    --chart-tertiary: var(--bronze);
+    --chart-success: var(--positive);
+    --chart-warning: var(--warning);
+    --chart-danger: var(--critical);
+    --chart-grid: rgba(255,255,255,.06);
+    --chart-text: var(--text-secondary);
+    --chart-tooltip-bg: var(--bg-card-solid);
+    --chart-tooltip-border: var(--border-card);
   }
 
   * { border-color: var(--divider); }
