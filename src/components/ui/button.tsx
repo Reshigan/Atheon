@@ -32,11 +32,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<string, string> = {
-  primary:   'text-white shadow-sm',
+  primary:   'text-[var(--text-on-accent)] shadow-sm',
   secondary: 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-input-focus)] t-primary border border-[var(--border-card)]',
   ghost:     'bg-transparent hover:bg-[var(--bg-secondary)] t-secondary hover:t-primary',
-  danger:    'bg-red-500/10 hover:bg-red-500/15 text-red-500 border border-red-500/20',
-  success:   'bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-500 border border-emerald-500/20',
+  danger:    'bg-[rgba(255,107,107,.12)] hover:bg-[rgba(255,107,107,.18)] text-[var(--critical)] border border-[rgba(255,107,107,.25)]',
+  success:   'bg-[rgba(124,255,178,.12)] hover:bg-[rgba(124,255,178,.18)] text-[var(--positive)] border border-[rgba(124,255,178,.25)]',
   outline:   'bg-transparent hover:bg-[var(--bg-secondary)] t-secondary border border-[var(--border-card)]',
 };
 
