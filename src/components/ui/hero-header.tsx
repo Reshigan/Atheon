@@ -20,6 +20,7 @@
  *   - amber   → urgency
  *   - red     → critical / system alerts
  */
+import { cn } from "@/lib/utils";
 import type { ReactNode, ComponentType } from 'react';
 
 type Accent = 'sage' | 'sky' | 'bronze' | 'amber' | 'red';
@@ -104,5 +105,43 @@ export function HeroHeader({
       </div>
       {trailing && <div className="flex-shrink-0">{trailing}</div>}
     </div>
+  );
+}
+
+/**
+ * `<EditorialHero>` — the magazine-style hero band for views that lead with a
+ * single hero figure (a shared-savings total, a portfolio value, a run count)
+ * rather than a module title. The figure is rendered in Hanken light at an
+ * editorial scale; an optional delta chip and provenance deck sit alongside.
+ */
+export interface EditorialHeroProps {
+  /** Uppercase kicker / eyebrow, e.g. "Released this quarter · verified". */
+  kicker: string;
+  /** The one hero figure for the view, e.g. "R4.2M". Rendered in Hanken. */
+  figure: string;
+  /** One-line provenance deck under the figure. */
+  deck?: string;
+  /** Optional delta chip, e.g. "+13.5%". */
+  delta?: string;
+  /** Optional trailing actions (buttons). */
+  actions?: ReactNode;
+  className?: string;
+}
+
+export function EditorialHero({ kicker, figure, deck, delta, actions, className }: EditorialHeroProps) {
+  return (
+    <header className={cn('relative', className)}>
+      <div className="text-label">{kicker}</div>
+      <div className="flex items-baseline gap-3 mt-1">
+        <span className="font-display font-light tracking-[-0.03em] leading-[0.92] text-[clamp(40px,6vw,60px)] t-primary">
+          {figure}
+        </span>
+        {delta && (
+          <span className="font-mono text-sm" style={{ color: 'var(--positive)' }}>{delta}</span>
+        )}
+      </div>
+      {deck && <p className="text-body-sm t-secondary mt-2 max-w-[60ch]">{deck}</p>}
+      {actions && <div className="flex gap-2 mt-4">{actions}</div>}
+    </header>
   );
 }
