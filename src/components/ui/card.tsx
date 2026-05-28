@@ -6,7 +6,7 @@ export interface CardProps {
   className?: string;
   hover?: boolean;
   glow?: boolean;
-  variant?: 'default' | 'black' | 'mint' | 'accent' | 'glass' | 'outline';
+  variant?: 'default' | 'raised' | 'black' | 'mint' | 'accent' | 'glass' | 'outline';
   /** Padding scale. `default` = 20px (most cards); `compact` = 12px
    *  (dense bento tiles, KPI mini-cards); `relaxed` = 28px (top-level
    *  hero cards that anchor a screen). Avoid freelance className overrides
@@ -17,12 +17,13 @@ export interface CardProps {
 }
 
 const variantClass: Record<string, string> = {
-  default: 'card-glass',
-  black: 'card-black',
-  mint: 'card-mint',
-  accent: 'card-teal',
-  glass: 'card-glass',
-  outline: 'card-glass',
+  default: 'card-glass',          // solid (Task 4)
+  raised:  'card-glass shadow-[var(--shadow-card-hover)] bg-[var(--bg-card-hover)]',
+  black:   'card-black',
+  mint:    'card-mint',
+  accent:  'card-teal',
+  glass:   'overlay-surface',     // ONLY for floating contexts
+  outline: 'bg-transparent border border-[var(--border-card)] rounded-2xl',
 };
 
 const sizeClass: Record<NonNullable<CardProps['size']>, string> = {
