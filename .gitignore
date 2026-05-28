@@ -39,3 +39,4 @@ workers/api/.wrangler/
 test-results/
 playwright-report/
 .playwright/
+.superpowers/

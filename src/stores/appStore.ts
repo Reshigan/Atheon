@@ -137,8 +137,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
   setIndustry: (industry) => set({ industry }),
-  setTheme: (_theme) => {
-    // Light mode retired — always dark.
+  setTheme: () => {
+    // Light mode retired — the `theme` arg is ignored; always dark.
     localStorage.setItem('atheon-theme', 'dark');
     if (typeof document !== 'undefined') document.body.classList.add('atheon-dark');
     const accent = (localStorage.getItem('atheon-accent') as AccentColor) || 'indigo';
