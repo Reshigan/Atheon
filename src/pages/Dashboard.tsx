@@ -19,11 +19,10 @@ import {
   TrendingUp, TrendingDown, Minus,
   ChevronRight, AlertTriangle, RefreshCw, Eye, Lightbulb, X,
   CheckCircle2, XCircle, Gauge, Shield, Radar, Stethoscope, Coins, ArrowRight,
-  LayoutDashboard,
 } from "lucide-react";
 import { chartPalette, chartAccentB, chartLight } from "@/lib/chart-theme";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { EditorialHero } from "@/components/ui/hero-header";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
@@ -265,13 +264,16 @@ export function Dashboard() {
           realised savings yet; dismissible per session. */}
       <SharedSavingsStrip />
 
-      {/* HEADER — v2 HeroHeader for consistent brand identity across modules */}
-      <HeroHeader
-        icon={LayoutDashboard}
-        title={getGreeting(user?.name)}
-        subtitle="Atheon Command Center — your real-time operating picture"
-        accent="sage"
-        trailing={
+      {/* HEADER — editorial hero leading with the Atheon Score (the page's
+          signature health figure). The shared-savings proof lives in the
+          SharedSavingsStrip above, so the hero does not duplicate the
+          recovered-rand number. Operating controls sit in the actions slot. */}
+      <EditorialHero
+        kicker={`${getGreeting(user?.name)} · Atheon Score`}
+        figure={`${overallScore}`}
+        deck={`${dimensions.length} business dimensions monitored — ${upCount} improving, ${downCount} declining this period.`}
+        delta={avgDelta >= 0 ? `+${avgDelta.toFixed(1)} pts` : undefined}
+        actions={
           <div className="flex items-center gap-2">
             <SectionFreshness section="Health" />
             <select
