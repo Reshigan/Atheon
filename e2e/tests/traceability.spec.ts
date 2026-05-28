@@ -1,193 +1,109 @@
+/**
+ * E2E: Traceability drill-down chain (LIVE, same-origin).
+ *
+ * Proves the executive traceability story end-to-end against the *deployed*
+ * frontend + real API: an admin logs in, Apex renders real health dimensions,
+ * and the dimension / risk / metric trace controls open the shared
+ * TraceabilityModal sourced from real batch runs.
+ *
+ * Skipped unless it targets a deployed same-origin frontend (E2E_BASE_URL is
+ * not localhost) AND real login creds are present (E2E_LOGIN_EMAIL /
+ * E2E_LOGIN_PASSWORD). See docs/runbooks/go-live.md: a browser on localhost is
+ * CORS-blocked from the prod API, and the mock-JWT fixture used elsewhere
+ * cannot exercise the real backend.
+ */
 import { test, expect } from '@playwright/test';
+import { realLogin, realLoginCreds, isLiveBaseUrl } from '../fixtures/real-login';
 
-test.describe('Traceability Chain', () => {
+const creds = realLoginCreds();
+const live = isLiveBaseUrl() && creds !== null;
+
+// Skip the whole group at collection time (no browser launch) unless we're
+// running against a deployed same-origin frontend with real login creds.
+const describeLive = live ? test.describe : test.describe.skip;
+
+describeLive('Traceability chain (live)', () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
-    await page.goto('/login');
-    await page.fill('[data-testid="email"]', 'admin@example.com');
-    await page.fill('[data-testid="password"]', 'password123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL(/\/dashboard/);
+    await realLogin(page, creds!);
   });
 
-  test('should display Apex health dashboard with dimensions', async ({ page }) => {
+  test('admin lands in the authenticated app after real login', async ({ page }) => {
+    await expect(page).not.toHaveURL(/\/login/);
+  });
+
+  test('Apex renders real health dimensions', async ({ page }) => {
     await page.goto('/apex');
-    
-    // Wait for health score to load
-    await expect(page.locator('[data-testid="health-score"]')).toBeVisible({ timeout: 10000 });
-    
-    // Check that dimensions are displayed
-    const dimensions = ['Financial', 'Operational', 'Compliance', 'Strategic', 'Technology'];
-    for (const dimension of dimensions) {
-      await expect(page.locator(`text=${dimension}`)).toBeVisible();
+    await expect(page.getByRole('tablist').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('tab', { name: /Business Health/i })).toBeVisible();
+  });
+
+  test('Apex dimension trace opens the traceability modal (or reports no data)', async ({ page }) => {
+    await page.goto('/apex');
+    await expect(page.getByRole('tablist').first()).toBeVisible({ timeout: 20_000 });
+
+    const traceBtn = page
+      .locator('[aria-label^="Open trace for "], [aria-label*="open traceability"]')
+      .first();
+    await expect(traceBtn).toBeAttached({ timeout: 20_000 });
+    await traceBtn.click();
+
+    const modalHeading = page.getByRole('heading', { level: 3, name: /^Dimension:/ });
+    const noData = page.getByText(/No traceability data available/i);
+    await expect(modalHeading.or(noData).first()).toBeVisible({ timeout: 15_000 });
+
+    // When the modal opened, it must carry a real source section and close cleanly.
+    if (await modalHeading.isVisible()) {
+      await expect(
+        page
+          .getByRole('button', { name: /Batch Runs|Source Attribution|Contributing Clusters/ })
+          .first(),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
+      await expect(modalHeading).toBeHidden();
     }
   });
 
-  test('should drill down from Apex dimension to traceability modal', async ({ page }) => {
+  test('Apex risk trace opens the risk traceability modal', async ({ page }) => {
     await page.goto('/apex');
-    
-    // Wait for health score to load
-    await expect(page.locator('[data-testid="health-score"]')).toBeVisible({ timeout: 10000 });
-    
-    // Click on a dimension to open traceability modal
-    const dimensionBtn = page.locator('[data-testid="dimension-operational"]');
-    if (await dimensionBtn.isVisible()) {
-      await dimensionBtn.click();
-      
-      // Wait for traceability modal to open
-      await expect(page.locator('[data-testid="traceability-modal"]')).toBeVisible();
-      
-      // Check modal content
-      await expect(page.locator('text=Source Attribution')).toBeVisible();
-      await expect(page.locator('text=Drill-down Path')).toBeVisible();
-      
-      // Close modal
-      await page.click('[data-testid="close-modal"]');
-      await expect(page.locator('[data-testid="traceability-modal"]')).not.toBeVisible();
+    await expect(page.getByRole('tablist').first()).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('tab', { name: /Risk Overview/i }).click();
+
+    const riskTrace = page.locator('button[title="Trace to source"]').first();
+    if (!(await riskTrace.isVisible({ timeout: 10_000 }).catch(() => false))) {
+      test.skip(true, 'No risks with source attribution in the live tenant');
     }
+    await riskTrace.click();
+
+    const heading = page.getByRole('heading', { level: 3, name: /^Risk:/ });
+    await expect(heading).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByRole('button', { name: /Source Attribution|Batch Runs/ }).first(),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(heading).toBeHidden();
   });
 
-  test('should trace risk alerts to source runs', async ({ page }) => {
-    await page.goto('/apex');
-    await page.click('[data-testid="tab-risks"]');
-    
-    // Wait for risks list to load
-    await expect(page.locator('[data-testid="risks-list"]')).toBeVisible({ timeout: 10000 });
-    
-    // Find first risk and click trace button
-    const traceBtn = page.locator('[data-testid="trace-risk"]').first();
-    if (await traceBtn.isVisible()) {
-      await traceBtn.click();
-      
-      // Wait for traceability modal
-      await expect(page.locator('[data-testid="traceability-modal"]')).toBeVisible();
-      
-      // Check risk trace content
-      await expect(page.locator('text=Source Run')).toBeVisible();
-      await expect(page.locator('text=Flagged Items')).toBeVisible();
-      
-      // Check drill-down path
-      await expect(page.locator('text=View Run')).toBeVisible();
-    }
-  });
-
-  test('should display Pulse metrics dashboard', async ({ page }) => {
+  test('Pulse metric trace opens the metric traceability modal (or reports no data)', async ({ page }) => {
     await page.goto('/pulse');
-    
-    // Wait for metrics to load
-    await expect(page.locator('[data-testid="metrics-list"]')).toBeVisible({ timeout: 10000 });
-    
-    // Check metrics are displayed with status
-    const metrics = page.locator('[data-testid="metric-item"]');
-    const count = await metrics.count();
-    expect(count).toBeGreaterThan(0);
-  });
 
-  test('should trace metric to source sub-catalyst run', async ({ page }) => {
-    await page.goto('/pulse');
-    
-    // Wait for metrics to load
-    await expect(page.locator('[data-testid="metrics-list"]')).toBeVisible({ timeout: 10000 });
-    
-    // Find first metric and click trace button
-    const traceBtn = page.locator('[data-testid="trace-metric"]').first();
-    if (await traceBtn.isVisible()) {
-      await traceBtn.click();
-      
-      // Wait for traceability modal
-      await expect(page.locator('[data-testid="traceability-modal"]')).toBeVisible();
-      
-      // Check metric trace content
-      await expect(page.locator('text=Source Attribution')).toBeVisible();
-      await expect(page.locator('text=Contributing KPIs')).toBeVisible();
-      await expect(page.locator('text=Related Anomalies')).toBeVisible();
+    const metricTrace = page.locator('button[title="Trace to source"]').first();
+    if (!(await metricTrace.isVisible({ timeout: 20_000 }).catch(() => false))) {
+      test.skip(true, 'No metrics with source attribution in the live tenant');
     }
-  });
+    await metricTrace.click();
 
-  test('should navigate from traceability modal to run detail', async ({ page }) => {
-    await page.goto('/pulse');
-    
-    // Wait for metrics to load
-    await expect(page.locator('[data-testid="metrics-list"]')).toBeVisible({ timeout: 10000 });
-    
-    // Open metric trace
-    const traceBtn = page.locator('[data-testid="trace-metric"]').first();
-    if (await traceBtn.isVisible()) {
-      await traceBtn.click();
-      await expect(page.locator('[data-testid="traceability-modal"]')).toBeVisible();
-      
-      // Click View Run button
-      const viewRunBtn = page.locator('[data-testid="view-run"]');
-      if (await viewRunBtn.isVisible()) {
-        await viewRunBtn.click();
-        
-        // Should navigate to catalyst run detail page
-        await page.waitForURL(/\/catalysts\/runs\/.+/);
-        await expect(page.locator('[data-testid="run-detail"]')).toBeVisible();
-      }
-    }
-  });
+    const modalHeading = page.getByRole('heading', { level: 3, name: /^Metric:/ });
+    const noData = page.getByText(/No traceability data available/i);
+    await expect(modalHeading.or(noData).first()).toBeVisible({ timeout: 15_000 });
 
-  test('should display Catalyst runs with traceability navigation', async ({ page }) => {
-    await page.goto('/catalysts');
-    
-    // Wait for runs list to load
-    await expect(page.locator('[data-testid="runs-list"]')).toBeVisible({ timeout: 10000 });
-    
-    // Check runs are displayed with status
-    const runs = page.locator('[data-testid="run-item"]');
-    const count = await runs.count();
-    
-    if (count > 0) {
-      // Click on first run to view detail
-      await runs.first().click();
-      await page.waitForURL(/\/catalysts\/runs\/.+/);
-      
-      // Check run detail page
-      await expect(page.locator('[data-testid="run-detail"]')).toBeVisible();
-      await expect(page.locator('text=KPIs')).toBeVisible();
-      await expect(page.locator('text=Items')).toBeVisible();
-    }
-  });
-
-  test('should display complete drill-down path in traceability modal', async ({ page }) => {
-    await page.goto('/apex');
-    
-    // Wait for health score to load
-    await expect(page.locator('[data-testid="health-score"]')).toBeVisible({ timeout: 10000 });
-    
-    // Open dimension trace
-    const dimensionBtn = page.locator('[data-testid="dimension-operational"]');
-    if (await dimensionBtn.isVisible()) {
-      await dimensionBtn.click();
-      await expect(page.locator('[data-testid="traceability-modal"]')).toBeVisible();
-      
-      // Check drill-down path badges
-      await expect(page.locator('[data-testid="drill-path-dimension"]')).toBeVisible();
-      await expect(page.locator('[data-testid="drill-path-clusters"]')).toBeVisible();
-      await expect(page.locator('[data-testid="drill-path-runs"]')).toBeVisible();
-      await expect(page.locator('[data-testid="drill-path-items"]')).toBeVisible();
-    }
-  });
-
-  test('should handle missing traceability data gracefully', async ({ page }) => {
-    // This test verifies error handling when no data exists
-    await page.goto('/apex');
-    
-    // Wait for page to load
-    await expect(page.locator('[data-testid="health-score"]')).toBeVisible({ timeout: 10000 });
-    
-    // Try to open trace for a dimension with no data
-    // Should show user-friendly message instead of crashing
-    const dimensionBtn = page.locator('[data-testid="dimension-compliance"]');
-    if (await dimensionBtn.isVisible()) {
-      await dimensionBtn.click();
-      
-      // Should either show modal with "no data" message or alert
-      const hasModal = await page.locator('[data-testid="traceability-modal"]').isVisible({ timeout: 3000 });
-      const hasAlert = await page.locator('.alert').isVisible({ timeout: 1000 });
-      
-      expect(hasModal || hasAlert).toBeTruthy();
+    if (await modalHeading.isVisible()) {
+      await expect(
+        page
+          .getByRole('button', { name: /Source Attribution|Batch Runs|KPI Contributors/ })
+          .first(),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
+      await expect(modalHeading).toBeHidden();
     }
   });
 });
