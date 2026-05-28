@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { EditorialHero } from "@/components/ui/hero-header";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
@@ -773,20 +773,32 @@ export function PulsePage() {
     { id: 'cost-of-inaction', label: 'Cost of Inaction', icon: <DollarSign size={14} /> },
   ];
 
+  const heroTotal = summary?.totalMetrics ?? metrics.length;
+  const heroGreen = summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length;
+  const heroAmber = summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length;
+  const heroRed = summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length;
+  const heroOpenAnomalies = summary?.openAnomalies ?? anomalies.filter(a => a.status === 'open' || !a.status).length;
+
   const pageHeader = (
-    <HeroHeader
-      icon={Activity}
-      title="Pulse"
-      subtitle="Process Intelligence & Anomaly Detection"
-      accent="sky"
-      trailing={<SectionFreshness section="Diagnostics" />}
+    <EditorialHero
+      kicker="Pulse · Operational Health"
+      figure={`${health.score}`}
+      deck={heroTotal > 0
+        ? `${heroTotal} metrics monitored — ${heroGreen} green, ${heroAmber} amber, ${heroRed} red · ${heroOpenAnomalies} open ${heroOpenAnomalies === 1 ? 'anomaly' : 'anomalies'}.`
+        : 'No metrics monitored yet. Run a catalyst to populate process health.'}
+      actions={
+        <div className="flex items-center gap-2">
+          <SectionFreshness section="Diagnostics" />
+          <CSVExportButton endpoint="/api/diagnostics" filename="pulse-diagnostics.csv" label="Export Diagnostics" />
+        </div>
+      }
     />
   );
 
   if (loading) {
     return (
       <div className="space-y-6 animate-fadeIn">
-        {pageHeader}
+        <div className="text-label">Pulse · Process Intelligence</div>
         <LoadingState variant="cards" count={4} />
       </div>
     );
@@ -796,12 +808,7 @@ export function PulsePage() {
     <div className="space-y-6 animate-fadeIn">
       <SharedSavingsStrip />
       {/* Header */}
-      <div className="space-y-4">
-        {pageHeader}
-        <div className="flex items-center justify-end">
-          <CSVExportButton endpoint="/api/diagnostics" filename="pulse-diagnostics.csv" label="Export Diagnostics" />
-        </div>
-      </div>
+      {pageHeader}
 
       {actionError && (
         <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
