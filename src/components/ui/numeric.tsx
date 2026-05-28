@@ -57,7 +57,7 @@ const PLACEHOLDER = '—';
 const sizeClass: Record<NonNullable<NumericProps['size']>, string> = {
   sm: 'text-body-sm',
   md: 'text-body',
-  lg: 'text-h1',
+  lg: 'text-headline-xl',
   xl: 'text-display',
 };
 

@@ -144,7 +144,7 @@ function ModalHeader({
       style={{ borderBottom: '1px solid var(--border-card)' }}
     >
       <div className="flex-1 min-w-0">
-        <h2 id={titleId} className="text-h2 t-primary">{title}</h2>
+        <h2 id={titleId} className="text-headline-lg t-primary">{title}</h2>
         {description && (
           <p className="text-caption t-muted mt-0.5">{description}</p>
         )}

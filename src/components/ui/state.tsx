@@ -138,7 +138,7 @@ export function ErrorState({
       role="alert"
     >
       <AlertCircle className="w-8 h-8 t-muted mb-3 opacity-50" />
-      <p className="text-h2 t-primary mb-1">{title}</p>
+      <p className="text-headline-lg t-primary mb-1">{title}</p>
       {message && <p className="text-body-sm t-muted max-w-md mb-4">{message}</p>}
       {onRetry && (
         <button
@@ -210,7 +210,7 @@ export function EmptyState({
       role="status"
     >
       <Icon className={`${iconSize} t-muted mb-3 opacity-40`} />
-      <p className="text-h2 t-primary mb-1">{title}</p>
+      <p className="text-headline-lg t-primary mb-1">{title}</p>
       {description && <p className="text-body-sm t-muted max-w-md">{description}</p>}
       {action && (
         action.href ? (
