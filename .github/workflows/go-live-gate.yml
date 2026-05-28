@@ -1,0 +1,105 @@
+name: Go-Live Gate
+
+# Runs the deployed-API verification suite documented in
+# docs/runbooks/go-live.md. The gates prove what unit tests and demos cannot:
+# the live tenant reconciles, tenant isolation holds, roles are enforced, the
+# API survives concurrent load, and the database can be restored from a backup.
+#
+# Two entry points, one definition (DRY):
+#   - workflow_call:     required by deploy-api.yml before promoting production
+#   - workflow_dispatch: on-demand full verification of a deployed environment
+#
+# Required secrets (repo-level, or scoped to the `environment` chosen):
+#   VERIFY_ADMIN_EMAIL     - seeded admin login (accuracy/isolation/rbac/load)
+#   VERIFY_ADMIN_PASSWORD  - its password
+#   CLOUDFLARE_API_TOKEN   - wrangler auth: accuracy's live D1 queries + DR export
+#   CLOUDFLARE_ACCOUNT_ID  - wrangler account scope for the same
+#
+# Optional repo/environment vars (config.ts falls back to vantax prod defaults
+# when unset - an unset GitHub var resolves to '' and optionalEnv treats '' as
+# "use default", so leaving these blank is safe):
+#   VERIFY_API_URL, VERIFY_APP_URL, VERIFY_TENANT_SLUG, VERIFY_D1_DB
+#
+# Workflow-injection safety: this workflow takes no free-text input that reaches
+# a shell. `environment` is a constrained choice and is only used in GitHub
+# contexts (job key, concurrency group), never interpolated into a run script.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment whose secrets + URLs to verify'
+        type: choice
+        options:
+          - production
+          - staging
+        default: production
+      run_dr:
+        description: 'Run the disaster-recovery restore drill (needs wrangler auth)'
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment whose secrets + URLs to verify'
+        type: string
+        default: production
+      run_dr:
+        description: 'Run the disaster-recovery restore drill'
+        type: boolean
+        default: true
+
+concurrency:
+  # The accuracy gate reseeds the shared tenant - never let two gate runs of the
+  # same environment overlap, or they will perturb each other's reconciliation.
+  group: go-live-gate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify deployed API
+    runs-on: ubuntu-latest
+    # Pulls VERIFY_* / CLOUDFLARE_* from the chosen environment's secret scope.
+    environment: ${{ inputs.environment }}
+    # Accuracy reseeds (~220s) + executes 4 catalysts (~290s); load + DR add ~3
+    # min. 30 min leaves generous headroom for cold workers without flapping.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+
+      # accuracy + isolation + rbac run under one vitest invocation, so the
+      # destructive reseed happens exactly once for all three matrices.
+      - name: Accuracy, isolation & RBAC matrices
+        run: npm run verify:matrices
+        env:
+          VERIFY_ADMIN_EMAIL: ${{ secrets.VERIFY_ADMIN_EMAIL }}
+          VERIFY_ADMIN_PASSWORD: ${{ secrets.VERIFY_ADMIN_PASSWORD }}
+          VERIFY_API_URL: ${{ vars.VERIFY_API_URL }}
+          VERIFY_APP_URL: ${{ vars.VERIFY_APP_URL }}
+          VERIFY_TENANT_SLUG: ${{ vars.VERIFY_TENANT_SLUG }}
+          VERIFY_D1_DB: ${{ vars.VERIFY_D1_DB }}
+          # accuracy queries live D1 through wrangler.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Load gate
+        run: npm run verify:load
+        env:
+          VERIFY_ADMIN_EMAIL: ${{ secrets.VERIFY_ADMIN_EMAIL }}
+          VERIFY_ADMIN_PASSWORD: ${{ secrets.VERIFY_ADMIN_PASSWORD }}
+          VERIFY_API_URL: ${{ vars.VERIFY_API_URL }}
+          VERIFY_TENANT_SLUG: ${{ vars.VERIFY_TENANT_SLUG }}
+
+      - name: Disaster-recovery restore drill
+        if: ${{ inputs.run_dr }}
+        run: npm run verify:dr
+        env:
+          VERIFY_D1_DB: ${{ vars.VERIFY_D1_DB }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
