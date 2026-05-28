@@ -5,23 +5,23 @@ import { useEffect, useRef, useState } from "react";
    ============================================================ */
 
 const marketingCSS = `
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
 
 .mk5-body {
-  --void: #06090d;
-  --abyss: #0a0f14;
-  --deep: #0e151c;
+  --void: #0A0E2A;
+  --abyss: #0E1430;
+  --deep: #161D3A;
   --sage: #A3B18A;
   --sage-b: #5d8a6f;
-  --sage-d: rgba(74,107,90,.08);
-  --bronze: #CDA37E;
-  --sky: #7EB3CD;
-  --cream: #e8e4dc;
-  --chalk: #c4bfb4;
-  --slate: #586573;
-  --line: rgba(74,107,90,.1);
-  --line-b: rgba(74,107,90,.25);
-  font-family: 'Outfit', sans-serif;
+  --sage-d: rgba(163,177,138,.08);
+  --bronze: #A3B18A;
+  --sky: #A3B18A;
+  --cream: #EEF1F8;
+  --chalk: #AEB8D4;
+  --slate: #8C98B8;
+  --line: rgba(163,177,138,.1);
+  --line-b: rgba(163,177,138,.25);
+  font-family: 'Hanken Grotesk', sans-serif;
   background: var(--void);
   color: var(--cream);
   -webkit-font-smoothing: antialiased;
@@ -51,7 +51,7 @@ const marketingCSS = `
 }
 .mk5-nav-logo {
   display: flex; align-items: center; gap: .6rem;
-  font-family: 'Instrument Serif', serif; font-size: 1.4rem; letter-spacing: .15em;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.4rem; letter-spacing: .15em;
   text-decoration: none; color: var(--cream);
 }
 .mk5-nav-links { display: flex; gap: 3rem; align-items: center; }
@@ -114,7 +114,7 @@ const marketingCSS = `
   content: ''; position: absolute; inset: 0; z-index: 1;
   background:
     radial-gradient(ellipse 60% 50% at 65% 40%, rgba(74,107,90,.06) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 60% at 30% 70%, rgba(201,160,89,.03) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 30% 70%, rgba(163,177,138,.03) 0%, transparent 60%),
     linear-gradient(180deg, transparent 50%, var(--void) 100%);
 }
 .mk5-hero-content {
@@ -124,7 +124,7 @@ const marketingCSS = `
 .mk5-hero-left { max-width: 680px; }
 .mk5-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 1rem;
-  font-family: 'IBM Plex Mono', monospace; font-size: .62rem; letter-spacing: .35em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .62rem; letter-spacing: .35em;
   text-transform: uppercase; color: var(--sage); margin-bottom: 2.5rem;
   opacity: 0; animation: mk5revUp 1s cubic-bezier(.16,1,.3,1) .5s forwards;
 }
@@ -133,7 +133,7 @@ const marketingCSS = `
   background: linear-gradient(90deg, transparent, var(--sage));
 }
 .mk5-hero h1 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(3.5rem, 7.5vw, 7rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3.5rem, 7.5vw, 7rem);
   font-weight: 400; line-height: .95; letter-spacing: -.02em; margin: 0;
   opacity: 0; animation: mk5revUp 1.2s cubic-bezier(.16,1,.3,1) .7s forwards;
 }
@@ -143,7 +143,7 @@ const marketingCSS = `
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .mk5-hero h1 .thin {
-  font-family: 'Outfit', sans-serif; font-weight: 200; font-size: .7em;
+  font-family: 'Hanken Grotesk', sans-serif; font-weight: 200; font-size: .7em;
   -webkit-text-fill-color: var(--chalk); letter-spacing: .02em;
 }
 .mk5-hero-right { display: flex; flex-direction: column; gap: 2.5rem; padding-bottom: .5rem; }
@@ -187,7 +187,7 @@ const marketingCSS = `
   background: var(--sage); animation: mk5scrollP 2s ease-in-out infinite;
 }
 .mk5-hero-scroll span {
-  font-family: 'IBM Plex Mono', monospace; font-size: .55rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem; letter-spacing: .3em;
   text-transform: uppercase; color: var(--slate);
 }
 
@@ -200,7 +200,7 @@ const marketingCSS = `
   display: flex; white-space: nowrap; animation: mk5tickScroll 40s linear infinite;
 }
 .mk5-ticker-item {
-  font-family: 'Instrument Serif', serif; font-size: clamp(3rem, 6vw, 5rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5rem);
   padding: 0 2rem; flex-shrink: 0; display: flex; align-items: center; gap: 2rem;
   -webkit-text-fill-color: transparent; -webkit-text-stroke: 1px rgba(74,107,90,.15);
 }
@@ -215,11 +215,11 @@ const marketingCSS = `
 }
 .mk5-manifesto::before {
   content: '01'; position: absolute; top: 6rem; left: 3.5rem;
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
   color: var(--sage); opacity: .4;
 }
 .mk5-manifesto-text {
-  font-family: 'Instrument Serif', serif; font-size: clamp(2rem, 4.5vw, 3.8rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2rem, 4.5vw, 3.8rem);
   font-weight: 400; line-height: 1.4; text-align: center; max-width: 1000px;
   color: var(--chalk);
 }
@@ -249,14 +249,14 @@ const marketingCSS = `
 .mk5-evo-item.present::before { background: var(--sky); }
 .mk5-evo-item.future::before { background: var(--sage); height: 3px; }
 .mk5-evo-era {
-  font-family: 'IBM Plex Mono', monospace; font-size: .5rem; letter-spacing: .35em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .5rem; letter-spacing: .35em;
   text-transform: uppercase; margin-bottom: 1.5rem;
 }
 .mk5-evo-era.past { color: var(--slate); }
 .mk5-evo-era.present { color: var(--sky); }
 .mk5-evo-era.future { color: var(--sage); }
 .mk5-evo-name {
-  font-family: 'Instrument Serif', serif; font-size: 2.5rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 2.5rem; font-weight: 400;
   margin-bottom: 1rem;
 }
 .mk5-evo-item.future .mk5-evo-name {
@@ -265,7 +265,7 @@ const marketingCSS = `
 }
 .mk5-evo-desc { font-size: .9rem; font-weight: 300; line-height: 1.8; color: var(--chalk); }
 .mk5-evo-arrow {
-  font-family: 'Instrument Serif', serif; font-size: 1.5rem; color: var(--slate);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.5rem; color: var(--slate);
   margin-top: 1.5rem; opacity: .3;
 }
 
@@ -276,11 +276,11 @@ const marketingCSS = `
   margin-bottom: 10rem; padding-top: 4rem; border-top: 1px solid var(--line);
 }
 .mk5-layers-intro-left {
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .35em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .35em;
   text-transform: uppercase; color: var(--sage); padding-top: .3rem;
 }
 .mk5-layers-intro-right h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 5vw, 4.5rem);
   font-weight: 400; line-height: 1.1; margin-bottom: 2rem;
 }
 .mk5-layers-intro-right p {
@@ -295,16 +295,16 @@ const marketingCSS = `
 }
 .mk5-layer-block.visible { opacity: 1; transform: translateY(0); }
 .mk5-layer-num {
-  font-family: 'Instrument Serif', serif; font-size: 8rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 8rem; font-weight: 400;
   line-height: .8; -webkit-text-stroke: 1px var(--line-b);
   -webkit-text-fill-color: transparent; user-select: none;
 }
 .mk5-layer-name {
-  font-family: 'Instrument Serif', serif; font-size: 2.2rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 2.2rem; font-weight: 400;
   line-height: 1.2; margin-bottom: .5rem;
 }
 .mk5-layer-role {
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
   text-transform: uppercase; margin-bottom: 2rem;
 }
 .mk5-layer-role.bronze { color: var(--bronze); }
@@ -329,7 +329,7 @@ const marketingCSS = `
 /* BIG STATEMENT */
 .mk5-big-stmt { padding: 16rem 3.5rem; text-align: center; }
 .mk5-big-stmt h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(3rem, 8vw, 8rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3rem, 8vw, 8rem);
   font-weight: 400; line-height: .95; letter-spacing: -.02em;
 }
 .mk5-big-stmt .stroke {
@@ -352,11 +352,11 @@ const marketingCSS = `
 .mk5-stat-item:last-child { border-right: none; }
 .mk5-stat-item:hover { background: var(--sage-d); }
 .mk5-stat-num {
-  font-family: 'Instrument Serif', serif; font-size: 4.5rem; font-weight: 400; line-height: 1;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 4.5rem; font-weight: 400; line-height: 1;
 }
 .mk5-stat-num .accent { color: var(--sage-b); }
 .mk5-stat-label {
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .25em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .25em;
   text-transform: uppercase; color: var(--slate); margin-top: 1rem;
 }
 
@@ -364,12 +364,12 @@ const marketingCSS = `
 .mk5-comp { padding: 10rem 3.5rem; position: relative; }
 .mk5-comp::before {
   content: '02'; position: absolute; top: 4rem; left: 3.5rem;
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
   color: var(--sage); opacity: .4;
 }
 .mk5-comp-header { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 5rem; }
 .mk5-comp-header h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(2.5rem, 4vw, 4rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 4vw, 4rem);
   font-weight: 400; line-height: 1.1;
 }
 .mk5-comp-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); align-self: end; }
@@ -377,7 +377,7 @@ const marketingCSS = `
   display: grid; grid-template-columns: 2fr repeat(4, 1fr); border-top: 1px solid var(--line);
 }
 .mk5-ch {
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; font-weight: 500;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; font-weight: 500;
   letter-spacing: .2em; text-transform: uppercase; color: var(--slate);
   padding: 1.2rem 1.5rem; border-bottom: 2px solid var(--line); border-right: 1px solid var(--line);
 }
@@ -398,7 +398,7 @@ const marketingCSS = `
 .mk5-int { padding: 10rem 3.5rem; }
 .mk5-int-header { margin-bottom: 5rem; padding-bottom: 3rem; border-bottom: 1px solid var(--line); }
 .mk5-int-header h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(2rem, 3.5vw, 3rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 400; line-height: 1.2;
 }
 .mk5-int-grid {
@@ -413,7 +413,7 @@ const marketingCSS = `
 .mk5-int-item:hover .mk5-int-icon { opacity: .6; }
 .mk5-int-name { font-size: .75rem; font-weight: 500; letter-spacing: .1em; color: var(--chalk); }
 .mk5-int-type {
-  font-family: 'IBM Plex Mono', monospace; font-size: .5rem; letter-spacing: .2em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .5rem; letter-spacing: .2em;
   text-transform: uppercase; color: var(--slate);
 }
 
@@ -421,12 +421,12 @@ const marketingCSS = `
 .mk5-ind { padding: 10rem 3.5rem; position: relative; }
 .mk5-ind::before {
   content: '03'; position: absolute; top: 4rem; left: 3.5rem;
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
   color: var(--sage); opacity: .4;
 }
 .mk5-ind-header { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 5rem; }
 .mk5-ind-header h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(2.5rem, 4vw, 4rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 4vw, 4rem);
   font-weight: 400; line-height: 1.1;
 }
 .mk5-ind-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); align-self: end; }
@@ -440,12 +440,12 @@ const marketingCSS = `
 }
 .mk5-ind-featured-main:hover { background: var(--deep); }
 .mk5-ind-featured-badge {
-  display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: .5rem;
+  display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .5rem;
   letter-spacing: .3em; text-transform: uppercase; color: var(--void);
   background: var(--sage); padding: .3rem .8rem; margin-bottom: 1.5rem;
 }
 .mk5-ind-featured-title {
-  font-family: 'Instrument Serif', serif; font-size: 2.2rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 2.2rem; font-weight: 400;
   line-height: 1.2; margin-bottom: 1rem;
 }
 .mk5-ind-featured-desc {
@@ -467,7 +467,7 @@ const marketingCSS = `
   display: flex; align-items: baseline; gap: 1rem;
 }
 .mk5-ind-stat-num {
-  font-family: 'Instrument Serif', serif; font-size: 3rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 3rem; font-weight: 400;
   line-height: 1; color: var(--sage-b);
 }
 .mk5-ind-stat-label {
@@ -489,7 +489,7 @@ const marketingCSS = `
   font-size: 1.4rem; margin-bottom: 1.5rem; opacity: .4;
 }
 .mk5-ind-card-name {
-  font-family: 'Instrument Serif', serif; font-size: 1.5rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.5rem; font-weight: 400;
   margin-bottom: .5rem;
 }
 .mk5-ind-card-desc {
@@ -497,7 +497,7 @@ const marketingCSS = `
   margin-bottom: 1.5rem;
 }
 .mk5-ind-card-cats {
-  font-family: 'IBM Plex Mono', monospace; font-size: .55rem; letter-spacing: .15em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem; letter-spacing: .15em;
   color: var(--slate); line-height: 1.8;
 }
 
@@ -505,12 +505,12 @@ const marketingCSS = `
 .mk5-feat { padding: 10rem 3.5rem; border-top: 1px solid var(--line); position: relative; }
 .mk5-feat::before {
   content: '04'; position: absolute; top: 4rem; left: 3.5rem;
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
   color: var(--sage); opacity: .4;
 }
 .mk5-feat-header { margin-bottom: 5rem; }
 .mk5-feat-header h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(2.5rem, 4vw, 4rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 4vw, 4rem);
   font-weight: 400; line-height: 1.1; margin-bottom: 1.5rem;
 }
 .mk5-feat-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); max-width: 600px; }
@@ -522,11 +522,11 @@ const marketingCSS = `
 }
 .mk5-feat-item:hover { background: var(--deep); }
 .mk5-feat-item-label {
-  font-family: 'IBM Plex Mono', monospace; font-size: .55rem; letter-spacing: .3em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem; letter-spacing: .3em;
   text-transform: uppercase; color: var(--sage); margin-bottom: 1rem;
 }
 .mk5-feat-item-title {
-  font-family: 'Instrument Serif', serif; font-size: 1.6rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.6rem; font-weight: 400;
   margin-bottom: 1rem;
 }
 .mk5-feat-item-desc {
@@ -561,12 +561,12 @@ const marketingCSS = `
 }
 .mk5-ethos-card:hover::before { opacity: 1; }
 .mk5-ethos-num {
-  font-family: 'Instrument Serif', serif; font-size: 3.5rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 3.5rem; font-weight: 400;
   line-height: 1; -webkit-text-stroke: 1px var(--line-b); -webkit-text-fill-color: transparent;
   margin-bottom: 2rem; user-select: none;
 }
 .mk5-ethos-title {
-  font-family: 'Instrument Serif', serif; font-size: 1.8rem; font-weight: 400;
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.8rem; font-weight: 400;
   line-height: 1.2; margin-bottom: 1rem;
 }
 .mk5-ethos-desc {
@@ -592,11 +592,11 @@ const marketingCSS = `
 }
 .mk5-cta-content { position: relative; z-index: 2; }
 .mk5-cta-ey {
-  font-family: 'IBM Plex Mono', monospace; font-size: .6rem; letter-spacing: .4em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .4em;
   text-transform: uppercase; color: var(--sage); margin-bottom: 3rem;
 }
 .mk5-cta h2 {
-  font-family: 'Instrument Serif', serif; font-size: clamp(3rem, 7vw, 6.5rem);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3rem, 7vw, 6.5rem);
   font-weight: 400; line-height: .95; letter-spacing: -.02em; margin-bottom: 2rem;
 }
 .mk5-cta h2 i {
@@ -624,13 +624,13 @@ const marketingCSS = `
 }
 .mk5-contact-field { display: flex; flex-direction: column; gap: .5rem; }
 .mk5-contact-field > span {
-  font-family: 'IBM Plex Mono', monospace; font-size: .55rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem;
   letter-spacing: .3em; text-transform: uppercase; color: var(--sage);
 }
 .mk5-contact-field input,
 .mk5-contact-field textarea {
   background: var(--void); border: 1px solid var(--line-b);
-  color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .9rem;
+  color: var(--cream); font-family: 'Hanken Grotesk', sans-serif; font-size: .9rem;
   padding: .75rem 1rem; outline: none; transition: border-color .2s;
   font-weight: 300; resize: vertical;
 }
@@ -639,7 +639,7 @@ const marketingCSS = `
 .mk5-contact-field textarea { min-height: 100px; }
 .mk5-contact-error {
   font-size: .8rem; color: var(--bronze); padding: .5rem .75rem;
-  border-left: 2px solid var(--bronze); background: rgba(201,160,89,.05);
+  border-left: 2px solid var(--bronze); background: rgba(163,177,138,.05);
 }
 .mk5-contact button[type="submit"] {
   align-self: flex-start; margin-top: .5rem;
@@ -650,7 +650,7 @@ const marketingCSS = `
   background: var(--abyss); border: 1px solid var(--sage);
 }
 .mk5-contact-success-title {
-  font-family: 'Instrument Serif', serif; font-size: 1.8rem; color: var(--sage-b);
+  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.8rem; color: var(--sage-b);
   margin-bottom: .75rem;
 }
 .mk5-contact-success p {
@@ -667,10 +667,10 @@ const marketingCSS = `
   padding: 3rem 3.5rem; border-top: 1px solid var(--line);
   display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center;
 }
-.mk5-fl { font-family: 'Instrument Serif', serif; font-size: 1.2rem; letter-spacing: .15em; }
+.mk5-fl { font-family: 'Hanken Grotesk', sans-serif; font-size: 1.2rem; letter-spacing: .15em; }
 .mk5-fc { text-align: center; font-size: .75rem; font-weight: 300; color: var(--slate); }
 .mk5-fr {
-  text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: .55rem;
+  text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem;
   letter-spacing: .2em; text-transform: uppercase; color: var(--slate);
 }
 
@@ -728,8 +728,8 @@ const AtheonLogo = ({ size = 28 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
     <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
     <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
-    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
-    <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
+    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#A3B18A" strokeWidth=".8" opacity=".5" />
+    <circle cx="16" cy="9" r="1.5" fill="#A3B18A" />
   </svg>
 );
 
@@ -778,7 +778,7 @@ function HeroCanvas() {
         sp: Math.random() * 0.003 + 0.001,
         an: Math.random() * Math.PI * 2,
         dr: Math.random() * 20 + 10,
-        c: c < 0.6 ? "74,107,90" : c < 0.85 ? "122,172,181" : "201,160,89",
+        c: c < 0.6 ? "124,138,104" : c < 0.85 ? "163,177,138" : "196,206,178",
       });
     }
 
@@ -1252,7 +1252,7 @@ export function MarketingPage() {
             </div>
           </div>
           <div className="mk5-layer-visual">
-            <LayerViz color="rgba(201,160,89," />
+            <LayerViz color="rgba(163,177,138," />
           </div>
         </div>
 
