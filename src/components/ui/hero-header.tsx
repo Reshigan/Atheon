@@ -13,10 +13,10 @@
  * primitive collapses the duplication and gives us one place to evolve the
  * shape (responsive density, optional badges, sticky-on-scroll, etc.).
  *
- * Accent presets correspond to the Stitch module palette:
- *   - sage    → executive surfaces (Apex / IAM / Audit / ROI / Chat)
- *   - sky     → process + data surfaces (Pulse / Memory / Integrations)
- *   - bronze  → operations (Catalysts / actions)
+ * Accent presets (Quiet Capital — single sage accent):
+ *   - sage / sky / bronze → all collapse to the one sage accent. The legacy
+ *     per-module palette is retired; `sky`/`bronze` remain as accepted prop
+ *     values only so existing call sites keep compiling.
  *   - amber   → urgency
  *   - red     → critical / system alerts
  */
@@ -33,8 +33,8 @@ interface AccentTokens {
 
 const ACCENT: Record<Accent, AccentTokens> = {
   sage:   { bg: 'rgba(163, 177, 138, 0.10)', border: 'rgba(163, 177, 138, 0.25)', fg: 'var(--accent)' },
-  sky:    { bg: 'rgba(126, 179, 205, 0.10)', border: 'rgba(126, 179, 205, 0.25)', fg: 'var(--sky)' },
-  bronze: { bg: 'rgba(205, 163, 126, 0.10)', border: 'rgba(205, 163, 126, 0.25)', fg: 'var(--bronze)' },
+  sky:    { bg: 'rgba(163, 177, 138, 0.10)', border: 'rgba(163, 177, 138, 0.25)', fg: 'var(--accent)' },
+  bronze: { bg: 'rgba(163, 177, 138, 0.10)', border: 'rgba(163, 177, 138, 0.25)', fg: 'var(--accent)' },
   amber:  { bg: 'rgba(251, 191, 36, 0.10)',  border: 'rgba(251, 191, 36, 0.25)',  fg: '#FBBF24' },
   red:    { bg: 'rgba(248, 113, 113, 0.10)', border: 'rgba(248, 113, 113, 0.25)', fg: '#F87171' },
 };

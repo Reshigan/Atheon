@@ -272,7 +272,7 @@ export function Dashboard() {
         kicker={`${getGreeting(user?.name)} · Atheon Score`}
         figure={`${overallScore}`}
         deck={`${dimensions.length} business dimensions monitored — ${upCount} improving, ${downCount} declining this period.`}
-        delta={avgDelta >= 0 ? `+${avgDelta.toFixed(1)} pts` : undefined}
+        delta={avgDelta > 0 ? `+${avgDelta.toFixed(1)} pts` : undefined}
         actions={
           <div className="flex items-center gap-2">
             <SectionFreshness section="Health" />
