@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<string, string> = {
-  default: 'bg-[var(--bg-secondary)] t-secondary border-[var(--border-card)]',
-  success: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  warning: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  danger: 'bg-red-500/10 text-red-500 border-red-500/20',
-  info: 'bg-[var(--accent-subtle)] text-accent border-[var(--accent-glow)]',
+  default: 'pill-muted',
+  success: 'pill-success',
+  warning: 'pill-warning',
+  danger: 'pill-danger',
+  info: 'pill-accent',
   outline: 'bg-transparent border-[var(--border-card)] t-muted',
 };
 

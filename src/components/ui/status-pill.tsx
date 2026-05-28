@@ -82,31 +82,32 @@ const STATUS_DEF: Record<StatusKind, StatusVisual> = {
   disconnected:  { label: 'Disconnected',  tone: 'neutral',  glyph: '○' },
 };
 
-/** Tone → Tailwind class set. Three tokens per tone: bg, text, border.
- *  Maps onto `.pill-*` utilities defined in index.css §POLISH-2026. */
+/** Tone → class set. `solid` maps onto the `.pill-*` utilities defined in
+ *  index.css (they carry bg + text + border in Quiet Capital tokens).
+ *  `outline`/`dot` paint the severity token directly. */
 const TONE_CLASS: Record<StatusVisual['tone'], { solid: string; outline: string; dot: string }> = {
   success:  {
-    solid:   'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
-    outline: 'bg-transparent text-emerald-700 border-emerald-500/40 dark:text-emerald-300',
-    dot:     'text-emerald-500',
+    solid:   'pill-success',
+    outline: 'bg-transparent text-[var(--positive)] border-[rgba(124,255,178,.4)]',
+    dot:     'text-[var(--positive)]',
   },
   warning:  {
-    solid:   'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300',
-    outline: 'bg-transparent text-amber-700 border-amber-500/40 dark:text-amber-300',
-    dot:     'text-amber-500',
+    solid:   'pill-warning',
+    outline: 'bg-transparent text-[var(--warning)] border-[rgba(255,200,87,.4)]',
+    dot:     'text-[var(--warning)]',
   },
   critical: {
-    solid:   'bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-300',
-    outline: 'bg-transparent text-red-700 border-red-500/40 dark:text-red-300',
-    dot:     'text-red-500',
+    solid:   'pill-danger',
+    outline: 'bg-transparent text-[var(--critical)] border-[rgba(255,107,107,.4)]',
+    dot:     'text-[var(--critical)]',
   },
   info:     {
-    solid:   'bg-blue-500/15 text-blue-700 border-blue-500/30 dark:text-blue-300',
-    outline: 'bg-transparent text-blue-700 border-blue-500/40 dark:text-blue-300',
-    dot:     'text-blue-500',
+    solid:   'pill-info',
+    outline: 'bg-transparent text-[var(--info)] border-[rgba(126,179,205,.4)]',
+    dot:     'text-[var(--info)]',
   },
   neutral:  {
-    solid:   'bg-[var(--bg-secondary)] t-muted border-[var(--border-subtle)]',
+    solid:   'pill-muted',
     outline: 'bg-transparent t-muted border-[var(--border-subtle)]',
     dot:     't-muted',
   },
