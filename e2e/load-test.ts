@@ -10,11 +10,13 @@ const BASE_URL = process.argv[2] || 'https://atheon-api.vantax.co.za';
 const CONCURRENCY = parseInt(process.argv[3] || '10', 10);
 const DURATION_SECONDS = parseInt(process.argv[4] || '30', 10);
 
-// Creds are env-overridable so the gate can drive real seeded users instead of
-// the stale demo defaults; without a valid login the auth endpoints all 401.
-const LOGIN_EMAIL = process.env.LOAD_EMAIL || 'admin@vantax.co.za';
-const LOGIN_PASSWORD = process.env.LOAD_PASSWORD || 'Admin123';
+// Creds come from the env — the gate injects real seeded users. Never hardcode a
+// password. With no creds the script degrades to public endpoints only; the
+// authenticated probes then 401, which is the correct signal that creds are absent.
+const LOGIN_EMAIL = process.env.LOAD_EMAIL ?? '';
+const LOGIN_PASSWORD = process.env.LOAD_PASSWORD ?? '';
 const LOGIN_TENANT = process.env.LOAD_TENANT || 'vantax';
+const HAS_CREDS = LOGIN_EMAIL !== '' && LOGIN_PASSWORD !== '';
 const LOGIN_BODY = { email: LOGIN_EMAIL, password: LOGIN_PASSWORD, tenant_slug: LOGIN_TENANT };
 
 interface LoadTestResult {
@@ -98,21 +100,25 @@ async function runLoadTest(): Promise<void> {
   console.log(`   Duration:    ${DURATION_SECONDS}s`);
   console.log(`   Endpoints:   ${ENDPOINTS.length}\n`);
 
-  // Step 1: Get auth token
+  // Step 1: Get auth token (only when creds are supplied via env)
   let token: string | null = null;
-  try {
-    const loginResp = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(LOGIN_BODY),
-    });
-    if (loginResp.ok) {
-      const loginData = await loginResp.json() as { token?: string };
-      token = loginData.token || null;
-      console.log(`   Auth: ${token ? 'Token acquired' : 'No token (auth endpoints will fail)'}\n`);
+  if (!HAS_CREDS) {
+    console.log('   Auth: LOAD_EMAIL/LOAD_PASSWORD unset — public endpoints only\n');
+  } else {
+    try {
+      const loginResp = await fetch(`${BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(LOGIN_BODY),
+      });
+      if (loginResp.ok) {
+        const loginData = await loginResp.json() as { token?: string };
+        token = loginData.token || null;
+        console.log(`   Auth: ${token ? 'Token acquired' : 'No token (auth endpoints will fail)'}\n`);
+      }
+    } catch {
+      console.log('   Auth: Login failed (proceeding with public endpoints only)\n');
     }
-  } catch {
-    console.log('   Auth: Login failed (proceeding with public endpoints only)\n');
   }
 
   const results: Map<string, number[]> = new Map();

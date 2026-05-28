@@ -5,8 +5,11 @@ import { CONFIG } from '../config';
 const execFileAsync = promisify(execFile);
 
 /**
- * Run a read-only SQL statement against the REMOTE D1 via wrangler and return
- * the result rows. Invoked from workers/api (where wrangler.toml binds atheon-db).
+ * Execute a SQL statement against the REMOTE D1 via wrangler and return the
+ * result rows. Reads dominate, but this also drives the negative-control test's
+ * deliberate DELETE — it does NOT enforce read-only, so callers that mutate must
+ * interpolate only validated values (see negative-control's UUID guard) and must
+ * restore clean state afterwards. Invoked from workers/api (wrangler.toml binds atheon-db).
  *
  * Auth is resolved by wrangler itself: a CLOUDFLARE_API_TOKEN (+ CLOUDFLARE_ACCOUNT_ID)
  * in env is used when present (CI), otherwise wrangler falls back to its stored OAuth

@@ -43,9 +43,12 @@ export async function setup(): Promise<void> {
     runs[key] = { subName, runId, status, totals, statusCounts: countBy(items, 'item_status') };
   }
 
+  if (!client.user?.tenantId) {
+    throw new Error('login succeeded but returned no user.tenantId — cannot write a manifest');
+  }
   const manifest: RunManifest = {
     seededAt: new Date().toISOString(),
-    tenantId: client.user!.tenantId,
+    tenantId: client.user.tenantId,
     runs,
   };
   writeManifest(manifest);

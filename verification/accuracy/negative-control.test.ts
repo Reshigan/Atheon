@@ -34,6 +34,11 @@ describe('negative control — the accuracy harness can fail', () => {
   });
 
   it('perturbing one inventory record makes the live count diverge from the oracle', async () => {
+    // tenantId feeds an interpolated DELETE against remote D1 — fail closed if it
+    // is not a plain UUID rather than risk a malformed/injected mutation.
+    if (!/^[0-9a-f-]{36}$/i.test(tenantId)) {
+      throw new Error(`refusing to mutate D1: tenantId is not a UUID (${tenantId})`);
+    }
     // Orphan one MARD source row by deleting its ISEG counterpart.
     await queryD1(
       `DELETE FROM sap_iseg WHERE tenant_id = '${tenantId}'

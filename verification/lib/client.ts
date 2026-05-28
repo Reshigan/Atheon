@@ -52,7 +52,9 @@ export class ApiClient {
       body: JSON.stringify({ email: this.email, password: this.password, tenant_slug: CONFIG.tenantSlug }),
     });
     if (!resp.ok) {
-      throw new Error(`Login failed (${resp.status}) for ${this.email}: ${await resp.text()}`);
+      // Do not log the response body: a failing auth endpoint can reflect request
+      // material. Status + the configured email is enough to triage.
+      throw new Error(`Login failed (${resp.status}) for ${this.email} — check VERIFY_ADMIN_* credentials`);
     }
     const data = await resp.json() as { token?: string; user?: AuthedUser };
     if (!data.token) throw new Error(`Login returned no token (MFA may be enforced for ${this.email})`);

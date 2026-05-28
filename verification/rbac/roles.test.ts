@@ -55,8 +55,12 @@ describe('RBAC role matrix (live API)', () => {
 
   it('only executive may execute a catalyst; every other role is 403', async () => {
     const exec = await clients.get('executive')!.authedFetch(EXECUTE_PATH, { method: 'POST' });
-    expect(exec.status).not.toBe(403);
-    expect(exec.status).not.toBe(401);
+    // Executive must clear the role gate (not 401/403) AND actually reach cluster
+    // lookup — a 5xx would mean the gate errored out, not that it passed, so reject
+    // it explicitly rather than letting "not 403" mask a server failure.
+    expect(exec.status, 'executive should not be denied at the role gate').not.toBe(403);
+    expect(exec.status, 'executive should be authenticated').not.toBe(401);
+    expect(exec.status, 'executive should reach lookup, not hit a server error').toBeLessThan(500);
 
     for (const role of ROLES) {
       if (role === 'executive') continue;
