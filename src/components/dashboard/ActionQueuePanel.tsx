@@ -170,7 +170,7 @@ export function ActionQueuePanel({
     <Card>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-h2 t-primary flex items-center gap-2">
+          <h3 className="text-headline-lg t-primary flex items-center gap-2">
             <Zap size={14} /> {title || (variant === 'executive' ? 'Pending high-value actions' : 'Action Queue')}
           </h3>
           {!loading && summary && (
