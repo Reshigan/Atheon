@@ -49,8 +49,8 @@ function confidencePill(confidence: number): React.ReactNode {
 }
 
 function trendIcon(pct: number): React.ReactNode {
-  if (pct > 0.5) return <TrendingUp size={12} className="text-emerald-500" />;
-  if (pct < -0.5) return <TrendingDown size={12} className="text-red-500" />;
+  if (pct > 0.5) return <TrendingUp size={12} className="text-accent" />;
+  if (pct < -0.5) return <TrendingDown size={12} className="text-[var(--neg)]" />;
   return <Minus size={12} className="t-muted" />;
 }
 
@@ -185,13 +185,13 @@ export function ValueLedgerPanel() {
             <button
               key={opt.key}
               onClick={() => setPeriod(opt.key)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] ${period === opt.key ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] ${period === opt.key ? 'bg-accent text-[var(--text-on-accent)]' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
             >{opt.label}</button>
           ))}
         </div>
         <button
           onClick={load}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
         >
           <RefreshCw size={12} /> Refresh
         </button>
@@ -202,8 +202,8 @@ export function ValueLedgerPanel() {
         <SummaryTile
           label="Realized savings"
           value={fmtZar(data.summary.totalRealizedSavingsZar)}
-          icon={<Wallet size={14} className="text-emerald-500" />}
-          accent="#10b981"
+          icon={<Wallet size={14} className="text-accent" />}
+          accent="var(--accent)"
           big
         />
         <SummaryTile
@@ -265,13 +265,13 @@ export function ValueLedgerPanel() {
                     <td className="py-2.5 pr-3 t-secondary capitalize">{c.domain || '—'}</td>
                     <td className="py-2.5 pr-3 text-right tabular-nums font-mono t-secondary">{c.runsCount.toLocaleString('en-ZA')}</td>
                     <td className="py-2.5 pr-3 text-right tabular-nums font-mono t-secondary">{fmtZar(c.valueProcessedZar)}</td>
-                    <td className="py-2.5 pr-3 text-right tabular-nums font-mono font-semibold" style={{ color: '#10b981' }}>{fmtZar(c.realizedSavingsZar)}</td>
+                    <td className="py-2.5 pr-3 text-right tabular-nums font-mono font-semibold" style={{ color: 'var(--accent)' }}>{fmtZar(c.realizedSavingsZar)}</td>
                     <td className="py-2.5 pr-3 text-right tabular-nums font-mono t-secondary">{fmtPct(c.successRatePct)}</td>
                     <td className="py-2.5 pr-3 text-right tabular-nums font-mono t-secondary">{fmtPct(c.roiEstimatePct)}</td>
                     <td className="py-2.5 pr-3 text-right">
                       <span className="inline-flex items-center gap-1 tabular-nums font-mono text-caption">
                         {trendIcon(c.improvementTrendPct)}
-                        <span className={c.improvementTrendPct > 0.5 ? 'text-emerald-500' : c.improvementTrendPct < -0.5 ? 'text-red-500' : 't-muted'}>
+                        <span className={c.improvementTrendPct > 0.5 ? 'text-accent' : c.improvementTrendPct < -0.5 ? 'text-[var(--neg)]' : 't-muted'}>
                           {c.improvementTrendPct === 0 ? '0' : `${c.improvementTrendPct > 0 ? '+' : ''}${c.improvementTrendPct.toFixed(1)}%`}
                         </span>
                       </span>
@@ -337,7 +337,7 @@ export function ValueLedgerPanel() {
       {packError && (
         <Card>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-red-500">{packError}</p>
+            <p className="text-sm text-[var(--neg)]">{packError}</p>
             <button onClick={() => setPackError(null)} className="text-caption t-muted hover:t-primary">Dismiss</button>
           </div>
         </Card>
@@ -345,9 +345,9 @@ export function ValueLedgerPanel() {
 
       {/* Pack-ready toast */}
       {packToast && (
-        <div className="fixed bottom-6 right-6 z-40 w-[min(92vw,420px)] rounded-2xl border border-emerald-500/30 bg-[var(--bg-card-solid)] p-4 shadow-2xl animate-fadeIn">
+        <div className="fixed bottom-6 right-6 z-40 w-[min(92vw,420px)] rounded-md border border-[rgb(var(--accent-rgb)/0.3)] bg-[var(--bg-card-solid)] p-4 animate-fadeIn">
           <div className="flex items-start gap-2.5">
-            <Download size={18} className="text-emerald-500 mt-0.5" />
+            <Download size={18} className="text-accent mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold t-primary">Audit pack signed &amp; downloaded</p>
               <p className="text-caption t-muted mt-0.5">
@@ -370,7 +370,7 @@ export function ValueLedgerPanel() {
           onClick={onCancelStepUp}
         >
           <div
-            className="w-[min(92vw,420px)] rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-solid)] p-5 shadow-2xl"
+            className="w-[min(92vw,420px)] rounded-md border border-[var(--border-card)] bg-[var(--bg-card-solid)] p-5"
             onClick={(e) => e.stopPropagation()}
             style={{ animation: 'pop 200ms cubic-bezier(0.23,1,0.32,1)' }}
           >
@@ -391,20 +391,20 @@ export function ValueLedgerPanel() {
               value={mfaCode}
               onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               onKeyDown={(e) => { if (e.key === 'Enter' && mfaCode.length === 6) onConfirmStepUp(); }}
-              className="w-full h-11 px-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-card-solid)] t-primary font-mono text-lg tabular-nums tracking-[0.4em] text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
+              className="w-full h-11 px-3 rounded-md border border-[var(--border-card)] bg-[var(--bg-card-solid)] t-primary font-mono text-lg tabular-nums tracking-[0.4em] text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
               placeholder="000000"
               aria-label="One-time code"
             />
-            {mfaError && <p className="text-caption text-red-500 mt-2">{mfaError}</p>}
+            {mfaError && <p className="text-caption text-[var(--neg)] mt-2">{mfaError}</p>}
             <div className="flex items-center justify-end gap-2 mt-4">
               <button
                 onClick={onCancelStepUp}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium t-secondary hover:t-primary transition-[color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
+                className="px-3 py-1.5 rounded-md text-xs font-medium t-secondary hover:t-primary transition-[color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
               >Cancel</button>
               <button
                 disabled={mfaCode.length !== 6 || packBusy !== null}
                 onClick={onConfirmStepUp}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-white hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-accent text-[var(--text-on-accent)] hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
               >
                 {packBusy ? <Loader2 size={12} className="animate-spin" /> : null}
                 Confirm
@@ -429,7 +429,7 @@ function LineItemRow({ item, onAuditPack }: { item: LedgerLineItem; onAuditPack:
         </div>
       </div>
       <div className="text-right flex-shrink-0">
-        <div className="text-sm font-semibold tabular-nums font-mono" style={{ color: '#10b981' }}>{fmtZar(item.attributedSavingsZar)}</div>
+        <div className="text-sm font-semibold tabular-nums font-mono" style={{ color: 'var(--accent)' }}>{fmtZar(item.attributedSavingsZar)}</div>
         <div className="mt-1 flex justify-end">{confidencePill(item.confidence)}</div>
         <button
           onClick={onAuditPack}
@@ -462,7 +462,7 @@ function BillingPeriodRow({ period, onAuditPack }: { period: LedgerBillingPeriod
         <div className="mt-1 flex justify-end"><StatusPill status={statusVariant} label={period.status} /></div>
         <button
           onClick={onAuditPack}
-          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-accent text-white hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-accent text-[var(--text-on-accent)] hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
           title="Generate signed audit pack for this billing period"
         >
           <FileText size={10} /> Audit pack
@@ -477,7 +477,7 @@ function SummaryTile({ label, value, sub, icon, accent, big = false }: {
 }) {
   return (
     <div
-      className="p-3 rounded-lg border"
+      className="p-3 rounded-md border"
       style={{ background: 'var(--bg-card-solid)', borderColor: 'var(--border-card)' }}
     >
       <div className="flex items-center gap-1.5 mb-1">

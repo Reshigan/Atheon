@@ -211,7 +211,7 @@ export function ConfidenceThresholdsPanel() {
   if (error) {
     return (
       <Card>
-        <div className="flex items-start gap-2 p-4 text-sm text-red-400">
+        <div className="flex items-start gap-2 p-4 text-sm text-[var(--neg)]">
           <AlertTriangle size={16} className="mt-0.5" />
           <div>
             <p className="font-medium">Couldn't load confidence thresholds.</p>
@@ -292,14 +292,14 @@ export function ConfidenceThresholdsPanel() {
               step={1}
               value={draft.minSampleSize}
               onChange={(e) => setDraftField('minSampleSize', Math.max(1, parseInt(e.target.value || '1', 10)))}
-              className="w-32 rounded-lg bg-[var(--bg-base)] border border-[var(--border-card)] px-3 py-2 text-sm t-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-32 rounded-md bg-[var(--bg-base)] border border-[var(--border-card)] px-3 py-2 text-sm t-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
               data-testid="threshold-sample-size"
             />
           </div>
         </div>
 
         {draftError && (
-          <div className="mt-4 flex items-start gap-2 text-xs text-red-400">
+          <div className="mt-4 flex items-start gap-2 text-xs text-[var(--neg)]">
             <AlertTriangle size={14} className="mt-0.5" />
             <span>{draftError}</span>
           </div>
@@ -315,7 +315,7 @@ export function ConfidenceThresholdsPanel() {
             <RotateCcw size={12} /> Reset to platform defaults
           </button>
           <div className="flex items-center gap-2">
-            {savedFlash && <span className="text-xs text-emerald-400">Saved.</span>}
+            {savedFlash && <span className="text-xs text-accent">Saved.</span>}
             <Button
               variant="primary"
               size="sm"
@@ -377,7 +377,7 @@ export function ConfidenceThresholdsPanel() {
                     <button
                       type="button"
                       onClick={() => runRemove(r.id)}
-                      className="t-muted hover:text-red-400 inline-flex items-center gap-1"
+                      className="t-muted hover:text-[var(--neg)] inline-flex items-center gap-1"
                       title="Remove override (returns this scope to the tenant default)"
                       data-testid={`threshold-remove-${r.id}`}
                     >
@@ -401,10 +401,10 @@ export function ConfidenceThresholdsPanel() {
             if (e.target === e.currentTarget) setMfaPrompt(null);
           }}
         >
-          <div className="w-full max-w-md mx-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] p-5 shadow-2xl">
+          <div className="w-full max-w-md mx-4 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)] p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <KeyRound size={16} className="text-amber-400" />
+                <KeyRound size={16} style={{ color: 'var(--warning)' }} />
                 <h3 id="threshold-mfa-title" className="text-sm font-semibold t-primary">Step-up verification</h3>
               </div>
               <button
@@ -434,10 +434,10 @@ export function ConfidenceThresholdsPanel() {
               }}
               placeholder="000000"
               aria-label="Authenticator code"
-              className="w-full rounded-lg bg-[var(--bg-base)] border border-[var(--border-card)] px-3 py-2 text-center text-lg tracking-[0.4em] font-mono t-primary focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+              className="w-full rounded-md bg-[var(--bg-base)] border border-[var(--border-card)] px-3 py-2 text-center text-lg tracking-[0.4em] font-mono t-primary focus:outline-none focus:ring-2 focus:ring-[var(--warning)]/40"
               data-testid="threshold-mfa-input"
             />
-            {mfaError && <p className="text-xs text-red-400 mt-2" role="alert">{mfaError}</p>}
+            {mfaError && <p className="text-xs text-[var(--neg)] mt-2" role="alert">{mfaError}</p>}
             <div className="flex items-center justify-end gap-2 mt-4">
               <Button variant="ghost" size="sm" onClick={() => setMfaPrompt(null)} disabled={mfaSubmitting}>
                 Cancel
