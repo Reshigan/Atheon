@@ -18,9 +18,8 @@ const sizeConfig = {
 
 function getScoreColor(score: number): string {
   if (score >= 80) return 'var(--accent)';
-  if (score >= 60) return '#f59e0b';
-  if (score >= 40) return '#f97316';
-  return '#ef4444';
+  if (score >= 50) return 'var(--warning)';
+  return 'var(--neg)';
 }
 
 export function ScoreRing({ score, maxScore = 100, size = 'lg', label, sublabel, className }: ScoreRingProps) {
@@ -40,7 +39,7 @@ export function ScoreRing({ score, maxScore = 100, size = 'lg', label, sublabel,
             cy={center}
             r={config.r}
             fill="none"
-            stroke="var(--bg-secondary)"
+            stroke="var(--border-card)"
             strokeWidth={config.stroke}
           />
           <circle

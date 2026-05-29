@@ -106,7 +106,7 @@ function ModalRoot({
           // trap would tab-cycle within the modal; that's a follow-up.
           tabIndex={-1}
           autoFocus
-          className={`w-full ${sizeClass[size]} rounded-2xl overflow-hidden flex flex-col animate-modalIn ${className}`}
+          className={`w-full ${sizeClass[size]} rounded-md overflow-hidden flex flex-col animate-modalIn ${className}`}
           style={{
             background: 'var(--bg-modal)',
             border: '1px solid var(--border-card)',

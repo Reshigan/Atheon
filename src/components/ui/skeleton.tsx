@@ -25,7 +25,7 @@ export function Skeleton({ variant = 'text', width, height, lines = 1, className
 
   if (variant === 'card') {
     return (
-      <div className={`${baseClass} rounded-xl ${className}`} style={{ width: width || '100%', height: height || 120 }} role="status" aria-label="Loading" {...props} />
+      <div className={`${baseClass} rounded-md ${className}`} style={{ width: width || '100%', height: height || 120 }} role="status" aria-label="Loading" {...props} />
     );
   }
 
@@ -65,7 +65,7 @@ export function DashboardSkeleton() {
       {/* KPI cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-card)]">
+          <div key={i} className="p-4 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)]">
             <Skeleton width="60%" height={14} className="mb-2" />
             <Skeleton width="40%" height={28} className="mb-3" />
             <Skeleton width="80%" height={12} />
@@ -95,7 +95,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
       </div>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-4 p-3 rounded-lg bg-[var(--bg-card)]">
+        <div key={i} className="flex gap-4 p-3 rounded bg-[var(--bg-card)]">
           {Array.from({ length: columns }).map((_, j) => (
             <Skeleton key={j} width={`${100 / columns}%`} height={16} />
           ))}
@@ -110,7 +110,7 @@ export function CardListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-4" role="status" aria-label="Loading">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-card)]">
+        <div key={i} className="p-4 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)]">
           <div className="flex items-center gap-3 mb-3">
             <Skeleton variant="circular" width={36} height={36} />
             <div className="flex-1">

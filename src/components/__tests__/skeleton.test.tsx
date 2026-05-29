@@ -24,7 +24,7 @@ describe("Skeleton", () => {
   it("renders card variant", () => {
     render(<Skeleton variant="card" />);
     const el = screen.getByRole("status");
-    expect(el.className).toContain("rounded-xl");
+    expect(el.className).toContain("rounded-md");
   });
 });
 

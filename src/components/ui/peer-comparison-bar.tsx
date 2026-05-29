@@ -20,7 +20,7 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
 
   const toPercent = (val: number) => Math.max(0, Math.min(100, ((val - min) / range) * 100));
 
-  const rankColor = percentileRank === 'top_25' ? 'text-emerald-500' : percentileRank === 'above_median' ? 'text-blue-400' : percentileRank === 'below_median' ? 'text-amber-400' : 'text-red-400';
+  const rankColor = percentileRank === 'top_25' ? 'text-[var(--accent)]' : percentileRank === 'above_median' ? 'text-[var(--info)]' : percentileRank === 'below_median' ? 'text-[var(--warning)]' : 'text-[var(--neg)]';
   const rankLabel = percentileRank === 'top_25' ? 'Top 25%' : percentileRank === 'above_median' ? 'Above Median' : percentileRank === 'below_median' ? 'Below Median' : percentileRank === 'bottom_25' ? 'Bottom 25%' : '—';
 
   // CTA shown when the tenant is below the median in this dimension and a
@@ -72,7 +72,7 @@ export function PeerComparisonBar({ benchmark }: { benchmark: PeerBenchmarkItem 
         {ownScore !== null && <span className="font-medium t-primary">You: {ownScore}</span>}
       </div>
       {rec && (
-        <div className="flex items-center justify-between gap-2 mt-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
+        <div className="flex items-center justify-between gap-2 mt-2 p-2 rounded-md bg-[rgba(154,107,31,0.06)] border border-[rgba(154,107,31,0.24)]">
           <div className="text-caption t-secondary">
             You're <span className="font-semibold t-primary">{gap} pts</span> behind peer median.
             Deploy <span className="font-medium t-primary">{rec.catalyst}</span> → <span className="font-medium t-primary">{rec.subCatalyst}</span> to close the gap.

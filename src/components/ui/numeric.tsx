@@ -38,7 +38,7 @@ export interface NumericProps {
   compact?: boolean;
   /** Render a leading trend glyph (▲ / ▼ / ·). `auto` derives from sign. */
   trend?: NumericTrend | boolean;
-  /** Override trend tone colour. Otherwise: positive=emerald, negative=red,
+  /** Override trend tone colour. Otherwise: positive=accent, negative=neg,
    *  flat=muted. Pass `mute` to render the glyph but stay foreground-neutral. */
   tone?: 'positive' | 'negative' | 'neutral' | 'mute';
   /** Visual weight. `lg` is hero numbers (the one big number per screen). */
@@ -116,11 +116,11 @@ const GLYPH: Record<NumericTrend, string> = {
 
 function toneClass(t: NumericProps['tone'], trend: NumericTrend | null): string {
   if (t === 'mute') return 't-muted';
-  if (t === 'positive') return 'text-emerald-500';
-  if (t === 'negative') return 'text-red-500';
+  if (t === 'positive') return 'text-[var(--accent)]';
+  if (t === 'negative') return 'text-[var(--neg)]';
   if (t === 'neutral') return 't-primary';
   if (!trend || trend === 'flat') return 't-primary';
-  return trend === 'up' ? 'text-emerald-500' : 'text-red-500';
+  return trend === 'up' ? 'text-[var(--accent)]' : 'text-[var(--neg)]';
 }
 
 export function Numeric({

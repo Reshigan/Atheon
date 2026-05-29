@@ -11,9 +11,9 @@ interface ProgressProps {
 
 const colorClasses: Record<string, string> = {
   indigo: 'bg-accent',
-  emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
+  emerald: 'bg-[var(--accent)]',
+  amber: 'bg-[var(--warning)]',
+  red: 'bg-[var(--neg)]',
   blue: 'bg-accent',
   cyan: 'bg-accent',
 };

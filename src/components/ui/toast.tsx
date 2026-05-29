@@ -86,17 +86,17 @@ export function useToast(): ToastApi {
 }
 
 const ICONS: Record<ToastType, React.ReactNode> = {
-  success: <CheckCircle size={16} className="text-emerald-500" />,
-  error: <XCircle size={16} className="text-red-500" />,
-  warning: <AlertTriangle size={16} className="text-amber-500" />,
-  info: <Info size={16} className="text-blue-500" />,
+  success: <CheckCircle size={16} className="text-[var(--accent)]" />,
+  error: <XCircle size={16} className="text-[var(--neg)]" />,
+  warning: <AlertTriangle size={16} className="text-[var(--warning)]" />,
+  info: <Info size={16} className="text-[var(--info)]" />,
 };
 
 const BG: Record<ToastType, string> = {
-  success: 'border-emerald-500/20',
-  error: 'border-red-500/20',
-  warning: 'border-amber-500/20',
-  info: 'border-blue-500/20',
+  success: 'border-[rgb(var(--accent-rgb)/0.24)]',
+  error: 'border-[rgb(var(--neg-rgb)/0.26)]',
+  warning: 'border-[rgba(154,107,31,0.24)]',
+  info: 'border-[rgba(59,63,71,0.22)]',
 };
 
 function RequestIdFooter({ requestId }: { requestId: string }) {
@@ -139,7 +139,7 @@ function RequestIdFooter({ requestId }: { requestId: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="text-gray-400 hover:text-gray-200 transition-colors flex-shrink-0"
+        className="t-muted hover:t-primary transition-colors flex-shrink-0"
         aria-label={copied ? 'Request ID copied' : 'Copy request ID'}
         title={copied ? 'Copied' : 'Copy request ID'}
       >
@@ -157,7 +157,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className={`flex items-start gap-3 p-3 rounded-xl border ${BG[toast.type]} animate-toastIn`}
+      className={`flex items-start gap-3 p-3 rounded-md border ${BG[toast.type]} animate-toastIn`}
       style={{
         background: 'var(--bg-card-solid)',
         minWidth: 280,
@@ -176,7 +176,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="text-gray-400 hover:text-gray-200 transition-[color,transform] duration-150 [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
+        className="t-muted hover:t-primary transition-[color,transform] duration-150 [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
         aria-label="Dismiss notification"
       >
         <X size={14} />

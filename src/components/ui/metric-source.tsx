@@ -113,7 +113,7 @@ export function MetricSource({ source, className = '', triggerSize = 12 }: Metri
           ref={popoverRef}
           role="dialog"
           aria-label={`Source of ${source.label}`}
-          className="absolute z-40 top-full right-0 mt-2 w-80 rounded-xl shadow-lg p-3 text-left"
+          className="absolute z-40 top-full right-0 mt-2 w-80 rounded-md p-3 text-left"
           style={{
             background: 'var(--bg-modal)',
             border: '1px solid var(--border-card)',

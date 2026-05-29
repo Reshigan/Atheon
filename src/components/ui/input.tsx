@@ -16,22 +16,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={cn(
-            'w-full rounded-lg px-3 py-2 text-sm',
+            'w-full rounded px-3 py-2 text-sm',
             'focus:outline-none focus:ring-[3px] focus:ring-[var(--accent-glow)]',
             'transition-[border-color,box-shadow] duration-150',
             '[transition-timing-function:var(--ease-out)]',
             'placeholder:text-[var(--placeholder)]',
-            error && 'focus:ring-[rgba(255,107,107,.25)]',
+            error && 'focus:ring-[rgb(var(--neg-rgb)/0.25)]',
             className
           )}
           style={{
             background: 'var(--bg-input)',
             color: 'var(--text-primary)',
-            border: error ? '1px solid var(--critical)' : '1px solid var(--border-card)',
+            border: error ? '1px solid var(--neg)' : '1px solid var(--border-card)',
           }}
           {...props}
         />
-        {error && <p className="text-caption text-red-500">{error}</p>}
+        {error && <p className="text-caption text-[var(--neg)]">{error}</p>}
       </div>
     );
   }

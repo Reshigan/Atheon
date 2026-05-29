@@ -62,7 +62,7 @@ export function AtheonScoreRing({ compact = false }: { compact?: boolean }) {
         <div>
           <p className="text-xs font-semibold t-primary">{data.score}/100</p>
           <div className="flex items-center gap-1">
-            {trend > 0 ? <TrendingUp className="w-3 h-3 text-emerald-500" /> : trend < 0 ? <TrendingDown className="w-3 h-3 text-red-500" /> : <Minus className="w-3 h-3 text-gray-400" />}
+            {trend > 0 ? <TrendingUp className="w-3 h-3 text-[var(--accent)]" /> : trend < 0 ? <TrendingDown className="w-3 h-3 text-[var(--neg)]" /> : <Minus className="w-3 h-3 t-muted" />}
             <span className="text-caption t-muted">{trend > 0 ? '+' : ''}{trend}</span>
           </div>
         </div>

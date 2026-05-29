@@ -35,7 +35,7 @@ const ACCENT: Record<Accent, AccentTokens> = {
   sage:   { bg: 'rgb(var(--accent-rgb) / 0.10)', border: 'rgb(var(--accent-rgb) / 0.25)', fg: 'var(--accent)' },
   sky:    { bg: 'rgb(var(--accent-rgb) / 0.10)', border: 'rgb(var(--accent-rgb) / 0.25)', fg: 'var(--accent)' },
   bronze: { bg: 'rgb(var(--accent-rgb) / 0.10)', border: 'rgb(var(--accent-rgb) / 0.25)', fg: 'var(--accent)' },
-  amber:  { bg: 'rgba(251, 191, 36, 0.10)',  border: 'rgba(251, 191, 36, 0.25)',  fg: 'var(--warning)' },
+  amber:  { bg: 'rgba(154, 107, 31, 0.10)',  border: 'rgba(154, 107, 31, 0.25)',  fg: 'var(--warning)' },
   red:    { bg: 'rgb(var(--neg-rgb) / 0.10)', border: 'rgb(var(--neg-rgb) / 0.25)', fg: 'var(--neg)' },
 };
 
@@ -74,20 +74,13 @@ export function HeroHeader({
     : eyebrow;
   return (
     <div className={`relative flex items-center gap-4 ${className}`}>
-      {/* v2: stronger icon tile — navy/sage gradient with subtle inset highlight */}
+      {/* Swiss: flat tinted tile, hairline border, no gradient or shadow. */}
       <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center border flex-shrink-0 shadow-sm relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${tokens.bg}, ${tokens.bg.replace('0.10', '0.04')})`,
-          borderColor: tokens.border,
-        }}
+        className="w-12 h-12 rounded-md flex items-center justify-center border flex-shrink-0"
+        style={{ background: tokens.bg, borderColor: tokens.border }}
         aria-hidden="true"
       >
-        <span
-          className="absolute inset-0 opacity-60"
-          style={{ background: `radial-gradient(120% 80% at 0% 0%, ${tokens.bg.replace('0.10', '0.25')} 0%, transparent 60%)` }}
-        />
-        <Icon className="w-5 h-5 relative" style={{ color: tokens.fg }} />
+        <Icon className="w-5 h-5" style={{ color: tokens.fg }} />
       </div>
       <div className="flex-1 min-w-0">
         {showEyebrow && (

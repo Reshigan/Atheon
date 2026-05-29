@@ -15,10 +15,10 @@ export function SuccessStoryCard({ story }: { story: SuccessStory }) {
   const signature = story.patternSignature.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <div className="rounded-xl p-4 border border-[var(--border-card)]" style={{ background: 'var(--bg-card-solid)' }}>
+    <div className="rounded-md p-4 border border-[var(--border-card)]" style={{ background: 'var(--bg-card-solid)' }}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
+          <CheckCircle2 size={14} className="text-[var(--accent)] flex-shrink-0" />
           <h4 className="text-xs font-semibold t-primary">{signature}</h4>
         </div>
         <StatusPill status="verified" label={`${story.resolutionCount} resolved`} size="sm" noGlyph />
@@ -31,7 +31,7 @@ export function SuccessStoryCard({ story }: { story: SuccessStory }) {
         </div>
         {story.avgValueRecovered > 0 && (
           <div className="flex items-center gap-1.5 text-caption t-secondary">
-            <Coins size={10} className="text-emerald-400" />
+            <Coins size={10} className="text-[var(--accent)]" />
             <span>Avg {formatCurrency(story.avgValueRecovered)} recovered</span>
           </div>
         )}
