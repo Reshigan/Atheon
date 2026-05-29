@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill } from "@/components/ui/status-pill";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { api, ApiError } from "@/lib/api";
@@ -20,7 +20,7 @@ import { useToast } from "@/components/ui/toast";
 import { FormError } from "@/components/ui/state";
 import {
   Plug, CheckCircle, XCircle, RefreshCw, Plus, Database,
-  Activity, Loader2, X, AlertCircle, Code, Layers, Globe, Play,
+  Activity, Loader2, X, AlertCircle, Code, Layers, Play,
   Settings, Trash2, Wifi, Eye, EyeOff, Shield, Key, ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { IconERP_SAP, IconERP_Cloud, IconERP_Generic, IconERP_Odoo } from "@/components/icons/AtheonIcons";
@@ -33,16 +33,16 @@ const systemIconMap: Record<string, React.FC<{ size?: number }>> = {
 };
 
 const methodColor: Record<string, string> = {
-  GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  GET: 'bg-[rgb(var(--accent-rgb)/0.1)] text-accent border-[rgb(var(--accent-rgb)/0.2)]',
   POST: 'bg-accent/10 text-accent border-accent/20',
   PUT: 'bg-accent/10 text-accent border-accent/20',
   PATCH: 'bg-accent/10 text-accent border-accent/20',
-  DELETE: 'bg-red-500/10 text-red-400 border-red-500/20',
+  DELETE: 'bg-[rgb(var(--neg-rgb)/0.1)] text-[var(--neg)] border-[rgb(var(--neg-rgb)/0.2)]',
 };
 
 const domainColor: Record<string, string> = {
-  finance: 'text-emerald-400', procurement: 'text-accent', 'supply-chain': 'text-accent',
-  hr: 'text-accent', sales: 'text-pink-600', inventory: 'text-accent', crm: 'text-orange-400',
+  finance: 'text-accent', procurement: 'text-accent', 'supply-chain': 'text-accent',
+  hr: 'text-accent', sales: 'text-accent', inventory: 'text-accent', crm: 'text-[var(--info)]',
 };
 
 /* -- Credential field definitions per auth method -- */
@@ -146,13 +146,13 @@ function CredentialInput({ field, value, onChange }: { field: CredField; value: 
   return (
     <div>
       <label className="text-xs t-muted flex items-center gap-1">
-        {isSecret && <Shield size={10} className="text-amber-400" />}
+        {isSecret && <Shield size={10} style={{ color: 'var(--warning)' }} />}
         {field.label}
-        {field.required && <span className="text-red-400">*</span>}
+        {field.required && <span style={{ color: 'var(--neg)' }}>*</span>}
       </label>
       <div className="relative">
         <input
-          className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary pr-9"
+          className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary pr-9"
           type={isSecret && !showSecret ? 'password' : 'text'}
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -666,39 +666,38 @@ export function IntegrationsPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Globe}
-          title="Integrations"
-          subtitle="Connected Systems, Adapters & Canonical Schema"
-          accent="sky"
-        />
-        <Button variant="primary" size="sm" onClick={() => { setShowConnect(true); setSelectedAuth(''); setCredentialValues({}); }} title="Connect a new ERP system">
-          <Plus size={14} /> Connect System
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Integrations · Connectors"
+        title="Integrations"
+        dek="Connected Systems, Adapters & Canonical Schema"
+        actions={
+          <Button variant="primary" size="sm" onClick={() => { setShowConnect(true); setSelectedAuth(''); setCredentialValues({}); }} title="Connect a new ERP system">
+            <Plus size={14} /> Connect System
+          </Button>
+        }
+      />
 
       {actionError && (
-        <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-          <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-400 flex-1">{actionError}</p>
-          <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300" title="Dismiss error"><X size={14} /></button>
+        <div className="flex items-center gap-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.1)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
+          <AlertCircle size={16} style={{ color: 'var(--neg)' }} className="flex-shrink-0" />
+          <p className="text-sm flex-1" style={{ color: 'var(--neg)' }}>{actionError}</p>
+          <button onClick={() => setActionError(null)} style={{ color: 'var(--neg)' }} title="Dismiss error"><X size={14} /></button>
         </div>
       )}
 
       {/* Connect System Modal */}
       {showConnect && (
         <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary flex items-center gap-2"><Plug size={18} className="text-accent" /> Connect System</h3>
-              <button onClick={() => { setShowConnect(false); setConnectError(null); }} className="text-gray-400 hover:text-gray-300" title="Close"><X size={18} /></button>
+              <button onClick={() => { setShowConnect(false); setConnectError(null); }} className="t-muted hover:t-primary" title="Close"><X size={18} /></button>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="text-xs t-muted">ERP Adapter</label>
-                <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={connectForm.adapterId} onChange={e => {
+                <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={connectForm.adapterId} onChange={e => {
                   const adapterId = e.target.value;
                   const adapter = adapters.find(a => a.id === adapterId);
                   setConnectForm(p => ({ ...p, adapterId }));
@@ -711,11 +710,11 @@ export function IntegrationsPage() {
               </div>
               <div>
                 <label className="text-xs t-muted">Connection Name</label>
-                <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={connectForm.name} onChange={e => setConnectForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Production SAP, Customer ABC Odoo" />
+                <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={connectForm.name} onChange={e => setConnectForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Production SAP, Customer ABC Odoo" />
               </div>
               <div>
                 <label className="text-xs t-muted">Sync Frequency</label>
-                <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={connectForm.syncFrequency} onChange={e => setConnectForm(p => ({ ...p, syncFrequency: e.target.value }))}>
+                <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={connectForm.syncFrequency} onChange={e => setConnectForm(p => ({ ...p, syncFrequency: e.target.value }))}>
                   <option value="realtime">Real-time</option>
                   <option value="hourly">Hourly</option>
                   <option value="daily">Daily</option>
@@ -734,7 +733,7 @@ export function IntegrationsPage() {
                 {selectedAdapter.authMethods.length > 1 && (
                   <div>
                     <label className="text-xs t-muted">Authentication Method</label>
-                    <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={selectedAuth} onChange={e => { setSelectedAuth(e.target.value); setCredentialValues({}); }}>
+                    <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={selectedAuth} onChange={e => { setSelectedAuth(e.target.value); setCredentialValues({}); }}>
                       {selectedAdapter.authMethods.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
@@ -772,14 +771,14 @@ export function IntegrationsPage() {
       {/* Configure Connection Modal */}
       {configureConn && (
         <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+          <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold t-primary flex items-center gap-2"><Settings size={18} className="text-accent" /> Configure Connection</h3>
-              <button onClick={() => { setConfigureConn(null); setConfigError(null); }} className="text-gray-400 hover:text-gray-300" title="Close"><X size={18} /></button>
+              <button onClick={() => { setConfigureConn(null); setConfigError(null); }} className="t-muted hover:t-primary" title="Close"><X size={18} /></button>
             </div>
 
-            <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-card)] flex items-center justify-center">
+            <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-[var(--bg-primary)] border border-[var(--border-card)] flex items-center justify-center">
                 {(() => { const SysIcon = systemIconMap[configureConn.adapterSystem] || IconERP_Generic; return <SysIcon size={16} />; })()}
               </div>
               <div>
@@ -791,11 +790,11 @@ export function IntegrationsPage() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs t-muted">Connection Name</label>
-                <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={configName} onChange={e => setConfigName(e.target.value)} placeholder="Connection name" />
+                <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={configName} onChange={e => setConfigName(e.target.value)} placeholder="Connection name" />
               </div>
               <div>
                 <label className="text-xs t-muted">Sync Frequency</label>
-                <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={configSyncFreq} onChange={e => setConfigSyncFreq(e.target.value)}>
+                <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={configSyncFreq} onChange={e => setConfigSyncFreq(e.target.value)}>
                   <option value="realtime">Real-time</option>
                   <option value="hourly">Hourly</option>
                   <option value="daily">Daily</option>
@@ -814,7 +813,7 @@ export function IntegrationsPage() {
                 {configAdapter.authMethods.length > 1 && (
                   <div>
                     <label className="text-xs t-muted">Authentication Method</label>
-                    <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={configAuth} onChange={e => { setConfigAuth(e.target.value); setConfigCredentials({}); }}>
+                    <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary" value={configAuth} onChange={e => { setConfigAuth(e.target.value); setConfigCredentials({}); }}>
                       {configAdapter.authMethods.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
@@ -852,12 +851,12 @@ export function IntegrationsPage() {
       {/* Delete Confirmation Modal */}
       {confirmDelete && (
         <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+          <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-sm space-y-4">
             <h3 className="text-lg font-semibold t-primary">Delete Connection</h3>
             <p className="text-sm t-muted">Are you sure you want to delete this connection? This will remove all configuration and sync history. This action cannot be undone.</p>
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" size="sm" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-              <Button variant="primary" size="sm" className="!bg-red-500 hover:!bg-red-600" onClick={() => handleDelete(confirmDelete)} disabled={deleting === confirmDelete}>
+              <Button variant="primary" size="sm" style={{ background: 'var(--neg)' }} onClick={() => handleDelete(confirmDelete)} disabled={deleting === confirmDelete}>
                 {deleting === confirmDelete ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete
               </Button>
             </div>
@@ -891,7 +890,7 @@ export function IntegrationsPage() {
               sample: activeCount,
             }} />
           </div>
-          <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono mt-1">{activeCount}</p>
+          <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">{activeCount}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between">
@@ -962,7 +961,7 @@ export function IntegrationsPage() {
                 <Card key={conn.id}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center">
                         {(() => { const SysIcon = systemIconMap[conn.adapterSystem] || IconERP_Generic; return <SysIcon size={18} />; })()}
                       </div>
                       <div>
@@ -1015,11 +1014,13 @@ export function IntegrationsPage() {
                   </div>
 
                   {testResult && testResult.id === conn.id && (
-                    <div className={`mt-3 p-3 rounded-lg border text-sm flex items-center gap-2 animate-fadeIn ${
-                      testResult.connected
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                        : 'bg-red-500/10 border-red-500/20 text-red-400'
-                    }`}>
+                    <div
+                      className="mt-3 p-3 rounded-md border text-sm flex items-center gap-2 animate-fadeIn"
+                      style={testResult.connected
+                        ? { background: 'rgb(var(--accent-rgb) / 0.1)', borderColor: 'rgb(var(--accent-rgb) / 0.2)', color: 'var(--accent)' }
+                        : { background: 'rgb(var(--neg-rgb) / 0.1)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }
+                      }
+                    >
                       {testResult.connected ? <CheckCircle size={14} /> : <XCircle size={14} />}
                       {testResult.connected ? 'Connection successful' : `Connection failed${testResult.message ? ': ' + testResult.message : ''}`}
                     </div>
@@ -1055,13 +1056,13 @@ export function IntegrationsPage() {
                     <Button variant="ghost" size="sm" onClick={() => toggleBaseline(conn.id)} title="Compare your configuration to the vendor's recommended defaults (SAP / Odoo / Xero)">
                       <Layers size={12} /> {showBaseline === conn.id ? 'Hide Baseline' : 'Vendor Baseline'}
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => setConfirmDelete(conn.id)} title="Delete this connection">
+                    <Button variant="ghost" size="sm" style={{ color: 'var(--neg)' }} onClick={() => setConfirmDelete(conn.id)} title="Delete this connection">
                       <Trash2 size={12} /> Delete
                     </Button>
                   </div>
 
                   {showLogs === conn.id && (
-                    <div className="mt-3 p-3 rounded-lg bg-gray-900 text-green-400 font-mono text-xs max-h-48 overflow-y-auto animate-fadeIn">
+                    <div className="mt-3 p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-accent font-mono text-xs max-h-48 overflow-y-auto animate-fadeIn">
                       <p>[{new Date().toISOString()}] Connection: {conn.name}</p>
                       <p>[{new Date().toISOString()}] Adapter: {conn.adapterName} ({conn.adapterSystem})</p>
                       <p>[{new Date().toISOString()}] Status: {conn.status}</p>
@@ -1071,7 +1072,7 @@ export function IntegrationsPage() {
                   )}
 
                   {showSchemas === conn.id && (
-                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                    <div className="mt-3 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
@@ -1131,7 +1132,7 @@ export function IntegrationsPage() {
                   )}
 
                   {showMappings === conn.id && (
-                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                    <div className="mt-3 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
@@ -1214,7 +1215,7 @@ export function IntegrationsPage() {
                                               {m.status !== 'rejected' && (
                                                 <Button
                                                   variant="ghost" size="sm"
-                                                  className="text-red-400 hover:text-red-300"
+                                                  style={{ color: 'var(--neg)' }}
                                                   onClick={() => handleRejectMapping(conn.id, m.canonical_field, m.source_field, m.entity_type)}
                                                   disabled={pending}
                                                   title="Reject — remove from the active set"
@@ -1238,7 +1239,7 @@ export function IntegrationsPage() {
                   )}
 
                   {showProfile === conn.id && (
-                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                    <div className="mt-3 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
@@ -1281,7 +1282,7 @@ export function IntegrationsPage() {
                             const isLowConf = ev.source === 'low-confidence';
                             const isHuman = ev.source === 'human';
                             return (
-                              <div key={field} className={`p-2 rounded border ${isLowConf ? 'border-amber-500/30 bg-amber-500/5' : 'border-[var(--border-card)] bg-[var(--bg-primary)]'}`}>
+                              <div key={field} className="p-2 rounded-sm border" style={isLowConf ? { borderColor: 'rgba(154,107,31,0.3)', background: 'rgba(154,107,31,0.05)' } : { borderColor: 'var(--border-card)', background: 'var(--bg-primary)' }}>
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -1331,7 +1332,7 @@ export function IntegrationsPage() {
                   )}
 
                   {showBaseline === conn.id && (
-                    <div className="mt-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
+                    <div className="mt-3 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] animate-fadeIn">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="text-sm font-semibold t-primary flex items-center gap-2">
@@ -1369,11 +1370,13 @@ export function IntegrationsPage() {
                               <div className="text-xs font-semibold t-primary mb-1">Configuration deviations</div>
                               <div className="space-y-1.5">
                                 {baselineByConn[conn.id].profile_deviations!.map((d) => (
-                                  <div key={d.field} className={`p-2 rounded border text-xs ${
-                                    d.severity === 'critical' ? 'border-red-500/30 bg-red-500/5'
-                                      : d.severity === 'warning' ? 'border-amber-500/30 bg-amber-500/5'
-                                      : 'border-[var(--border-card)] bg-[var(--bg-primary)]'
-                                  }`}>
+                                  <div key={d.field} className="p-2 rounded-sm border text-xs" style={
+                                    d.severity === 'critical'
+                                      ? { borderColor: 'rgb(var(--neg-rgb) / 0.3)', background: 'rgb(var(--neg-rgb) / 0.05)' }
+                                      : d.severity === 'warning'
+                                      ? { borderColor: 'rgba(154,107,31,0.3)', background: 'rgba(154,107,31,0.05)' }
+                                      : { borderColor: 'var(--border-card)', background: 'var(--bg-primary)' }
+                                  }>
                                     <div className="flex items-center justify-between gap-2">
                                       <span className="font-medium t-primary">{d.field}</span>
                                       <StatusPill status={d.severity} size="sm" />
@@ -1451,7 +1454,7 @@ export function IntegrationsPage() {
               <Card key={adapter.id} hover>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center">
                       {(() => { const SysIcon = systemIconMap[adapter.system] || IconERP_Generic; return <SysIcon size={20} />; })()}
                     </div>
                     <div>
@@ -1512,7 +1515,7 @@ export function IntegrationsPage() {
                 ].map((entity) => (
                   <Card key={entity.name}>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-sm font-bold ${domainColor[entity.domain] || 'text-gray-400'}`}>{entity.name}</span>
+                      <span className={`text-sm font-bold ${domainColor[entity.domain] || 't-muted'}`}>{entity.name}</span>
                       <Badge variant="outline" size="sm">{entity.domain}</Badge>
                     </div>
                     <p className="text-xs t-secondary mb-3">{entity.desc}</p>
@@ -1520,7 +1523,7 @@ export function IntegrationsPage() {
                       {entity.fields.map((f) => (
                         <div key={f} className="flex items-center gap-2 text-xs">
                           <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
-                          <span className="font-mono text-gray-400">{f}</span>
+                          <span className="font-mono t-muted">{f}</span>
                         </div>
                       ))}
                     </div>
@@ -1542,7 +1545,7 @@ export function IntegrationsPage() {
                         <h3 className="text-sm font-semibold t-primary">{ep.description || ep.path}</h3>
                         <p className="text-xs font-mono text-accent mt-0.5">{ep.path}</p>
                         <div className="flex items-center gap-3 mt-2">
-                          <span className={`text-xs font-medium ${domainColor[ep.domain] || 'text-gray-500'}`}>{ep.domain}</span>
+                          <span className={`text-xs font-medium ${domainColor[ep.domain] || 't-muted'}`}>{ep.domain}</span>
                           <span className="text-caption t-muted">v{ep.version}</span>
                           <span className="text-caption t-muted">Rate limit: {ep.rateLimit}/min</span>
                           {ep.method === 'GET' && (
@@ -1595,7 +1598,7 @@ export function IntegrationsPage() {
                               </Badge>
                               <span className="text-xs t-muted">Response</span>
                             </div>
-                            <pre className="p-3 rounded-lg bg-gray-900 text-green-400 text-xs font-mono overflow-x-auto max-h-48">
+                            <pre className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-accent text-xs font-mono overflow-x-auto max-h-48">
                               {JSON.stringify(tryResult.data, null, 2)}
                             </pre>
                           </div>
