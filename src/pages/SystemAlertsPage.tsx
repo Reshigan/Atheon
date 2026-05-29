@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusPill } from '@/components/ui/status-pill';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { LoadingState, EmptyState } from '@/components/ui/state';
@@ -299,34 +299,34 @@ export function SystemAlertsPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Bell}
-          title="System Alerts"
-          subtitle="Alert rules, channels, silence & synthetic tests"
-          accent="amber"
-        />
-        <Button size="sm" onClick={openCreateModal}>
-          <Plus size={14} className="mr-1" /> New Rule
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Platform · System Alerts"
+        title="System Alerts"
+        dek="Alert rules, channels, silence & synthetic tests"
+        live
+        actions={
+          <Button size="sm" onClick={openCreateModal}>
+            <Plus size={14} className="mr-1" /> New Rule
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
           <p className="text-label">Total Rules</p>
-          <p className="text-xl font-bold t-primary">{rules.length}</p>
+          <p className="text-xl font-bold font-mono tnum t-primary">{rules.length}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Enabled</p>
-          <p className="text-xl font-bold text-emerald-400">{enabledCount}</p>
+          <p className="text-xl font-bold font-mono tnum text-accent">{enabledCount}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Silenced</p>
-          <p className="text-xl font-bold text-amber-400">{silencedCount}</p>
+          <p className="text-xl font-bold font-mono tnum" style={{ color: 'var(--warning)' }}>{silencedCount}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Triggered</p>
-          <p className="text-xl font-bold text-red-400">{firingRules.length}</p>
+          <p className="text-xl font-bold font-mono tnum text-neg">{firingRules.length}</p>
         </Card>
       </div>
 
@@ -350,7 +350,7 @@ export function SystemAlertsPage() {
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <button onClick={() => toggleRuleEnabled(r)} className="mt-0.5" disabled={savingId === r.id} title={r.enabled ? 'Disable rule' : 'Enable rule'}>
                       {savingId === r.id ? <Loader2 size={20} className="animate-spin t-muted" /> :
-                        r.enabled ? <ToggleRight size={20} className="text-emerald-400" /> : <ToggleLeft size={20} className="t-muted" />}
+                        r.enabled ? <ToggleRight size={20} className="text-accent" /> : <ToggleLeft size={20} className="t-muted" />}
                     </button>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -372,7 +372,7 @@ export function SystemAlertsPage() {
                         ))}
                         <span className="text-caption t-muted">· Triggered {r.triggered_count}x</span>
                         {r.silenced && r.silenced_until && (
-                          <span className="text-caption t-amber-400">· Silenced until {new Date(r.silenced_until).toLocaleString()}</span>
+                          <span className="text-caption" style={{ color: 'var(--warning)' }}>· Silenced until {new Date(r.silenced_until).toLocaleString()}</span>
                         )}
                       </div>
                     </div>
@@ -386,18 +386,18 @@ export function SystemAlertsPage() {
                       <Play size={14} />
                     </button>
                     {r.silenced ? (
-                      <button onClick={() => clearSilence(r)} className="p-1.5 rounded-md hover:bg-emerald-500/10 t-muted hover:text-emerald-400 transition-colors active:scale-[0.97]" title="Clear silence">
+                      <button onClick={() => clearSilence(r)} className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors active:scale-[0.97]" title="Clear silence">
                         <VolumeX size={14} />
                       </button>
                     ) : (
-                      <button onClick={() => setSilencingRule(r)} className="p-1.5 rounded-md hover:bg-amber-500/10 t-muted hover:text-amber-400 transition-colors active:scale-[0.97]" title="Silence">
+                      <button onClick={() => setSilencingRule(r)} className="p-1.5 rounded-md t-muted hover:t-primary transition-colors active:scale-[0.97]" style={{ ['--hover-bg' as string]: 'rgb(var(--accent-rgb) / 0.08)' }} title="Silence">
                         <VolumeX size={14} />
                       </button>
                     )}
                     <button onClick={() => openEditModal(r)} className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors active:scale-[0.97]" title="Edit">
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => deleteRule(r)} className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors active:scale-[0.97]" title="Delete">
+                    <button onClick={() => deleteRule(r)} className="p-1.5 rounded-md hover:bg-neg/10 t-muted hover:text-neg transition-colors active:scale-[0.97]" title="Delete">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -411,7 +411,7 @@ export function SystemAlertsPage() {
       <TabPanel id="active" activeTab={activeTab}>
         {firingRules.length === 0 ? (
           <Card className="p-8 text-center">
-            <CheckCircle size={24} className="mx-auto text-emerald-400 mb-2" />
+            <CheckCircle size={24} className="mx-auto text-accent mb-2" />
             <p className="text-sm t-muted">No recently triggered rules</p>
           </Card>
         ) : (
@@ -419,7 +419,7 @@ export function SystemAlertsPage() {
             {firingRules.map(r => (
               <Card key={r.id} className="p-4">
                 <div className="flex items-start gap-3">
-                  <XCircle size={14} className="text-red-400 mt-1" />
+                  <XCircle size={14} className="text-neg mt-1" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium t-primary">{r.name}</p>
@@ -442,10 +442,10 @@ export function SystemAlertsPage() {
       {/* CREATE/EDIT RULE MODAL */}
       {showRuleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto" onClick={() => !savingRule && setShowRuleModal(false)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-lg w-full my-8" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-lg w-full my-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold t-primary">{form.id ? 'Edit Rule' : 'Create Alert Rule'}</h3>
-              <button onClick={() => !savingRule && setShowRuleModal(false)} className="p-1 rounded hover:bg-[var(--bg-secondary)]">
+              <button onClick={() => !savingRule && setShowRuleModal(false)} className="p-1 rounded-sm hover:bg-[var(--bg-secondary)]">
                 <XIcon size={16} className="t-muted" />
               </button>
             </div>
@@ -454,7 +454,7 @@ export function SystemAlertsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Rule Name</label>
                 <input
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   placeholder="e.g., ERP Sync Failure"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -463,7 +463,7 @@ export function SystemAlertsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Description</label>
                 <input
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   placeholder="Optional description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -472,7 +472,7 @@ export function SystemAlertsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Event Type</label>
                 <select
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   value={form.event_type}
                   onChange={(e) => setForm({ ...form, event_type: e.target.value })}
                 >
@@ -484,20 +484,20 @@ export function SystemAlertsPage() {
                 <label className="block text-xs font-medium t-primary mb-1">Condition</label>
                 <div className="grid grid-cols-3 gap-2">
                   <input
-                    className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono"
+                    className="px-2 py-1 rounded-sm border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono"
                     placeholder="field"
                     value={form.field}
                     onChange={(e) => setForm({ ...form, field: e.target.value })}
                   />
                   <select
-                    className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono"
+                    className="px-2 py-1 rounded-sm border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono"
                     value={form.op}
                     onChange={(e) => setForm({ ...form, op: e.target.value })}
                   >
                     {OPERATORS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                   <input
-                    className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono"
+                    className="px-2 py-1 rounded-sm border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono"
                     placeholder="value"
                     value={form.value}
                     onChange={(e) => setForm({ ...form, value: e.target.value })}
@@ -510,7 +510,7 @@ export function SystemAlertsPage() {
                 <div>
                   <label className="block text-xs font-medium t-primary mb-1">Severity</label>
                   <select
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                    className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                     value={form.severity}
                     onChange={(e) => setForm({ ...form, severity: e.target.value })}
                   >
@@ -522,9 +522,9 @@ export function SystemAlertsPage() {
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, enabled: !form.enabled })}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary flex items-center justify-center gap-2"
+                    className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary flex items-center justify-center gap-2"
                   >
-                    {form.enabled ? <ToggleRight size={16} className="text-emerald-400" /> : <ToggleLeft size={16} className="t-muted" />}
+                    {form.enabled ? <ToggleRight size={16} className="text-accent" /> : <ToggleLeft size={16} className="t-muted" />}
                     {form.enabled ? 'Yes' : 'No'}
                   </button>
                 </div>
@@ -546,7 +546,7 @@ export function SystemAlertsPage() {
                             channels: active ? prev.channels.filter(c => c !== ch.value) : [...prev.channels, ch.value],
                           }));
                         }}
-                        className={`px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1 ${active ? 'border-accent bg-accent/10 text-accent' : 'border-[var(--border-card)] t-muted hover:t-primary'}`}
+                        className={`px-3 py-1.5 rounded-sm border text-xs flex items-center gap-1 ${active ? 'border-accent bg-accent/10 text-accent' : 'border-[var(--border-card)] t-muted hover:t-primary'}`}
                       >
                         <I size={12} /> {ch.label}
                       </button>
@@ -558,7 +558,7 @@ export function SystemAlertsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Recipients (comma-separated)</label>
                 <input
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   placeholder="admin@company.com, ops@company.com"
                   value={form.recipients}
                   onChange={(e) => setForm({ ...form, recipients: e.target.value })}
@@ -580,7 +580,7 @@ export function SystemAlertsPage() {
       {/* SILENCE DIALOG */}
       {silencingRule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setSilencingRule(null)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold t-primary mb-1">Silence Rule</h3>
             <p className="text-xs t-muted mb-4">{silencingRule.name}</p>
             <div className="space-y-2">
@@ -593,7 +593,7 @@ export function SystemAlertsPage() {
                 <label className="block text-xs font-medium t-primary mb-1">Custom until</label>
                 <input
                   type="datetime-local"
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   value={customSilenceUntil}
                   onChange={(e) => setCustomSilenceUntil(e.target.value)}
                 />
@@ -608,16 +608,16 @@ export function SystemAlertsPage() {
       {/* TEST DIALOG */}
       {testingRule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setTestingRule(null)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-base font-semibold t-primary">Test Rule</h3>
-              <button onClick={() => setTestingRule(null)} className="p-1 rounded hover:bg-[var(--bg-secondary)]"><XIcon size={16} className="t-muted" /></button>
+              <button onClick={() => setTestingRule(null)} className="p-1 rounded-sm hover:bg-[var(--bg-secondary)]"><XIcon size={16} className="t-muted" /></button>
             </div>
             <p className="text-xs t-muted mb-3">{testingRule.name}</p>
 
             <label className="block text-xs font-medium t-primary mb-1">Test payload (JSON)</label>
             <textarea
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono h-32"
+              className="w-full px-3 py-2 rounded-sm border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary font-mono h-32"
               value={testPayload}
               onChange={(e) => setTestPayload(e.target.value)}
             />
@@ -630,9 +630,9 @@ export function SystemAlertsPage() {
               <Card className="p-3 mt-3">
                 <div className="flex items-center gap-2 mb-2">
                   {testResult.would_fire ? (
-                    <><XCircle size={16} className="text-red-400" /><span className="text-sm font-medium t-primary">Would fire</span></>
+                    <><XCircle size={16} className="text-neg" /><span className="text-sm font-medium t-primary">Would fire</span></>
                   ) : (
-                    <><CheckCircle size={16} className="text-emerald-400" /><span className="text-sm font-medium t-primary">Would not fire</span></>
+                    <><CheckCircle size={16} className="text-accent" /><span className="text-sm font-medium t-primary">Would not fire</span></>
                   )}
                 </div>
                 <p className="text-xs t-muted">{testResult.reason}</p>
