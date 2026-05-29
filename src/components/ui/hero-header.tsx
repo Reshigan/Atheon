@@ -32,11 +32,11 @@ interface AccentTokens {
 }
 
 const ACCENT: Record<Accent, AccentTokens> = {
-  sage:   { bg: 'rgba(163, 177, 138, 0.10)', border: 'rgba(163, 177, 138, 0.25)', fg: 'var(--accent)' },
-  sky:    { bg: 'rgba(163, 177, 138, 0.10)', border: 'rgba(163, 177, 138, 0.25)', fg: 'var(--accent)' },
-  bronze: { bg: 'rgba(163, 177, 138, 0.10)', border: 'rgba(163, 177, 138, 0.25)', fg: 'var(--accent)' },
-  amber:  { bg: 'rgba(251, 191, 36, 0.10)',  border: 'rgba(251, 191, 36, 0.25)',  fg: '#FBBF24' },
-  red:    { bg: 'rgba(248, 113, 113, 0.10)', border: 'rgba(248, 113, 113, 0.25)', fg: '#F87171' },
+  sage:   { bg: 'rgb(var(--accent-rgb) / 0.10)', border: 'rgb(var(--accent-rgb) / 0.25)', fg: 'var(--accent)' },
+  sky:    { bg: 'rgb(var(--accent-rgb) / 0.10)', border: 'rgb(var(--accent-rgb) / 0.25)', fg: 'var(--accent)' },
+  bronze: { bg: 'rgb(var(--accent-rgb) / 0.10)', border: 'rgb(var(--accent-rgb) / 0.25)', fg: 'var(--accent)' },
+  amber:  { bg: 'rgba(251, 191, 36, 0.10)',  border: 'rgba(251, 191, 36, 0.25)',  fg: 'var(--warning)' },
+  red:    { bg: 'rgb(var(--neg-rgb) / 0.10)', border: 'rgb(var(--neg-rgb) / 0.25)', fg: 'var(--neg)' },
 };
 
 export interface HeroHeaderProps {

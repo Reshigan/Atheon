@@ -55,7 +55,7 @@ const fmtDate = (d?: string) => {
 };
 
 
-function MiniSparkline({ data, color = '#60a5fa' }: { data: number[]; color?: string }) {
+function MiniSparkline({ data, color = 'var(--info)' }: { data: number[]; color?: string }) {
   if (!data.length) return <span className="text-xs text-white/30">No data</span>;
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
@@ -290,7 +290,7 @@ export function SubCatalystOpsPanel({ clusterId, clusterName, subCatalystName, o
     s === 'green' ? 'text-emerald-400' : s === 'amber' ? 'text-amber-400' : s === 'red' ? 'text-red-400' : 'text-white/70';
 
   const sparklineColor = (s: string) =>
-    s === 'green' ? '#34d399' : s === 'amber' ? '#fbbf24' : s === 'red' ? '#f87171' : '#60a5fa';
+    s === 'green' ? 'var(--accent)' : s === 'amber' ? 'var(--warning)' : s === 'red' ? 'var(--neg)' : 'var(--info)';
 
   const renderOverview = () => {
     const agg = kpis?.aggregate;

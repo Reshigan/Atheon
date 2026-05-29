@@ -11,7 +11,7 @@ function ScoreRingVisual({ score, size = 120 }: { score: number; size?: number }
   const radius = (size - 12) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = (score / 100) * circumference;
-  const color = score >= 75 ? '#A3B18A' : score >= 50 ? '#CDA37E' : '#F87171';
+  const color = score >= 75 ? 'var(--accent)' : score >= 50 ? 'var(--warning)' : 'var(--neg)';
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
@@ -81,7 +81,7 @@ export function AtheonScoreRing({ compact = false }: { compact?: boolean }) {
               <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-secondary)]">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${c.score}%`, background: c.score >= 75 ? '#A3B18A' : c.score >= 50 ? '#CDA37E' : '#ef4444' }}
+                  style={{ width: `${c.score}%`, background: c.score >= 75 ? 'var(--accent)' : c.score >= 50 ? 'var(--warning)' : 'var(--neg)' }}
                 />
               </div>
               <span className="text-caption font-medium t-primary w-8 text-right">{c.score}</span>

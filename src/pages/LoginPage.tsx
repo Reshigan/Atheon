@@ -320,7 +320,7 @@ export function LoginPage() {
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            'radial-gradient(circle at 50% -10%, rgba(163, 177, 138, 0.10) 0%, transparent 60%),' +
+            'radial-gradient(circle at 50% -10%, rgb(var(--accent-rgb) / 0.10) 0%, transparent 60%),' +
             'radial-gradient(circle at 100% 110%, rgba(205, 163, 126, 0.08) 0%, transparent 55%)',
         }}
       />
@@ -334,15 +334,15 @@ export function LoginPage() {
             className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative"
             style={{
               background: 'linear-gradient(135deg, #06090d, #0e151c)',
-              boxShadow: '0 8px 32px rgba(163, 177, 138, 0.25), 0 0 0 1px rgba(163, 177, 138, 0.18)',
+              boxShadow: '0 8px 32px rgb(var(--accent-rgb) / 0.25), 0 0 0 1px rgb(var(--accent-rgb) / 0.18)',
             }}
             aria-hidden="true"
           >
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-              <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
-              <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
-              <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
-              <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
+              <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
+              <line x1="9" y1="20" x2="23" y2="20" stroke="var(--accent)" strokeWidth=".8" opacity=".6" />
+              <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="var(--info)" strokeWidth=".8" opacity=".5" />
+              <circle cx="16" cy="9" r="1.5" fill="var(--bronze)" />
             </svg>
           </div>
           <p className="text-caption t-muted uppercase tracking-[0.32em] mb-2" style={{ color: 'var(--accent)' }}>Atheon Workspace</p>

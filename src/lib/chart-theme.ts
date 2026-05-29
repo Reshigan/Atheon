@@ -34,12 +34,12 @@ export const chartTheme = {
 // Recharts-compatible color palette. Named exports below cover the two
 // extra brand-aligned shades the Dashboard needs alongside chartPalette.
 export const chartPalette = [
-  '#A3B18A', // sage     — chartPaletteNames.accent
-  '#CDA37E', // bronze   — chartPaletteNames.bronze
-  '#7EB3CD', // sky      — chartPaletteNames.sky
-  '#10b981', // success
-  '#f59e0b', // warning
-  '#ef4444', // danger
+  'var(--accent)', // accent   — chartPaletteNames.accent
+  'var(--bronze)', // bronze   — chartPaletteNames.bronze
+  'var(--info)',   // info     — chartPaletteNames.sky
+  'var(--accent)', // success
+  'var(--warning)', // warning
+  'var(--neg)',    // danger
   '#8b5cf6', // purple
   '#06b6d4', // cyan
 ];
@@ -48,7 +48,7 @@ export const chartPalette = [
 // Dashboard's secondary chart series). Keeping these here means Recharts
 // strokes and inline pills draw from a single source of truth — when the
 // brand palette changes, only this file needs to change.
-export const chartAccentB = '#5d8a6f';   // deeper sage for stacked/secondary series
+export const chartAccentB = 'var(--accent-hover)';   // deeper accent for stacked/secondary series
 export const chartLight = '#b8d4c4';     // soft sage tint for muted secondary lines
 
 // Recharts tooltip style using design tokens

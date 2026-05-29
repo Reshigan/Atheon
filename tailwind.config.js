@@ -34,6 +34,10 @@ export default {
         // ── Reserved negative ──────────────────────────────────
         neg: 'rgb(var(--neg-rgb) / <alpha-value>)',
 
+        // ── Restrained chart/data neutrals ─────────────────────
+        info:   'var(--info)',
+        bronze: 'var(--bronze)',
+
         // ── Semantic — status only (accent doubles as success) ──
         success: 'rgb(var(--accent-rgb) / <alpha-value>)',
         warning: '#9a6b1f',

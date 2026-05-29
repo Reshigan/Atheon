@@ -127,23 +127,23 @@ export function WorkingCapitalCard() {
         </div>
         <div className="h-2 rounded-full overflow-hidden flex" style={{ background: 'var(--bg-secondary)' }}>
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.currentPct}%`, background: '#10b981' }}
+               style={{ width: `${buckets.currentPct}%`, background: 'var(--accent)' }}
                title={`Current: ${buckets.currentPct.toFixed(0)}% (${fmtZAR(latest.arCurrentZar)})`} />
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.days30Pct}%`, background: '#7EB3CD' }}
+               style={{ width: `${buckets.days30Pct}%`, background: 'var(--info)' }}
                title={`30 days: ${buckets.days30Pct.toFixed(0)}% (${fmtZAR(latest.ar30Zar)})`} />
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.days60Pct}%`, background: '#fbbf24' }}
+               style={{ width: `${buckets.days60Pct}%`, background: 'var(--warning)' }}
                title={`60 days: ${buckets.days60Pct.toFixed(0)}% (${fmtZAR(latest.ar60Zar)})`} />
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.days90PlusPct}%`, background: '#f87171' }}
+               style={{ width: `${buckets.days90PlusPct}%`, background: 'var(--neg)' }}
                title={`90+ days: ${buckets.days90PlusPct.toFixed(0)}% (${fmtZAR(latest.ar90PlusZar)})`} />
         </div>
         <div className="flex items-center gap-3 mt-2 text-caption">
-          <BucketLegend swatch="#10b981" label="Current" pct={buckets.currentPct} />
-          <BucketLegend swatch="#7EB3CD" label="1–30" pct={buckets.days30Pct} />
-          <BucketLegend swatch="#fbbf24" label="31–60" pct={buckets.days60Pct} />
-          <BucketLegend swatch="#f87171" label="60+" pct={buckets.days90PlusPct} />
+          <BucketLegend swatch="var(--accent)" label="Current" pct={buckets.currentPct} />
+          <BucketLegend swatch="var(--info)" label="1–30" pct={buckets.days30Pct} />
+          <BucketLegend swatch="var(--warning)" label="31–60" pct={buckets.days60Pct} />
+          <BucketLegend swatch="var(--neg)" label="60+" pct={buckets.days90PlusPct} />
           {buckets.days90PlusPct > 8 && (
             <StatusPill status="failed" label={`${buckets.days90PlusPct.toFixed(0)}% > 60d — action needed`} />
           )}
@@ -175,10 +175,10 @@ interface MetricProps {
 }
 
 const ACCENT_SPARK: Record<MetricProps['accent'], string> = {
-  emerald: '#10b981',
-  sky: '#7EB3CD',
-  sage: '#A3B18A',
-  bronze: '#CDA37E',
+  emerald: 'var(--accent)',
+  sky: 'var(--info)',
+  sage: 'var(--accent)',
+  bronze: 'var(--bronze)',
 };
 
 function Metric({ label, value, delta, deltaLabel, trend, invertTrend = false, spark, accent }: MetricProps) {

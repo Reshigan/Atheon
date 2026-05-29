@@ -90,7 +90,7 @@ export function TrialPage() {
       <div className="border-b border-white/10 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield size={24} className="text-[#A3B18A]" />
+            <Shield size={24} className="text-accent" />
             <span className="text-lg font-bold text-white">Atheon</span>
             <span className="text-xs text-gray-400 border-l border-gray-600 pl-3 ml-1">Free Trial Assessment</span>
           </div>
@@ -104,7 +104,7 @@ export function TrialPage() {
           {(['info', 'upload', 'processing', 'results'] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
-                step === s ? 'bg-[#A3B18A] text-white' :
+                step === s ? 'bg-accent text-white' :
                 (['info', 'upload', 'processing', 'results'].indexOf(step) > i) ? 'bg-emerald-500/20 text-emerald-400' :
                 'bg-white/5 text-gray-500'
               }`}>
@@ -135,7 +135,7 @@ export function TrialPage() {
                 <label className="block text-xs font-medium text-gray-400 mb-1">Company Name *</label>
                 <input
                   type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#A3B18A] transition-colors"
+                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent transition-colors"
                   placeholder="Acme Corporation"
                 />
               </div>
@@ -143,7 +143,7 @@ export function TrialPage() {
                 <label className="block text-xs font-medium text-gray-400 mb-1">Industry *</label>
                 <select
                   value={industry} onChange={(e) => setIndustry(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#A3B18A] transition-colors"
+                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition-colors"
                 >
                   {INDUSTRIES.map((ind) => (
                     <option key={ind} value={ind} className="bg-slate-800">{ind.charAt(0).toUpperCase() + ind.slice(1)}</option>
@@ -154,7 +154,7 @@ export function TrialPage() {
                 <label className="block text-xs font-medium text-gray-400 mb-1">Your Name *</label>
                 <input
                   type="text" value={contactName} onChange={(e) => setContactName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#A3B18A] transition-colors"
+                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent transition-colors"
                   placeholder="John Smith"
                 />
               </div>
@@ -162,7 +162,7 @@ export function TrialPage() {
                 <label className="block text-xs font-medium text-gray-400 mb-1">Email Address *</label>
                 <input
                   type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#A3B18A] transition-colors"
+                  className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent transition-colors"
                   placeholder="john@acme.co.za"
                 />
               </div>
@@ -170,7 +170,7 @@ export function TrialPage() {
               <button
                 onClick={handleStart}
                 disabled={loading}
-                className="w-full py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.97]"
+                className="w-full py-3 rounded-lg bg-accent hover:bg-[var(--accent-hover)] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.97]"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                 {loading ? 'Starting...' : 'Start Free Assessment'}
@@ -193,7 +193,7 @@ export function TrialPage() {
 
             <div className="max-w-md mx-auto">
               <div
-                className="border-2 border-dashed border-white/20 rounded-xl p-12 hover:border-[#A3B18A]/50 transition-colors cursor-pointer active:scale-[0.97]"
+                className="border-2 border-dashed border-white/20 rounded-xl p-12 hover:border-accent/50 transition-colors cursor-pointer active:scale-[0.97]"
                 onClick={handleUpload}
               >
                 <Upload size={40} className="mx-auto mb-4 text-gray-400" />
@@ -204,7 +204,7 @@ export function TrialPage() {
               <button
                 onClick={handleUpload}
                 disabled={loading}
-                className="mt-6 w-full py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.97]"
+                className="mt-6 w-full py-3 rounded-lg bg-accent hover:bg-[var(--accent-hover)] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.97]"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <BarChart3 size={16} />}
                 {loading ? 'Processing...' : 'Run Assessment'}
@@ -222,7 +222,7 @@ export function TrialPage() {
             </div>
 
             <div className="max-w-sm mx-auto">
-              <Loader2 size={48} className="mx-auto mb-6 text-[#A3B18A] animate-spin" />
+              <Loader2 size={48} className="mx-auto mb-6 text-accent animate-spin" />
               <div className="space-y-3">
                 {['Ingesting data', 'Running health check', 'Identifying risks', 'Calculating ROI potential', 'Generating report'].map((label, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm">
@@ -248,8 +248,8 @@ export function TrialPage() {
             {/* Key Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-xl p-6 bg-white/5 border border-white/10 text-center">
-                <div className="w-16 h-16 mx-auto rounded-full bg-[#A3B18A]/20 flex items-center justify-center mb-3">
-                  <span className="text-2xl font-bold text-[#A3B18A]">{results.healthScore ?? '—'}</span>
+                <div className="w-16 h-16 mx-auto rounded-full bg-accent/20 flex items-center justify-center mb-3">
+                  <span className="text-2xl font-bold text-accent">{results.healthScore ?? '—'}</span>
                 </div>
                 <p className="text-xs text-gray-400">Health Score</p>
               </div>
@@ -328,7 +328,7 @@ export function TrialPage() {
                 Download Full Report
               </button>
               <div>
-                <a href="/login" className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-[#A3B18A] hover:bg-[#5d8a6f] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
+                <a href="/login" className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-accent hover:bg-[var(--accent-hover)] text-white font-medium text-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
                   <ArrowRight size={16} />
                   Start Your Full Atheon Journey
                 </a>

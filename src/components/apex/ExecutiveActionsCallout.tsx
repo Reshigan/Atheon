@@ -8,7 +8,7 @@
  *
  * Hidden when there are no critical / high severity risks. Uses tenant-orange
  * (#F97316) — the new dedicated colour for "must-act-now" state, distinct from
- * danger-red (#F87171, which is for failed/rejected things).
+ * danger (var(--neg), which is for failed/rejected things).
  */
 import type { Risk } from '@/lib/api';
 import { recommendForRisk, catalystDeployUrl } from '@/lib/catalyst-recommendation';
@@ -78,9 +78,9 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
             {urgent.map((r) => {
               const rec = recommendForRisk({ category: r.category, title: r.title });
               const isCritical = r.severity === 'critical';
-              const sevTone = isCritical ? '#F87171' : '#FBBF24';
-              const sevBg = isCritical ? 'rgba(248, 113, 113, 0.18)' : 'rgba(251, 191, 36, 0.18)';
-              const sevBorder = isCritical ? 'rgba(248, 113, 113, 0.30)' : 'rgba(251, 191, 36, 0.30)';
+              const sevTone = isCritical ? 'var(--neg)' : 'var(--warning)';
+              const sevBg = isCritical ? 'rgb(var(--neg-rgb) / 0.18)' : 'rgba(251, 191, 36, 0.18)';
+              const sevBorder = isCritical ? 'rgb(var(--neg-rgb) / 0.30)' : 'rgba(251, 191, 36, 0.30)';
               return (
                 <div
                   key={r.id}

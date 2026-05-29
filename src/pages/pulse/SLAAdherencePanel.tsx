@@ -141,7 +141,7 @@ export function SLAAdherencePanel() {
 function SLACard({ sla }: { sla: SLAItem }) {
   const delta = deltaTrend(sla.trend);
   const trendData = sla.trend.map((t) => t.adherencePct);
-  const accent = sla.status === 'green' ? '#10b981' : sla.status === 'amber' ? '#fbbf24' : '#f87171';
+  const accent = sla.status === 'green' ? 'var(--accent)' : sla.status === 'amber' ? 'var(--warning)' : 'var(--neg)';
   const adherenceLabel = sla.latest ? `${sla.latest.adherencePct.toFixed(1)}%` : '—';
   const avgVsTarget = sla.latest ? sla.latest.avgHours / sla.targetHours : 0;
 
@@ -203,8 +203,8 @@ function SummaryTile({ label, value, icon, tone = 'neutral' }: {
     <div
       className="p-2.5 rounded-lg border"
       style={{
-        background: tone === 'red' ? 'rgba(248,113,113,0.06)' : 'var(--bg-card-solid)',
-        borderColor: tone === 'red' ? 'rgba(248,113,113,0.30)' : 'var(--border-card)',
+        background: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.06)' : 'var(--bg-card-solid)',
+        borderColor: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.30)' : 'var(--border-card)',
       }}
     >
       <div className="flex items-center gap-1.5 mb-1">
@@ -223,8 +223,8 @@ function Tile({ label, value, sub, accent, tone = 'neutral', big = false }: {
     <div
       className="p-2 rounded-md border"
       style={{
-        background: tone === 'red' ? 'rgba(248,113,113,0.06)' : 'var(--bg-card-solid)',
-        borderColor: tone === 'red' ? 'rgba(248,113,113,0.30)' : 'var(--border-card)',
+        background: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.06)' : 'var(--bg-card-solid)',
+        borderColor: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.30)' : 'var(--border-card)',
       }}
     >
       <div className="text-caption font-medium t-muted uppercase tracking-wider">{label}</div>

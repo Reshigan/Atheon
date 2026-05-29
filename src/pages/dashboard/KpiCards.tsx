@@ -24,11 +24,11 @@ const ACCENT_BORDER: Record<Accent, string> = {
 };
 
 const ACCENT_SPARK: Record<Accent, string> = {
-  sage:   '#A3B18A',
-  sky:    '#7EB3CD',
-  bronze: '#CDA37E',
-  amber:  '#FBBF24',
-  red:    '#F87171',
+  sage:   'var(--accent)',
+  sky:    'var(--info)',
+  bronze: 'var(--bronze)',
+  amber:  'var(--warning)',
+  red:    'var(--neg)',
 };
 
 const trendIcon = (trend: string) => {
@@ -57,7 +57,7 @@ export function KpiCard({
   label, value, trend = "stable", delta, sparkData, subline, accent = 'sage', source,
 }: KpiCardProps): JSX.Element {
   const sparkColour = trend === "down" || trend === "declining"
-    ? '#F87171'
+    ? 'var(--neg)'
     : ACCENT_SPARK[accent];
 
   return (

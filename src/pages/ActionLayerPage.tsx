@@ -107,10 +107,10 @@ const TILE_DEFS: Array<{
   accent: string;
   hoverBorder: string;
 }> = [
-  { key: 'pending_approval', label: 'Pending',   countKey: 'pending_approval_count', valueKey: 'pending_approval_value_zar', icon: Inbox,         accent: '#FBBF24', hoverBorder: 'hover:border-amber-500/40' },
-  { key: 'previewed',        label: 'Previewed', countKey: 'previewed_count',         valueKey: 'previewed_value_zar',         icon: FileSearch,    accent: '#7EB3CD', hoverBorder: 'hover:border-sky-500/40' },
-  { key: 'completed',        label: 'Completed', countKey: 'completed_count',         valueKey: 'completed_value_zar',         icon: CheckCircle2,  accent: '#34D399', hoverBorder: 'hover:border-emerald-500/40' },
-  { key: 'failed',           label: 'Failed',    countKey: 'failed_count',            valueKey: 'failed_value_zar',            icon: XCircle,       accent: '#F87171', hoverBorder: 'hover:border-red-500/40' },
+  { key: 'pending_approval', label: 'Pending',   countKey: 'pending_approval_count', valueKey: 'pending_approval_value_zar', icon: Inbox,         accent: 'var(--warning)', hoverBorder: 'hover:border-amber-500/40' },
+  { key: 'previewed',        label: 'Previewed', countKey: 'previewed_count',         valueKey: 'previewed_value_zar',         icon: FileSearch,    accent: 'var(--info)', hoverBorder: 'hover:border-sky-500/40' },
+  { key: 'completed',        label: 'Completed', countKey: 'completed_count',         valueKey: 'completed_value_zar',         icon: CheckCircle2,  accent: 'var(--accent)', hoverBorder: 'hover:border-emerald-500/40' },
+  { key: 'failed',           label: 'Failed',    countKey: 'failed_count',            valueKey: 'failed_value_zar',            icon: XCircle,       accent: 'var(--neg)', hoverBorder: 'hover:border-red-500/40' },
   { key: 'rejected',         label: 'Rejected',  countKey: 'rejected_count',          valueKey: 'rejected_value_zar',          icon: AlertOctagon,  accent: '#F97316', hoverBorder: 'hover:border-orange-500/40' },
 ];
 
@@ -394,7 +394,7 @@ export function ActionLayerPage(): JSX.Element {
             ? 'font-medium border'
             : 't-secondary hover:t-primary border border-transparent hover:bg-[var(--bg-secondary)]'
         } active:scale-[0.97]`}
-        style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : undefined}
+        style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgb(var(--accent-rgb) / 0.40)', color: 'var(--accent)' } : undefined}
         aria-pressed={active}
       >
         {label}{count !== null ? ` (${count})` : ''}
@@ -513,7 +513,7 @@ export function ActionLayerPage(): JSX.Element {
                   className={`group inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full text-body-sm border transition-colors ${
                     active ? 'font-medium' : 'border-transparent hover:bg-[var(--bg-secondary)]'
                   } active:scale-[0.97]`}
-                  style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : { borderColor: 'var(--border-card)' }}
+                  style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgb(var(--accent-rgb) / 0.40)', color: 'var(--accent)' } : { borderColor: 'var(--border-card)' }}
                 >
                   <button
                     type="button"
@@ -553,7 +553,7 @@ export function ActionLayerPage(): JSX.Element {
               className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl"
               style={{
                 background: 'var(--accent-subtle)',
-                border: '1px solid rgba(163, 177, 138, 0.40)',
+                border: '1px solid rgb(var(--accent-rgb) / 0.40)',
               }}
             >
               <div className="flex items-center gap-3">
