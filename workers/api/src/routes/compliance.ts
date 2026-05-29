@@ -27,12 +27,18 @@ function isSupportOrAbove(role: string | undefined): boolean {
 function isPlatformAdmin(role: string | undefined): boolean {
   return role === 'superadmin' || role === 'support_admin' || role === 'admin';
 }
+// `auditor` is a read-only compliance role: it lands on /compliance and that
+// page (incl. its Audit Log tab) is driven entirely by this evidence pack.
+// Read is allowed; minting/revoking share links stays admin-only below.
+function isComplianceReader(role: string | undefined): boolean {
+  return isPlatformAdmin(role) || role === 'auditor';
+}
 
 compliance.get('/evidence-pack', async (c) => {
   const auth = getAuth(c);
   if (!auth) return c.json({ error: 'Unauthorized' }, 401);
-  if (!isPlatformAdmin(auth.role)) {
-    return c.json({ error: 'Forbidden: admin role required' }, 403);
+  if (!isComplianceReader(auth.role)) {
+    return c.json({ error: 'Forbidden: compliance read access required' }, 403);
   }
 
   // Admin: own tenant only. Support+/superadmin: cross-tenant via ?tenant_id=.
