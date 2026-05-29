@@ -40,8 +40,8 @@ export const chartPalette = [
   'var(--accent)', // success
   'var(--warning)', // warning
   'var(--neg)',    // danger
-  '#8b5cf6', // purple
-  '#06b6d4', // cyan
+  'var(--accent)', // tail fallback series 6 → accent
+  'var(--accent)', // tail fallback series 7 → accent
 ];
 
 // Named brand-aligned shades used outside the indexed palette (e.g. the
@@ -56,9 +56,8 @@ export const tooltipStyle = {
   contentStyle: {
     backgroundColor: 'var(--bg-card-solid)',
     border: '1px solid var(--border-card)',
-    borderRadius: 8,
+    borderRadius: 2,
     padding: '8px 12px',
-    boxShadow: 'var(--shadow-dropdown)',
   },
   labelStyle: {
     color: 'var(--text-primary)',

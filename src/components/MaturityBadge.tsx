@@ -12,11 +12,11 @@ interface MaturityBadgeProps {
 const MATURITY_META: Record<Maturity, { label: string; classes: string }> = {
   production: {
     label: 'Production',
-    classes: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
+    classes: 'text-accent border-[var(--border-card)]',
   },
   partial: {
     label: 'Partial',
-    classes: 'bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300',
+    classes: 'text-[var(--warning)] border-[var(--border-card)]',
   },
   planned: {
     label: 'Planned',
@@ -55,7 +55,7 @@ export function MaturityBadge({ maturity, summary, className }: MaturityBadgePro
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border font-medium px-2 py-0.5 text-caption',
+        'inline-flex items-center rounded-sm border font-medium px-2 py-0.5 text-caption',
         meta.classes,
         className
       )}
