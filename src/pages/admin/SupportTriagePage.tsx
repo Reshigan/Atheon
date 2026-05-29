@@ -14,10 +14,11 @@ import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import type { SupportTicket } from '@/lib/api';
 import { useAppStore } from '@/stores/appStore';
-import { LifeBuoy, Filter, Loader2, CheckCircle, UserPlus } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { Filter, Loader2, CheckCircle, UserPlus } from 'lucide-react';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
-  open: 'info',
+  open: 'warning',
   in_progress: 'warning',
   waiting_customer: 'warning',
   resolved: 'success',
@@ -26,7 +27,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'danger
 
 const PRIORITY_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
   low: 'default',
-  normal: 'info',
+  normal: 'default',
   high: 'warning',
   urgent: 'danger',
 };
@@ -124,20 +125,11 @@ export function SupportTriagePage() {
 
   return (
     <div className="p-5 max-w-6xl mx-auto space-y-5">
-      <header className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-               style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
-            <LifeBuoy size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold t-primary">Support Triage</h1>
-            <p className="text-xs t-muted mt-0.5">
-              All tickets for this tenant. Assign, change status, and reply via detail view.
-            </p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Support · Triage"
+        title="Support Triage"
+        dek="All tickets for this tenant. Assign, change status, and reply via detail view."
+      />
 
       <Card>
         <div className="flex items-center gap-2 flex-wrap">
@@ -174,7 +166,7 @@ export function SupportTriagePage() {
       ) : tickets.length === 0 ? (
         <Card>
           <div className="text-center py-10">
-            <LifeBuoy size={28} className="mx-auto t-muted mb-3" />
+            <CheckCircle size={28} className="mx-auto t-muted mb-3" />
             <p className="text-sm t-secondary">No tickets match this filter.</p>
           </div>
         </Card>
@@ -199,7 +191,7 @@ export function SupportTriagePage() {
                       {isAssignedToMe && <Badge variant="success">assigned to you</Badge>}
                     </div>
                     <p className="text-xs t-muted mt-1 line-clamp-2">{t.body}</p>
-                    <div className="text-caption t-muted mt-1">
+                    <div className="text-caption t-muted mt-1 font-mono tnum">
                       Opened {new Date(t.created_at).toLocaleString()}
                     </div>
                   </div>

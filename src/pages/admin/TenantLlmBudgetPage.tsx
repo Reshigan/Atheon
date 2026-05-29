@@ -25,6 +25,7 @@ import { api, ApiError } from '@/lib/api';
 import type { LlmBudgetResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { UsageBar, usageColor } from '@/components/UsageBar';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   ArrowLeft, Shield, AlertTriangle, Calendar, Save, Info, CheckCircle, XCircle, Zap,
 } from 'lucide-react';
@@ -34,6 +35,12 @@ interface TenantMeta {
   id: string;
   name: string;
   slug: string;
+}
+
+function pctColorStyle(color: ReturnType<typeof usageColor>): string {
+  if (color === 'red') return 'text-neg';
+  if (color === 'amber') return 'text-[var(--warning)]';
+  return 'text-accent';
 }
 
 export function TenantLlmBudgetPage() {
@@ -148,33 +155,38 @@ export function TenantLlmBudgetPage() {
     return Math.min((budget.tokensUsedThisMonth / budget.monthlyTokenBudget) * 100, 100);
   }, [budget]);
 
-  const pctColor = usageColor(usagePct);
-  const pctColorClass =
-    pctColor === 'red' ? 'text-red-400' : pctColor === 'amber' ? 'text-amber-400' : 'text-emerald-400';
+  const pctColorClass = pctColorStyle(usageColor(usagePct));
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/tenants')}>
-          <ArrowLeft size={16} className="mr-2" />
-          Back to Tenants
-        </Button>
-        <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">LLM Budget</h1>
-      </div>
+      <PageHeader
+        eyebrow="Tenants · LLM Budget"
+        title="LLM Budget"
+        dek={tenantMeta ? `${tenantMeta.name} · ${tenantMeta.slug}` : undefined}
+        actions={
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/tenants')}>
+            <ArrowLeft size={16} className="mr-2" />
+            Back to Tenants
+          </Button>
+        }
+      />
 
       {tenantMeta && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400">Tenant:</span>
-          <span className="text-sm font-medium text-white">{tenantMeta.name}</span>
+          <span className="text-sm t-muted">Tenant:</span>
+          <span className="text-sm font-medium t-primary">{tenantMeta.name}</span>
           <Badge variant="info" className="text-xs">{tenantMeta.slug}</Badge>
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-          <AlertTriangle size={18} className="text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-400">{error}</p>
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300">
+        <div
+          className="p-4 border rounded-md flex items-center gap-3"
+          style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}
+        >
+          <AlertTriangle size={18} className="text-neg flex-shrink-0" />
+          <p className="text-sm text-neg">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-neg">
             <XCircle size={16} />
           </button>
         </div>
@@ -192,7 +204,7 @@ export function TenantLlmBudgetPage() {
           <Card>
             <div className="p-6 space-y-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <h2 className="text-lg font-semibold t-primary flex items-center gap-2">
                   <Zap size={18} className="text-accent" />
                   Current Month Usage
                 </h2>
@@ -202,27 +214,36 @@ export function TenantLlmBudgetPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
-                  <div className="text-xs text-gray-400 mb-1">Tokens used this month</div>
-                  <div className="text-headline-xl font-bold t-primary tracking-tight leading-tight">
+                <div
+                  className="p-4 rounded-sm border"
+                  style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-card)' }}
+                >
+                  <div className="text-xs t-muted mb-1">Tokens used this month</div>
+                  <div className="text-headline-xl font-bold t-primary tracking-tight leading-tight font-mono tnum">
                     {budget.tokensUsedThisMonth.toLocaleString()}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
-                  <div className="text-xs text-gray-400 mb-1">Monthly budget</div>
-                  <div className="text-headline-xl font-bold t-primary tracking-tight leading-tight">
+                <div
+                  className="p-4 rounded-sm border"
+                  style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-card)' }}
+                >
+                  <div className="text-xs t-muted mb-1">Monthly budget</div>
+                  <div className="text-headline-xl font-bold t-primary tracking-tight leading-tight font-mono tnum">
                     {budget.monthlyTokenBudget === null
-                      ? <span className="text-emerald-400">Unlimited</span>
+                      ? <span className="text-accent">Unlimited</span>
                       : budget.monthlyTokenBudget.toLocaleString()}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
-                  <div className="text-xs text-gray-400 mb-1 flex items-center gap-1.5">
+                <div
+                  className="p-4 rounded-sm border"
+                  style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-card)' }}
+                >
+                  <div className="text-xs t-muted mb-1 flex items-center gap-1.5">
                     <Calendar size={12} /> Resets
                   </div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium t-primary font-mono tnum">
                     {budget.tokensResetAt
                       ? format(new Date(budget.tokensResetAt), 'PPP')
                       : 'Start of next month'}
@@ -231,14 +252,17 @@ export function TenantLlmBudgetPage() {
               </div>
 
               {budget.monthlyTokenBudget === null ? (
-                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-300">
+                <div
+                  className="p-4 rounded-sm border text-sm text-accent"
+                  style={{ background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'rgb(var(--accent-rgb) / 0.2)' }}
+                >
                   This tenant is on an <strong>unlimited</strong> plan — no token cap is enforced.
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-gray-400">
+                  <div className="flex items-center justify-between text-xs t-muted">
                     <span>Usage</span>
-                    <span className={`font-semibold ${pctColorClass}`}>{usagePct.toFixed(1)}%</span>
+                    <span className={`font-semibold font-mono tnum ${pctColorClass}`}>{usagePct.toFixed(1)}%</span>
                   </div>
                   <UsageBar
                     used={budget.tokensUsedThisMonth}
@@ -251,21 +275,21 @@ export function TenantLlmBudgetPage() {
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">Redaction:</span>
+                  <span className="text-xs t-muted">Redaction:</span>
                   {budget.llmRedactionEnabled ? (
                     <Badge variant="success" className="text-xs">
                       <CheckCircle size={10} className="mr-1" />
                       Enabled
                     </Badge>
                   ) : (
-                    <Badge variant="default" className="text-xs bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                    <Badge variant="warning" className="text-xs">
                       <AlertTriangle size={10} className="mr-1" />
                       Disabled
                     </Badge>
                   )}
                 </div>
                 {budget.updatedAt && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs t-muted font-mono tnum">
                     Last updated {format(new Date(budget.updatedAt), 'PPP p')}
                   </span>
                 )}
@@ -276,14 +300,14 @@ export function TenantLlmBudgetPage() {
           {/* Edit Form */}
           <Card>
             <div className="p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h2 className="text-lg font-semibold t-primary flex items-center gap-2">
                 <Shield size={18} className="text-accent" />
-                Edit LLM Budget & Redaction
+                Edit LLM Budget &amp; Redaction
               </h2>
 
               {/* Budget field */}
               <div className="space-y-2">
-                <label htmlFor="llm-budget-input" className="block text-sm font-medium text-gray-300">
+                <label htmlFor="llm-budget-input" className="block text-sm font-medium t-secondary">
                   Monthly token budget
                 </label>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -296,27 +320,33 @@ export function TenantLlmBudgetPage() {
                     value={budgetInput}
                     disabled={unlimited || saving}
                     onChange={(e) => setBudgetInput(e.target.value)}
-                    className="flex-1 max-w-xs px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent disabled:opacity-50"
+                    className="flex-1 max-w-xs px-3 py-2 rounded-md text-sm focus:outline-none focus:border-accent disabled:opacity-50 font-mono tnum"
+                    style={{
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border-card)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
+                  <label className="inline-flex items-center gap-2 text-sm t-secondary cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={unlimited}
                       disabled={saving}
                       onChange={(e) => setUnlimited(e.target.checked)}
-                      className="w-4 h-4 accent-emerald-500"
+                      className="w-4 h-4"
+                      style={{ accentColor: 'var(--accent)' }}
                     />
                     Unlimited
                   </label>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs t-muted">
                   Tokens counted across all LLM calls (prompt + completion). When exceeded, subsequent calls are rejected until the monthly reset.
                 </p>
               </div>
 
               {/* Redaction toggle */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-300">PII redaction</label>
+                <label className="block text-sm font-medium t-secondary">PII redaction</label>
                 <div className="flex items-center gap-4">
                   <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
                     <input
@@ -324,24 +354,28 @@ export function TenantLlmBudgetPage() {
                       checked={redactionEnabled}
                       disabled={saving}
                       onChange={(e) => setRedactionEnabled(e.target.checked)}
-                      className="w-4 h-4 accent-emerald-500"
+                      className="w-4 h-4"
+                      style={{ accentColor: 'var(--accent)' }}
                     />
-                    <span className={redactionEnabled ? 'text-emerald-400' : 'text-amber-400'}>
+                    <span className={redactionEnabled ? 'text-accent' : 'text-[var(--warning)]'}>
                       {redactionEnabled ? 'Enabled' : 'Disabled'}
                     </span>
                   </label>
                 </div>
-                <p className="text-xs text-gray-500 flex items-start gap-1.5">
-                  <Info size={12} className="mt-0.5 flex-shrink-0 text-gray-500" />
+                <p className="text-xs t-muted flex items-start gap-1.5">
+                  <Info size={12} className="mt-0.5 flex-shrink-0 t-muted" />
                   <span>
-                    <strong className="text-gray-400">Enabled (default):</strong> PII (emails, phones, IDs, credit cards) is redacted before LLM calls.
+                    <strong className="t-secondary">Enabled (default):</strong> PII (emails, phones, IDs, credit cards) is redacted before LLM calls.
                     Disable only if this tenant has a DPA allowing raw PII processing.
                   </span>
                 </p>
               </div>
 
               {/* Save actions */}
-              <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-700">
+              <div
+                className="flex flex-wrap items-center gap-3 pt-2 border-t"
+                style={{ borderColor: 'var(--border-card)' }}
+              >
                 <Button
                   variant="primary"
                   onClick={handleSave}
@@ -349,7 +383,10 @@ export function TenantLlmBudgetPage() {
                 >
                   {saving ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      <div
+                        className="w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin mr-2"
+                        style={{ borderColor: 'var(--text-on-accent)', borderTopColor: 'transparent' }}
+                      />
                       Saving...
                     </>
                   ) : (
@@ -359,7 +396,7 @@ export function TenantLlmBudgetPage() {
                     </>
                   )}
                 </Button>
-                <span className="text-xs text-gray-500 inline-flex items-center gap-1">
+                <span className="text-xs t-muted inline-flex items-center gap-1">
                   <Info size={12} /> Changes are audit-logged
                 </span>
                 {isDirty && !saving && (
@@ -381,7 +418,7 @@ export function TenantLlmBudgetPage() {
             </div>
           </Card>
 
-          <div className="text-xs text-gray-500">
+          <div className="text-xs t-muted">
             <Link to="/admin/tenants" className="text-accent hover:underline">
               Back to Tenant Management
             </Link>
