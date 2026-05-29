@@ -44,19 +44,19 @@ const SEVERITY_LABEL: Record<string, string> = {
   major_outage: 'Major outage',
 };
 
-const SEVERITY_TONE: Record<string, { bg: string; border: string; label: string; icon: typeof CheckCircle2 }> = {
-  operational: { bg: 'rgba(52, 211, 153, 0.08)', border: 'rgba(52, 211, 153, 0.35)', label: 'text-emerald-500', icon: CheckCircle2 },
-  degraded: { bg: 'rgba(251, 191, 36, 0.08)', border: 'rgba(251, 191, 36, 0.35)', label: 'text-amber-500', icon: AlertTriangle },
-  partial_outage: { bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.35)', label: 'text-orange-500', icon: AlertTriangle },
-  major_outage: { bg: 'rgba(248, 113, 113, 0.08)', border: 'rgba(248, 113, 113, 0.35)', label: 'text-red-500', icon: XCircle },
+const SEVERITY_TONE: Record<string, { bg: string; border: string; color: string; icon: typeof CheckCircle2 }> = {
+  operational: { bg: 'rgb(var(--accent-rgb) / 0.07)', border: 'rgb(var(--accent-rgb) / 0.30)', color: 'var(--accent)', icon: CheckCircle2 },
+  degraded: { bg: 'rgb(var(--warning-rgb) / 0.07)', border: 'rgb(var(--warning-rgb) / 0.30)', color: 'var(--warning)', icon: AlertTriangle },
+  partial_outage: { bg: 'rgb(var(--warning-rgb) / 0.07)', border: 'rgb(var(--warning-rgb) / 0.30)', color: 'var(--warning)', icon: AlertTriangle },
+  major_outage: { bg: 'rgb(var(--neg-rgb) / 0.07)', border: 'rgb(var(--neg-rgb) / 0.30)', color: 'var(--neg)', icon: XCircle },
 };
 
-function componentPillTone(s: ComponentStatus): { label: string; tone: string } {
-  if (s === 'operational') return { label: 'Operational', tone: 'text-emerald-500' };
-  if (s === 'degraded') return { label: 'Degraded', tone: 'text-amber-500' };
-  if (s === 'partial_outage') return { label: 'Partial outage', tone: 'text-orange-500' };
-  if (s === 'major_outage') return { label: 'Major outage', tone: 'text-red-500' };
-  return { label: s, tone: 't-muted' };
+function componentPillTone(s: ComponentStatus): { label: string; color: string } {
+  if (s === 'operational') return { label: 'Operational', color: 'var(--accent)' };
+  if (s === 'degraded') return { label: 'Degraded', color: 'var(--warning)' };
+  if (s === 'partial_outage') return { label: 'Partial outage', color: 'var(--warning)' };
+  if (s === 'major_outage') return { label: 'Major outage', color: 'var(--neg)' };
+  return { label: s, color: 'var(--text-muted)' };
 }
 
 function ComponentTile({ label, icon: Icon, status, hint }: { label: string; icon: typeof CheckCircle2; status: ComponentStatus; hint?: string }) {
@@ -68,7 +68,7 @@ function ComponentTile({ label, icon: Icon, status, hint }: { label: string; ico
           <Icon size={16} className="t-muted" />
           <span className="text-body-sm font-medium t-primary">{label}</span>
         </div>
-        <span className={`text-caption font-medium ${pill.tone}`}>{pill.label}</span>
+        <span className="text-caption font-medium" style={{ color: pill.color }}>{pill.label}</span>
       </div>
       {hint && <div className="text-caption t-muted mt-2">{hint}</div>}
     </Card>
@@ -132,9 +132,9 @@ export default function StatusPage(): JSX.Element {
         {/* Overall status banner */}
         <Card className="p-6" style={{ background: tone.bg, borderColor: tone.border }}>
           <div className="flex items-center gap-3">
-            <ToneIcon className={tone.label} size={24} />
+            <ToneIcon size={24} style={{ color: tone.color }} />
             <div>
-              <h2 className={`text-headline-md font-bold ${tone.label}`}>{SEVERITY_LABEL[overall] ?? overall}</h2>
+              <h2 className="text-headline-md font-bold" style={{ color: tone.color }}>{SEVERITY_LABEL[overall] ?? overall}</h2>
               <p className="text-body-sm t-muted mt-0.5">Auto-refreshes every {POLL_INTERVAL_MS / 1000}s. Subscribe via your monitoring tool against <code className="font-mono">https://atheon-api.vantax.co.za/api/status</code>.</p>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function StatusPage(): JSX.Element {
           </div>
           {!data || data.incidents.length === 0 ? (
             <div className="p-8 text-center">
-              <CheckCircle2 size={28} className="text-emerald-500/40 mx-auto mb-2" />
+              <CheckCircle2 size={28} className="mx-auto mb-2" style={{ color: 'rgb(var(--accent-rgb) / 0.40)' }} />
               <p className="text-body-sm t-primary font-medium">No incidents in the last 90 days</p>
               <p className="text-caption t-muted mt-1">All systems have been operational.</p>
             </div>
