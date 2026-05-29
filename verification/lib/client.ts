@@ -71,11 +71,25 @@ export class ApiClient {
 
   async reseed(): Promise<unknown> {
     // Doubled prefix: router mounts /api/v1/seed-vantax, handler path is /seed-vantax.
-    const resp = await this.authedFetch('/api/v1/seed-vantax/seed-vantax', { method: 'POST' });
-    if (!resp.ok) {
-      throw new Error(`Reseed failed (${resp.status}): ${await resp.text()}`);
+    // The seed writes thousands of rows in one request and intermittently trips
+    // D1's per-request CPU limit ("D1 DB exceeded its CPU time limit and was reset"),
+    // returning 500 and leaving a partially-seeded tenant (e.g. a null
+    // business_report_key). The seed is idempotent — it truncates then re-seeds —
+    // so retry transient 5xx with backoff rather than failing the gate on one flake.
+    // A 4xx is a real client error and is never retried.
+    const MAX_ATTEMPTS = 3;
+    let lastBody = '';
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const resp = await this.authedFetch('/api/v1/seed-vantax/seed-vantax', { method: 'POST' });
+      if (resp.ok) return resp.json();
+      lastBody = await resp.text();
+      if (resp.status < 500 || attempt === MAX_ATTEMPTS) {
+        throw new Error(`Reseed failed (${resp.status}): ${lastBody}`);
+      }
+      // D1 was just reset — give it a moment to recover before re-seeding.
+      await new Promise<void>(resolve => setTimeout(resolve, attempt * 5000));
     }
-    return resp.json();
+    throw new Error(`Reseed failed after ${MAX_ATTEMPTS} attempts: ${lastBody}`);
   }
 
   async listClusters(): Promise<Cluster[]> {
