@@ -66,7 +66,7 @@ const trendIcon = (trend: string) => {
 // (ui/card.tsx) — having both made Dashboard "feel like a different system"
 // per the 2026-05-12 polish audit. The 30 call sites now use:
 //   <Card>            for the standard tile  (was <DashCard>)
-//   <Card variant="mint">  for the tinted hero  (was <TintedCard>)
+//   <Card variant="default">  for the tinted hero  (was <TintedCard>)
 // See docs/UI_POLISH_PRINCIPLES.md §4 for the canonical card pattern.
 
 export function Dashboard() {
@@ -419,7 +419,7 @@ export function Dashboard() {
       {/* Hero: Atheon Score as central KPI (canonical name — see
           UI_POLISH_PRINCIPLES + WORLD_CLASS_FRONTEND_PROPOSAL §A.4). */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card variant="mint" className="lg:col-span-1 flex flex-col items-center justify-center py-6">
+        <Card variant="default" className="lg:col-span-1 flex flex-col items-center justify-center py-6">
           <ScoreRing score={overallScore} size="xl" label="Atheon Score" />
           <div className="flex items-center gap-2 mt-4">
             {trendIcon(healthTrend)}
@@ -935,7 +935,7 @@ export function Dashboard() {
       {false && (
         <div className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Card variant="mint">
+            <Card variant="default">
               <p className="text-label mb-1">Overall Score</p>
               <p className="text-4xl font-bold t-primary">{overallScore}<span className="text-lg t-muted font-normal">/100</span></p>
               <div className="flex items-center gap-1.5 mt-2">

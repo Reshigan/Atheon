@@ -1760,13 +1760,13 @@ export function CatalystsPage() {
 
  {!analyticsLoading && runAggregate && (
  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-   <Card variant="black"><div className="text-center"><p className="text-label">Total Runs</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalRuns}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-label">Items Processed</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalItems}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-label">Completed</p><p className="text-xl font-bold text-emerald-400 mt-1">{runAggregate.totalCompleted}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-label">Exceptions</p><p className="text-xl font-bold text-red-400 mt-1">{runAggregate.totalExceptions}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-label">Escalated</p><p className="text-xl font-bold text-amber-400 mt-1">{runAggregate.totalEscalated}</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-label">Avg Confidence</p><p className="text-xl font-bold text-blue-400 mt-1">{(runAggregate.avgConfidence * 100).toFixed(0)}%</p></div></Card>
-   <Card variant="black"><div className="text-center"><p className="text-label">Automation Rate</p><p className="text-xl font-bold text-accent mt-1">{(runAggregate.automationRate * 100).toFixed(0)}%</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Total Runs</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalRuns}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Items Processed</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalItems}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Completed</p><p className="text-xl font-bold text-emerald-400 mt-1">{runAggregate.totalCompleted}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Exceptions</p><p className="text-xl font-bold text-red-400 mt-1">{runAggregate.totalExceptions}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Escalated</p><p className="text-xl font-bold text-amber-400 mt-1">{runAggregate.totalEscalated}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Avg Confidence</p><p className="text-xl font-bold text-blue-400 mt-1">{(runAggregate.avgConfidence * 100).toFixed(0)}%</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Automation Rate</p><p className="text-xl font-bold text-accent mt-1">{(runAggregate.automationRate * 100).toFixed(0)}%</p></div></Card>
  </div>
  )}
 

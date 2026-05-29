@@ -309,68 +309,39 @@
   .border-theme { border-color: var(--border-card); }
   .border-theme-subtle { border-color: var(--border-subtle); }
 
-  .card-glass {
+  /* Swiss surface — white field, single hairline rule, sharp corners, flat.
+     The card's authority comes from precise alignment and the hairline grid,
+     never from drop shadows or rounded softness. */
+  .card-swiss {
     background: var(--bg-card);
     border: 1px solid var(--border-card);
-    border-radius: 1rem;
+    border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-    position: relative;
-  }
-  .card-glass:hover { box-shadow: var(--shadow-card-hover); }
-  /* v2: hairline sage glow at the top edge — a subtle but unmistakable
-     brand signature that visually anchors every card to the Atheon palette
-     without competing with content. Light theme uses the same accent at
-     reduced alpha for legibility on the soft slate field. */
-  .atheon-dark .card-glass::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 1px;
-    border-radius: 1rem 1rem 0 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(163, 177, 138, 0.45) 50%, transparent 100%);
-    pointer-events: none;
+    transition: background var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out);
   }
 
-  .card-dark {
+  /* Borderless section block anchored by a 1.5px ink top-rule. */
+  .card-panel {
+    background: transparent;
+    border: 0;
+    border-top: 1.5px solid var(--line-strong);
+    border-radius: 0;
+  }
+
+  /* Single-emphasis card — hairline tinted with the ledger accent. */
+  .card-accent {
     background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    border-radius: 1rem;
+    border: 1px solid rgb(var(--accent-rgb) / 0.32);
+    border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
+    transition: background var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out);
   }
-  .card-dark:hover { box-shadow: var(--shadow-card-hover); }
+  .card-accent:hover { border-color: rgb(var(--accent-rgb) / 0.5); }
 
-  .card-black {
-    background: var(--bg-card-hover);
-    border: 1px solid var(--border-card);
-    border-radius: 1rem;
-    color: var(--text-primary);
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-  }
-  .card-black:hover { border-color: rgba(163, 177, 138, 0.22); }
-  .card-black .t-primary, .card-black h3, .card-black h4, .card-black p { color: #e8e4dc; }
-  .card-black .t-secondary { color: #c4bfb4; }
-  .card-black .t-muted { color: #586573; }
-
-  .card-teal {
-    background: var(--bg-card);
-    border: 1px solid rgba(163,177,138,.28);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-  }
-  .card-teal:hover { border-color: rgba(163, 177, 138, 0.30); }
-
-  .card-mint {
-    background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-  }
-  .card-mint:hover { border-color: rgba(16, 185, 129, 0.25); }
+  /* Legacy aliases — keep until the page-rollout phases migrate direct
+     className references off them. All resolve to the Swiss surface. */
+  .card-glass, .card-dark, .card-black, .card-mint { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); box-shadow: var(--shadow-card); transition: background var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out); }
+  .card-teal { background: var(--bg-card); border: 1px solid rgb(var(--accent-rgb) / 0.28); border-radius: var(--radius); box-shadow: var(--shadow-card); }
 
   .bg-glass {
     background: var(--bg-card);

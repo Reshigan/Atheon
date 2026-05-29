@@ -929,7 +929,7 @@ export function PulsePage() {
 
           {/* Top Row: Status Strip + Dimensions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <Card variant="black" className="lg:col-span-1 flex flex-col items-center justify-center">
+            <Card variant="default" className="lg:col-span-1 flex flex-col items-center justify-center">
               {/* Pulse Status Strip (visual differentiation from Apex ring) */}
               <p className="text-label mb-2">Operational Health</p>
               <p className="text-3xl font-bold t-primary mb-3 tabular-nums font-mono">{health.score}<span className="text-sm font-normal t-muted">/100</span></p>
@@ -1146,7 +1146,7 @@ export function PulsePage() {
           {/* Narrative + Insights */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Operational Narrative */}
-            <Card variant="black">
+            <Card variant="default">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="w-4 h-4 text-accent" />
                 <h3 className="text-lg font-semibold">Operational Summary</h3>
@@ -2136,7 +2136,7 @@ export function PulsePage() {
           {/* Summary Cards */}
           {catalystSummary.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card variant="black">
+              <Card variant="default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                     <Play className="w-5 h-5 text-accent" />
@@ -2147,7 +2147,7 @@ export function PulsePage() {
                   </div>
                 </div>
               </Card>
-              <Card variant="black">
+              <Card variant="default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -2158,7 +2158,7 @@ export function PulsePage() {
                   </div>
                 </div>
               </Card>
-              <Card variant="black">
+              <Card variant="default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
                     <FileWarning className="w-5 h-5 text-red-400" />
@@ -2169,7 +2169,7 @@ export function PulsePage() {
                   </div>
                 </div>
               </Card>
-              <Card variant="black">
+              <Card variant="default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
                     <UserCheck className="w-5 h-5 text-amber-400" />
@@ -2185,7 +2185,7 @@ export function PulsePage() {
 
           {/* Per-Catalyst Summary Table */}
           {catalystSummary.length > 0 && (
-            <Card variant="black" className="mb-6">
+            <Card variant="default" className="mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-4 h-4 text-accent" />
                 <h3 className="text-sm font-semibold t-primary">Catalyst Performance Summary</h3>

@@ -953,7 +953,7 @@ export function ApexPage() {
 
   {/* Executive Summary + Risk Snapshot */}
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-   <Card variant="black">
+   <Card variant="default">
     <div className="flex items-center gap-2 mb-3">
      <BarChart3 className="w-4 h-4 text-accent" />
      <h3 className="text-lg font-semibold">Executive Summary</h3>
@@ -1169,7 +1169,7 @@ export function ApexPage() {
  </div>
  </Card>
 
- <Card variant="mint">
+ <Card variant="default">
  <h3 className="text-base font-semibold t-primary mb-3 flex items-center gap-2">
  <Lightbulb className="w-4 h-4 text-emerald-400" /> Opportunities
  </h3>
