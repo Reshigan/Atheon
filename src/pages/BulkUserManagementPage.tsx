@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { LoadingState, EmptyState } from '@/components/ui/state';
 import { api, ApiError } from '@/lib/api';
@@ -233,11 +233,10 @@ export function BulkUserManagementPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <HeroHeader
-        icon={Users}
+      <PageHeader
+        eyebrow="Access · Bulk Users"
         title="Bulk User Management"
-        subtitle="Import users via CSV and apply bulk actions across your tenant"
-        accent="sage"
+        dek="Import users via CSV and apply bulk actions across your tenant"
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -247,11 +246,11 @@ export function BulkUserManagementPage() {
         </Card>
         <Card className="p-3">
           <p className="text-label">Active</p>
-          <p className="text-xl font-bold text-emerald-400">{activeCount}</p>
+          <p className="text-xl font-bold tabular-nums font-mono" style={{ color: 'var(--positive)' }}>{activeCount}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Suspended</p>
-          <p className="text-xl font-bold text-red-400">{suspendedCount}</p>
+          <p className="text-xl font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{suspendedCount}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Imports</p>
@@ -269,7 +268,7 @@ export function BulkUserManagementPage() {
             <h3 className="text-sm font-medium t-primary mb-1">Import Users via CSV</h3>
             <p className="text-xs t-muted mb-4">Columns: <code className="px-1 rounded bg-[var(--bg-secondary)]">email</code>, <code className="px-1 rounded bg-[var(--bg-secondary)]">name</code>, <code className="px-1 rounded bg-[var(--bg-secondary)]">role</code> (optional), <code className="px-1 rounded bg-[var(--bg-secondary)]">permissions</code> (optional)</p>
             <div
-              className={`border-2 border-dashed rounded-xl p-8 mb-4 transition-colors ${dragOver ? 'border-accent bg-accent/5' : 'border-[var(--border-card)] hover:border-accent/50'} active:scale-[0.97]`}
+              className={`border-2 border-dashed rounded-md p-8 mb-4 transition-colors ${dragOver ? 'border-accent bg-accent/5' : 'border-[var(--border-card)] hover:border-accent/50'} active:scale-[0.97]`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
@@ -315,7 +314,7 @@ export function BulkUserManagementPage() {
           </div>
 
           {previewRows.length > 0 && (
-            <div className="mt-6 p-4 rounded-lg bg-[var(--bg-secondary)]">
+            <div className="mt-6 p-4 rounded-md bg-[var(--bg-secondary)]">
               <p className="text-xs font-medium t-primary mb-2">CSV Preview (first 6 lines)</p>
               <pre className="text-caption t-muted font-mono whitespace-pre-wrap">{previewRows.join('\n')}</pre>
             </div>
@@ -325,14 +324,14 @@ export function BulkUserManagementPage() {
             <div className="mt-6 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Card className="p-3"><p className="text-label">Rows</p><p className="text-xl font-bold t-primary">{importResult.total}</p></Card>
-                <Card className="p-3"><p className="text-label">{importResult.dryRun ? 'Valid' : 'Created'}</p><p className="text-xl font-bold text-emerald-400">{importResult.created}</p></Card>
-                <Card className="p-3"><p className="text-label">Skipped</p><p className="text-xl font-bold text-amber-400">{importResult.skipped.length}</p></Card>
-                <Card className="p-3"><p className="text-label">Errors</p><p className="text-xl font-bold text-red-400">{importResult.errors.length}</p></Card>
+                <Card className="p-3"><p className="text-label">{importResult.dryRun ? 'Valid' : 'Created'}</p><p className="text-xl font-bold tabular-nums font-mono" style={{ color: 'var(--positive)' }}>{importResult.created}</p></Card>
+                <Card className="p-3"><p className="text-label">Skipped</p><p className="text-xl font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{importResult.skipped.length}</p></Card>
+                <Card className="p-3"><p className="text-label">Errors</p><p className="text-xl font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{importResult.errors.length}</p></Card>
               </div>
 
               {importResult.createdUsers.length > 0 && (
                 <Card className="p-4">
-                  <p className="text-xs font-medium t-primary mb-2 flex items-center gap-2"><CheckCircle size={14} className="text-emerald-400" /> {importResult.dryRun ? 'Would create' : 'Created'} ({importResult.createdUsers.length})</p>
+                  <p className="text-xs font-medium t-primary mb-2 flex items-center gap-2"><CheckCircle size={14} className="text-accent" /> {importResult.dryRun ? 'Would create' : 'Created'} ({importResult.createdUsers.length})</p>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
                     {importResult.createdUsers.map(u => (
                       <div key={`${u.row}-${u.email}`} className="flex items-center justify-between text-xs">
@@ -351,7 +350,7 @@ export function BulkUserManagementPage() {
 
               {importResult.skipped.length > 0 && (
                 <Card className="p-4">
-                  <p className="text-xs font-medium t-primary mb-2 flex items-center gap-2"><AlertTriangle size={14} className="text-amber-400" /> Skipped ({importResult.skipped.length})</p>
+                  <p className="text-xs font-medium t-primary mb-2 flex items-center gap-2"><AlertTriangle size={14} style={{ color: 'var(--warning)' }} /> Skipped ({importResult.skipped.length})</p>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
                     {importResult.skipped.map((s, i) => (
                       <div key={i} className="text-xs flex items-center justify-between">
@@ -364,13 +363,13 @@ export function BulkUserManagementPage() {
               )}
 
               {importResult.errors.length > 0 && (
-                <Card className="p-4 border-red-500/20">
-                  <p className="text-xs font-medium text-red-400 mb-2 flex items-center gap-2"><XCircle size={14} /> Errors ({importResult.errors.length})</p>
+                <Card className="p-4" style={{ borderColor: 'rgb(var(--neg-rgb)/0.2)' }}>
+                  <p className="text-xs font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--neg)' }}><XCircle size={14} /> Errors ({importResult.errors.length})</p>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
                     {importResult.errors.map((e, i) => (
                       <div key={i} className="text-xs flex items-center justify-between">
                         <span className="t-primary">Row {e.row} {e.email ? `· ${e.email}` : ''}</span>
-                        <span className="text-red-400">{e.reason}</span>
+                        <span style={{ color: 'var(--neg)' }}>{e.reason}</span>
                       </div>
                     ))}
                   </div>
@@ -384,7 +383,7 @@ export function BulkUserManagementPage() {
       {/* BULK ACTIONS TAB */}
       <TabPanel id="bulk-actions" activeTab={activeTab}>
         <Card className="p-4">
-          <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-[var(--bg-secondary)]">
+          <div className="flex items-center justify-between mb-4 p-3 rounded-md bg-[var(--bg-secondary)]">
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={allSelected} onChange={toggleAll} className="rounded" />
               <span className="text-xs t-muted">{selectedCount} of {users.length} selected</span>
@@ -393,7 +392,7 @@ export function BulkUserManagementPage() {
               <select
                 value={bulkAction}
                 onChange={(e) => setBulkAction(e.target.value)}
-                className="text-xs rounded-lg border border-[var(--border-card)] bg-[var(--bg-primary)] t-primary px-2 py-1"
+                className="text-xs rounded-md border border-[var(--border-card)] bg-[var(--bg-primary)] t-primary px-2 py-1"
               >
                 <option value="">Select action...</option>
                 <option value="suspend">Suspend Users</option>
@@ -420,7 +419,7 @@ export function BulkUserManagementPage() {
           ) : (
             <div className="space-y-1">
               {users.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]">
+                <div key={u.id} className="flex items-center gap-3 p-3 rounded-md hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]">
                   <input type="checkbox" checked={selectedIds.has(u.id)} onChange={() => toggleOne(u.id)} className="rounded" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
