@@ -124,10 +124,10 @@ export function OnboardingWizardPage(): JSX.Element {
       {allComplete && (
         <Card className="p-7 text-center" style={{ background: 'rgba(163, 177, 138, 0.08)', border: '1px solid rgba(163, 177, 138, 0.30)' }}>
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border"
+            className="w-14 h-14 rounded-md flex items-center justify-center mx-auto mb-4 border"
             style={{
-              background: 'rgba(163, 177, 138, 0.15)',
-              borderColor: 'rgba(163, 177, 138, 0.35)',
+              background: 'rgb(var(--accent-rgb) / 0.12)',
+              borderColor: 'rgb(var(--accent-rgb) / 0.30)',
             }}
             aria-hidden="true"
           >
@@ -164,11 +164,11 @@ export function OnboardingWizardPage(): JSX.Element {
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center border"
                       style={{
-                        background: 'rgba(52, 211, 153, 0.15)',
-                        borderColor: 'rgba(52, 211, 153, 0.35)',
+                        background: 'rgb(var(--accent-rgb) / 0.12)',
+                        borderColor: 'rgb(var(--accent-rgb) / 0.30)',
                       }}
                     >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-accent" />
                     </div>
                   ) : (
                     <div
