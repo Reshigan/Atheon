@@ -56,7 +56,7 @@ export function OnboardingChecklist() {
 
   return (
     <div
-      className="rounded-xl overflow-hidden mb-5"
+      className="rounded-md overflow-hidden mb-5"
       style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', boxShadow: '0 2px 12px rgba(100, 120, 180, 0.07)' }}
     >
       {/* Header */}
@@ -73,7 +73,7 @@ export function OnboardingChecklist() {
           <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" title={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           </button>
-          <button onClick={handleDismiss} className="p-1 rounded t-muted hover:text-red-400 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" title="Dismiss checklist">
+          <button onClick={handleDismiss} className="p-1 rounded t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" title="Dismiss checklist">
             <X size={14} />
           </button>
         </div>
@@ -87,13 +87,13 @@ export function OnboardingChecklist() {
               key={step.id}
               onClick={() => !step.completed && handleComplete(step.id)}
               disabled={step.completed || completing === step.id}
-              className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)] disabled:opacity-70 disabled:cursor-default group active:scale-[0.97]"
+              className="w-full flex items-start gap-2.5 p-2 rounded-sm text-left transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:bg-[var(--bg-secondary)] disabled:opacity-70 disabled:cursor-default group active:scale-[0.97]"
             >
               <div className="flex-shrink-0 mt-0.5">
                 {completing === step.id ? (
                   <Loader2 size={16} className="text-accent animate-spin" />
                 ) : step.completed ? (
-                  <CheckCircle2 size={16} className="text-emerald-500" />
+                  <CheckCircle2 size={16} className="text-accent" />
                 ) : (
                   <Circle size={16} className="t-muted group-hover:text-accent transition-colors" />
                 )}

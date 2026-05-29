@@ -63,7 +63,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           }}
         >
           <div
-            className="w-full max-w-md rounded-2xl p-7 sm:p-8 text-center"
+            className="w-full max-w-md rounded-md p-7 sm:p-8 text-center"
             style={{
               background: 'var(--bg-card-solid)',
               border: '1px solid var(--border-card)',
@@ -73,10 +73,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           >
             <div className="flex flex-col items-center">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border"
+                className="w-14 h-14 rounded-md flex items-center justify-center mb-5 border"
                 style={{
-                  background: isChunkError ? 'rgba(163, 177, 138, 0.10)' : 'rgba(251, 191, 36, 0.10)',
-                  borderColor: isChunkError ? 'rgba(163, 177, 138, 0.25)' : 'rgba(251, 191, 36, 0.30)',
+                  background: isChunkError ? 'rgb(var(--accent-rgb) / 0.1)' : 'rgb(var(--neg-rgb) / 0.1)',
+                  borderColor: isChunkError ? 'rgb(var(--accent-rgb) / 0.25)' : 'rgb(var(--neg-rgb) / 0.25)',
                 }}
                 aria-hidden="true"
               >
@@ -85,7 +85,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   style={{
                     fontVariationSettings: "'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24",
                     fontSize: 28,
-                    color: isChunkError ? 'var(--accent)' : '#FBBF24',
+                    color: isChunkError ? 'var(--accent)' : 'var(--neg)',
                     lineHeight: 1,
                   }}
                 >
@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                       window.location.reload();
                     }
                   }}
-                  className="px-4 py-2 rounded-lg text-body-sm font-medium text-white transition-colors hover:opacity-90 active:scale-[0.97]"
+                  className="px-4 py-2 rounded-md text-body-sm font-medium text-[var(--text-on-accent)] transition-colors hover:opacity-90 active:scale-[0.97]"
                   style={{ background: 'var(--accent)' }}
                 >
                   {isChunkError ? 'Reload now' : 'Reload page'}
@@ -116,7 +116,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   <button
                     type="button"
                     onClick={() => this.setState({ hasError: false, error: null })}
-                    className="px-4 py-2 rounded-lg text-body-sm font-medium t-secondary transition-colors hover:t-primary hover:bg-[var(--bg-secondary)] border border-[var(--border-card)] active:scale-[0.97]"
+                    className="px-4 py-2 rounded-md text-body-sm font-medium t-secondary transition-colors hover:t-primary hover:bg-[var(--bg-secondary)] border border-[var(--border-card)] active:scale-[0.97]"
                   >
                     Try again
                   </button>

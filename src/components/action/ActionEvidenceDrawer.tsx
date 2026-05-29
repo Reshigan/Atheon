@@ -43,10 +43,10 @@ export interface ActionEvidenceDrawerProps {
 // Severity → Stitch token. Used to tint the finding card border so high/critical
 // findings pop without screaming.
 const SEVERITY_TINT: Record<string, { border: string; bg: string; label: string }> = {
-  critical: { border: 'rgba(248, 113, 113, 0.40)', bg: 'rgba(248, 113, 113, 0.08)', label: 'text-red-400' },
-  high:     { border: 'rgba(249, 115, 22, 0.40)',  bg: 'rgba(249, 115, 22, 0.08)',  label: 'text-orange-400' },
-  medium:   { border: 'rgba(251, 191, 36, 0.40)',  bg: 'rgba(251, 191, 36, 0.08)',  label: 'text-amber-400' },
-  low:      { border: 'rgba(126, 179, 205, 0.40)', bg: 'rgba(126, 179, 205, 0.08)', label: 'text-sky-400' },
+  critical: { border: 'rgb(var(--neg-rgb) / 0.40)',     bg: 'rgb(var(--neg-rgb) / 0.08)',     label: 'text-neg' },
+  high:     { border: 'rgb(var(--neg-rgb) / 0.30)',     bg: 'rgb(var(--neg-rgb) / 0.06)',     label: 'text-neg' },
+  medium:   { border: 'rgb(var(--warning-rgb) / 0.40)', bg: 'rgb(var(--warning-rgb) / 0.08)', label: 'text-[var(--warning)]' },
+  low:      { border: 'rgba(59, 63, 71, 0.30)',          bg: 'rgba(59, 63, 71, 0.06)',          label: 'text-[var(--info)]' },
 };
 
 function pillKind(s: string): string {
@@ -66,9 +66,9 @@ function shortRef(id: string): string {
 // way the inference engine does for its hard cutoff (<0.7 = "soft", forces
 // human review per the platform's "inference must be strong" rule).
 function confidenceBand(c: number): { label: string; tone: string } {
-  if (c >= 0.9) return { label: 'High', tone: 'text-emerald-400' };
-  if (c >= 0.7) return { label: 'Medium', tone: 'text-amber-400' };
-  return { label: 'Low — review carefully', tone: 'text-red-400' };
+  if (c >= 0.9) return { label: 'High', tone: 'text-accent' };
+  if (c >= 0.7) return { label: 'Medium', tone: 'text-[var(--warning)]' };
+  return { label: 'Low — review carefully', tone: 'text-neg' };
 }
 
 export function ActionEvidenceDrawer({
@@ -156,7 +156,7 @@ export function ActionEvidenceDrawer({
     const newVal = (payload.new_value ?? payload.to ?? payload.value) as unknown;
     if (!table && !field && oldVal === undefined && newVal === undefined) return null;
     return (
-      <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border-card)' }}>
+      <div className="rounded-md border p-4" style={{ borderColor: 'var(--border-card)' }}>
         <div className="flex items-center gap-2 mb-3">
           <Database size={14} className="t-muted" />
           <span className="text-caption uppercase tracking-wider t-muted font-medium">Field mapping</span>
@@ -219,7 +219,7 @@ export function ActionEvidenceDrawer({
             </div>
 
             {/* 2. Inference strength — confidence + sample size + reasoning */}
-            <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border-card)' }}>
+            <div className="rounded-md border p-4" style={{ borderColor: 'var(--border-card)' }}>
               <div className="flex items-center gap-2 mb-3">
                 <Brain size={14} className="t-muted" />
                 <span className="text-caption uppercase tracking-wider t-muted font-medium">Inference</span>
@@ -266,7 +266,7 @@ export function ActionEvidenceDrawer({
                 const tint = SEVERITY_TINT[finding.severity] ?? SEVERITY_TINT.medium;
                 return (
                   <div
-                    className="rounded-xl border p-4"
+                    className="rounded-md border p-4"
                     style={{ borderColor: tint.border, background: tint.bg }}
                   >
                     <div className="flex items-start gap-2 mb-3">
@@ -313,7 +313,7 @@ export function ActionEvidenceDrawer({
                 );
               })()
             ) : (
-              <div className="rounded-xl border border-dashed p-4 flex items-start gap-2" style={{ borderColor: 'var(--border-card)' }}>
+              <div className="rounded-md border border-dashed p-4 flex items-start gap-2" style={{ borderColor: 'var(--border-card)' }}>
                 <FileText size={14} className="t-muted mt-0.5" />
                 <div className="text-body-sm t-muted">
                   No linked assessment finding. This action was dispatched without a source finding — confidence + sample size from the catalyst output are the only inference signals.
@@ -323,7 +323,7 @@ export function ActionEvidenceDrawer({
 
             {/* 4. Sample records — the actual ERP rows that justify the action */}
             {sampleRecords.length > 0 && (
-              <div className="rounded-xl border" style={{ borderColor: 'var(--border-card)' }}>
+              <div className="rounded-md border" style={{ borderColor: 'var(--border-card)' }}>
                 <div className="flex items-center justify-between gap-2 px-4 py-3 border-b" style={{ borderColor: 'var(--border-card)' }}>
                   <div className="flex items-center gap-2">
                     <Database size={14} className="t-muted" />
@@ -370,7 +370,7 @@ export function ActionEvidenceDrawer({
 
             {/* 6. Execution trace — per-step logs from execution_logs */}
             {logs.length > 0 && (
-              <div className="rounded-xl border" style={{ borderColor: 'var(--border-card)' }}>
+              <div className="rounded-md border" style={{ borderColor: 'var(--border-card)' }}>
                 <div className="flex items-center justify-between gap-2 px-4 py-3 border-b" style={{ borderColor: 'var(--border-card)' }}>
                   <div className="flex items-center gap-2">
                     <Workflow size={14} className="t-muted" />
@@ -402,7 +402,7 @@ export function ActionEvidenceDrawer({
 
             {/* 7. Raw payload — collapsed by default, available for debug */}
             {(action.input || action.output) && (
-              <details className="rounded-xl border p-3" style={{ borderColor: 'var(--border-card)' }}>
+              <details className="rounded-md border p-3" style={{ borderColor: 'var(--border-card)' }}>
                 <summary className="cursor-pointer flex items-center gap-2 text-caption uppercase tracking-wider t-muted font-medium">
                   <ListTree size={14} /> Raw payload
                 </summary>
@@ -460,7 +460,7 @@ export function ActionEvidenceDrawer({
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+    <div className="rounded-md p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
       <div className="text-caption uppercase tracking-wider t-muted mb-1">{label}</div>
       <div>{value}</div>
     </div>
