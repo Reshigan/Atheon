@@ -71,17 +71,17 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
       return (
         <div className="flex items-center gap-3">
           <span className="text-headline-lg font-bold t-primary tabular-nums font-mono">{d.score !== null ? `${d.score}/100` : 'N/A'}</span>
-          {d.trend === 'improving' ? <TrendingUp size={16} className="text-emerald-400" /> :
-           d.trend === 'declining' ? <TrendingDown size={16} className="text-red-400" /> :
-           <Minus size={16} className="text-gray-400" />}
+          {d.trend === 'improving' ? <TrendingUp size={16} className="text-accent" /> :
+           d.trend === 'declining' ? <TrendingDown size={16} className="text-neg" /> :
+           <Minus size={16} className="t-muted" />}
           <span className="text-xs t-muted">Δ {d.delta > 0 ? '+' : ''}{d.delta}</span>
         </div>
       );
     } else if (type === 'risk') {
       const r = data as RiskTraceResponse;
-      const sevTint = r.riskAlert.severity === 'critical' ? 'text-red-400'
-        : r.riskAlert.severity === 'high' ? 'text-amber-400'
-        : 'text-blue-400';
+      const sevTint = r.riskAlert.severity === 'critical' ? 'text-neg'
+        : r.riskAlert.severity === 'high' ? 'text-neg'
+        : 'text-[var(--info)]';
       return (
         <div className="flex items-center gap-2">
           <AlertTriangle size={16} className={sevTint} />
@@ -94,7 +94,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
       const statusColor = m.metric.status === 'red' ? 'danger' : m.metric.status === 'amber' ? 'warning' : 'success';
       return (
         <div className="flex items-center gap-2">
-          <BarChart3 size={16} className={`text-${statusColor === 'danger' ? 'red' : statusColor === 'warning' ? 'amber' : 'emerald'}-400`} />
+          <BarChart3 size={16} className={statusColor === 'danger' ? 'text-neg' : statusColor === 'warning' ? 'text-[var(--warning)]' : 'text-accent'} />
           <Badge variant={statusColor} className="text-xs">{m.metric.status}</Badge>
           <span className="text-sm t-primary">{m.metric.value} {m.metric.unit}</span>
         </div>
@@ -109,7 +109,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
         <div className="space-y-2">
           <h4 className="text-xs font-semibold t-primary uppercase tracking-wider">KPI Contributors</h4>
           {d.kpiContributors.map((kpi, i) => (
-            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+            <div key={i} className="flex items-center justify-between p-2 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
               <span className="text-sm t-primary">{kpi.name}</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs t-muted">{kpi.value}</span>
@@ -127,7 +127,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
         <div className="space-y-2">
           <h4 className="text-xs font-semibold t-primary uppercase tracking-wider">Flagged Items ({r.flaggedItems.length})</h4>
           {r.flaggedItems.slice(0, 5).map((item, i) => (
-            <div key={i} className="p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+            <div key={i} className="p-2 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
               <div className="flex items-center justify-between">
                 <span className="text-xs t-primary font-medium">Item #{item.itemNumber}</span>
                 <StatusPill status={item.status} size="sm" />
@@ -148,7 +148,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
         <div className="space-y-2">
           <h4 className="text-xs font-semibold t-primary uppercase tracking-wider">Related Anomalies ({m.relatedAnomalies.length})</h4>
           {m.relatedAnomalies.slice(0, 3).map((a, i) => (
-            <div key={i} className="p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+            <div key={i} className="p-2 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
               <div className="flex items-center justify-between">
                 <span className="text-xs t-primary font-medium">Anomaly #{i + 1}</span>
                 <StatusPill status={a.severity} size="sm" />
@@ -165,7 +165,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} 
-             className="rounded-xl shadow-2xl p-6 w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+             className="rounded-md p-6 w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto">
           
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -179,7 +179,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                  `Metric: ${(data as MetricTraceResponse).metric.name}`}
               </h3>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="t-muted hover:t-secondary">
               <X size={18} />
             </button>
           </div>
@@ -204,7 +204,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                       : [];
               if (runs.length === 0) return null;
               return (
-                <div className="border border-[var(--border-card)] rounded-lg">
+                <div className="border border-[var(--border-card)] rounded-md">
                   <button
                     onClick={() => toggleSection('source')}
                     className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
@@ -223,7 +223,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                             <button
                               key={r.runId}
                               onClick={() => navigateToRun(r.runId)}
-                              className="w-full text-left p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--accent)] hover:shadow-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
+                              className="w-full text-left p-3 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--accent)] hover:shadow-sm transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
                             >
                               <div className="flex items-center justify-between mb-1.5">
                                 <span className="text-sm font-medium t-primary truncate pr-2">{r.subCataulystName}</span>
@@ -234,9 +234,9 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                               </div>
                               <div className="flex items-center gap-3 text-caption">
                                 <span className="t-muted">Records: <span className="t-primary font-medium tabular-nums">{total}</span></span>
-                                <span className="text-emerald-500">Matched <span className="font-medium tabular-nums">{r.matched}</span></span>
-                                <span className="text-amber-500">Discrepancies <span className="font-medium tabular-nums">{r.discrepancies}</span></span>
-                                {r.exceptions > 0 && <span className="text-red-500">Exceptions <span className="font-medium tabular-nums">{r.exceptions}</span></span>}
+                                <span className="text-accent">Matched <span className="font-medium tabular-nums">{r.matched}</span></span>
+                                <span style={{ color: 'var(--warning)' }}>Discrepancies <span className="font-medium tabular-nums">{r.discrepancies}</span></span>
+                                {r.exceptions > 0 && <span className="text-neg">Exceptions <span className="font-medium tabular-nums">{r.exceptions}</span></span>}
                                 {typeof r.totalValue === 'number' && r.totalValue > 0 && (
                                   <span className="ml-auto t-primary font-medium tabular-nums">{formatZAR(r.totalValue)}</span>
                                 )}
@@ -254,7 +254,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
 
             {/* Source Attribution — kept compact, only shown when there's a single source */}
             {(type === 'risk' || type === 'metric') && (
-              <div className="border border-[var(--border-card)] rounded-lg">
+              <div className="border border-[var(--border-card)] rounded-md">
                 <button
                   onClick={() => toggleSection('attribution')}
                   className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
@@ -285,7 +285,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
             )}
 
             {type === 'dimension' && (data as HealthDimensionTraceResponse).traceability?.contributingClusters?.length > 0 && (
-              <div className="border border-[var(--border-card)] rounded-lg">
+              <div className="border border-[var(--border-card)] rounded-md">
                 <button
                   onClick={() => toggleSection('clusters')}
                   className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"
@@ -311,7 +311,7 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
             )}
 
             {/* Contributors/Items */}
-            <div className="border border-[var(--border-card)] rounded-lg">
+            <div className="border border-[var(--border-card)] rounded-md">
               <button 
                 onClick={() => toggleSection('contributors')}
                 className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-secondary)]"

@@ -98,7 +98,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
 
   if (metrics.length === 0) {
     return (
-      <div className="flex items-center gap-3 py-6 px-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+      <div className="flex items-center gap-3 py-6 px-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
         <Link2 className="w-5 h-5 t-muted opacity-40 flex-shrink-0" />
         <p className="text-sm t-muted">
           Not enough correlation data to render a matrix yet.
@@ -112,13 +112,13 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
   const cellColour = (signed: number): string => {
     const strength = Math.min(1, Math.abs(signed));
     if (strength < 0.05) return "var(--bg-card-solid)";
-    // Emerald for positive, red for negative. Alpha scales with strength.
+    // Accent for positive, neg for negative. Alpha scales with strength.
     if (signed >= 0) {
       const alpha = 0.12 + strength * 0.78; // 0.12..0.90
-      return `rgba(16, 185, 129, ${alpha.toFixed(3)})`;
+      return `rgb(var(--accent-rgb) / ${alpha.toFixed(3)})`;
     }
     const alpha = 0.12 + strength * 0.78;
-    return `rgba(239, 68, 68, ${alpha.toFixed(3)})`;
+    return `rgb(var(--neg-rgb) / ${alpha.toFixed(3)})`;
   };
 
   return (
@@ -130,11 +130,11 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
         </h4>
         <div className="flex items-center gap-3 text-caption t-muted">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded" style={{ background: "rgba(16, 185, 129, 0.85)" }} />
+            <span className="inline-block w-3 h-3 rounded" style={{ background: "rgb(var(--accent-rgb) / 0.85)" }} />
             Positive
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded" style={{ background: "rgba(239, 68, 68, 0.85)" }} />
+            <span className="inline-block w-3 h-3 rounded" style={{ background: "rgb(var(--neg-rgb) / 0.85)" }} />
             Negative
           </span>
           <span className="flex items-center gap-1">
@@ -149,7 +149,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
         </p>
       )}
 
-      <div className="overflow-auto max-w-full rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+      <div className="overflow-auto max-w-full rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)]">
         <table className="text-caption border-collapse">
           <thead>
             <tr>
@@ -255,7 +255,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
 
       {/* Hover detail panel */}
       {hovered && hovered.item ? (
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--bg-secondary)] border border-accent/20">
+        <div className="flex items-start gap-3 p-3 rounded-md bg-[var(--bg-secondary)] border border-accent/20">
           <Link2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium t-primary">
@@ -265,7 +265,7 @@ export function CorrelationMatrix({ correlations, maxMetrics = 20 }: Correlation
               {hovered.signed >= 0 ? "Positive" : "Negative"} correlation · strength{" "}
               <span
                 className={`font-medium ${
-                  hovered.signed >= 0 ? "text-emerald-400" : "text-red-400"
+                  hovered.signed >= 0 ? "text-accent" : "text-neg"
                 }`}
               >
                 {(hovered.strength * 100).toFixed(0)}%
