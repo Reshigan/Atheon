@@ -182,7 +182,6 @@ function SidebarSection({ section, visible, isExpanded, isActiveSection, onToggl
           '[transition-timing-function:var(--ease-out)] active:scale-[0.98]',
           isActiveSection ? 't-primary' : 't-secondary hover:t-primary hover:bg-[var(--bg-secondary)]',
         )}
-        style={isActiveSection ? { background: 'var(--accent-subtle)' } : undefined}
         aria-expanded={isExpanded}
         aria-controls={`section-${section.key}`}
       >
@@ -210,13 +209,13 @@ function SidebarSection({ section, visible, isExpanded, isActiveSection, onToggl
                     'transition-[background-color,color,transform] duration-[var(--dur-press)]',
                     '[transition-timing-function:var(--ease-out)] active:scale-[0.98]',
                     isActive
-                      ? 'font-medium text-accent border-r-2 border-accent'
+                      ? 'font-medium border-l-[3px]'
                       : 't-secondary hover:t-primary hover:bg-[var(--bg-secondary)]',
                   )}
-                  style={isActive ? { background: 'var(--accent-subtle)' } : undefined}
+                  style={isActive ? { background: 'var(--text-primary)', color: 'var(--bg-primary)', borderColor: 'var(--accent)' } : undefined}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <MaterialIcon name={leaf.symbol} size={16} className={isActive ? 'text-accent' : 't-muted'} />
+                  <MaterialIcon name={leaf.symbol} size={16} className={isActive ? '' : 't-muted'} />
                   <span className="truncate">{leaf.label}</span>
                 </Link>
               </li>
@@ -267,7 +266,7 @@ function findActiveSection(pathname: string): SectionKey | null {
 }
 
 export function Sidebar() {
-  const { mobileSidebarOpen, setMobileSidebarOpen, user, theme } = useAppStore();
+  const { mobileSidebarOpen, setMobileSidebarOpen, user } = useAppStore();
   const location = useLocation();
   const closeMobile = () => setMobileSidebarOpen(false);
   const userRole = user?.role as UserRole | undefined;
@@ -314,7 +313,6 @@ export function Sidebar() {
   }, [userRole]);
 
   const activeSectionKey = findActiveSection(location.pathname);
-  const isDark = theme === 'dark';
 
   // Shared sidebar body (used by desktop + mobile drawer).
   // Logo target is role-aware — scoped read-only roles land on their own
@@ -330,7 +328,7 @@ export function Sidebar() {
         <Link to={homeTarget} className="flex items-center gap-2.5" onClick={closeMobile}>
           <AtheonSidebarLogo />
           <div className="min-w-0">
-            <p className="text-headline-md font-bold t-primary leading-none tracking-tight">Atheon AI</p>
+            <p className="font-display text-headline-md font-bold t-primary leading-none tracking-tight">Atheon AI</p>
             <p className="text-caption t-muted uppercase tracking-widest mt-1">Enterprise Intelligence</p>
           </div>
         </Link>
@@ -387,7 +385,7 @@ export function Sidebar() {
     <>
       {mobileSidebarOpen && (
         <div
-          className={cn("fixed inset-0 z-40 md:hidden", isDark ? "bg-black/60" : "bg-black/20")}
+          className="fixed inset-0 z-40 md:hidden bg-black/20"
           onClick={closeMobile}
         />
       )}
@@ -398,7 +396,6 @@ export function Sidebar() {
         style={{
           background: 'var(--bg-sidebar)',
           borderRight: '1px solid var(--border-card)',
-          boxShadow: '2px 0 12px rgba(100, 120, 180, 0.06)',
         }}
         role="navigation"
         aria-label="Main navigation"
@@ -412,7 +409,7 @@ export function Sidebar() {
           'fixed left-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 w-72 md:hidden',
           mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
-        style={{ background: 'var(--bg-modal)', borderRight: '1px solid var(--border-card)', boxShadow: '4px 0 24px rgba(100, 120, 180, 0.10)' }}
+        style={{ background: 'var(--bg-modal)', borderRight: '1px solid var(--border-card)', boxShadow: '2px 0 16px rgba(28, 25, 23, 0.10)' }}
         role="navigation"
         aria-label="Mobile navigation"
         aria-hidden={!mobileSidebarOpen}
