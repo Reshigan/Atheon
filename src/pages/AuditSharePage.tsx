@@ -26,20 +26,20 @@ interface SharePayload {
 
 function StatCell({ label, value, tone }: { label: string; value: string | number; tone?: 'good' | 'warn' | 'bad' }) {
   const colorMap: Record<string, string> = {
-    good: '#10b981',
-    warn: '#f59e0b',
-    bad: '#ef4444',
+    good: 'var(--positive)',
+    warn: 'var(--warning)',
+    bad: 'var(--neg)',
   };
   const color = tone ? colorMap[tone] : '#0f172a';
   return (
     <div style={{
       padding: '14px 16px',
-      borderRadius: 10,
+      borderRadius: 6,
       border: '1px solid #e5e7eb',
       background: '#ffffff',
     }}>
       <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, color: '#64748b' }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'ui-monospace, monospace', marginTop: 4 }}>{value}</div>
     </div>
   );
 }
@@ -53,10 +53,9 @@ function Section({ icon: Icon, title, code, children }: {
   return (
     <section style={{
       padding: 24,
-      borderRadius: 14,
+      borderRadius: 6,
       border: '1px solid #e5e7eb',
       background: '#ffffff',
-      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <Icon width={16} height={16} color="#0f4d3a" />
@@ -97,7 +96,7 @@ export default function AuditSharePage(): JSX.Element {
 
   const bgStyle: React.CSSProperties = {
     minHeight: '100vh',
-    background: 'radial-gradient(1100px 700px at 25% -10%, rgba(15, 77, 58, 0.06), transparent 60%), #f8fafc',
+    background: '#f8fafc',
     fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     color: '#0f172a',
   };
@@ -164,8 +163,8 @@ export default function AuditSharePage(): JSX.Element {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: 'linear-gradient(135deg, #0f4d3a, #1a7556)',
+              width: 36, height: 36, borderRadius: 4,
+              background: '#0f4d3a',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontWeight: 700, fontSize: 16,
             }}>A</div>
@@ -283,7 +282,7 @@ export default function AuditSharePage(): JSX.Element {
             onClick={downloadJson}
             style={{
               padding: '10px 16px',
-              borderRadius: 10,
+              borderRadius: 6,
               background: '#0f4d3a',
               color: '#fff',
               border: 'none',

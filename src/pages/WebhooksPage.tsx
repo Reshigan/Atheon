@@ -20,7 +20,7 @@ import {
   CheckCircle, Clock, AlertTriangle, ShieldCheck, Code, Copy, CheckCircle2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Portal } from "@/components/ui/portal";
@@ -115,21 +115,20 @@ export function WebhooksPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <HeroHeader
-          icon={WebhookIcon}
-          title="Webhooks"
-          subtitle="HMAC-signed event subscriptions for external systems"
-          accent="sky"
-        />
-        <Button variant="primary" size="md" onClick={() => setShowCreate(true)}>
-          <Plus size={14} /> New webhook
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Webhooks · Event Delivery"
+        title="Webhooks"
+        dek="HMAC-signed event subscriptions for external systems"
+        actions={
+          <Button variant="primary" size="md" onClick={() => setShowCreate(true)}>
+            <Plus size={14} /> New webhook
+          </Button>
+        }
+      />
 
       {error && (
-        <Card variant="outline" className="border-red-500/30">
-          <p className="text-sm text-red-400">{error}</p>
+        <Card variant="outline" className="border border-[var(--neg)]" style={{ borderColor: 'rgb(var(--neg-rgb) / 0.3)' }}>
+          <p className="text-sm" style={{ color: 'var(--neg)' }}>{error}</p>
         </Card>
       )}
 
@@ -236,7 +235,7 @@ function Modal({ children, title, onClose, wide }: { children: React.ReactNode; 
         onClick={onClose}
       >
         <div
-          className="relative rounded-2xl border shadow-2xl w-full my-8"
+          className="relative rounded-md border w-full my-8"
           style={{
             background: 'var(--bg-card-solid)',
             borderColor: 'var(--border-card)',
@@ -331,7 +330,7 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
         <div>
           <label className="text-caption font-medium t-muted">Signing secret</label>
           <div
-            className="mt-1 p-2 rounded-lg text-xs font-mono flex items-center justify-between gap-2"
+            className="mt-1 p-2 rounded-md text-xs font-mono flex items-center justify-between gap-2"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
           >
             <span className="t-muted tracking-widest">{webhook.secret || '***'}</span>
@@ -474,12 +473,12 @@ function CodeBlock({ title, snippet }: { title: string; snippet: string }) {
           className="text-caption t-muted hover:t-primary inline-flex items-center gap-1"
           aria-label={`Copy ${title} snippet`}
         >
-          {copied ? <CheckCircle2 size={10} className="text-emerald-500" /> : <Copy size={10} />}
+          {copied ? <CheckCircle2 size={10} className="text-accent" /> : <Copy size={10} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
       <pre
-        className="p-3 rounded-lg text-caption overflow-x-auto font-mono"
+        className="p-3 rounded-md text-caption overflow-x-auto font-mono"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
       >
         <code>{snippet}</code>
