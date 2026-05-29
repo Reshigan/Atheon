@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { api, ApiError } from '@/lib/api';
 import type { GovernanceResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -79,13 +79,13 @@ export function DataGovernancePage() {
   if (error && !data) {
     return (
       <Card className="p-6 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
+        <AlertCircle className="w-5 h-5 mt-0.5" style={{ color: 'var(--neg)' }} />
         <div className="flex-1">
           <p className="text-sm font-medium t-primary">Failed to load data governance</p>
           <p className="text-xs t-muted mt-1">{error}</p>
           <button
             onClick={handleRefresh}
-            className="mt-3 text-xs px-3 py-1.5 rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary"
+            className="mt-3 text-xs px-3 py-1.5 rounded-md border border-[var(--border-card)] t-secondary hover:t-primary"
           >
             Retry
           </button>
@@ -102,22 +102,21 @@ export function DataGovernancePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Shield}
-          title="Data Governance"
-          subtitle="Retention, DSAR history, erasure log & encryption status"
-          accent="sage"
-        />
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
-        >
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Governance · Data Lineage"
+        title="Data Governance"
+        dek="Retention, DSAR history, erasure log &amp; encryption status"
+        actions={
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -170,7 +169,7 @@ export function DataGovernancePage() {
             ) : (
               <>
                 <div className="flex items-center gap-2 mb-3">
-                  <p className="text-2xl font-bold" style={{ color: encryptionHealthy ? 'var(--accent)' : '#f59e0b' }}>
+                  <p className="text-2xl font-bold" style={{ color: encryptionHealthy ? 'var(--accent)' : 'var(--warning)' }}>
                     {encryptionPct}%
                   </p>
                   <Badge variant={encryptionHealthy ? 'success' : 'warning'} className="text-caption">
@@ -179,11 +178,15 @@ export function DataGovernancePage() {
                 </div>
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between">
-                    <span className="t-muted flex items-center gap-1.5"><CheckCircle size={11} className="text-emerald-400" /> Encrypted</span>
+                    <span className="t-muted flex items-center gap-1.5">
+                      <CheckCircle size={11} style={{ color: 'var(--accent)' }} /> Encrypted
+                    </span>
                     <span className="t-primary font-medium">{data.encryption.erpEncrypted}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="t-muted flex items-center gap-1.5"><XCircle size={11} className="text-red-400" /> Plaintext</span>
+                    <span className="t-muted flex items-center gap-1.5">
+                      <XCircle size={11} style={{ color: 'var(--neg)' }} /> Plaintext
+                    </span>
                     <span className="t-primary font-medium">{data.encryption.erpPlaintext}</span>
                   </div>
                 </div>
@@ -272,16 +275,17 @@ export function DataGovernancePage() {
                   <span className="t-muted">Encrypted (encrypted_config)</span>
                   <span className="t-primary font-medium">{data.encryption.erpEncrypted} of {totalErpConns}</span>
                 </div>
-                <div className="h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+                <div className="h-2 rounded-md bg-[var(--bg-secondary)] overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+                    className="h-full rounded-md transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                     style={{ width: `${encryptionPct}%`, background: 'var(--accent)' }}
                   />
                 </div>
               </div>
               {data.encryption.erpPlaintext > 0 && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-400/10 border border-amber-400/20">
-                  <AlertCircle size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 p-3 rounded-md border"
+                     style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.20)' }}>
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
                   <div>
                     <p className="text-xs font-medium t-primary">{data.encryption.erpPlaintext} connection{data.encryption.erpPlaintext === 1 ? '' : 's'} storing credentials as plaintext</p>
                     <p className="text-caption t-muted mt-1">

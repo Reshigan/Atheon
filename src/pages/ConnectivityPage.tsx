@@ -17,7 +17,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { ERPConnection, CircuitBreakerState, ERPCompany } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/state";
 import {
   Plug, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Clock, Loader2,
@@ -117,10 +117,10 @@ export function ConnectivityPage() {
 
   const statusIcon = (status: ConnStatus) => {
     switch (status) {
-      case "connected": return <CheckCircle2 size={16} className="text-emerald-500" />;
-      case "syncing": return <RefreshCw size={16} className="text-blue-500 animate-spin" />;
-      case "error": return <XCircle size={16} className="text-red-500" />;
-      default: return <AlertTriangle size={16} className="text-amber-500" />;
+      case "connected": return <CheckCircle2 size={16} style={{ color: 'var(--accent)' }} />;
+      case "syncing": return <RefreshCw size={16} className="animate-spin" style={{ color: 'var(--info)' }} />;
+      case "error": return <XCircle size={16} style={{ color: 'var(--neg)' }} />;
+      default: return <AlertTriangle size={16} style={{ color: 'var(--warning)' }} />;
     }
   };
 
@@ -146,21 +146,20 @@ export function ConnectivityPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <HeroHeader
-          icon={Plug}
-          title="Connectivity"
-          subtitle="Live Protocols & Integration Health"
-          accent="sky"
-        />
-        {multicompany && (
-          <div className="flex items-center gap-1.5 text-xs t-muted px-2.5 py-1 rounded-md"
-               style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
-               title="Synced ERP data spans multiple company codes (BUKRS/tenant)">
-            <Building2 size={12} /> {companies.length} companies
-          </div>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Connectivity · Systems"
+        title="Connectivity"
+        dek="Live Protocols &amp; Integration Health"
+        actions={
+          multicompany ? (
+            <div className="flex items-center gap-1.5 text-xs t-muted px-2.5 py-1 rounded-md"
+                 style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
+                 title="Synced ERP data spans multiple company codes (BUKRS/tenant)">
+              <Building2 size={12} /> {companies.length} companies
+            </div>
+          ) : undefined
+        }
+      />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -170,7 +169,7 @@ export function ConnectivityPage() {
           { label: "Errors", value: normalisedConnections.filter((c) => c._status === "error").length, icon: XCircle },
           { label: "Circuits Open", value: Object.values(circuitStates).filter(s => s.state !== 'CLOSED').length, icon: ShieldAlert },
         ].map((card) => (
-          <div key={card.label} className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+          <div key={card.label} className="rounded-md p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
             <div className="flex items-center gap-2 mb-2">
               <card.icon size={14} className="t-muted" />
               <span className="text-label">{card.label}</span>
@@ -186,7 +185,7 @@ export function ConnectivityPage() {
           const cb = circuitStates[conn.id];
           const tr = testResults[conn.id];
           return (
-            <div key={conn.id} className="rounded-xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+            <div key={conn.id} className="rounded-md p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   {/* Live status pulse — connected nodes get a sage breathing
@@ -194,8 +193,8 @@ export function ConnectivityPage() {
                       states fall back to the static status glyph. */}
                   {conn._status === 'connected' ? (
                     <span className="relative inline-flex w-2.5 h-2.5" aria-hidden="true" title="Live connection">
-                      <span className="absolute inset-0 rounded-full animate-ping" style={{ background: '#34D399', opacity: 0.55 }} />
-                      <span className="relative inline-flex w-2.5 h-2.5 rounded-full" style={{ background: '#34D399', boxShadow: '0 0 0 3px rgba(52,211,153,0.18)' }} />
+                      <span className="absolute inset-0 rounded-full animate-ping" style={{ background: 'var(--accent)', opacity: 0.55 }} />
+                      <span className="relative inline-flex w-2.5 h-2.5 rounded-full" style={{ background: 'var(--accent)', boxShadow: '0 0 0 3px rgb(var(--accent-rgb) / 0.18)' }} />
                     </span>
                   ) : (
                     statusIcon(conn._status)
@@ -208,11 +207,12 @@ export function ConnectivityPage() {
                 <div className="flex items-center gap-2">
                   {cb && cb.state !== 'CLOSED' && (
                     <span
-                      className={`inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded border font-medium ${
+                      className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-md border font-medium"
+                      style={
                         cb.state === 'OPEN'
-                          ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                          : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                      }`}
+                          ? { background: 'rgb(var(--neg-rgb) / 0.10)', color: 'var(--neg)', borderColor: 'rgb(var(--neg-rgb) / 0.20)' }
+                          : { background: 'rgb(var(--warning-rgb, 180 130 60) / 0.10)', color: 'var(--warning)', borderColor: 'rgb(var(--warning-rgb, 180 130 60) / 0.20)' }
+                      }
                       title={`Circuit ${cb.state} — ${cb.failures} failure(s)${cb.openedAt ? ', opened ' + new Date(cb.openedAt).toLocaleTimeString() : ''}`}
                     >
                       {cb.state === 'OPEN' ? <ShieldAlert size={10} /> : <ShieldCheck size={10} />} Circuit {cb.state}
@@ -251,10 +251,10 @@ export function ConnectivityPage() {
               </div>
 
               {tr && !tr.connected && tr.message && (
-                <p className="mt-2 text-xs text-red-500">{tr.message}</p>
+                <p className="mt-2 text-xs" style={{ color: 'var(--neg)' }}>{tr.message}</p>
               )}
               {tr && tr.connected && (
-                <p className="mt-2 text-xs text-emerald-500">Last test: connection successful</p>
+                <p className="mt-2 text-xs" style={{ color: 'var(--accent)' }}>Last test: connection successful</p>
               )}
             </div>
           );
