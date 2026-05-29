@@ -427,7 +427,7 @@ export function Header() {
 
         <div className="flex items-center gap-1.5 ml-1.5 pl-1.5" style={{ borderLeft: '1px solid var(--border-card)' }}>
           <div
-            className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center text-caption font-semibold text-white flex-shrink-0"
+            className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center text-caption font-semibold text-[var(--text-on-accent)] flex-shrink-0"
             style={{ background: 'var(--accent)' }}
           >
             {user?.name?.charAt(0) || 'A'}

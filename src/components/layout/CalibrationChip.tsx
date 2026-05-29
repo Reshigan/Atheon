@@ -42,10 +42,10 @@ export function CalibrationChip(): JSX.Element | null {
 
   // Tone follows the same thresholds as the Trust page card.
   const tone = accuracy >= 80
-    ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
+    ? 'text-accent border-[var(--border-card)] bg-[rgb(var(--accent-rgb)/0.1)]'
     : accuracy >= 60
-      ? 'text-amber-400 border-amber-500/30 bg-amber-500/10'
-      : 'text-red-400 border-red-500/30 bg-red-500/10';
+      ? 'text-[var(--warning)] border-[var(--border-card)] bg-[rgb(var(--warning-rgb)/0.1)]'
+      : 'text-neg border-[var(--border-card)] bg-[rgb(var(--neg-rgb)/0.1)]';
 
   return (
     <button
