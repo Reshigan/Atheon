@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
-import { HeroHeader } from '@/components/ui/hero-header';
-import { Server } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import type {
   ManagedDeployment, CreateDeploymentRequest, CreateDeploymentResponse, AgentErrorLog
 } from '@/lib/api';
@@ -88,46 +87,47 @@ export function DeploymentsPage() {
   // ── Status badge ────────────────────────────────────────────────
   const statusColor = (s: string) => {
     switch (s) {
-      case 'active': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-      case 'degraded': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-      case 'offline': case 'suspended': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      case 'pending': case 'provisioning': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      default: return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+      case 'active': return 'text-accent' + ' ' + 'border border-[var(--accent)]';
+      case 'degraded': return 'text-[var(--warning)] border border-[var(--warning)]';
+      case 'offline': case 'suspended': return 'text-neg border border-[var(--neg)]';
+      case 'pending': case 'provisioning': return 't-muted border border-[var(--divider)]';
+      default: return 't-muted border border-[var(--divider)]';
     }
   };
 
+  const headerActions = (
+    <>
+      {view !== 'overview' && (
+        <button
+          onClick={() => { setView('overview'); setSelectedId(null); setSelectedDeployment(null); }}
+          className="px-3 py-1.5 text-sm rounded-md transition-colors"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
+        >
+          &larr; Back
+        </button>
+      )}
+      <button
+        onClick={() => setView('provision')}
+        className="px-4 py-1.5 text-sm font-medium rounded-md transition-colors"
+        style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
+      >
+        + Provision New
+      </button>
+    </>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <HeroHeader
-          icon={Server}
-          title="Deployments"
-          subtitle="Hybrid & On-Premise Deployment Management"
-          accent="bronze"
-        />
-        <div className="flex gap-2">
-          {view !== 'overview' && (
-            <button
-              onClick={() => { setView('overview'); setSelectedId(null); setSelectedDeployment(null); }}
-              className="px-3 py-1.5 text-sm rounded-lg transition-colors"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
-            >
-              &larr; Back
-            </button>
-          )}
-          <button
-            onClick={() => setView('provision')}
-            className="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
-            style={{ background: 'var(--accent)' }}
-          >
-            + Provision New
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Platform · Deployments"
+        title="Deployments"
+        dek="Hybrid &amp; On-Premise Deployment Management"
+        live={view === 'overview' && deployments.some(d => d.status === 'active')}
+        actions={headerActions}
+      />
 
       {error && (
-        <div className="p-3 rounded-lg text-sm bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+        <div className="p-3 rounded-sm text-sm border" style={{ background: 'rgb(var(--neg-rgb) / 0.07)', color: 'var(--neg)', borderColor: 'var(--neg)' }}>
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
         </div>
@@ -135,27 +135,27 @@ export function DeploymentsPage() {
 
       {/* Install Config Modal */}
       {installModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="rounded-xl p-6 max-w-xl w-full mx-4 space-y-4" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)' }}>
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Deployment Provisioned</h3>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Share the following with the customer&apos;s IT team:</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-md p-6 max-w-xl w-full mx-4 space-y-4" style={{ background: 'var(--bg-modal)', border: '1px solid var(--border-card)' }}>
+            <h3 className="text-lg font-semibold t-primary">Deployment Provisioned</h3>
+            <p className="text-sm t-secondary">Share the following with the customer&apos;s IT team:</p>
             <div className="space-y-2">
-              <div className="p-3 rounded-lg text-xs font-mono" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+              <div className="p-3 rounded-sm text-xs font-mono" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}>
                 <p><strong>Licence Key:</strong> {installModal.licenceKey}</p>
                 <p><strong>Deployment ID:</strong> {installModal.id}</p>
               </div>
-              <div className="p-3 rounded-lg text-xs font-mono overflow-auto max-h-40" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+              <div className="p-3 rounded-sm text-xs font-mono overflow-auto max-h-40" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}>
                 <p className="mb-1 font-semibold">Install Command:</p>
                 <code>{installModal.installConfig?.installCommand || 'N/A'}</code>
               </div>
-              <div className="p-3 rounded-lg text-xs font-mono overflow-auto max-h-40" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+              <div className="p-3 rounded-sm text-xs font-mono overflow-auto max-h-40" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}>
                 <p className="mb-1 font-semibold">.env file:</p>
                 <pre>{installModal.installConfig?.envFile || 'N/A'}</pre>
               </div>
             </div>
             <button
               onClick={() => { setInstallModal(null); loadDeployments(); setView('overview'); }}
-              className="w-full py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
+              className="w-full py-2 text-sm font-medium rounded-md" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
             >
               Done
             </button>
@@ -183,7 +183,7 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
   if (loading) {
     return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {[1,2,3].map(i => (
-        <div key={i} className="h-48 rounded-xl animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
+        <div key={i} className="h-48 rounded-md animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
       ))}
     </div>;
   }
@@ -191,7 +191,7 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
   if (deployments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-14 h-14 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-md border t-muted flex items-center justify-center mb-4" style={{ borderColor: 'var(--border-card)', background: 'var(--bg-secondary)' }}>
           <svg className="w-7 h-7 t-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
         </div>
         <h3 className="text-base font-semibold t-primary mb-1">No On-Premise Deployments</h3>
@@ -210,59 +210,59 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
         return (
           <div
             key={d.id}
-            className="rounded-xl p-4 cursor-pointer hover:shadow-lg transition-shadow active:scale-[0.97]"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
+            className="rounded-md p-4 cursor-pointer transition-colors active:scale-[0.97]"
+            style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}
             onClick={() => openDetail(d.id)}
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{d.name}</h3>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{d.tenantName}</p>
+                <h3 className="font-medium text-sm t-primary">{d.name}</h3>
+                <p className="text-xs t-muted">{d.tenantName}</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(d.status)}`}>
+              <span className={`text-label px-2 py-0.5 rounded-full font-medium ${statusColor(d.status)}`}>
                 {d.status}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>Health</span>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{d.healthScore}%</p>
+                <span className="t-muted">Health</span>
+                <p className="font-mono tnum font-medium t-primary">{d.healthScore}%</p>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>Last Heartbeat</span>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{timeSince}</p>
+                <span className="t-muted">Last Heartbeat</span>
+                <p className="font-mono tnum font-medium t-primary">{timeSince}</p>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>CPU</span>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{(ru as Record<string, number>).cpuPct ?? '—'}%</p>
+                <span className="t-muted">CPU</span>
+                <p className="font-mono tnum font-medium t-primary">{(ru as Record<string, number>).cpuPct ?? '—'}%</p>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>RAM</span>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{(ru as Record<string, number>).memMb ?? '—'} MB</p>
+                <span className="t-muted">RAM</span>
+                <p className="font-mono tnum font-medium t-primary">{(ru as Record<string, number>).memMb ?? '—'} MB</p>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>Agent</span>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{d.agentVersion || '—'}</p>
+                <span className="t-muted">Agent</span>
+                <p className="font-mono tnum font-medium t-primary">{d.agentVersion || '—'}</p>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>Type</span>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{d.deploymentType}</p>
+                <span className="t-muted">Type</span>
+                <p className="font-medium t-primary">{d.deploymentType}</p>
               </div>
             </div>
 
             <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: '1px solid var(--border-card)' }}>
               <button
                 onClick={(e) => { e.stopPropagation(); openDetail(d.id); }}
-                className="text-xs px-2 py-1 rounded"
-                style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}
+                className="text-xs px-2 py-1 rounded-sm"
+                style={{ background: 'rgb(var(--accent-rgb) / 0.1)', color: 'var(--accent)' }}
               >
                 Details
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); openLogs(d.id); }}
-                className="text-xs px-2 py-1 rounded"
-                style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                className="text-xs px-2 py-1 rounded-sm"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
               >
                 Logs
               </button>
@@ -315,15 +315,15 @@ function ProvisionView({ onCreated, onError }: {
   const inputStyle = { background: 'var(--bg-secondary)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' };
 
   return (
-    <div className="max-w-lg mx-auto rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-      <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Provision New Deployment</h2>
+    <div className="max-w-lg mx-auto rounded-md p-6 space-y-4" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}>
+      <h2 className="text-lg font-semibold t-primary">Provision New Deployment</h2>
 
       <div>
-        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Tenant</label>
+        <label className="block text-xs font-medium mb-1 t-secondary">Tenant</label>
         <select
           value={form.tenant_id}
           onChange={e => setForm({ ...form, tenant_id: e.target.value })}
-          className="w-full rounded-lg px-3 py-2 text-sm"
+          className="w-full rounded-md px-3 py-2 text-sm"
           style={inputStyle}
         >
           <option value="">Select tenant...</option>
@@ -332,24 +332,24 @@ function ProvisionView({ onCreated, onError }: {
       </div>
 
       <div>
-        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Deployment Name</label>
+        <label className="block text-xs font-medium mb-1 t-secondary">Deployment Name</label>
         <input
           type="text"
           value={form.name}
           onChange={e => setForm({ ...form, name: e.target.value })}
           placeholder="e.g. Protea Manufacturing — JHB DC"
-          className="w-full rounded-lg px-3 py-2 text-sm"
+          className="w-full rounded-md px-3 py-2 text-sm"
           style={inputStyle}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Type</label>
+          <label className="block text-xs font-medium mb-1 t-secondary">Type</label>
           <select
             value={form.deployment_type}
             onChange={e => setForm({ ...form, deployment_type: e.target.value as 'hybrid' | 'on-premise' })}
-            className="w-full rounded-lg px-3 py-2 text-sm"
+            className="w-full rounded-md px-3 py-2 text-sm"
             style={inputStyle}
           >
             <option value="hybrid">Hybrid</option>
@@ -357,11 +357,11 @@ function ProvisionView({ onCreated, onError }: {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Region</label>
+          <label className="block text-xs font-medium mb-1 t-secondary">Region</label>
           <select
             value={form.region}
             onChange={e => setForm({ ...form, region: e.target.value })}
-            className="w-full rounded-lg px-3 py-2 text-sm"
+            className="w-full rounded-md px-3 py-2 text-sm"
             style={inputStyle}
           >
             <option value="af-south-1">Africa South (JHB)</option>
@@ -373,23 +373,23 @@ function ProvisionView({ onCreated, onError }: {
       </div>
 
       <div>
-        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Licence Expiry</label>
+        <label className="block text-xs font-medium mb-1 t-secondary">Licence Expiry</label>
         <input
           type="date"
           value={form.licence_expires_at || ''}
           onChange={e => setForm({ ...form, licence_expires_at: e.target.value })}
-          className="w-full rounded-lg px-3 py-2 text-sm"
+          className="w-full rounded-md px-3 py-2 text-sm"
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Max Users</label>
+        <label className="block text-xs font-medium mb-1 t-secondary">Max Users</label>
         <input
           type="number"
           value={(form.config as Record<string, number>)?.maxUsers || 50}
           onChange={e => setForm({ ...form, config: { ...form.config, maxUsers: parseInt(e.target.value) || 50 } })}
-          className="w-full rounded-lg px-3 py-2 text-sm"
+          className="w-full rounded-md px-3 py-2 text-sm"
           style={inputStyle}
         />
       </div>
@@ -397,8 +397,8 @@ function ProvisionView({ onCreated, onError }: {
       <button
         onClick={submit}
         disabled={submitting}
-        className="w-full py-2.5 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50"
-        style={{ background: 'var(--accent)' }}
+        className="w-full py-2.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50"
+        style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
       >
         {submitting ? 'Provisioning...' : 'Provision Deployment'}
       </button>
@@ -525,29 +525,35 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
     }
   };
 
+  const statusBadgeClass = (s: string) => {
+    if (s === 'active') return 'text-accent border border-[var(--accent)]';
+    if (s === 'degraded') return 'text-[var(--warning)] border border-[var(--warning)]';
+    return 'text-neg border border-[var(--neg)]';
+  };
+
   const ru = deployment.resourceUsage || {};
   const inputStyle = { background: 'var(--bg-secondary)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' };
 
   return (
     <div className="space-y-6">
       {/* Status Header */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+      <div className="rounded-md p-5" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}>
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{deployment.name}</h2>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            <h2 className="text-xl font-semibold t-primary">{deployment.name}</h2>
+            <p className="text-sm mt-0.5 t-muted">
               {deployment.tenantName} &middot; {deployment.deploymentType} &middot; {deployment.region}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => { if (editing && deployment) { setEditForm({ name: deployment.name, region: deployment.region, deployment_type: deployment.deploymentType, licence_expires_at: deployment.licenceExpiresAt || '' }); } setEditing(!editing); }}
-              className="px-3 py-1 text-xs font-medium rounded-lg transition-colors"
+              className="px-3 py-1 text-xs font-medium rounded-md transition-colors"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
             >
               {editing ? 'Cancel Edit' : 'Edit'}
             </button>
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${deployment.status === 'active' ? 'bg-emerald-100 text-emerald-700' : deployment.status === 'degraded' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+            <span className={`text-label px-2.5 py-1 rounded-full font-medium ${statusBadgeClass(deployment.status)}`}>
               {deployment.status}
             </span>
           </div>
@@ -557,22 +563,22 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
         {editing && (
           <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid var(--border-card)' }}>
             <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Deployment Name</label>
+              <label className="block text-xs font-medium mb-1 t-secondary">Deployment Name</label>
               <input
                 type="text"
                 value={editForm.name}
                 onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full rounded-lg px-3 py-2 text-sm"
+                className="w-full rounded-md px-3 py-2 text-sm"
                 style={inputStyle}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Type</label>
+                <label className="block text-xs font-medium mb-1 t-secondary">Type</label>
                 <select
                   value={editForm.deployment_type}
                   onChange={e => setEditForm({ ...editForm, deployment_type: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-md px-3 py-2 text-sm"
                   style={inputStyle}
                 >
                   <option value="hybrid">Hybrid</option>
@@ -580,11 +586,11 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Region</label>
+                <label className="block text-xs font-medium mb-1 t-secondary">Region</label>
                 <select
                   value={editForm.region}
                   onChange={e => setEditForm({ ...editForm, region: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-md px-3 py-2 text-sm"
                   style={inputStyle}
                 >
                   <option value="af-south-1">Africa South (JHB)</option>
@@ -595,20 +601,20 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Licence Expiry</label>
+              <label className="block text-xs font-medium mb-1 t-secondary">Licence Expiry</label>
               <input
                 type="date"
                 value={editForm.licence_expires_at}
                 onChange={e => setEditForm({ ...editForm, licence_expires_at: e.target.value })}
-                className="w-full rounded-lg px-3 py-2 text-sm"
+                className="w-full rounded-md px-3 py-2 text-sm"
                 style={inputStyle}
               />
             </div>
             <button
               onClick={saveEdit}
               disabled={saving || !editForm.name.trim()}
-              className="px-4 py-2 text-sm font-medium rounded-lg text-white disabled:opacity-50"
-              style={{ background: 'var(--accent)' }}
+              className="px-4 py-2 text-sm font-medium rounded-md disabled:opacity-50"
+              style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
@@ -627,37 +633,37 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
             { label: 'Created', value: new Date(deployment.createdAt).toLocaleDateString() },
           ].map((item) => (
             <div key={item.label}>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.label}</span>
-              <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{item.value}</p>
+              <span className="text-xs t-muted">{item.label}</span>
+              <p className="text-sm font-mono tnum font-medium truncate t-primary">{item.value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Config Editor */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-        <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Configuration</h3>
+      <div className="rounded-md p-5" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}>
+        <h3 className="font-medium mb-3 t-primary">Configuration</h3>
         <textarea
           value={configText}
           onChange={e => setConfigText(e.target.value)}
           rows={10}
-          className="w-full rounded-lg px-3 py-2 text-xs font-mono"
+          className="w-full rounded-sm px-3 py-2 text-xs font-mono"
           style={inputStyle}
         />
         <button
           onClick={pushConfig}
           disabled={saving}
-          className="mt-2 px-4 py-1.5 text-sm font-medium rounded-lg text-white disabled:opacity-50"
-          style={{ background: 'var(--accent)' }}
+          className="mt-2 px-4 py-1.5 text-sm font-medium rounded-md disabled:opacity-50"
+          style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
         >
           {saving ? 'Pushing...' : 'Push Config'}
         </button>
       </div>
 
       {/* Promote / Push New Version */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-        <h3 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Promote New Version</h3>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+      <div className="rounded-md p-5" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}>
+        <h3 className="font-medium mb-1 t-primary">Promote New Version</h3>
+        <p className="text-xs mb-3 t-muted">
           Instruct the on-premise agent to pull a new Docker image. Current: <span className="font-mono">{deployment.agentVersion || '—'}</span>
         </p>
         <div className="flex gap-2">
@@ -666,14 +672,14 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
             placeholder="e.g. gonxt/atheon-api:v2.1.0"
             value={updateVersion}
             onChange={e => setUpdateVersion(e.target.value)}
-            className="flex-1 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 rounded-md px-3 py-2 text-sm"
             style={inputStyle}
           />
           <button
             onClick={pushUpdate}
             disabled={pushingUpdate || !updateVersion.trim()}
-            className="px-4 py-2 text-sm font-medium rounded-lg text-white disabled:opacity-50"
-            style={{ background: 'var(--accent)' }}
+            className="px-4 py-2 text-sm font-medium rounded-md disabled:opacity-50"
+            style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
           >
             {pushingUpdate ? 'Pushing...' : 'Promote'}
           </button>
@@ -681,9 +687,9 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
       </div>
 
       {/* Rollback */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-        <h3 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Rollback</h3>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+      <div className="rounded-md p-5" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}>
+        <h3 className="font-medium mb-1 t-primary">Rollback</h3>
+        <p className="text-xs mb-3 t-muted">
           Re-push a previous image tag. Version history is not persisted yet &mdash; enter the tag you want to roll back to.
         </p>
         <div className="flex gap-2">
@@ -692,14 +698,14 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
             placeholder="e.g. gonxt/atheon-api:v2.0.0"
             value={rollbackVersion}
             onChange={e => setRollbackVersion(e.target.value)}
-            className="flex-1 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 rounded-md px-3 py-2 text-sm"
             style={inputStyle}
           />
           <button
             onClick={doRollback}
             disabled={rollingBack || !rollbackVersion.trim()}
-            className="px-4 py-2 text-sm font-medium rounded-lg text-white disabled:opacity-50"
-            style={{ background: '#b45309' }}
+            className="px-4 py-2 text-sm font-medium rounded-md disabled:opacity-50"
+            style={{ background: 'var(--neg)', color: 'var(--text-on-accent)' }}
             title="Instruct the agent to pull the specified previous image"
           >
             {rollingBack ? 'Rolling back...' : 'Rollback'}
@@ -708,16 +714,16 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
       </div>
 
       {/* Canary — Not yet implemented */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-card)' }}>
+      <div className="rounded-md p-5" style={{ background: 'var(--bg-card-solid)', border: '1px dashed var(--border-card)' }}>
         <div className="flex items-start gap-2">
           <div className="flex-1">
-            <h3 className="font-medium mb-1 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="font-medium mb-1 flex items-center gap-2 t-primary">
               Canary Promotion
-              <span className="text-label px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              <span className="text-label px-1.5 py-0.5 rounded-sm" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', color: 'var(--warning)', border: '1px solid var(--warning)' }}>
                 Not yet implemented
               </span>
             </h3>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-xs t-muted">
               Canary deployments (rolling out a version to a subset of the fleet first) require a backend endpoint
               <span className="font-mono"> POST /api/deployments/:id/canary </span>
               plus an <span className="font-mono">agent_version_history</span> table. Track progress in the Deployments epic.
@@ -727,9 +733,9 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
       </div>
 
       {/* Delete / Revoke */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-danger, #dc2626)' }}>
-        <h3 className="font-medium mb-3 text-red-600">Delete Deployment</h3>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+      <div className="rounded-md p-5" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--neg)' }}>
+        <h3 className="font-medium mb-3 text-neg">Delete Deployment</h3>
+        <p className="text-xs mb-3 t-muted">
           This will revoke the licence and suspend the deployment. The agent will be refused on next heartbeat.
           Type &quot;<strong>{deployment.name}</strong>&quot; to confirm.
         </p>
@@ -739,13 +745,14 @@ function DetailView({ deployment, id, onRefresh, onError, onBack }: {
             value={revokeConfirm}
             onChange={e => setRevokeConfirm(e.target.value)}
             placeholder="Type deployment name to confirm"
-            className="flex-1 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 rounded-md px-3 py-2 text-sm"
             style={inputStyle}
           />
           <button
             onClick={revoke}
             disabled={revokeConfirm !== deployment.name}
-            className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-red-600 disabled:opacity-30"
+            className="px-4 py-2 text-sm font-medium rounded-md disabled:opacity-30"
+            style={{ background: 'var(--neg)', color: 'var(--text-on-accent)' }}
           >
             Revoke
           </button>
@@ -769,10 +776,10 @@ function LogsView({ id, onError }: { id: string; onError: (title: string, err?: 
 
   const severityColor = (sev: string) => {
     switch (sev) {
-      case 'critical': return 'text-red-600 bg-red-50 dark:bg-red-900/20';
-      case 'error': return 'text-orange-600 bg-orange-50 dark:bg-orange-900/20';
-      case 'warning': return 'text-amber-600 bg-amber-50 dark:bg-amber-900/20';
-      default: return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
+      case 'critical': return 'text-neg bg-[rgb(var(--neg-rgb)/0.08)] border border-[var(--neg)]';
+      case 'error': return 'text-neg bg-[rgb(var(--neg-rgb)/0.08)] border border-[var(--neg)]';
+      case 'warning': return 'text-[var(--warning)] bg-[rgb(var(--neg-rgb)/0.05)] border border-[var(--warning)]';
+      default: return 't-muted border border-[var(--divider)]';
     }
   };
 
@@ -781,24 +788,24 @@ function LogsView({ id, onError }: { id: string; onError: (title: string, err?: 
   if (logs.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No error logs recorded.</p>
+        <p className="text-sm t-muted">No error logs recorded.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+    <div className="rounded-md overflow-hidden" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}>
       <div className="max-h-[600px] overflow-y-auto divide-y" style={{ borderColor: 'var(--border-card)' }}>
         {logs.map((log, i) => (
           <div key={i} className="px-4 py-3 flex items-start gap-3">
-            <span className={`text-caption font-medium uppercase px-1.5 py-0.5 rounded ${severityColor(log.severity)}`}>
+            <span className={`text-caption font-medium uppercase px-1.5 py-0.5 rounded-sm ${severityColor(log.severity)}`}>
               {log.severity}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{log.message}</p>
-              {log.code && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Code: {log.code}</p>}
+              <p className="text-sm t-primary">{log.message}</p>
+              {log.code && <p className="text-xs mt-0.5 t-muted">Code: {log.code}</p>}
             </div>
-            <span className="text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+            <span className="text-xs whitespace-nowrap font-mono tnum t-muted">
               {new Date(log.ts).toLocaleString()}
             </span>
           </div>
