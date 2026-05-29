@@ -472,6 +472,56 @@ describe('Auth + Tenant Isolation', () => {
   });
 
   // ────────────────────────────────────────────
+  // Account Enumeration Defense (timing-safe login)
+  // ────────────────────────────────────────────
+  describe('Account Enumeration Defense', () => {
+    const EXIST_EMAIL = 'enum-exist@tenant-a.com';
+    const GHOST_EMAIL = 'enum-ghost@tenant-a.com'; // intentionally never seeded
+
+    beforeAll(async () => {
+      await seedTestUser('enum-exist-user', TENANT_A_ID, EXIST_EMAIL, TEST_PASSWORD, 'analyst', 'Enum Exist');
+    });
+
+    async function timeWrongLogin(email: string): Promise<{ ms: number; res: Response }> {
+      await env.CACHE.delete(`login_attempts:${email}`);
+      const t0 = Date.now();
+      const res = await postJSON('/api/v1/auth/login', {
+        email, password: 'WrongPassword1!', tenant_slug: 'tenant-a',
+      });
+      return { ms: Date.now() - t0, res };
+    }
+
+    it('missing user returns the same generic 401 as a wrong password', async () => {
+      const { res: ghostRes } = await timeWrongLogin(GHOST_EMAIL);
+      const { res: existRes } = await timeWrongLogin(EXIST_EMAIL);
+      expect(ghostRes.status).toBe(401);
+      expect(existRes.status).toBe(401);
+      const ghostBody = await ghostRes.json() as { error: string };
+      const existBody = await existRes.json() as { error: string };
+      expect(ghostBody.error).toBe(existBody.error); // identical message — no enumeration via response body
+    });
+
+    it('missing user pays the same PBKDF2 cost so timing does not reveal existence', async () => {
+      // Warm up to absorb first-call JIT/import overhead.
+      await timeWrongLogin(EXIST_EMAIL);
+      await timeWrongLogin(GHOST_EMAIL);
+
+      const minOf = async (email: string): Promise<number> => {
+        const samples: number[] = [];
+        for (let i = 0; i < 3; i++) samples.push((await timeWrongLogin(email)).ms);
+        return Math.min(...samples);
+      };
+      const tExist = await minOf(EXIST_EMAIL);
+      const tGhost = await minOf(GHOST_EMAIL);
+
+      // Without the dummy verify, the missing-user path skips PBKDF2 and would
+      // be a tiny fraction of the wrong-password path. With it, the two are
+      // comparable; 0.5 cleanly separates fixed from unfixed without flaking.
+      expect(tGhost).toBeGreaterThan(tExist * 0.5);
+    });
+  });
+
+  // ────────────────────────────────────────────
   // Admin Setup Endpoint
   // ────────────────────────────────────────────
   describe('Admin Setup', () => {

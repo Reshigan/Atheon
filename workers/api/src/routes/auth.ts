@@ -212,6 +212,13 @@ auth.post('/register', async (c) => {
 });
 
 // POST /api/auth/login
+// Throwaway hash for the account-enumeration timing defense. Format and
+// iteration count must match hashPassword() (pbkdf2:100000:salt:hash) so a
+// verify against it costs the same as verifying a real user's password. The
+// salt is a valid base64url string; the hash never matches any input.
+const DUMMY_PASSWORD_HASH =
+  'pbkdf2:100000:AAAAAAAAAAAAAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
 auth.post('/login', async (c) => {
   const { data: body, errors } = await getValidatedJsonBody<{ email: string; password: string; tenant_slug?: string }>(c, [
     { field: 'email', type: 'email', required: true },
@@ -259,6 +266,10 @@ auth.post('/login', async (c) => {
   }
 
   if (!user) {
+    // Account-enumeration defense: run a full PBKDF2 verify against a throwaway
+    // hash so a missing account takes the same time as a wrong password. The
+    // result is discarded; the response is identical to the invalid-password path.
+    await verifyPassword(body.password, DUMMY_PASSWORD_HASH);
     await recordFailedLogin(c.env.CACHE, body.email);
     return c.json({ error: 'Invalid credentials' }, 401);
   }
