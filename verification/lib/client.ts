@@ -46,20 +46,36 @@ export class ApiClient {
   ) {}
 
   async login(): Promise<void> {
-    const resp = await fetch(`${this.baseUrl}/api/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: this.email, password: this.password, tenant_slug: CONFIG.tenantSlug }),
-    });
-    if (!resp.ok) {
-      // Do not log the response body: a failing auth endpoint can reflect request
-      // material. Status + the configured email is enough to triage.
-      throw new Error(`Login failed (${resp.status}) for ${this.email} — check VERIFY_ADMIN_* credentials`);
+    // A cold worker / brief D1 hiccup can make the login endpoint return a
+    // transient 5xx (observed: one role's login flaked 500 mid-run while the
+    // same live API passed the whole RBAC matrix moments earlier). Login is
+    // idempotent — a retry only writes one more audit-log row — so retry
+    // transient 5xx with backoff rather than flapping the gate. A 4xx is a real
+    // client error (bad credentials, MFA) and is never retried.
+    const MAX_ATTEMPTS = 3;
+    let lastStatus = 0;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const resp = await fetch(`${this.baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: this.email, password: this.password, tenant_slug: CONFIG.tenantSlug }),
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { token?: string; user?: AuthedUser };
+        if (!data.token) throw new Error(`Login returned no token (MFA may be enforced for ${this.email})`);
+        this.token = data.token;
+        this.user = data.user ?? null;
+        return;
+      }
+      lastStatus = resp.status;
+      if (resp.status < 500 || attempt === MAX_ATTEMPTS) {
+        // Do not log the response body: a failing auth endpoint can reflect
+        // request material. Status + the configured email is enough to triage.
+        throw new Error(`Login failed (${resp.status}) for ${this.email} — check VERIFY_ADMIN_* credentials`);
+      }
+      await new Promise<void>(resolve => setTimeout(resolve, attempt * 1000));
     }
-    const data = await resp.json() as { token?: string; user?: AuthedUser };
-    if (!data.token) throw new Error(`Login returned no token (MFA may be enforced for ${this.email})`);
-    this.token = data.token;
-    this.user = data.user ?? null;
+    throw new Error(`Login failed after ${MAX_ATTEMPTS} attempts (last ${lastStatus}) for ${this.email}`);
   }
 
   async authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
