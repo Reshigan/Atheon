@@ -207,7 +207,7 @@ export async function handleScheduled(
   // only runs the DELETE once per UTC day. Retention window is overridable
   // per env var (AUDIT_LOG_RETENTION_DAYS) for customers under stricter
   // contracts; defaults to 365.
-  try { await pruneAuditLogIfDue(db, env); } catch (e) { console.error('Audit log retention purge failed:', e); }
+  try { await pruneAuditLogIfDue(db); } catch (e) { console.error('Audit log retention purge failed:', e); }
 
   // Phase 6.4: Email delivery with retry + fallback
   await processEmailQueue(db, env);
@@ -1296,22 +1296,32 @@ async function calculateResolutionPatterns(db: D1Database): Promise<void> {
 /**
  * Audit log retention purge — Phase 10-30.
  *
- * Deletes audit_log rows older than the configured retention window. SOC2
- * baseline is one year; we accept a per-deployment override via
- * `AUDIT_LOG_RETENTION_DAYS` (clamped to [30, 3650] so a misconfigured env
- * can't immediately wipe the table or hoard a decade of rows).
+ * Deletes audit_log rows past each tenant's retention window. The window is
+ * per-tenant: max(tenant_entitlements.data_retention_days, 365). The 365-day
+ * SOC 2 baseline is a floor — a tenant can only EXTEND retention beyond it,
+ * never shorten below it (a tenant set to 90 days still keeps a full year).
+ * Tenants with no entitlements row, and system rows, fall back to the floor.
+ * The upper bound is 10 years so a misconfigured value can't hoard forever.
  *
  * Daily debounce: the every-15-minute cron tick would otherwise re-run the
  * same DELETE 96 times a day. A marker row in `tenant_settings` (tenant_id
  * = '__system__', key = 'audit_log_retention.last_run') gates the work to
  * once per UTC date — first tick of the day runs it, subsequent ticks no-op.
  *
- * Safety: the DELETE is bounded by `LIMIT` so a one-off prune on a tenant
+ * Safety: each DELETE is bounded by `LIMIT` so a one-off prune on a tenant
  * that has accumulated millions of rows can't hold the D1 write lock for
- * long. We loop in batches until either nothing's left or we've hit the
- * day's batch cap; the rest carries over to the next day.
+ * long. A global daily batch budget bounds total write work across tenants;
+ * the rest carries over to the next day.
  */
-async function pruneAuditLogIfDue(db: D1Database, env: ScheduledEnv): Promise<void> {
+const AUDIT_RETENTION_FLOOR_DAYS = 365; // SOC 2 baseline
+const AUDIT_RETENTION_CEILING_DAYS = 3650;
+
+function auditRetentionWindow(dataRetentionDays: number | null | undefined): number {
+  const tenantDays = Number.isFinite(Number(dataRetentionDays)) ? Math.trunc(Number(dataRetentionDays)) : 0;
+  return Math.min(AUDIT_RETENTION_CEILING_DAYS, Math.max(AUDIT_RETENTION_FLOOR_DAYS, tenantDays));
+}
+
+export async function pruneAuditLogIfDue(db: D1Database): Promise<void> {
   const today = new Date().toISOString().slice(0, 10); // yyyy-mm-dd UTC
   const MARKER_KEY = 'audit_log_retention.last_run';
   const SYSTEM_TENANT = '__system__';
@@ -1326,34 +1336,58 @@ async function pruneAuditLogIfDue(db: D1Database, env: ScheduledEnv): Promise<vo
     // tenant_settings missing on a fresh deploy is fine — fall through and prune
   }
 
-  const rawDays = Number((env as { AUDIT_LOG_RETENTION_DAYS?: string | number }).AUDIT_LOG_RETENTION_DAYS);
-  const retentionDays = Number.isFinite(rawDays) ? Math.max(30, Math.min(3650, Math.trunc(rawDays))) : 365;
-  const BATCH_SIZE = 5000;       // rows per DELETE
-  const MAX_BATCHES_PER_DAY = 20; // ≤100k rows/day per deployment
+  const BATCH_SIZE = 5000;        // rows per DELETE
+  const MAX_BATCHES_PER_DAY = 20; // ≤100k rows/day across all tenants
+
+  // Per-tenant retention windows. Only tenants that actually have audit rows
+  // are worth visiting; their window comes from tenant_entitlements (floor 365).
+  const retentionByTenant = new Map<string, number>();
+  let tenantIds: string[] = [];
+  try {
+    const ents = await db.prepare(
+      `SELECT tenant_id, data_retention_days FROM tenant_entitlements`
+    ).all<{ tenant_id: string; data_retention_days: number }>();
+    for (const e of ents.results ?? []) {
+      retentionByTenant.set(e.tenant_id, auditRetentionWindow(e.data_retention_days));
+    }
+    const distinct = await db.prepare(
+      `SELECT DISTINCT tenant_id FROM audit_log`
+    ).all<{ tenant_id: string }>();
+    tenantIds = (distinct.results ?? []).map((r) => r.tenant_id);
+  } catch (err) {
+    logError('audit_log.retention.scan_failed', err,
+      { layer: 'compliance', action: 'audit_log.retention' }, {});
+    return;
+  }
 
   let totalDeleted = 0;
   let batches = 0;
-  let lastBatchSize = BATCH_SIZE;
-  while (lastBatchSize === BATCH_SIZE && batches < MAX_BATCHES_PER_DAY) {
-    try {
-      const r = await db.prepare(
-        `DELETE FROM audit_log
-          WHERE rowid IN (
-            SELECT rowid FROM audit_log
-             WHERE created_at < datetime('now', ?)
-             LIMIT ?
-          )`
-      ).bind(`-${retentionDays} days`, BATCH_SIZE).run();
-      lastBatchSize = r.meta?.changes ?? 0;
-      totalDeleted += lastBatchSize;
-      batches++;
-    } catch (err) {
-      // First failure stops the loop — better to log + retry tomorrow than
-      // burn the budget on a known-bad query.
-      logError('audit_log.retention.batch_failed', err,
-        { layer: 'compliance', action: 'audit_log.retention' },
-        { batches, totalDeleted });
-      break;
+  for (const tenantId of tenantIds) {
+    if (batches >= MAX_BATCHES_PER_DAY) break;
+    const retentionDays = retentionByTenant.get(tenantId) ?? AUDIT_RETENTION_FLOOR_DAYS;
+    let deleted = BATCH_SIZE;
+    while (deleted === BATCH_SIZE && batches < MAX_BATCHES_PER_DAY) {
+      try {
+        const r = await db.prepare(
+          `DELETE FROM audit_log
+            WHERE rowid IN (
+              SELECT rowid FROM audit_log
+               WHERE tenant_id = ? AND created_at < datetime('now', ?)
+               LIMIT ?
+            )`
+        ).bind(tenantId, `-${retentionDays} days`, BATCH_SIZE).run();
+        deleted = r.meta?.changes ?? 0;
+        totalDeleted += deleted;
+        if (deleted > 0) batches++; // no-op tenants don't consume the budget
+      } catch (err) {
+        // Stop this tenant on first failure — log + retry tomorrow rather than
+        // burn the budget on a known-bad query.
+        logError('audit_log.retention.batch_failed', err,
+          { layer: 'compliance', action: 'audit_log.retention' },
+          { tenantId, batches, totalDeleted });
+        deleted = 0;
+        break;
+      }
     }
   }
 
@@ -1378,7 +1412,7 @@ async function pruneAuditLogIfDue(db: D1Database, env: ScheduledEnv): Promise<vo
   if (totalDeleted > 0) {
     logInfo('audit_log.retention.completed',
       { layer: 'compliance', action: 'audit_log.retention' },
-      { retention_days: retentionDays, rows_deleted: totalDeleted, batches });
+      { floor_days: AUDIT_RETENTION_FLOOR_DAYS, tenants: tenantIds.length, rows_deleted: totalDeleted, batches });
   }
 }
 

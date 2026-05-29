@@ -76,6 +76,14 @@ async function seedApiKey(userId: string): Promise<void> {
   ).bind(crypto.randomUUID(), TENANT, userId).run();
 }
 
+// user_id is NULL for tenant-wide system notifications (no data subject).
+async function seedNotification(userId: string | null, title: string): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO notifications (id, tenant_id, user_id, type, title, message, severity)
+     VALUES (?, ?, ?, 'system', ?, 'test message', 'info')`
+  ).bind(crypto.randomUUID(), TENANT, userId, title).run();
+}
+
 describe('Phase 10-20 — DSAR', () => {
   beforeAll(async () => {
     const res = await SELF.fetch('http://localhost/api/v1/admin/migrate', {
@@ -92,6 +100,7 @@ describe('Phase 10-20 — DSAR', () => {
     await env.DB.prepare('DELETE FROM chat_conversations WHERE tenant_id = ?').bind(TENANT).run();
     await env.DB.prepare('DELETE FROM user_sessions WHERE tenant_id = ?').bind(TENANT).run();
     await env.DB.prepare('DELETE FROM api_keys WHERE tenant_id = ?').bind(TENANT).run();
+    await env.DB.prepare('DELETE FROM notifications WHERE tenant_id = ?').bind(TENANT).run();
     await env.DB.prepare('DELETE FROM users WHERE tenant_id = ?').bind(TENANT).run();
     await seedUser(ADMIN, 'admin@example.com', 'admin');
   });
@@ -124,6 +133,22 @@ describe('Phase 10-20 — DSAR', () => {
       });
       expect(exp.subject.user_id).toBe(SUBJECT_USER);
       expect(exp.chat_conversations.length).toBe(1);
+    });
+
+    it('notifications are subject-scoped — excludes other users and tenant-wide', async () => {
+      const OTHER_USER = 'other-user';
+      await seedUser(SUBJECT_USER, SUBJECT_EMAIL);
+      await seedUser(OTHER_USER, 'other@example.com');
+      await seedNotification(SUBJECT_USER, 'yours');
+      await seedNotification(OTHER_USER, 'theirs');
+      await seedNotification(null, 'tenant-wide system message');
+
+      const { export: exp } = await exportSubjectData(env.DB, {
+        tenantId: TENANT, requestType: 'access',
+        subjectIdentifier: SUBJECT_USER, requestedBy: ADMIN,
+      });
+      expect(exp.notifications.length).toBe(1);
+      expect(exp.notifications[0].title).toBe('yours');
     });
 
     it('unknown subject → empty export, request logged', async () => {
@@ -183,6 +208,32 @@ describe('Phase 10-20 — DSAR', () => {
       expect(user?.name).toBe('[Erased]');
       expect(user?.status).toBe('deleted');
       expect(user?.password_hash).toBeNull();
+    });
+
+    it('erasure deletes only the subject notifications — other users untouched', async () => {
+      const OTHER_USER = 'other-user';
+      await seedUser(SUBJECT_USER, SUBJECT_EMAIL);
+      await seedUser(OTHER_USER, 'other@example.com');
+      await seedNotification(SUBJECT_USER, 'yours');
+      await seedNotification(OTHER_USER, 'theirs');
+      await seedNotification(null, 'tenant-wide system message');
+
+      await eraseSubjectData(env.DB, {
+        tenantId: TENANT, requestType: 'erasure',
+        subjectIdentifier: SUBJECT_USER, requestedBy: ADMIN,
+        reason: 'POPIA right to erasure request received',
+      });
+
+      const subjectLeft = await env.DB.prepare(
+        `SELECT COUNT(*) as n FROM notifications WHERE tenant_id = ? AND user_id = ?`
+      ).bind(TENANT, SUBJECT_USER).first<{ n: number }>();
+      expect(subjectLeft?.n).toBe(0);
+
+      // Other user's notification and the tenant-wide one survive.
+      const survivors = await env.DB.prepare(
+        `SELECT COUNT(*) as n FROM notifications WHERE tenant_id = ?`
+      ).bind(TENANT).first<{ n: number }>();
+      expect(survivors?.n).toBe(2);
     });
 
     it('subject not found → no_subject status, no rows changed', async () => {
