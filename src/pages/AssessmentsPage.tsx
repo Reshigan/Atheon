@@ -4,7 +4,7 @@ import { api, ApiError } from '@/lib/api';
 import type { Assessment, AssessmentResults, CatalystScore, ERPConnection, ValueAssessmentFinding, DataQualityRecord, ProcessTimingRecord, ValueSummaryRecord } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { AssessmentFindingsPanel } from '@/components/AssessmentFindingsPanel';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { ClipboardList } from 'lucide-react';
 import { EmptyState } from '@/components/ui/state';
@@ -77,38 +77,38 @@ export function AssessmentsPage() {
     }
   };
 
+  const headerActions = (
+    <div className="flex gap-2">
+      {view !== 'list' && (
+        <button
+          onClick={() => { setView('list'); setSelectedId(null); setSelectedAssessment(null); loadAssessments(); }}
+          className="px-3 py-1.5 text-sm rounded-md transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] hover:opacity-90"
+          style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
+        >
+          &larr; Back
+        </button>
+      )}
+      <button
+        onClick={() => setView('new')}
+        className="px-4 py-1.5 text-sm font-medium rounded-md transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] hover:opacity-90"
+        style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
+      >
+        + New Assessment
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <HeroHeader
-          icon={ClipboardList}
-          title="Assessments"
-          subtitle="Pre-Sale Discovery & Business Case Generation"
-          accent="sage"
-        />
-        <div className="flex gap-2">
-          {view !== 'list' && (
-            <button
-              onClick={() => { setView('list'); setSelectedId(null); setSelectedAssessment(null); loadAssessments(); }}
-              className="px-3 py-1.5 text-sm rounded-lg transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] hover:opacity-90"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
-            >
-              &larr; Back
-            </button>
-          )}
-          <button
-            onClick={() => setView('new')}
-            className="px-4 py-1.5 text-sm font-medium rounded-lg text-white transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] hover:opacity-90"
-            style={{ background: 'var(--accent)' }}
-          >
-            + New Assessment
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Assessments · Engagements"
+        title="Assessments"
+        dek="Pre-Sale Discovery &amp; Business Case Generation"
+        actions={headerActions}
+      />
 
       {error && (
-        <div className="p-3 rounded-lg text-sm bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+        <div className="p-3 rounded-md text-sm" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', color: 'var(--neg)', border: '1px solid rgb(var(--neg-rgb) / 0.2)' }}>
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
         </div>
@@ -151,7 +151,7 @@ function ListView({ assessments, loading, onView, onDelete }: {
 }) {
   if (loading) {
     return <div className="space-y-3">{[1,2,3].map(i => (
-      <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
+      <div key={i} className="h-16 rounded-md animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
     ))}</div>;
   }
 
@@ -166,17 +166,17 @@ function ListView({ assessments, loading, onView, onDelete }: {
     );
   }
 
-  const statusColor = (s: string) => {
+  const statusStyle = (s: string) => {
     switch (s) {
-      case 'complete': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-      case 'running': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'failed': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+      case 'complete': return { background: 'rgb(var(--accent-rgb) / 0.1)', color: 'var(--accent)' };
+      case 'running': return { background: 'var(--bg-secondary)', color: 'var(--warning)' };
+      case 'failed': return { background: 'rgb(var(--neg-rgb) / 0.1)', color: 'var(--neg)' };
+      default: return { background: 'var(--bg-secondary)', color: 'var(--text-muted)' };
     }
   };
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+    <div className="rounded-md overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
       <table className="w-full text-sm">
         <thead>
           <tr style={{ background: 'var(--bg-secondary)' }}>
@@ -192,24 +192,24 @@ function ListView({ assessments, loading, onView, onDelete }: {
             const totalSaving = results?.catalyst_scores?.reduce((sum: number, c: CatalystScore) => sum + (c.estimated_annual_saving_zar || 0), 0) || 0;
 
             return (
-              <tr key={a.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-[background-color,color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]">
+              <tr key={a.id} className="hover:bg-black/5 transition-[background-color,color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]">
                 <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{a.prospectName}</td>
                 <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{a.prospectIndustry}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(a.status)}`}>{a.status}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={statusStyle(a.status)}>{a.status}</span>
                 </td>
                 <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{catalystCount}</td>
-                <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
+                <td className="px-4 py-3 font-mono tnum font-medium" style={{ color: 'var(--text-primary)' }}>
                   {totalSaving > 0 ? `R ${(totalSaving / 1000).toFixed(0)}k` : '—'}
                 </td>
-                <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <td className="px-4 py-3 text-xs font-mono tnum" style={{ color: 'var(--text-muted)' }}>
                   {new Date(a.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
                     <button
                       onClick={() => onView(a.id)}
-                      className="text-xs px-2 py-1 rounded"
+                      className="text-xs px-2 py-1 rounded-sm"
                       style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}
                     >
                       View
@@ -218,14 +218,14 @@ function ListView({ assessments, loading, onView, onDelete }: {
                       <>
                         <button
                           onClick={() => api.assessments.downloadBusiness(a.id, a)}
-                          className="text-xs px-2 py-1 rounded"
+                          className="text-xs px-2 py-1 rounded-sm"
                           style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
                         >
                           PDF
                         </button>
                         <button
                           onClick={() => api.assessments.downloadExcel(a.id, a)}
-                          className="text-xs px-2 py-1 rounded"
+                          className="text-xs px-2 py-1 rounded-sm"
                           style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
                         >
                           Excel
@@ -234,7 +234,8 @@ function ListView({ assessments, loading, onView, onDelete }: {
                     )}
                     <button
                       onClick={() => onDelete(a.id)}
-                      className="text-xs px-2 py-1 rounded text-red-600 bg-red-50 dark:bg-red-900/20"
+                      className="text-xs px-2 py-1 rounded-sm"
+                      style={{ background: 'rgb(var(--neg-rgb) / 0.08)', color: 'var(--neg)' }}
                     >
                       Del
                     </button>
@@ -315,16 +316,14 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
   const inputStyle = { background: 'var(--bg-secondary)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' };
 
   return (
-    <div className="max-w-2xl mx-auto rounded-xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+    <div className="max-w-2xl mx-auto rounded-md p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
       {/* Steps indicator */}
       <div className="flex items-center gap-2 mb-6">
         {[1, 2, 3].map(s => (
           <div key={s} className="flex items-center gap-2">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
-                s <= step ? 'text-white' : ''
-              }`}
-              style={{ background: s <= step ? 'var(--accent)' : 'var(--bg-secondary)', color: s > step ? 'var(--text-muted)' : undefined }}
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium`}
+              style={{ background: s <= step ? 'var(--accent)' : 'var(--bg-secondary)', color: s <= step ? 'var(--text-on-accent)' : 'var(--text-muted)' }}
             >
               {s}
             </div>
@@ -347,13 +346,13 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
               value={prospectName}
               onChange={e => setProspectName(e.target.value)}
               placeholder="e.g. Protea Manufacturing"
-              className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle}
+              className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle}
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Industry</label>
-            <select value={prospectIndustry} onChange={e => setProspectIndustry(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle}>
+            <select value={prospectIndustry} onChange={e => setProspectIndustry(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle}>
               <option value="">Select industry...</option>
               {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
             </select>
@@ -361,7 +360,7 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
 
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>ERP Connection (optional)</label>
-            <select value={erpConnectionId} onChange={e => setErpConnectionId(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle}>
+            <select value={erpConnectionId} onChange={e => setErpConnectionId(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle}>
               <option value="">No ERP connection — use estimated data</option>
               {erpConnections.map(c => <option key={c.id} value={c.id}>{c.company_name} ({c.erp_type})</option>)}
             </select>
@@ -369,7 +368,7 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
 
           <button
             onClick={() => { if (prospectName && prospectIndustry) setStep(2); else onError('Fill in prospect name and industry'); }}
-            className="w-full py-2.5 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--accent)' }}
+            className="w-full py-2.5 text-sm font-medium rounded-md" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
           >
             Next &rarr;
           </button>
@@ -387,7 +386,7 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
               <select
                 value={config.deployment_model}
                 onChange={e => setConfig({ ...config, deployment_model: e.target.value as 'saas' | 'on-premise' | 'hybrid' })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle}
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle}
               >
                 <option value="saas">SaaS</option>
                 <option value="on-premise">On-Premise</option>
@@ -399,7 +398,7 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
               <select
                 value={config.currency}
                 onChange={e => setConfig({ ...config, currency: e.target.value })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle}
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle}
               >
                 <option value="ZAR">ZAR (South African Rand)</option>
                 <option value="USD">USD (US Dollar)</option>
@@ -415,13 +414,13 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Exchange Rate to ZAR</label>
               <input type="number" step="0.01" value={config.exchange_rate_to_zar}
                 onChange={e => setConfig({ ...config, exchange_rate_to_zar: parseFloat(e.target.value) || 1 })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle} />
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle} />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Target Users</label>
               <input type="number" value={config.target_users}
                 onChange={e => setConfig({ ...config, target_users: parseInt(e.target.value) || 50 })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle} />
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle} />
             </div>
           </div>
 
@@ -430,13 +429,13 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Contract Years</label>
               <input type="number" value={config.contract_years}
                 onChange={e => setConfig({ ...config, contract_years: parseInt(e.target.value) || 3 })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle} />
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle} />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>SaaS Price/User/Month</label>
               <input type="number" value={config.saas_price_per_user_pm}
                 onChange={e => setConfig({ ...config, saas_price_per_user_pm: parseInt(e.target.value) || 450 })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle} />
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle} />
             </div>
           </div>
 
@@ -445,21 +444,21 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>On-Prem Licence Fee/Year</label>
               <input type="number" value={config.onprem_licence_fee_pa}
                 onChange={e => setConfig({ ...config, onprem_licence_fee_pa: parseInt(e.target.value) || 360000 })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle} />
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle} />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Hybrid Licence Fee/Year</label>
               <input type="number" value={config.hybrid_licence_fee_pa}
                 onChange={e => setConfig({ ...config, hybrid_licence_fee_pa: parseInt(e.target.value) || 180000 })}
-                className="w-full rounded-lg px-3 py-2 text-sm" style={inputStyle} />
+                className="w-full rounded-md px-3 py-2 text-sm" style={inputStyle} />
             </div>
           </div>
 
           <div className="flex gap-2">
-            <button onClick={() => setStep(1)} className="flex-1 py-2.5 text-sm rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>
+            <button onClick={() => setStep(1)} className="flex-1 py-2.5 text-sm rounded-md" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>
               &larr; Back
             </button>
-            <button onClick={() => setStep(3)} className="flex-1 py-2.5 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--accent)' }}>
+            <button onClick={() => setStep(3)} className="flex-1 py-2.5 text-sm font-medium rounded-md" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
               Next &rarr;
             </button>
           </div>
@@ -471,7 +470,7 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Review &amp; Run</h3>
 
-          <div className="rounded-lg p-4 space-y-2" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="rounded-md p-4 space-y-2" style={{ background: 'var(--bg-secondary)' }}>
             <div className="flex justify-between text-sm">
               <span style={{ color: 'var(--text-muted)' }}>Prospect</span>
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{prospectName}</span>
@@ -501,20 +500,20 @@ function NewAssessmentWizard({ onCreated, onError, reportError }: {
           </div>
 
           {!erpConnectionId && (
-            <div className="p-3 rounded-lg text-xs bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+            <div className="p-3 rounded-md text-xs" style={{ background: 'var(--bg-secondary)', color: 'var(--warning)', border: '1px solid var(--border-card)' }}>
               No ERP connection selected. Estimated data will be used for volume estimation.
             </div>
           )}
 
           <div className="flex gap-2">
-            <button onClick={() => setStep(2)} className="flex-1 py-2.5 text-sm rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>
+            <button onClick={() => setStep(2)} className="flex-1 py-2.5 text-sm rounded-md" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>
               &larr; Back
             </button>
             <button
               onClick={submit}
               disabled={submitting}
-              className="flex-1 py-2.5 text-sm font-medium rounded-lg text-white disabled:opacity-50"
-              style={{ background: 'var(--accent)' }}
+              className="flex-1 py-2.5 text-sm font-medium rounded-md disabled:opacity-50"
+              style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
             >
               {submitting ? 'Running...' : 'Run Assessment'}
             </button>
@@ -580,7 +579,7 @@ function RunningView({ id, onComplete }: {
     return (
       <div className="text-center py-20">
         <div className="text-4xl mb-3">❌</div>
-        <h3 className="text-lg font-medium text-red-600">Assessment Failed</h3>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--neg)' }}>Assessment Failed</h3>
         <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>An error occurred during processing. Check the logs.</p>
       </div>
     );
@@ -599,10 +598,12 @@ function RunningView({ id, onComplete }: {
       <div className="space-y-3">
         {stages.map((s, i) => (
           <div key={i} className="flex items-center gap-3">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-              i < stage ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
-              i === stage ? 'animate-pulse' : ''
-            }`} style={i === stage ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } : i > stage ? { background: 'var(--bg-secondary)', color: 'var(--text-muted)' } : undefined}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs${i === stage ? ' animate-pulse' : ''}`}
+              style={
+                i < stage ? { background: 'rgb(var(--accent-rgb) / 0.1)', color: 'var(--accent)' } :
+                i === stage ? { background: 'var(--accent-subtle)', color: 'var(--accent)' } :
+                { background: 'var(--bg-secondary)', color: 'var(--text-muted)' }
+              }>
               {i < stage ? '✓' : i + 1}
             </div>
             <span className="text-sm" style={{ color: i <= stage ? 'var(--text-primary)' : 'var(--text-muted)' }}>
@@ -726,7 +727,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
     const errorMsg = (results as Record<string, unknown>)?.error as string;
     return (
       <div className="text-center py-10">
-        <p className="text-lg font-medium text-red-600">Assessment Failed</p>
+        <p className="text-lg font-medium" style={{ color: 'var(--neg)' }}>Assessment Failed</p>
         {errorMsg && <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>{errorMsg}</p>}
       </div>
     );
@@ -746,15 +747,15 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
   return (
     <div className="space-y-6">
       {/* Tab selector */}
-      <div className="flex gap-1 p-1 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+      <div className="flex gap-1 p-1 rounded-md" style={{ background: 'var(--bg-secondary)' }}>
         {[
           { key: 'findings' as const, label: 'Findings', count: results?.findings?.length || 0 },
           { key: 'value' as const, label: 'Value Assessment', count: 0 },
           { key: 'legacy' as const, label: 'Legacy Sizing', count: 0 },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${tab === t.key ? 'text-white' : ''}`}
-            style={tab === t.key ? { background: 'var(--accent)' } : { color: 'var(--text-secondary)' }}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-colors`}
+            style={tab === t.key ? { background: 'var(--accent)', color: 'var(--text-on-accent)' } : { color: 'var(--text-secondary)' }}
             data-testid={`assessment-tab-${t.key}`}
           >
             {t.label}{t.count > 0 ? ` (${t.count})` : ''}
@@ -778,7 +779,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
         <div className="space-y-6">
           {/* Run Value Assessment button if no data */}
           {!hasValueData && !loadingVA && (
-            <div className="rounded-xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+            <div className="rounded-md p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
               <div className="text-4xl mb-3">📊</div>
               <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Run Value Assessment</h3>
               <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
@@ -786,21 +787,21 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
               </p>
               <div className="flex gap-3 justify-center">
                 <button onClick={() => runVA('quick')} disabled={runningVA}
-                  className="px-4 py-2 text-sm font-medium rounded-lg"
+                  className="px-4 py-2 text-sm font-medium rounded-md"
                   style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                 >{runningVA ? 'Running...' : 'Quick (DQ + Timing)'}</button>
                 <button onClick={() => runVA('full')} disabled={runningVA}
-                  className="px-4 py-2 text-sm font-medium rounded-lg text-white"
-                  style={{ background: 'var(--accent)' }}
+                  className="px-4 py-2 text-sm font-medium rounded-md"
+                  style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
                 >{runningVA ? 'Running...' : 'Full Assessment'}</button>
               </div>
             </div>
           )}
 
-          {loadingVA && <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 rounded-xl animate-pulse" style={{ background: 'var(--bg-secondary)' }} />)}</div>}
+          {loadingVA && <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 rounded-md animate-pulse" style={{ background: 'var(--bg-secondary)' }} />)}</div>}
 
           {runningVA && (
-            <div className="rounded-xl p-6 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+            <div className="rounded-md p-6 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
               <div className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center animate-pulse" style={{ background: 'var(--accent-subtle)' }}>
                 <span className="text-xl">🔍</span>
               </div>
@@ -840,7 +841,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                     label: 'Immediate Recovery',
                     value: formatRk(valueSummary.total_immediate_value),
                     sub: 'One-time cleanup value',
-                    color: '#10b981',
+                    color: 'var(--positive)',
                     source: {
                       ...assessmentBase,
                       label: 'Immediate recovery value (ZAR)',
@@ -857,7 +858,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                     label: 'Ongoing Monthly Value',
                     value: formatRk(valueSummary.total_ongoing_monthly_value),
                     sub: `${formatRk(valueSummary.total_ongoing_annual_value)}/year`,
-                    color: '#3b82f6',
+                    color: 'var(--info)',
                     source: {
                       ...assessmentBase,
                       label: 'Ongoing monthly value (ZAR)',
@@ -874,7 +875,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                     label: 'Payback Period',
                     value: formatDays(valueSummary.payback_days, { long: true }),
                     sub: `Outcome fee: ${formatRk(valueSummary.outcome_based_monthly_fee)}/mo`,
-                    color: '#8b5cf6',
+                    color: 'var(--text-primary)',
                     source: {
                       ...assessmentBase,
                       label: 'Payback period',
@@ -892,14 +893,14 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                 {tiles.map(m => (
                   <div
                     key={m.label}
-                    className="rounded-xl p-4 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.20)] active:scale-[0.97]"
+                    className="rounded-md p-4 hover:-translate-y-px transition-[border-color,transform] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
                     style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
                       <MetricSource source={m.source} />
                     </div>
-                    <p className="text-xl font-bold mt-1" style={{ color: m.color }}>{m.value}</p>
+                    <p className="text-xl font-bold mt-1 font-mono tnum" style={{ color: m.color }}>{m.value}</p>
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.sub}</span>
                   </div>
                 ))}
@@ -909,7 +910,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 
               {/* Section 2: Executive Narrative */}
               {valueSummary.executive_narrative && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+                <div className="rounded-md p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                   <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Executive Summary</h3>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{valueSummary.executive_narrative}</p>
                 </div>
@@ -917,31 +918,31 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 
               {/* Section 3: Value by Domain */}
               {domainData.length > 0 && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+                <div className="rounded-md p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                   <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Value by Domain</h3>
                   <div className="space-y-3">
                     {domainData.map(d => (
                       <div key={d.domain}>
                         <div className="flex justify-between text-xs mb-1">
                           <span className="capitalize font-medium" style={{ color: 'var(--text-primary)' }}>{d.domain}</span>
-                          <span style={{ color: 'var(--text-muted)' }}>{formatRk(d.immediate + d.ongoing)}</span>
+                          <span className="font-mono tnum" style={{ color: 'var(--text-muted)' }}>{formatRk(d.immediate + d.ongoing)}</span>
                         </div>
-                        <div className="flex gap-0.5 h-5 rounded overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
-                          <div className="h-full rounded-l" style={{ width: `${(d.immediate / maxDomainValue) * 100}%`, background: '#10b981', minWidth: d.immediate > 0 ? '4px' : '0' }} />
-                          <div className="h-full rounded-r" style={{ width: `${(d.ongoing / maxDomainValue) * 100}%`, background: '#3b82f6', minWidth: d.ongoing > 0 ? '4px' : '0' }} />
+                        <div className="flex gap-0.5 h-2 rounded-sm overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+                          <div className="h-full" style={{ width: `${(d.immediate / maxDomainValue) * 100}%`, background: 'var(--positive)', minWidth: d.immediate > 0 ? '4px' : '0' }} />
+                          <div className="h-full" style={{ width: `${(d.ongoing / maxDomainValue) * 100}%`, background: 'var(--info)', minWidth: d.ongoing > 0 ? '4px' : '0' }} />
                         </div>
                       </div>
                     ))}
                     <div className="flex gap-4 text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ background: '#10b981' }} /> Immediate</span>
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ background: '#3b82f6' }} /> Ongoing (annual)</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{ background: 'var(--positive)' }} /> Immediate</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{ background: 'var(--info)' }} /> Ongoing (annual)</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Section 4: Findings Explorer */}
-              <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+              <div className="rounded-md overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                 <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-card)' }}>
                   <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Findings Explorer ({filteredFindings.length})</h3>
                   <div className="flex gap-2">
@@ -960,18 +961,18 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                 <div className="divide-y" style={{ borderColor: 'var(--border-card)' }}>
                   {filteredFindings.slice(0, 20).map(f => (
                     <div key={f.id}>
-                      <div className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-[background-color,color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+                      <div className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-black/5 transition-[background-color,color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                         onClick={() => setExpandedFinding(expandedFinding === f.id ? null : f.id)}>
                         <span className="text-xs">{expandedFinding === f.id ? '▾' : '▸'}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          f.severity === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          f.severity === 'high' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                          f.severity === 'medium' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                          'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                        }`}>{f.severity}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={
+                          f.severity === 'critical' ? { background: 'rgb(var(--neg-rgb) / 0.1)', color: 'var(--neg)' } :
+                          f.severity === 'high' ? { background: 'var(--bg-secondary)', color: 'var(--warning)' } :
+                          f.severity === 'medium' ? { background: 'var(--bg-secondary)', color: 'var(--info)' } :
+                          { background: 'var(--bg-secondary)', color: 'var(--text-muted)' }
+                        }>{f.severity}</span>
                         <span className="flex-1 text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{f.title}</span>
-                        <span className="text-xs capitalize px-2 py-0.5 rounded" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>{f.domain}</span>
-                        <span className="text-sm font-semibold" style={{ color: '#10b981' }}>{formatRk(f.financial_impact)}</span>
+                        <span className="text-xs capitalize px-2 py-0.5 rounded-sm" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>{f.domain}</span>
+                        <span className="text-sm font-semibold font-mono tnum" style={{ color: 'var(--positive)' }}>{formatRk(f.financial_impact)}</span>
                       </div>
                       {expandedFinding === f.id && (
                         <div className="px-4 pb-3 pt-0 ml-6 space-y-2" style={{ borderTop: '1px solid var(--border-card)' }}>
@@ -998,7 +999,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                                       <td className="px-2 py-1 font-medium" style={{ color: 'var(--text-primary)' }}>{String(r.ref)}</td>
                                       <td className="px-2 py-1" style={{ color: 'var(--text-secondary)' }}>{String(r.source_value)}</td>
                                       <td className="px-2 py-1" style={{ color: 'var(--text-secondary)' }}>{String(r.target_value)}</td>
-                                      <td className="px-2 py-1 text-right font-medium" style={{ color: r.difference > 0 ? '#ef4444' : 'var(--text-secondary)' }}>{r.difference > 0 ? formatR(r.difference) : '—'}</td>
+                                      <td className="px-2 py-1 text-right font-medium font-mono tnum" style={{ color: r.difference > 0 ? 'var(--neg)' : 'var(--text-secondary)' }}>{r.difference > 0 ? formatR(r.difference) : '—'}</td>
                                     </tr>
                                   ))}</tbody>
                                 </table>
@@ -1006,8 +1007,8 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                             </div>
                           )}
                           <div className="flex gap-4 text-xs mt-1">
-                            <span style={{ color: 'var(--text-muted)' }}>Immediate: <span className="font-medium" style={{ color: '#10b981' }}>{formatRk(f.immediate_value)}</span></span>
-                            <span style={{ color: 'var(--text-muted)' }}>Ongoing: <span className="font-medium" style={{ color: '#3b82f6' }}>{formatRk(f.ongoing_monthly_value)}/mo</span></span>
+                            <span style={{ color: 'var(--text-muted)' }}>Immediate: <span className="font-medium font-mono tnum" style={{ color: 'var(--positive)' }}>{formatRk(f.immediate_value)}</span></span>
+                            <span style={{ color: 'var(--text-muted)' }}>Ongoing: <span className="font-medium font-mono tnum" style={{ color: 'var(--info)' }}>{formatRk(f.ongoing_monthly_value)}/mo</span></span>
                             <span style={{ color: 'var(--text-muted)' }}>Records: {f.affected_records}</span>
                           </div>
                         </div>
@@ -1022,19 +1023,19 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 
               {/* Section 5: Data Quality Report Card */}
               {dataQuality.length > 0 && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+                <div className="rounded-md p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                   <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Data Quality Report Card</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {dataQuality.map(dq => {
-                      const scoreColor = dq.overall_quality_score >= 80 ? '#10b981' : dq.overall_quality_score >= 60 ? '#f59e0b' : '#ef4444';
+                      const scoreColor = dq.overall_quality_score >= 80 ? 'var(--positive)' : dq.overall_quality_score >= 60 ? 'var(--warning)' : 'var(--neg)';
                       return (
-                        <div key={dq.id} className="rounded-lg p-4" style={{ background: 'var(--bg-secondary)' }}>
+                        <div key={dq.id} className="rounded-sm p-4" style={{ background: 'var(--bg-secondary)' }}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium capitalize" style={{ color: 'var(--text-primary)' }}>{dq.table_name.replace('erp_', '').replace(/_/g, ' ')}</span>
-                            <span className="text-lg font-bold" style={{ color: scoreColor }}>{Math.round(dq.overall_quality_score)}%</span>
+                            <span className="text-lg font-bold font-mono tnum" style={{ color: scoreColor }}>{Math.round(dq.overall_quality_score)}%</span>
                           </div>
-                          <div className="h-2 rounded-full overflow-hidden mb-2" style={{ background: 'var(--bg-card)' }}>
-                            <div className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" style={{ width: `${dq.overall_quality_score}%`, background: scoreColor }} />
+                          <div className="h-1.5 rounded-sm overflow-hidden mb-2" style={{ background: 'var(--bg-card)' }}>
+                            <div className="h-full transition-[background-color,color,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]" style={{ width: `${dq.overall_quality_score}%`, background: scoreColor }} />
                           </div>
                           <div className="grid grid-cols-2 gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
                             <span>{dq.total_records.toLocaleString()} records</span>
@@ -1053,17 +1054,17 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
 
               {/* Section 6: Process Timing */}
               {processTiming.length > 0 && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+                <div className="rounded-md p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                   <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Process Timing Analysis</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {processTiming.map(t => {
                       const overBenchmark = t.avg_cycle_time_days > t.benchmark_cycle_time_days;
                       const maxTime = Math.max(t.p90_cycle_time_days, t.benchmark_cycle_time_days) * 1.2;
                       return (
-                        <div key={t.id} className="rounded-lg p-4" style={{ background: 'var(--bg-secondary)' }}>
+                        <div key={t.id} className="rounded-sm p-4" style={{ background: 'var(--bg-secondary)' }}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{t.process_name}</span>
-                            {overBenchmark && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Over benchmark</span>}
+                            {overBenchmark && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgb(var(--neg-rgb) / 0.1)', color: 'var(--neg)' }}>Over benchmark</span>}
                           </div>
                           <div className="space-y-2 mt-3">
                             <div>
@@ -1071,22 +1072,22 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                                 <span style={{ color: 'var(--text-muted)' }}>Your avg: {formatDays(t.avg_cycle_time_days, { long: true, decimals: 1 })}</span>
                                 <span style={{ color: 'var(--text-muted)' }}>P90: {formatDays(t.p90_cycle_time_days, { long: true, decimals: 1 })}</span>
                               </div>
-                              <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card)' }}>
-                                <div className="h-full rounded-full" style={{ width: `${(t.avg_cycle_time_days / maxTime) * 100}%`, background: overBenchmark ? '#ef4444' : '#10b981' }} />
+                              <div className="h-1.5 rounded-sm overflow-hidden" style={{ background: 'var(--bg-card)' }}>
+                                <div className="h-full" style={{ width: `${(t.avg_cycle_time_days / maxTime) * 100}%`, background: overBenchmark ? 'var(--neg)' : 'var(--positive)' }} />
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-xs mb-1">
                                 <span style={{ color: 'var(--text-muted)' }}>Benchmark: {formatDays(t.benchmark_cycle_time_days, { long: true })}</span>
                               </div>
-                              <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card)' }}>
-                                <div className="h-full rounded-full" style={{ width: `${(t.benchmark_cycle_time_days / maxTime) * 100}%`, background: '#6b7280' }} />
+                              <div className="h-1.5 rounded-sm overflow-hidden" style={{ background: 'var(--bg-card)' }}>
+                                <div className="h-full" style={{ width: `${(t.benchmark_cycle_time_days / maxTime) * 100}%`, background: 'var(--text-muted)' }} />
                               </div>
                             </div>
                           </div>
                           <div className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                             {t.records_analysed} records | {t.records_exceeding_benchmark} over benchmark
-                            {t.financial_impact_of_delay > 0 && <span className="ml-2 font-medium" style={{ color: '#ef4444' }}>Impact: {formatRk(t.financial_impact_of_delay)}</span>}
+                            {t.financial_impact_of_delay > 0 && <span className="ml-2 font-medium font-mono tnum" style={{ color: 'var(--neg)' }}>Impact: {formatRk(t.financial_impact_of_delay)}</span>}
                           </div>
                           {t.bottleneck_step && (
                             <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>Bottleneck: {t.bottleneck_step} ({formatDays(t.bottleneck_avg_days, { long: true, decimals: 1 })})</div>
@@ -1099,7 +1100,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
               )}
 
               {/* Section 7: Outcome-Based Pricing */}
-              <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+              <div className="rounded-md p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                 <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Outcome-Based Pricing Proposal</h3>
                 <div className="mb-4">
                   <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Fee as % of ongoing value delivered</label>
@@ -1108,7 +1109,7 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
                     <span className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{feePercent}%</span>
                   </div>
                 </div>
-                <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border-card)' }}>
+                <div className="rounded-sm overflow-hidden" style={{ border: '1px solid var(--border-card)' }}>
                   <table className="w-full text-sm">
                     <thead><tr style={{ background: 'var(--bg-secondary)' }}>
                       <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Metric</th>
@@ -1146,13 +1147,13 @@ function ResultsView({ assessment }: { assessment: Assessment }) {
               {/* Download buttons */}
               <div className="flex gap-2">
                 <button onClick={() => api.assessments.downloadValueReport(assessment.id, assessment, findings, dataQuality, processTiming, valueSummary)}
-                  className="px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--accent)' }}
+                  className="px-4 py-2 text-sm font-medium rounded-md" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
                 >Download Value Assessment Report</button>
                 <button onClick={() => api.assessments.downloadBusiness(assessment.id, assessment)}
-                  className="px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
+                  className="px-4 py-2 text-sm font-medium rounded-md" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
                 >Business Case PDF</button>
                 <button onClick={() => api.assessments.downloadExcel(assessment.id, assessment)}
-                  className="px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
+                  className="px-4 py-2 text-sm font-medium rounded-md" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}
                 >Excel Model</button>
               </div>
             </>
@@ -1187,13 +1188,13 @@ function LegacySizingView({ assessment }: { assessment: Assessment }) {
           { label: 'Catalysts', value: catalysts.length.toString() },
           { label: 'Payback', value: sizing ? `${((sizing.total_infra_cost_pm_saas * 12) / Math.max(totalSaving, 1)).toFixed(1)} yrs` : '—' },
         ].map(m => (
-          <div key={m.label} className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+          <div key={m.label} className="rounded-md p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
-            <p className="text-xl font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>{m.value}</p>
+            <p className="text-xl font-semibold mt-1 font-mono tnum" style={{ color: 'var(--text-primary)' }}>{m.value}</p>
           </div>
         ))}
       </div>
-      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
+      <div className="rounded-md overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
         <table className="w-full text-sm">
           <thead><tr style={{ background: 'var(--bg-secondary)' }}>
             {['Domain', 'Priority', 'Saving', 'Confidence'].map(h => (
@@ -1214,13 +1215,13 @@ function LegacySizingView({ assessment }: { assessment: Assessment }) {
       </div>
       <div className="flex gap-2">
         <button onClick={() => api.assessments.downloadBusiness(assessment.id, assessment)}
-          className="px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ background: 'var(--accent)' }}>Business Case PDF</button>
+          className="px-4 py-2 text-sm font-medium rounded-md" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>Business Case PDF</button>
         {assessment.technicalReportKey && (
           <button onClick={() => api.assessments.downloadTechnical(assessment.id)}
-            className="px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>Technical PDF</button>
+            className="px-4 py-2 text-sm font-medium rounded-md" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>Technical PDF</button>
         )}
         <button onClick={() => api.assessments.downloadExcel(assessment.id, assessment)}
-          className="px-4 py-2 text-sm font-medium rounded-lg" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>Excel Model</button>
+          className="px-4 py-2 text-sm font-medium rounded-md" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-card)' }}>Excel Model</button>
       </div>
     </div>
   );
