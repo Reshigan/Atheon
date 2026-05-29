@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
-import { EditorialHero } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
@@ -41,9 +41,9 @@ import { MetricSubscribeButton } from "@/components/pulse/MetricSubscribeButton"
 
 /* ── helpers ──────────────────────────────────────────────── */
 const trendIcon = (trend: string, size = 14) => {
-  if (trend === 'up' || trend === 'improving') return <TrendingUp size={size} className="text-emerald-400" />;
-  if (trend === 'down' || trend === 'declining') return <TrendingDown size={size} className="text-red-400" />;
-  return <Minus size={size} className="text-gray-400" />;
+  if (trend === 'up' || trend === 'improving') return <TrendingUp size={size} style={{ color: 'var(--positive)' }} />;
+  if (trend === 'down' || trend === 'declining') return <TrendingDown size={size} style={{ color: 'var(--neg)' }} />;
+  return <Minus size={size} className="t-muted" />;
 };
 
 const CURRENCY_UNITS = new Set(['ZAR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'NGN', 'KES']);
@@ -97,7 +97,7 @@ function PulseActionRequired({
       tab: 'monitoring',
       count: redMetrics.length,
       label: 'Red metrics',
-      tone: 'text-red-400 border-red-500/30 bg-red-500/5',
+      tone: 'border-[var(--border-card)]',
       subline: redMetrics.slice(0, 2).map(m => m.name).join(', ') + (redMetrics.length > 2 ? ` +${redMetrics.length - 2} more` : ''),
     });
   }
@@ -107,7 +107,7 @@ function PulseActionRequired({
       tab: 'anomalies',
       count: criticalAnomalies.length,
       label: 'Critical / high anomalies',
-      tone: 'text-amber-400 border-amber-500/30 bg-amber-500/5',
+      tone: 'border-[var(--border-card)]',
       subline: criticalAnomalies.slice(0, 2).map(a => a.metric).join(', ') + (criticalAnomalies.length > 2 ? ` +${criticalAnomalies.length - 2} more` : ''),
     });
   }
@@ -117,15 +117,15 @@ function PulseActionRequired({
       tab: 'processes',
       count: lowConformance.length,
       label: 'Low-conformance processes',
-      tone: 'text-orange-400 border-orange-500/30 bg-orange-500/5',
+      tone: 'border-[var(--border-card)]',
       subline: lowConformance.slice(0, 2).map(p => p.name).join(', ') + (lowConformance.length > 2 ? ` +${lowConformance.length - 2} more` : ''),
     });
   }
 
   return (
-    <Card className="p-4 mb-6 border-red-500/20 bg-red-500/5" data-testid="pulse-action-required">
+    <Card className="p-4 mb-6" style={{ borderColor: 'var(--neg)' }} data-testid="pulse-action-required">
       <div className="flex items-center gap-2 mb-3">
-        <AlertCircle className="w-4 h-4 text-red-400" />
+        <AlertCircle className="w-4 h-4" style={{ color: 'var(--neg)' }} />
         <h3 className="text-sm font-semibold t-primary">Action Required</h3>
         <Badge variant="danger" size="sm">{totalActions}</Badge>
       </div>
@@ -134,7 +134,7 @@ function PulseActionRequired({
           <button
             key={item.key}
             onClick={() => onJumpToTab(item.tab)}
-            className={`text-left p-3 rounded-lg border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-[1.01] ${item.tone}`}
+            className={`text-left p-3 rounded-md border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-[1.01] bg-[var(--bg-secondary)] ${item.tone}`}
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium t-primary">{item.label}</span>
@@ -151,8 +151,9 @@ function PulseActionRequired({
   );
 }
 
-const statusColor = (s: string) =>
-  s === 'green' ? 'text-emerald-400' : s === 'amber' ? 'text-amber-400' : s === 'red' ? 'text-red-400' : 'text-gray-400';
+// Returns inline color style for metric/anomaly status
+const statusColorStyle = (s: string): React.CSSProperties =>
+  s === 'green' ? { color: 'var(--positive)' } : s === 'amber' ? { color: 'var(--warning)' } : s === 'red' ? { color: 'var(--neg)' } : {};
 
 const conformanceColor = (rate: number): 'emerald' | 'amber' | 'red' =>
   rate >= 90 ? 'emerald' : rate >= 75 ? 'amber' : 'red';
@@ -160,8 +161,8 @@ const conformanceColor = (rate: number): 'emerald' | 'amber' | 'red' =>
 const confidenceLabel = (c: number) =>
   c >= 0.85 ? 'Very Strong' : c >= 0.7 ? 'Strong' : c >= 0.5 ? 'Moderate' : 'Weak';
 
-const confidenceColor = (c: number) =>
-  c >= 0.85 ? 'text-emerald-400' : c >= 0.7 ? 'text-blue-400' : c >= 0.5 ? 'text-amber-400' : 'text-gray-400';
+const confidenceColorStyle = (c: number): React.CSSProperties =>
+  c >= 0.85 ? { color: 'var(--positive)' } : c >= 0.7 ? { color: 'var(--accent)' } : c >= 0.5 ? { color: 'var(--warning)' } : {};
 
 /* ── Operational Health Score (computed from metrics) ───── */
 function computeOperationalHealth(metrics: Metric[], summary: PulseSummary | null, anomalies: AnomalyItem[], processes: ProcessItem[]) {
@@ -780,12 +781,13 @@ export function PulsePage() {
   const heroOpenAnomalies = summary?.openAnomalies ?? anomalies.filter(a => a.status === 'open' || !a.status).length;
 
   const pageHeader = (
-    <EditorialHero
-      kicker="Pulse · Operational Health"
-      figure={`${health.score}`}
-      deck={heroTotal > 0
+    <PageHeader
+      eyebrow="Pulse · Process Intelligence"
+      title="Process intelligence"
+      dek={heroTotal > 0
         ? `${heroTotal} metrics monitored — ${heroGreen} green, ${heroAmber} amber, ${heroRed} red · ${heroOpenAnomalies} open ${heroOpenAnomalies === 1 ? 'anomaly' : 'anomalies'}.`
         : 'No metrics monitored yet. Run a catalyst to populate process health.'}
+      live
       actions={
         <div className="flex items-center gap-2">
           <SectionFreshness section="Diagnostics" />
@@ -811,10 +813,10 @@ export function PulsePage() {
       {pageHeader}
 
       {actionError && (
-        <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-          <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
-          <p className="text-sm text-amber-400 flex-1">{actionError}</p>
-          <button onClick={() => setActionError(null)} className="text-amber-400 hover:text-amber-300" title="Dismiss"><X size={14} /></button>
+        <div className="flex items-center gap-3 p-3 rounded-md border" style={{ background: 'rgba(154,107,31,0.08)', borderColor: 'var(--warning)' }}>
+          <AlertTriangle size={16} style={{ color: 'var(--warning)' }} className="flex-shrink-0" />
+          <p className="text-sm flex-1" style={{ color: 'var(--warning)' }}>{actionError}</p>
+          <button onClick={() => setActionError(null)} style={{ color: 'var(--warning)' }} title="Dismiss"><X size={14} /></button>
         </div>
       )}
 
@@ -850,7 +852,7 @@ export function PulsePage() {
         <button
           onClick={() => loadAiInsights(domainFilter)}
           disabled={aiInsightsLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
           title="Generate AI-powered operational insights"
         >
           <Lightbulb size={12} className={aiInsightsLoading ? 'animate-pulse' : ''} />
@@ -859,7 +861,7 @@ export function PulsePage() {
         <button
           onClick={handleManualRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
           {refreshing ? 'Refreshing...' : 'Refresh Mining'}
@@ -868,10 +870,10 @@ export function PulsePage() {
 
       {/* AI Insights Panel */}
       {aiInsights && (
-        <Card className="border-purple-500/20 bg-purple-500/5">
+        <Card className="border-[var(--border-card)]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Lightbulb size={16} className="text-purple-400" />
+              <Lightbulb size={16} className="text-accent" />
               <h3 className="text-sm font-semibold t-primary">Atheon Intelligence — Operational Insights</h3>
               {aiInsights.domain !== 'all' && <Badge variant="info" size="sm">{aiInsights.domain}</Badge>}
             </div>
@@ -884,7 +886,7 @@ export function PulsePage() {
               <ul className="space-y-1">
                 {aiInsights.recommendations.map((rec, i) => (
                   <li key={i} className="text-xs t-secondary flex items-start gap-1.5">
-                    <ArrowRight size={10} className="text-purple-400 mt-0.5 flex-shrink-0" />
+                    <ArrowRight size={10} className="text-accent mt-0.5 flex-shrink-0" />
                     {rec}
                   </li>
                 ))}
@@ -941,21 +943,21 @@ export function PulsePage() {
                   const total = green + amber + red || 1;
                   return (
                     <>
-                      <div className="bg-emerald-500 h-full" style={{ width: `${(green / total) * 100}%` }} />
-                      <div className="bg-amber-500 h-full" style={{ width: `${(amber / total) * 100}%` }} />
-                      <div className="bg-red-500 h-full" style={{ width: `${(red / total) * 100}%` }} />
+                      <div className="h-full" style={{ width: `${(green / total) * 100}%`, background: 'var(--positive)' }} />
+                      <div className="h-full" style={{ width: `${(amber / total) * 100}%`, background: 'var(--warning)' }} />
+                      <div className="h-full" style={{ width: `${(red / total) * 100}%`, background: 'var(--neg)' }} />
                     </>
                   );
                 })()}
               </div>
               <div className="flex items-center justify-between w-full mt-2 text-caption tabular-nums font-mono">
-                <span className="text-emerald-400">{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} green</span>
-                <span className="text-amber-400">{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} amber</span>
-                <span className="text-red-400">{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length} red</span>
+                <span style={{ color: 'var(--positive)' }}>{summary?.statusBreakdown?.green ?? metrics.filter(m => m.status === 'green').length} green</span>
+                <span style={{ color: 'var(--warning)' }}>{summary?.statusBreakdown?.amber ?? metrics.filter(m => m.status === 'amber').length} amber</span>
+                <span style={{ color: 'var(--neg)' }}>{summary?.statusBreakdown?.red ?? metrics.filter(m => m.status === 'red').length} red</span>
               </div>
               <div className="flex items-center gap-2 mt-3">
                 {trendIcon(health.trend)}
-                <span className={`text-sm ${health.trend === 'improving' ? 'text-emerald-400' : health.trend === 'declining' ? 'text-red-400' : 'text-gray-400'}`}>
+                <span className="text-sm" style={health.trend === 'improving' ? { color: 'var(--positive)' } : health.trend === 'declining' ? { color: 'var(--neg)' } : {}}>
                   {health.trend === 'improving' ? 'Improving' : health.trend === 'declining' ? 'Needs Attention' : 'Stable'}
                 </span>
               </div>
@@ -998,11 +1000,11 @@ export function PulsePage() {
                         </div>
                         <div className="flex items-center gap-1 w-20">
                           {trendIcon(dim.trend, 12)}
-                          <span className={`text-xs ${dim.trend === 'improving' ? 'text-emerald-400' : dim.trend === 'declining' ? 'text-red-400' : 'text-gray-400'}`}>
+                          <span className="text-xs" style={dim.trend === 'improving' ? { color: 'var(--positive)' } : dim.trend === 'declining' ? { color: 'var(--neg)' } : {}}>
                             {dim.trend === 'improving' ? 'Up' : dim.trend === 'declining' ? 'Down' : 'Stable'}
                           </span>
                         </div>
-                        <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'improving' ? '#10b981' : dim.trend === 'declining' ? '#ef4444' : '#6b7280'} />
+                        <Sparkline data={dim.sparkline} width={60} height={20} color={dim.trend === 'improving' ? 'var(--positive)' : dim.trend === 'declining' ? 'var(--neg)' : 'var(--text-muted)'} />
                         <button
                           onClick={() => handleOpenDimensionTrace(dim.key)}
                           className="opacity-0 group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ml-2"
@@ -1034,7 +1036,7 @@ export function PulsePage() {
             };
             return (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 stagger">
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(163,177,138,0.22)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 hover:-translate-y-px hover:shadow-sm transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Total Metrics</span>
                 <div className="flex items-center gap-1">
@@ -1053,12 +1055,12 @@ export function PulsePage() {
                 {metrics.slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className={`font-medium font-mono ${statusColor(m.status)}`}>{formatMetricValue(m.value, m.unit)}</span>
+                    <span className="font-medium font-mono" style={statusColorStyle(m.status)}>{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(16,185,129,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 hover:-translate-y-px hover:shadow-sm transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Healthy</span>
                 <div className="flex items-center gap-1">
@@ -1070,22 +1072,22 @@ export function PulsePage() {
                     sample: green,
                     notes: [{ label: 'Threshold', value: 'status = green' }],
                   }} />
-                  <CheckCircle2 size={14} className="text-emerald-400" />
+                  <CheckCircle2 size={14} style={{ color: 'var(--positive)' }} />
                 </div>
               </div>
-              <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">
+              <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--positive)' }}>
                 <Numeric value={green} size="lg" />
               </p>
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'green').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium font-mono text-emerald-400">{formatMetricValue(m.value, m.unit)}</span>
+                    <span className="font-medium font-mono" style={{ color: 'var(--positive)' }}>{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(245,158,11,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 hover:-translate-y-px hover:shadow-sm transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Warning</span>
                 <div className="flex items-center gap-1">
@@ -1097,22 +1099,22 @@ export function PulsePage() {
                     sample: amber,
                     notes: [{ label: 'Threshold', value: 'status = amber' }],
                   }} />
-                  <AlertTriangle size={14} className="text-amber-400" />
+                  <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
                 </div>
               </div>
-              <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">
+              <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>
                 <Numeric value={amber} size="lg" />
               </p>
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'amber').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium font-mono text-amber-400">{formatMetricValue(m.value, m.unit)}</span>
+                    <span className="font-medium font-mono" style={{ color: 'var(--warning)' }}>{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(239,68,68,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 hover:-translate-y-px hover:shadow-sm transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] h-full active:scale-[0.97]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
                 <div className="flex items-center gap-1">
@@ -1124,17 +1126,17 @@ export function PulsePage() {
                     sample: red,
                     notes: [{ label: 'Threshold', value: 'status = red' }],
                   }} />
-                  <XCircle size={14} className="text-red-400" />
+                  <XCircle size={14} style={{ color: 'var(--neg)' }} />
                 </div>
               </div>
-              <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">
+              <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>
                 <Numeric value={red} size="lg" />
               </p>
               <div className="mt-3 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {metrics.filter(m => m.status === 'red').slice(0, 3).map((m, i) => (
                   <div key={i} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{m.name}</span>
-                    <span className="font-medium font-mono text-red-400">{formatMetricValue(m.value, m.unit)}</span>
+                    <span className="font-medium font-mono" style={{ color: 'var(--neg)' }}>{formatMetricValue(m.value, m.unit)}</span>
                   </div>
                 ))}
               </div>
@@ -1159,13 +1161,13 @@ export function PulsePage() {
             {/* Insights */}
             <Card>
               <h3 className="text-base font-semibold t-primary mb-3 flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-emerald-400" /> Insights
+                <Lightbulb className="w-4 h-4 text-accent" /> Insights
               </h3>
               <div className="space-y-2.5">
                 {insights.map((insight, i) => {
                   const Icon = insight.icon;
                   return (
-                    <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                    <div key={i} className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
                         {i + 1}
                       </div>
@@ -1251,30 +1253,31 @@ export function PulsePage() {
                       >
                         <Link2 size={12} />
                       </button>
-                      <span className={`w-2.5 h-2.5 rounded-full ${
-                        metric.status === 'green' ? 'bg-emerald-500' : metric.status === 'amber' ? 'bg-amber-500' : 'bg-red-500'
-                      }`} />
-                      {isExpanded ? <ChevronUp size={12} className="text-gray-400" /> : <ChevronDown size={12} className="text-gray-400" />}
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={metric.status === 'green' ? { background: 'var(--positive)' } : metric.status === 'amber' ? { background: 'var(--warning)' } : { background: 'var(--neg)' }}
+                      />
+                      {isExpanded ? <ChevronUp size={12} className="t-muted" /> : <ChevronDown size={12} className="t-muted" />}
                     </div>
                   </div>
 
                   <div className="flex items-end justify-between">
                     <div>
-                      <span className={`text-2xl font-bold ${statusColor(metric.status)}`}>{formatMetricValue(metric.value, metric.unit)}</span>
+                      <span className="text-2xl font-bold" style={statusColorStyle(metric.status)}>{formatMetricValue(metric.value, metric.unit)}</span>
                       <span className="text-sm t-secondary ml-1">{metric.unit}</span>
                     </div>
                     <Sparkline
                       data={metric.trend || []}
                       width={80}
                       height={30}
-                      color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'}
+                      color={metric.status === 'green' ? 'var(--positive)' : metric.status === 'amber' ? 'var(--warning)' : 'var(--neg)'}
                     />
                   </div>
 
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-caption t-muted mb-1">
                       <span>Threshold</span>
-                      <span className="text-emerald-500">{metric.thresholds?.green ?? 'N/A'} (green)</span>
+                      <span style={{ color: 'var(--positive)' }}>{metric.thresholds?.green ?? 'N/A'} (green)</span>
                     </div>
                     <Progress
                       value={metric.value}
@@ -1288,28 +1291,28 @@ export function PulsePage() {
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-[var(--border-card)] space-y-4 animate-fadeIn">
                       {/* Threshold Breakdown */}
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-3">
                           <Gauge className="w-4 h-4 text-accent" />
                           <h4 className="text-sm font-semibold t-primary">Metric Analysis</h4>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Current Value</span>
-                            <p className={`text-lg font-bold mt-0.5 ${statusColor(metric.status)}`}>{formatMetricValue(metric.value, metric.unit)}</p>
+                            <p className="text-lg font-bold mt-0.5" style={statusColorStyle(metric.status)}>{formatMetricValue(metric.value, metric.unit)}</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Green Threshold</span>
-                            <p className="text-lg font-bold text-emerald-400 mt-0.5">{metric.thresholds?.green ?? '\u2014'}</p>
+                            <p className="text-lg font-bold mt-0.5" style={{ color: 'var(--positive)' }}>{metric.thresholds?.green ?? '\u2014'}</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Amber Threshold</span>
-                            <p className="text-lg font-bold text-amber-400 mt-0.5">{metric.thresholds?.amber ?? '\u2014'}</p>
+                            <p className="text-lg font-bold mt-0.5" style={{ color: 'var(--warning)' }}>{metric.thresholds?.amber ?? '\u2014'}</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Red Threshold</span>
-                            <p className="text-lg font-bold text-red-400 mt-0.5">{metric.thresholds?.red ?? '\u2014'}</p>
+                            <p className="text-lg font-bold mt-0.5" style={{ color: 'var(--neg)' }}>{metric.thresholds?.red ?? '\u2014'}</p>
                           </div>
                         </div>
 
@@ -1320,7 +1323,7 @@ export function PulsePage() {
                             <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
                               <div className="h-full rounded-full transition-all duration-700" style={{
                                 width: `${Math.min(100, (metric.value / ((metric.thresholds?.red ?? metric.value) * 1.2)) * 100)}%`,
-                                background: metric.status === 'red' ? 'linear-gradient(90deg, #ef4444, #dc2626)' : metric.status === 'amber' ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #10b981, #059669)',
+                                background: metric.status === 'red' ? 'var(--neg)' : metric.status === 'amber' ? 'var(--warning)' : 'var(--positive)',
                               }} />
                             </div>
                             <span className="text-xs font-bold t-primary w-16 text-right">{formatMetricValue(metric.value, metric.unit)}</span>
@@ -1332,7 +1335,7 @@ export function PulsePage() {
                           <div className="mb-4">
                             <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Trend (Recent Readings)</h5>
                             <div className="flex items-center gap-2">
-                              <Sparkline data={metric.trend} width={200} height={40} color={metric.status === 'green' ? '#10b981' : metric.status === 'amber' ? '#f59e0b' : '#ef4444'} />
+                              <Sparkline data={metric.trend} width={200} height={40} color={metric.status === 'green' ? 'var(--positive)' : metric.status === 'amber' ? 'var(--warning)' : 'var(--neg)'} />
                               <div className="text-xs t-muted">
                                 <p>Min: {Math.min(...metric.trend)}</p>
                                 <p>Max: {Math.max(...metric.trend)}</p>
@@ -1367,14 +1370,14 @@ export function PulsePage() {
                       {/* What This Means — for red/amber metrics, surfaces a
                           Run Catalyst button that triggers the full pulse
                           refresh (catalysts re-run, metrics re-evaluated). */}
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-2">
                           <Lightbulb className="w-4 h-4 text-accent" />
                           <h4 className="text-sm font-semibold t-primary">What This Means</h4>
                         </div>
                         <p className="text-sm t-muted leading-relaxed">
                           <span className="font-medium t-primary">{metric.name}</span> is currently at{' '}
-                          <span className={`font-medium ${statusColor(metric.status)}`}>{formatMetricValue(metric.value, metric.unit)}</span>
+                          <span className="font-medium" style={statusColorStyle(metric.status)}>{formatMetricValue(metric.value, metric.unit)}</span>
                           {metric.status === 'green' && ', which is within healthy operational parameters. Continue monitoring to maintain this performance.'}
                           {metric.status === 'amber' && '. This is approaching warning levels — consider proactive investigation to prevent escalation to critical status.'}
                           {metric.status === 'red' && '. This has breached the critical threshold and requires immediate attention. Investigate root cause and implement corrective action.'}
@@ -1435,15 +1438,15 @@ export function PulsePage() {
 
           {/* Anomaly Severity Filter */}
           <div className="flex items-center gap-2 mb-4">
-            <Filter size={14} className="text-gray-400" />
+            <Filter size={14} className="t-muted" />
             {(['all', 'critical', 'high', 'medium', 'low'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setAnomalyFilter(f)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                   anomalyFilter === f
                     ? 'bg-accent/20 text-accent border border-accent/30'
-                    : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
+                    : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-[var(--line-strong)]'
                 } active:scale-[0.97]`}
               >
                 {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -1470,12 +1473,14 @@ export function PulsePage() {
                   className={isExpanded ? 'border-accent/20' : ''}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      anom.severity === 'critical' ? 'bg-red-500/10' : anom.severity === 'high' ? 'bg-amber-500/10' : 'bg-accent/10'
-                    }`}>
-                      <AlertTriangle className={`w-5 h-5 ${
-                        anom.severity === 'critical' ? 'text-red-400' : anom.severity === 'high' ? 'text-amber-400' : 'text-accent'
-                      }`} />
+                    <div
+                      className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0"
+                      style={anom.severity === 'critical' ? { background: 'rgb(var(--neg-rgb) / 0.08)' } : anom.severity === 'high' ? { background: 'rgba(154,107,31,0.08)' } : { background: 'rgb(var(--accent-rgb) / 0.08)' }}
+                    >
+                      <AlertTriangle
+                        className="w-5 h-5"
+                        style={anom.severity === 'critical' ? { color: 'var(--neg)' } : anom.severity === 'high' ? { color: 'var(--warning)' } : { color: 'var(--accent)' }}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -1485,7 +1490,7 @@ export function PulsePage() {
                           <Badge variant={deviationPct >= 50 ? 'danger' : deviationPct >= 25 ? 'warning' : 'info'}>
                             +{deviationPct}% deviation
                           </Badge>
-                          {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                          {isExpanded ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
                         </div>
                       </div>
                       <p className="text-sm t-muted mt-1">{anom.hypothesis}</p>
@@ -1498,7 +1503,7 @@ export function PulsePage() {
                         </div>
                         <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                           <span className="text-caption t-muted">Actual</span>
-                          <p className="text-sm font-medium text-red-400">{anom.actualValue}</p>
+                          <p className="text-sm font-medium" style={{ color: 'var(--neg)' }}>{anom.actualValue}</p>
                         </div>
                         <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                           <span className="text-caption t-muted">Detected</span>
@@ -1510,28 +1515,28 @@ export function PulsePage() {
                       {isExpanded && (
                         <div className="mt-4 space-y-4 animate-fadeIn">
                           {/* Deviation Gauge */}
-                          <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                          <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                             <div className="flex items-center gap-2 mb-3">
                               <Gauge className="w-4 h-4 text-accent" />
                               <h4 className="text-sm font-semibold t-primary">Anomaly Investigation</h4>
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                                 <span className="text-label">Deviation</span>
-                                <p className={`text-lg font-bold mt-0.5 ${deviationPct >= 50 ? 'text-red-400' : deviationPct >= 25 ? 'text-amber-400' : 'text-accent'}`}>+{deviationPct}%</p>
+                                <p className="text-lg font-bold mt-0.5" style={deviationPct >= 50 ? { color: 'var(--neg)' } : deviationPct >= 25 ? { color: 'var(--warning)' } : { color: 'var(--accent)' }}>+{deviationPct}%</p>
                               </div>
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                                 <span className="text-label">Severity</span>
-                                <p className={`text-lg font-bold mt-0.5 capitalize ${anom.severity === 'critical' ? 'text-red-400' : anom.severity === 'high' ? 'text-amber-400' : 'text-accent'}`}>{anom.severity}</p>
+                                <p className="text-lg font-bold mt-0.5 capitalize" style={anom.severity === 'critical' ? { color: 'var(--neg)' } : anom.severity === 'high' ? { color: 'var(--warning)' } : { color: 'var(--accent)' }}>{anom.severity}</p>
                               </div>
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                                 <span className="text-label">Status</span>
                                 <p className="text-lg font-bold t-primary mt-0.5 capitalize">{anom.status || 'open'}</p>
                               </div>
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                                 <span className="text-label">Delta</span>
-                                <p className="text-lg font-bold text-red-400 mt-0.5">{(anom.actualValue - anom.expectedValue).toFixed(1)}</p>
+                                <p className="text-lg font-bold mt-0.5" style={{ color: 'var(--neg)' }}>{(anom.actualValue - anom.expectedValue).toFixed(1)}</p>
                               </div>
                             </div>
 
@@ -1542,7 +1547,7 @@ export function PulsePage() {
                                 <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
                                   <div className="h-full rounded-full transition-all duration-700" style={{
                                     width: `${Math.min(100, deviationPct)}%`,
-                                    background: deviationPct >= 50 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : deviationPct >= 25 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, var(--accent), var(--accent))',
+                                    background: deviationPct >= 50 ? 'var(--neg)' : deviationPct >= 25 ? 'var(--warning)' : 'var(--accent)',
                                   }} />
                                 </div>
                                 <span className="text-xs font-bold t-primary w-12 text-right">{deviationPct}%</span>
@@ -1554,9 +1559,9 @@ export function PulsePage() {
                               <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">What This Means</h5>
                               <p className="text-sm t-muted leading-relaxed">
                                 The <span className="font-medium t-primary">{anom.metric}</span> metric has deviated{' '}
-                                <span className={`font-medium ${deviationPct >= 50 ? 'text-red-400' : 'text-amber-400'}`}>{deviationPct}%</span>{' '}
+                                <span className="font-medium" style={deviationPct >= 50 ? { color: 'var(--neg)' } : { color: 'var(--warning)' }}>{deviationPct}%</span>{' '}
                                 from its expected value of <span className="font-medium t-primary">{anom.expectedValue}</span>,
-                                reaching <span className="font-medium text-red-400">{anom.actualValue}</span>.
+                                reaching <span className="font-medium" style={{ color: 'var(--neg)' }}>{anom.actualValue}</span>.
                                 {anom.severity === 'critical' ? ' This is a critical deviation requiring immediate investigation and remediation.' :
                                  anom.severity === 'high' ? ' This is a significant deviation — prompt action is recommended to prevent further escalation.' :
                                  ' This deviation is within manageable bounds but should be monitored.'}
@@ -1568,7 +1573,7 @@ export function PulsePage() {
                               Dead static text on a finance demo erodes trust faster
                               than an empty card; the operator must be able to act
                               from the same surface where they triaged. */}
-                          <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                          <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                             <div className="flex items-center gap-2 mb-3">
                               <Shield className="w-4 h-4 text-accent" />
                               <h4 className="text-sm font-semibold t-primary">Recommended Next Steps</h4>
@@ -1578,7 +1583,7 @@ export function PulsePage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAnomalyStatus(anom.id, 'investigating', 'Investigation opened'); }}
                                 disabled={anomalyActionPending === `${anom.id}:investigating` || anom.status === 'investigating' || anom.status === 'resolved'}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
+                                className="w-full flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
                                 aria-label={`Investigate ${anom.metric}`}
                               >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>1</div>
@@ -1599,7 +1604,7 @@ export function PulsePage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAnomalyRerun(anom.id); }}
                                 disabled={anomalyActionPending === `${anom.id}:rerun`}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
+                                className="w-full flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
                                 aria-label="Re-check data quality"
                               >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>2</div>
@@ -1619,7 +1624,7 @@ export function PulsePage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAnomalyStatus(anom.id, 'resolved', deviationPct >= 50 ? 'Anomaly escalated + closed' : 'Anomaly resolved'); }}
                                 disabled={anomalyActionPending === `${anom.id}:resolved` || anom.status === 'resolved'}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
+                                className="w-full flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors active:scale-[0.97]"
                                 aria-label={deviationPct >= 50 ? 'Escalate to management' : 'Mark resolved'}
                               >
                                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>3</div>
@@ -1679,7 +1684,7 @@ export function PulsePage() {
             {/* Process Health Summary — Stitch hover-tint bento */}
             {processes.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
+                <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Processes</span>
                     <GitBranch size={14} className="text-accent" />
@@ -1687,32 +1692,42 @@ export function PulsePage() {
                   <Numeric value={processes.length} size="lg" />
                   <p className="text-caption t-muted mt-1">Mapped & monitored</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
+                <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Avg Conformance</span>
-                    <Target size={14} className="text-emerald-400" />
+                    <Target size={14} style={{ color: 'var(--positive)' }} />
                   </div>
-                  <p className={`text-headline-lg font-bold tabular-nums font-mono ${
-                    (processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length) >= 80 ? 'text-emerald-400' : 'text-amber-400'
-                  }`}>{Math.round(processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length)}<span className="text-body">%</span></p>
+                  {(() => {
+                    const avgConf = processes.reduce((s, p) => s + p.conformanceRate, 0) / processes.length;
+                    return (
+                      <p className="text-headline-lg font-bold tabular-nums font-mono" style={avgConf >= 80 ? { color: 'var(--positive)' } : { color: 'var(--warning)' }}>
+                        {Math.round(avgConf)}<span className="text-body">%</span>
+                      </p>
+                    );
+                  })()}
                   <p className="text-caption t-muted mt-1">Target: 85%+</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors active:scale-[0.97]">
+                <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Total Variants</span>
-                    <Workflow size={14} style={{ color: 'var(--sky)' }} />
+                    <Workflow size={14} className="text-accent" />
                   </div>
                   <Numeric value={processes.reduce((s, p) => s + p.variants, 0)} size="lg" />
                   <p className="text-caption t-muted mt-1">Across all processes</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors active:scale-[0.97]">
+                <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-caption uppercase tracking-wider t-muted">Bottlenecks</span>
-                    <AlertTriangle size={14} className="text-red-400" />
+                    <AlertTriangle size={14} style={{ color: 'var(--neg)' }} />
                   </div>
-                  <p className={`text-headline-lg font-bold tabular-nums font-mono ${processes.reduce((s, p) => s + p.bottlenecks.length, 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    <Numeric value={processes.reduce((s, p) => s + p.bottlenecks.length, 0)} size="lg" />
-                  </p>
+                  {(() => {
+                    const bCount = processes.reduce((s, p) => s + p.bottlenecks.length, 0);
+                    return (
+                      <p className="text-headline-lg font-bold tabular-nums font-mono" style={bCount > 0 ? { color: 'var(--neg)' } : { color: 'var(--positive)' }}>
+                        <Numeric value={bCount} size="lg" />
+                      </p>
+                    );
+                  })()}
                   <p className="text-caption t-muted mt-1">Steps requiring attention</p>
                 </div>
               </div>
@@ -1735,9 +1750,9 @@ export function PulsePage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg font-semibold t-primary">{flow.name}</h3>
-                        {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                        {isExpanded ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
+                      <div className="flex items-center gap-4 mt-1 text-xs t-muted">
                         <span>{flow.variants} variants</span>
                         {/* Backend stores avg_duration in seconds. formatDuration
                             picks the right unit (s/m/h/d/mo) and renders "—"
@@ -1758,11 +1773,14 @@ export function PulsePage() {
                   <div className="flex items-center gap-2 overflow-x-auto pb-2">
                     {flow.steps.map((step, i) => (
                       <div key={step.id} className="flex items-center gap-2">
-                        <div className={`p-3 rounded-lg border min-w-32 ${
-                          step.status === 'bottleneck' ? 'bg-red-500/10 border-red-500/20' :
-                          step.status === 'degraded' ? 'bg-amber-500/10 border-amber-500/20' :
-                          'bg-[var(--bg-secondary)] border-[var(--border-card)]'
-                        }`}>
+                        <div
+                          className="p-3 rounded-md border min-w-32"
+                          style={step.status === 'bottleneck'
+                            ? { background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'var(--neg)' }
+                            : step.status === 'degraded'
+                            ? { background: 'rgba(154,107,31,0.08)', borderColor: 'var(--warning)' }
+                            : { background: 'var(--bg-secondary)', borderColor: 'var(--border-card)' }}
+                        >
                           <span className="text-sm font-medium t-primary">{step.name}</span>
                           <div className="flex items-center gap-3 mt-1 text-caption t-muted">
                             {/* Step-level avgDuration / throughput are not always
@@ -1783,15 +1801,15 @@ export function PulsePage() {
                           )}
                         </div>
                         {i < flow.steps.length - 1 && (
-                          <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <ArrowRight className="w-4 h-4 t-muted flex-shrink-0" />
                         )}
                       </div>
                     ))}
                   </div>
 
                   {flow.bottlenecks.length > 0 && (
-                    <div className="mt-3 p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-                      <span className="text-xs font-medium text-red-400">Bottlenecks: </span>
+                    <div className="mt-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'var(--neg)' }}>
+                      <span className="text-xs font-medium" style={{ color: 'var(--neg)' }}>Bottlenecks: </span>
                       <span className="text-xs t-muted">{flow.bottlenecks.join(', ')}</span>
                     </div>
                   )}
@@ -1800,26 +1818,26 @@ export function PulsePage() {
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-[var(--border-card)] space-y-4 animate-fadeIn">
                       {/* Process Health Report */}
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-3">
                           <BarChart3 className="w-4 h-4 text-accent" />
                           <h4 className="text-sm font-semibold t-primary">Process Health Report</h4>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Conformance</span>
-                            <p className={`text-lg font-bold mt-0.5 ${flow.conformanceRate >= 85 ? 'text-emerald-400' : flow.conformanceRate >= 70 ? 'text-amber-400' : 'text-red-400'}`}>{flow.conformanceRate}%</p>
+                            <p className="text-lg font-bold mt-0.5" style={flow.conformanceRate >= 85 ? { color: 'var(--positive)' } : flow.conformanceRate >= 70 ? { color: 'var(--warning)' } : { color: 'var(--neg)' }}>{flow.conformanceRate}%</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Step Health</span>
-                            <p className={`text-lg font-bold mt-0.5 ${stepHealth >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>{stepHealth}%</p>
+                            <p className="text-lg font-bold mt-0.5" style={stepHealth >= 80 ? { color: 'var(--positive)' } : { color: 'var(--warning)' }}>{stepHealth}%</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Avg Duration</span>
                             <p className="text-lg font-bold t-primary mt-0.5">{formatDuration(flow.avgDuration)}</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Process Variants</span>
                             <p className="text-lg font-bold t-primary mt-0.5">{flow.variants}</p>
                           </div>
@@ -1836,10 +1854,11 @@ export function PulsePage() {
                           <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Step-by-Step Analysis</h5>
                           <div className="space-y-2">
                             {flow.steps.map((step) => (
-                              <div key={step.id} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                  step.status === 'bottleneck' ? 'bg-red-500' : step.status === 'degraded' ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`} />
+                              <div key={step.id} className="flex items-center gap-3 p-2 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                                <div
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={step.status === 'bottleneck' ? { background: 'var(--neg)' } : step.status === 'degraded' ? { background: 'var(--warning)' } : { background: 'var(--positive)' }}
+                                />
                                 <span className="text-sm t-primary flex-1">{step.name}</span>
                                 <div className="flex items-center gap-4 text-xs t-muted">
                                   {Number.isFinite(step.avgDuration) && step.avgDuration > 0 ? (
@@ -1862,14 +1881,14 @@ export function PulsePage() {
                       </div>
 
                       {/* Optimisation Insights */}
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-3">
                           <Lightbulb className="w-4 h-4 text-accent" />
                           <h4 className="text-sm font-semibold t-primary">Optimisation Insights</h4>
                         </div>
                         <div className="space-y-2.5">
                           {flow.bottlenecks.length > 0 && (
-                            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                            <div className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>1</div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Address bottleneck{flow.bottlenecks.length > 1 ? 's' : ''} at: {flow.bottlenecks.join(', ')}</span>
@@ -1878,7 +1897,7 @@ export function PulsePage() {
                             </div>
                           )}
                           {flow.variants > 3 && (
-                            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                            <div className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>{flow.bottlenecks.length > 0 ? '2' : '1'}</div>
                               <div className="flex-1">
                                 <span className="text-sm t-primary">Reduce process variants from {flow.variants} to improve standardisation</span>
@@ -1887,7 +1906,7 @@ export function PulsePage() {
                             </div>
                           )}
                           {flow.conformanceRate < 85 && (
-                            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                            <div className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
                                 {(flow.bottlenecks.length > 0 ? 1 : 0) + (flow.variants > 3 ? 1 : 0) + 1}
                               </div>
@@ -1898,8 +1917,8 @@ export function PulsePage() {
                             </div>
                           )}
                           {flow.bottlenecks.length === 0 && flow.variants <= 3 && flow.conformanceRate >= 85 && (
-                            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                              <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--positive)' }} />
                               <div className="flex-1">
                                 <span className="text-sm t-primary">This process is performing well</span>
                                 <p className="text-caption t-muted mt-0.5">No immediate optimisations required. Continue monitoring for drift.</p>
@@ -1945,17 +1964,22 @@ export function PulsePage() {
               <Card>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-label">Avg Confidence</span>
-                  <Target size={14} className="text-emerald-400" />
+                  <Target size={14} style={{ color: 'var(--positive)' }} />
                 </div>
-                <p className={`text-2xl font-bold ${
-                  (correlations.reduce((s, c) => s + c.confidence, 0) / correlations.length) >= 0.7 ? 'text-emerald-400' : 'text-amber-400'
-                }`}>{Math.round((correlations.reduce((s, c) => s + c.confidence, 0) / correlations.length) * 100)}%</p>
+                {(() => {
+                  const avgConf = correlations.reduce((s, c) => s + c.confidence, 0) / correlations.length;
+                  return (
+                    <p className="text-2xl font-bold" style={avgConf >= 0.7 ? { color: 'var(--positive)' } : { color: 'var(--warning)' }}>
+                      {Math.round(avgConf * 100)}%
+                    </p>
+                  );
+                })()}
                 <p className="text-caption t-muted mt-1">Pattern reliability</p>
               </Card>
               <Card>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-label">Unique Systems</span>
-                  <Workflow size={14} className="text-blue-400" />
+                  <Workflow size={14} className="text-accent" />
                 </div>
                 <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">
                   {new Set([...correlations.map(c => c.sourceSystem), ...correlations.map(c => c.targetSystem)]).size}
@@ -1965,7 +1989,7 @@ export function PulsePage() {
               <Card>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-label">Avg Lag</span>
-                  <Clock size={14} className="text-gray-400" />
+                  <Clock size={14} className="t-muted" />
                 </div>
                 <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{formatDays(correlations.reduce((s, c) => s + (Number.isFinite(c.lagDays) ? c.lagDays : 0), 0) / correlations.length)}</p>
                 <p className="text-caption t-muted mt-1">Between events</p>
@@ -2000,22 +2024,22 @@ export function PulsePage() {
                   {/* Connection Visualization */}
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 flex-1">
-                      <div className="p-2.5 rounded-lg bg-accent/10 text-center min-w-24">
+                      <div className="p-2.5 rounded-md bg-accent/10 text-center min-w-24">
                         <span className="text-xs text-accent font-medium">{event.sourceSystem}</span>
                       </div>
                       <div className="flex-1 relative">
-                        <div className="h-px bg-gradient-to-r from-accent/40 to-blue-500/30" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-card)] text-caption text-gray-500">
+                        <div className="h-px bg-[var(--border-card)]" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] text-caption t-muted">
                           {formatDays(event.lagDays)} lag
                         </div>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-accent/10 text-center min-w-24">
+                      <div className="p-2.5 rounded-md bg-accent/10 text-center min-w-24">
                         <span className="text-xs text-accent font-medium">{event.targetSystem}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={confPct >= 70 ? 'success' : confPct >= 50 ? 'info' : 'default'}>{confPct}%</Badge>
-                      {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                      {isExpanded ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
                     </div>
                   </div>
 
@@ -2034,30 +2058,30 @@ export function PulsePage() {
                   {/* Expanded Correlation Detail */}
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-[var(--border-card)] space-y-4 animate-fadeIn">
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-3">
                           <Link2 className="w-4 h-4 text-accent" />
                           <h4 className="text-sm font-semibold t-primary">Correlation Analysis</h4>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Confidence</span>
-                            <p className={`text-lg font-bold mt-0.5 ${confidenceColor(event.confidence)}`}>
+                            <p className="text-lg font-bold mt-0.5" style={confidenceColorStyle(event.confidence)}>
                               {confidenceLabel(event.confidence)}
                             </p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Time Lag</span>
                             <p className="text-lg font-bold t-primary mt-0.5">{formatDays(event.lagDays, { long: true })}</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Source</span>
                             <p className="text-lg font-bold text-accent mt-0.5">{event.sourceSystem}</p>
                           </div>
-                          <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <span className="text-label">Target</span>
-                            <p className="text-lg font-bold text-blue-400 mt-0.5">{event.targetSystem}</p>
+                            <p className="text-lg font-bold text-accent mt-0.5">{event.targetSystem}</p>
                           </div>
                         </div>
 
@@ -2068,7 +2092,7 @@ export function PulsePage() {
                             <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
                               <div className="h-full rounded-full transition-all duration-700" style={{
                                 width: `${confPct}%`,
-                                background: confPct >= 70 ? 'linear-gradient(90deg, #10b981, #059669)' : confPct >= 50 ? 'linear-gradient(90deg, var(--accent), var(--accent))' : 'linear-gradient(90deg, #9ca3af, #6b7280)',
+                                background: confPct >= 70 ? 'var(--positive)' : confPct >= 50 ? 'var(--accent)' : 'var(--text-muted)',
                               }} />
                             </div>
                             <span className="text-xs font-bold t-primary w-10 text-right">{confPct}%</span>
@@ -2081,8 +2105,8 @@ export function PulsePage() {
                           <p className="text-sm t-muted leading-relaxed">
                             When <span className="font-medium text-accent">{event.sourceEvent}</span> occurs in{' '}
                             <span className="font-medium t-primary">{event.sourceSystem}</span>, there is a{' '}
-                            <span className={`font-medium ${confidenceColor(event.confidence)}`}>{confPct}%</span> probability
-                            that <span className="font-medium text-blue-400">{event.targetImpact}</span> will follow in{' '}
+                            <span className="font-medium" style={confidenceColorStyle(event.confidence)}>{confPct}%</span> probability
+                            that <span className="font-medium t-primary">{event.targetImpact}</span> will follow in{' '}
                             <span className="font-medium t-primary">{event.targetSystem}</span> within{' '}
                             <span className="font-medium t-primary">{formatDays(event.lagDays, { long: true })}</span>.
                             {confPct >= 70 ? ' This is a strong, actionable correlation that can be used for predictive planning.' :
@@ -2093,20 +2117,20 @@ export function PulsePage() {
                       </div>
 
                       {/* Business Implications */}
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                         <div className="flex items-center gap-2 mb-3">
                           <Lightbulb className="w-4 h-4 text-accent" />
                           <h4 className="text-sm font-semibold t-primary">Business Implications</h4>
                         </div>
                         <div className="space-y-2.5">
-                          <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <Eye className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <span className="text-sm t-primary">Set up automated alerts on <span className="font-medium">{event.sourceSystem}</span> for early detection</span>
                               <p className="text-caption t-muted mt-0.5">Use the {formatDays(event.lagDays)} lag as a predictive window to prepare for downstream impact.</p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+                          <div className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
                             <Shield className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <span className="text-sm t-primary">Build contingency plans for <span className="font-medium">{event.targetImpact.toLowerCase()}</span></span>
@@ -2138,7 +2162,7 @@ export function PulsePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <Card variant="default">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-md bg-accent/10 flex items-center justify-center">
                     <Play className="w-5 h-5 text-accent" />
                   </div>
                   <div>
@@ -2149,33 +2173,33 @@ export function PulsePage() {
               </Card>
               <Card variant="default">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <div className="w-10 h-10 rounded-md flex items-center justify-center" style={{ background: 'rgb(var(--accent-rgb) / 0.08)' }}>
+                    <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--positive)' }} />
                   </div>
                   <div>
-                    <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.completed as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--positive)' }}>{catalystSummary.reduce((s, c) => s + (c.completed as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Completed</p>
                   </div>
                 </div>
               </Card>
               <Card variant="default">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-                    <FileWarning className="w-5 h-5 text-red-400" />
+                  <div className="w-10 h-10 rounded-md flex items-center justify-center" style={{ background: 'rgb(var(--neg-rgb) / 0.08)' }}>
+                    <FileWarning className="w-5 h-5" style={{ color: 'var(--neg)' }} />
                   </div>
                   <div>
-                    <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.exceptions as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{catalystSummary.reduce((s, c) => s + (c.exceptions as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Exceptions</p>
                   </div>
                 </div>
               </Card>
               <Card variant="default">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                    <UserCheck className="w-5 h-5 text-amber-400" />
+                  <div className="w-10 h-10 rounded-md flex items-center justify-center" style={{ background: 'rgba(154,107,31,0.08)' }}>
+                    <UserCheck className="w-5 h-5" style={{ color: 'var(--warning)' }} />
                   </div>
                   <div>
-                    <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{catalystSummary.reduce((s, c) => s + (c.pending as number || 0), 0)}</p>
+                    <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{catalystSummary.reduce((s, c) => s + (c.pending as number || 0), 0)}</p>
                     <p className="text-xs t-muted">Pending Review</p>
                   </div>
                 </div>
@@ -2212,16 +2236,19 @@ export function PulsePage() {
                       >
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${cat.successRate >= 80 ? 'bg-emerald-400' : cat.successRate >= 60 ? 'bg-amber-400' : 'bg-red-400'}`} />
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={cat.successRate >= 80 ? { background: 'var(--positive)' } : cat.successRate >= 60 ? { background: 'var(--warning)' } : { background: 'var(--neg)' }}
+                            />
                             <span className={`font-medium ${catalystFilter === cat.catalystName ? 'text-accent' : 't-primary'}`}>{cat.catalystName}</span>
                           </div>
                         </td>
                         <td className="text-center py-2.5 px-3 t-secondary">{cat.totalRuns}</td>
-                        <td className="text-center py-2.5 px-3 text-emerald-400">{cat.completed}</td>
-                        <td className="text-center py-2.5 px-3 text-red-400">{cat.exceptions}</td>
-                        <td className="text-center py-2.5 px-3 text-amber-400">{cat.pending}</td>
+                        <td className="text-center py-2.5 px-3" style={{ color: 'var(--positive)' }}>{cat.completed}</td>
+                        <td className="text-center py-2.5 px-3" style={{ color: 'var(--neg)' }}>{cat.exceptions}</td>
+                        <td className="text-center py-2.5 px-3" style={{ color: 'var(--warning)' }}>{cat.pending}</td>
                         <td className="text-center py-2.5 px-3">
-                          <span className={`font-medium ${cat.avgConfidence >= 0.8 ? 'text-emerald-400' : cat.avgConfidence >= 0.6 ? 'text-amber-400' : 'text-red-400'}`}>
+                          <span className="font-medium" style={cat.avgConfidence >= 0.8 ? { color: 'var(--positive)' } : cat.avgConfidence >= 0.6 ? { color: 'var(--warning)' } : { color: 'var(--neg)' }}>
                             {(cat.avgConfidence * 100).toFixed(0)}%
                           </span>
                         </td>
@@ -2232,11 +2259,11 @@ export function PulsePage() {
                                 className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                                 style={{
                                   width: `${cat.successRate}%`,
-                                  background: cat.successRate >= 80 ? '#10b981' : cat.successRate >= 60 ? '#f59e0b' : '#ef4444',
+                                  background: cat.successRate >= 80 ? 'var(--positive)' : cat.successRate >= 60 ? 'var(--warning)' : 'var(--neg)',
                                 }}
                               />
                             </div>
-                            <span className={`text-xs font-medium ${cat.successRate >= 80 ? 'text-emerald-400' : cat.successRate >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
+                            <span className="text-xs font-medium" style={cat.successRate >= 80 ? { color: 'var(--positive)' } : cat.successRate >= 60 ? { color: 'var(--warning)' } : { color: 'var(--neg)' }}>
                               {Number(cat.successRate).toFixed(1)}%
                             </span>
                           </div>
@@ -2251,13 +2278,13 @@ export function PulsePage() {
 
           {/* Filter Bar */}
           <div className="flex items-center gap-2 mb-4">
-            <Filter size={14} className="text-gray-400" />
+            <Filter size={14} className="t-muted" />
             <button
               onClick={() => setCatalystFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                 catalystFilter === 'all'
                   ? 'bg-accent/20 text-accent border border-accent/30'
-                  : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
+                  : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-[var(--line-strong)]'
               } active:scale-[0.97]`}
             >
               All Catalysts
@@ -2266,10 +2293,10 @@ export function PulsePage() {
               <button
                 key={cat.catalystName}
                 onClick={() => setCatalystFilter(catalystFilter === cat.catalystName ? 'all' : cat.catalystName)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
                   catalystFilter === cat.catalystName
                     ? 'bg-accent/20 text-accent border border-accent/30'
-                    : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'
+                    : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-[var(--line-strong)]'
                 } active:scale-[0.97]`}
               >
                 {cat.catalystName}
@@ -2296,12 +2323,6 @@ export function PulsePage() {
             <div className="space-y-3">
               {catalystRuns.map((run) => {
                 const isExpanded = expandedRun === run.id;
-                const statusColors: Record<string, string> = {
-                  completed: 'text-emerald-400 bg-emerald-500/10',
-                  exception: 'text-red-400 bg-red-500/10',
-                  pending: 'text-amber-400 bg-amber-500/10',
-                  running: 'text-blue-400 bg-blue-500/10',
-                };
                 const statusIcons: Record<string, typeof CheckCircle2> = {
                   completed: CheckCircle2,
                   exception: XCircle,
@@ -2309,7 +2330,20 @@ export function PulsePage() {
                   running: Activity,
                 };
                 const StatusIcon = statusIcons[run.status] || AlertCircle;
-                const colorClass = statusColors[run.status] || 'text-gray-400 bg-gray-500/10';
+                const runColorStyle: React.CSSProperties = run.status === 'completed'
+                  ? { color: 'var(--positive)' }
+                  : run.status === 'exception'
+                  ? { color: 'var(--neg)' }
+                  : run.status === 'pending'
+                  ? { color: 'var(--warning)' }
+                  : { color: 'var(--accent)' };
+                const runBgStyle: React.CSSProperties = run.status === 'completed'
+                  ? { background: 'rgb(var(--accent-rgb) / 0.08)' }
+                  : run.status === 'exception'
+                  ? { background: 'rgb(var(--neg-rgb) / 0.08)' }
+                  : run.status === 'pending'
+                  ? { background: 'rgba(154,107,31,0.08)' }
+                  : { background: 'rgb(var(--accent-rgb) / 0.08)' };
 
                 return (
                   <Card
@@ -2319,8 +2353,8 @@ export function PulsePage() {
                     className={isExpanded ? 'border-accent/20' : ''}
                   >
                     <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass.split(' ')[1]}`}>
-                        <StatusIcon className={`w-5 h-5 ${colorClass.split(' ')[0]}`} />
+                      <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={runBgStyle}>
+                        <StatusIcon className="w-5 h-5" style={runColorStyle} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -2338,10 +2372,10 @@ export function PulsePage() {
                                 HITL
                               </Badge>
                             )}
-                            <span className={`text-xs font-medium ${run.confidence >= 0.8 ? 'text-emerald-400' : run.confidence >= 0.6 ? 'text-amber-400' : 'text-red-400'}`}>
+                            <span className="text-xs font-medium" style={run.confidence >= 0.8 ? { color: 'var(--positive)' } : run.confidence >= 0.6 ? { color: 'var(--warning)' } : { color: 'var(--neg)' }}>
                               {(run.confidence * 100).toFixed(0)}%
                             </span>
-                            {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                            {isExpanded ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
                           </div>
                         </div>
 
@@ -2364,17 +2398,17 @@ export function PulsePage() {
                           <div className="mt-4 space-y-4 animate-fadeIn">
                             {/* Run Details Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <span className="text-label">Status</span>
-                                <p className={`text-lg font-bold mt-0.5 capitalize ${colorClass.split(' ')[0]}`}>{run.status}</p>
+                                <p className="text-lg font-bold mt-0.5 capitalize" style={runColorStyle}>{run.status}</p>
                               </div>
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <span className="text-label">Confidence</span>
-                                <p className={`text-lg font-bold mt-0.5 ${run.confidence >= 0.8 ? 'text-emerald-400' : run.confidence >= 0.6 ? 'text-amber-400' : 'text-red-400'}`}>
+                                <p className="text-lg font-bold mt-0.5" style={run.confidence >= 0.8 ? { color: 'var(--positive)' } : run.confidence >= 0.6 ? { color: 'var(--warning)' } : { color: 'var(--neg)' }}>
                                   {(run.confidence * 100).toFixed(0)}%
                                 </p>
                               </div>
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <span className="text-label">Duration</span>
                                 <p className="text-lg font-bold t-primary mt-0.5">
                                   {run.completedAt
@@ -2382,22 +2416,22 @@ export function PulsePage() {
                                     : 'In progress'}
                                 </p>
                               </div>
-                              <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <span className="text-label">Review</span>
-                                <p className={`text-lg font-bold mt-0.5 ${run.needsHumanReview ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                <p className="text-lg font-bold mt-0.5" style={run.needsHumanReview ? { color: 'var(--warning)' } : { color: 'var(--positive)' }}>
                                   {run.needsHumanReview ? 'Required' : 'Auto'}
                                 </p>
                               </div>
                             </div>
 
                             {/* Confidence Gauge */}
-                            <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                            <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                               <h5 className="text-xs font-semibold t-primary mb-2 uppercase tracking-wider">Decision Confidence</h5>
                               <div className="flex items-center gap-3">
                                 <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
                                   <div className="h-full rounded-full transition-all duration-700" style={{
                                     width: `${run.confidence * 100}%`,
-                                    background: run.confidence >= 0.8 ? 'linear-gradient(90deg, #10b981, #059669)' : run.confidence >= 0.6 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                                    background: run.confidence >= 0.8 ? 'var(--positive)' : run.confidence >= 0.6 ? 'var(--warning)' : 'var(--neg)',
                                   }} />
                                 </div>
                                 <span className="text-xs font-bold t-primary w-10 text-right">{(run.confidence * 100).toFixed(0)}%</span>
@@ -2406,7 +2440,7 @@ export function PulsePage() {
 
                             {/* Input Data */}
                             {run.inputData && Object.keys(run.inputData).length > 0 && (
-                              <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <div className="flex items-center gap-2 mb-2">
                                   <ArrowRight className="w-4 h-4 text-accent" />
                                   <h4 className="text-sm font-semibold t-primary">Input Data</h4>
@@ -2424,7 +2458,7 @@ export function PulsePage() {
 
                             {/* Output Data / Results */}
                             {run.outputData && Object.keys(run.outputData).length > 0 && (
-                              <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Target className="w-4 h-4 text-accent" />
                                   <h4 className="text-sm font-semibold t-primary">Output / Results</h4>
@@ -2442,7 +2476,7 @@ export function PulsePage() {
 
                             {/* Reasoning */}
                             {run.reasoning && (
-                              <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Lightbulb className="w-4 h-4 text-accent" />
                                   <h4 className="text-sm font-semibold t-primary">AI Reasoning</h4>
@@ -2453,15 +2487,15 @@ export function PulsePage() {
 
                             {/* Approval Info */}
                             {run.approvedBy && (
-                              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                                <UserCheck className="w-4 h-4 text-emerald-400" />
-                                <span className="text-sm text-emerald-400">Approved by: <span className="font-medium">{run.approvedBy}</span></span>
+                              <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'var(--accent)' }}>
+                                <UserCheck className="w-4 h-4" style={{ color: 'var(--positive)' }} />
+                                <span className="text-sm" style={{ color: 'var(--positive)' }}>Approved by: <span className="font-medium">{run.approvedBy}</span></span>
                               </div>
                             )}
 
                             {/* Assigned Users */}
                             {run.assignedTo && (run.assignedTo.validators?.length || run.assignedTo.exceptionHandlers?.length || run.assignedTo.escalation?.length) ? (
-                              <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                              <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                                 <div className="flex items-center gap-2 mb-2">
                                   <UserCheck className="w-4 h-4 text-accent" />
                                   <h4 className="text-sm font-semibold t-primary">Assigned Users</h4>
@@ -2469,7 +2503,7 @@ export function PulsePage() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                                   {run.assignedTo.validators && run.assignedTo.validators.length > 0 && (
                                     <div>
-                                      <span className="text-emerald-400 font-medium block mb-1">Validators</span>
+                                      <span className="font-medium block mb-1" style={{ color: 'var(--positive)' }}>Validators</span>
                                       {run.assignedTo.validators.map((u, i) => (
                                         <p key={i} className="t-secondary">{u}</p>
                                       ))}
@@ -2477,7 +2511,7 @@ export function PulsePage() {
                                   )}
                                   {run.assignedTo.exceptionHandlers && run.assignedTo.exceptionHandlers.length > 0 && (
                                     <div>
-                                      <span className="text-amber-400 font-medium block mb-1">Exception Handlers</span>
+                                      <span className="font-medium block mb-1" style={{ color: 'var(--warning)' }}>Exception Handlers</span>
                                       {run.assignedTo.exceptionHandlers.map((u, i) => (
                                         <p key={i} className="t-secondary">{u}</p>
                                       ))}
@@ -2485,7 +2519,7 @@ export function PulsePage() {
                                   )}
                                   {run.assignedTo.escalation && run.assignedTo.escalation.length > 0 && (
                                     <div>
-                                      <span className="text-red-400 font-medium block mb-1">Escalation</span>
+                                      <span className="font-medium block mb-1" style={{ color: 'var(--neg)' }}>Escalation</span>
                                       {run.assignedTo.escalation.map((u, i) => (
                                         <p key={i} className="t-secondary">{u}</p>
                                       ))}
@@ -2538,10 +2572,10 @@ export function PulsePage() {
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <Card><div className="text-center"><p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{diagSummary.totalAnalyses}</p><p className="text-label">Total Analyses</p></div></Card>
-                <Card><div className="text-center"><p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{diagSummary.pendingAnalyses}</p><p className="text-label">Pending</p></div></Card>
-                <Card><div className="text-center"><p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{diagSummary.completedAnalyses}</p><p className="text-label">Completed</p></div></Card>
-                <Card><div className="text-center"><p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{diagSummary.undiagnosedMetrics}</p><p className="text-label">Undiagnosed</p></div></Card>
-                <Card><div className="text-center"><p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{diagSummary.criticalFindings}</p><p className="text-label">Critical Findings</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{diagSummary.pendingAnalyses}</p><p className="text-label">Pending</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--positive)' }}>{diagSummary.completedAnalyses}</p><p className="text-label">Completed</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{diagSummary.undiagnosedMetrics}</p><p className="text-label">Undiagnosed</p></div></Card>
+                <Card><div className="text-center"><p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{diagSummary.criticalFindings}</p><p className="text-label">Critical Findings</p></div></Card>
                 <Card><div className="text-center"><p className="text-2xl font-bold text-accent">{diagSummary.activeFixes}</p><p className="text-label">Active Fixes</p></div></Card>
               </div>
 
@@ -2551,10 +2585,10 @@ export function PulsePage() {
                   <h3 className="text-sm font-semibold t-primary mb-2">Quick Diagnose — At-Risk Metrics</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {metrics.filter(m => m.status === 'red' || m.status === 'amber').slice(0, 6).map(m => (
-                      <Card key={m.id} className={m.status === 'red' ? 'border-red-500/20' : 'border-amber-500/20'}>
+                      <Card key={m.id} className="border-[var(--border-card)]" style={m.status === 'red' ? { borderColor: 'var(--neg)' } : { borderColor: 'var(--warning)' }}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${m.status === 'red' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                            <span className="w-2 h-2 rounded-full" style={m.status === 'red' ? { background: 'var(--neg)' } : { background: 'var(--warning)' }} />
                             <span className="text-xs font-medium t-primary truncate">{m.name}</span>
                           </div>
                           <Button variant="secondary" size="sm" onClick={() => handleAnalyseMetric(m.id)} disabled={analysingMetric === m.id}>
@@ -2589,7 +2623,10 @@ export function PulsePage() {
                     <Card key={analysis.id} hover onClick={() => { setExpandedAnalysis(expandedAnalysis === analysis.id ? null : analysis.id); if (expandedAnalysis !== analysis.id) handleViewAnalysis(analysis.id); }}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className={`w-1 h-4 rounded-full flex-shrink-0 ${analysis.metricStatus === 'red' ? 'bg-red-400' : analysis.metricStatus === 'amber' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                          <span
+                            className="w-1 h-4 rounded-full flex-shrink-0"
+                            style={analysis.metricStatus === 'red' ? { background: 'var(--neg)' } : analysis.metricStatus === 'amber' ? { background: 'var(--warning)' } : { background: 'var(--positive)' }}
+                          />
                           <Badge variant={analysis.status === 'completed' ? 'success' : analysis.status === 'failed' ? 'danger' : 'warning'} size="sm">{analysis.status}</Badge>
                           <span className="text-sm font-medium t-primary">{analysis.metricName}</span>
                         </div>
@@ -2605,7 +2642,14 @@ export function PulsePage() {
                             {diagDetail.causalChain.map((link, i) => (
                               <div key={link.id} className="flex items-start gap-3">
                                 <div className="flex flex-col items-center">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold ${link.level === 0 ? 'bg-red-500/20 text-red-400' : link.causeType === 'root' ? 'bg-purple-500/20 text-purple-400' : 'bg-[var(--bg-secondary)] t-muted'}`}>L{link.level}</div>
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold"
+                                    style={link.level === 0
+                                      ? { background: 'rgb(var(--neg-rgb) / 0.15)', color: 'var(--neg)' }
+                                      : link.causeType === 'root'
+                                      ? { background: 'rgb(var(--accent-rgb) / 0.12)', color: 'var(--accent)' }
+                                      : { background: 'var(--bg-secondary)' }}
+                                  >L{link.level}</div>
                                   {i < diagDetail.causalChain.length - 1 && <div className="w-px h-4 bg-[var(--border-card)]" />}
                                 </div>
                                 <div className="flex-1">
@@ -2616,7 +2660,7 @@ export function PulsePage() {
                                   </div>
                                   <p className="text-caption t-secondary mt-0.5">{link.description}</p>
                                   {link.recommendedFix && (
-                                    <div className="flex items-start gap-1 mt-1 text-caption text-emerald-400">
+                                    <div className="flex items-start gap-1 mt-1 text-caption" style={{ color: 'var(--positive)' }}>
                                       <Wrench size={10} className="mt-0.5 flex-shrink-0" />
                                       <span>{link.recommendedFix}</span>
                                     </div>
