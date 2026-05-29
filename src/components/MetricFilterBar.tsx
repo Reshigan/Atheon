@@ -23,9 +23,9 @@ interface MetricFilterBarProps {
 }
 
 const STATUS_OPTIONS: FilterOption<MetricStatus>[] = [
-  { value: "red", label: "Red", dotClass: "bg-red-500" },
-  { value: "amber", label: "Amber", dotClass: "bg-amber-500" },
-  { value: "green", label: "Green", dotClass: "bg-emerald-500" },
+  { value: "red", label: "Red", dotClass: "bg-neg" },
+  { value: "amber", label: "Amber", dotClass: "bg-[var(--warning)]" },
+  { value: "green", label: "Green", dotClass: "bg-accent" },
 ];
 
 export function MetricFilterBar({

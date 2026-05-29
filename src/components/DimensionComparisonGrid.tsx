@@ -16,16 +16,16 @@ interface DimensionComparisonGridProps {
 }
 
 const trendIcon = (trend: string, size = 12) => {
-  if (trend === "up" || trend === "improving") return <TrendingUp size={size} className="text-emerald-400" />;
-  if (trend === "down" || trend === "declining") return <TrendingDown size={size} className="text-red-400" />;
-  return <Minus size={size} className="text-gray-400" />;
+  if (trend === "up" || trend === "improving") return <TrendingUp size={size} className="text-accent" />;
+  if (trend === "down" || trend === "declining") return <TrendingDown size={size} className="text-neg" />;
+  return <Minus size={size} className="t-muted" />;
 };
 
 const toneFor = (score: number | null) => {
-  if (score === null || score === undefined) return "#9ca3af";
-  if (score >= 80) return "#10b981";
-  if (score >= 60) return "#f59e0b";
-  return "#ef4444";
+  if (score === null || score === undefined) return "var(--info)";
+  if (score >= 80) return "var(--accent)";
+  if (score >= 60) return "var(--warning)";
+  return "var(--neg)";
 };
 
 export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, companyId }: DimensionComparisonGridProps) {
@@ -91,7 +91,7 @@ export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, c
               <button
                 type="button"
                 onClick={() => onRemove(dim)}
-                className="absolute top-3 right-3 text-gray-400 hover:text-red-400 transition-colors"
+                className="absolute top-3 right-3 t-muted hover:text-neg transition-colors"
                 title={`Remove ${dim} from comparison`}
                 aria-label={`Remove ${dim} from comparison`}
               >
@@ -113,7 +113,7 @@ export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, c
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         {trendIcon(result.trend)}
-                        <span className={`text-caption ${(result.delta ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        <span className={`text-caption ${(result.delta ?? 0) >= 0 ? "text-accent" : "text-neg"}`}>
                           {(result.delta ?? 0) > 0 ? "+" : ""}
                           {result.delta ?? 0}
                         </span>
@@ -149,9 +149,9 @@ export function DimensionComparisonGrid({ selectedDimensions, onRemove, risks, c
                               size={10}
                               className={
                                 r.severity === "critical"
-                                  ? "text-red-400 mt-0.5"
+                                  ? "text-neg mt-0.5"
                                   : r.severity === "high"
-                                  ? "text-amber-400 mt-0.5"
+                                  ? "text-[var(--warning)] mt-0.5"
                                   : "t-muted mt-0.5"
                               }
                             />
