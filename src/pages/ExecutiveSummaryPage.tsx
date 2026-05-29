@@ -22,13 +22,13 @@ import { useAppStore } from '@/stores/appStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusPill } from '@/components/ui/status-pill';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { ScoreRing } from '@/components/ui/score-ring';
 import { Sparkline } from '@/components/ui/sparkline';
 import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
 import type { ExecutiveSummaryResponse } from '@/lib/api';
 import {
-  Crown, Loader2, AlertTriangle, AlertCircle, TrendingUp,
+  Loader2, AlertTriangle, AlertCircle, TrendingUp,
   TrendingDown, Minus, RefreshCw, ArrowRight, FileText, Calendar,
 } from 'lucide-react';
 
@@ -88,11 +88,11 @@ export function ExecutiveSummaryPage() {
   if (error && !data) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-3">
-        <AlertTriangle className="w-8 h-8 text-red-400" />
+        <AlertTriangle className="w-8 h-8" style={{ color: 'var(--neg)' }} />
         <p className="text-sm t-primary">{error}</p>
         <button
           onClick={() => load()}
-          className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
+          className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
         >
           Retry
         </button>
@@ -104,12 +104,12 @@ export function ExecutiveSummaryPage() {
 
   const improvement = data.journey?.improvement;
   const improvementIcon = improvement === null || improvement === undefined
-    ? <Minus className="w-4 h-4 text-gray-400" />
+    ? <Minus className="w-4 h-4 t-muted" />
     : improvement > 0
-      ? <TrendingUp className="w-4 h-4 text-emerald-500" />
+      ? <TrendingUp className="w-4 h-4" style={{ color: 'var(--positive)' }} />
       : improvement < 0
-        ? <TrendingDown className="w-4 h-4 text-red-500" />
-        : <Minus className="w-4 h-4 text-gray-400" />;
+        ? <TrendingDown className="w-4 h-4" style={{ color: 'var(--neg)' }} />
+        : <Minus className="w-4 h-4 t-muted" />;
 
   const dimensionEntries = Object.entries(data.dimensions || {});
   const trendValues = (data.trend || []).map(t => t.score);
@@ -118,23 +118,21 @@ export function ExecutiveSummaryPage() {
     <div className="space-y-6 animate-fadeIn">
       <SharedSavingsStrip />
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <HeroHeader
-          icon={Crown}
-          title="Executive Summary"
-          subtitle={`One-page briefing for ${user?.name?.split(' ')[0] || 'executives'} — aggregated from Apex, ROI, diagnostics & signals`}
-          accent="sage"
-        />
-        <button
-          onClick={() => load(true)}
-          disabled={refreshing}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] text-xs t-muted hover:t-primary transition-colors"
-          aria-label="Refresh executive summary"
-        >
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Executive · Briefing"
+        title="Executive summary"
+        dek={`One-page briefing for ${user?.name?.split(' ')[0] || 'executives'} — aggregated from Apex, ROI, diagnostics & signals`}
+        actions={
+          <button
+            onClick={() => load(true)}
+            disabled={refreshing}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] text-xs t-muted hover:t-primary transition-colors"
+            aria-label="Refresh executive summary"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> Refresh
+          </button>
+        }
+      />
 
       {/* Top row: Atheon Score + Health Score + Journey */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -172,7 +170,7 @@ export function ExecutiveSummaryPage() {
             </>
           ) : (
             <>
-              <Minus className="w-6 h-6 text-gray-400 mb-2" />
+              <Minus className="w-6 h-6 t-muted mb-2" />
               <p className="text-xs t-muted">No baseline captured yet — the &ldquo;day zero&rdquo; snapshot will appear once onboarding completes.</p>
             </>
           )}
@@ -219,14 +217,14 @@ export function ExecutiveSummaryPage() {
               <button
                 key={key}
                 onClick={() => navigate('/apex')}
-                className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] transition-colors active:scale-[0.97]"
+                className="text-left p-3 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] transition-colors active:scale-[0.97]"
               >
                 <p className="text-label">{key.replace(/[-_]/g, ' ')}</p>
                 <div className="flex items-baseline gap-1 mt-1">
                   <span className="text-lg font-bold t-primary">{dim.score}</span>
-                  {dim.trend === 'improving' || dim.trend === 'up' ? <TrendingUp size={12} className="text-emerald-400" />
-                    : dim.trend === 'declining' || dim.trend === 'down' ? <TrendingDown size={12} className="text-red-400" />
-                    : <Minus size={12} className="text-gray-400" />}
+                  {dim.trend === 'improving' || dim.trend === 'up' ? <TrendingUp size={12} style={{ color: 'var(--positive)' }} />
+                    : dim.trend === 'declining' || dim.trend === 'down' ? <TrendingDown size={12} style={{ color: 'var(--neg)' }} />
+                    : <Minus size={12} className="t-muted" />}
                 </div>
               </button>
             ))}
@@ -245,11 +243,11 @@ export function ExecutiveSummaryPage() {
         {data.topRisks && data.topRisks.length > 0 ? (
           <div className="space-y-2">
             {data.topRisks.map((risk, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--bg-secondary)]">
-                <AlertCircle size={14} className={
-                  risk.severity === 'critical' ? 'text-red-500' :
-                  risk.severity === 'high' ? 'text-orange-500' : 'text-amber-500'
-                } />
+              <div key={i} className="flex items-start gap-3 p-3 rounded-md bg-[var(--bg-secondary)]">
+                <AlertCircle size={14} style={{
+                  color: risk.severity === 'critical' ? 'var(--neg)' :
+                    risk.severity === 'high' ? 'var(--neg)' : 'var(--warning)',
+                }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium t-primary truncate">{risk.title}</p>
@@ -275,14 +273,14 @@ export function ExecutiveSummaryPage() {
             {data.targets.map((t, i) => {
               const pct = t.targetValue ? Math.min(100, Math.round((t.currentValue / t.targetValue) * 100)) : 0;
               return (
-                <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)]">
+                <div key={i} className="p-3 rounded-md bg-[var(--bg-secondary)]">
                   <div className="flex items-center justify-between">
                     <p className="text-sm t-primary">{t.targetName}</p>
                     <Badge variant={targetStatusColor(t.status)} className="text-caption">{t.status}</Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-primary)] overflow-hidden">
-                      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+                    <div className="flex-1 h-1.5 rounded-sm bg-[var(--bg-primary)] overflow-hidden">
+                      <div className="h-full rounded-sm bg-accent" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-caption t-muted tabular-nums">{t.currentValue} / {t.targetValue}</span>
                   </div>
@@ -295,9 +293,9 @@ export function ExecutiveSummaryPage() {
       )}
 
       {/* Scheduling / Distribution — not yet implemented, called out so the gap is visible */}
-      <Card className="p-5 border-amber-500/20 bg-amber-500/5">
+      <Card className="p-5" style={{ borderColor: 'rgb(var(--warning-rgb, 154 107 31) / 0.25)', background: 'rgb(var(--warning-rgb, 154 107 31) / 0.04)' }}>
         <div className="flex items-start gap-3">
-          <Calendar size={16} className="text-amber-400 mt-0.5" />
+          <Calendar size={16} className="mt-0.5" style={{ color: 'var(--warning)' }} />
           <div className="flex-1">
             <p className="text-sm font-medium t-primary">Scheduled distribution — not yet implemented</p>
             <p className="text-xs t-muted mt-0.5">

@@ -228,7 +228,7 @@ export function KnowledgeGraphViz({
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={involved ? 'var(--accent)' : 'rgba(255,255,255,0.18)'}
+              stroke={involved ? 'var(--accent)' : 'rgba(10,20,30,0.18)'}
               strokeWidth={involved ? 1.5 : 0.8}
               strokeDasharray="3 4"
               opacity={isHighlighted ? (involved ? 0.95 : 0.5) : 0.12}

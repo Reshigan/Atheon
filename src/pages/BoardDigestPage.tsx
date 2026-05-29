@@ -18,14 +18,14 @@
  * still inspect the provenance behind any number.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
 import { Numeric } from '@/components/ui/numeric';
 import { LoadingState, ErrorState } from '@/components/ui/state';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { api, ApiError } from '@/lib/api';
 import type { HealthScore, BillingSummary, ForecastAccuracyResp } from '@/lib/api';
-import { TrendingUp, ShieldCheck, AlertTriangle, Activity, Crown } from 'lucide-react';
+import { TrendingUp, ShieldCheck, AlertTriangle, Activity } from 'lucide-react';
 
 function formatCurrency(value: number, currency = 'ZAR'): string {
   try {
@@ -90,16 +90,15 @@ export default function BoardDigestPage(): JSX.Element {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto" data-testid="board-digest-page">
-      <HeroHeader
-        icon={Crown}
-        title="Board Digest"
-        subtitle="Quarterly outcomes — shared-savings, health, risk"
-        accent="sage"
+      <PageHeader
+        eyebrow="Board · Digest"
+        title="Board digest"
+        dek="Quarterly outcomes — shared-savings, health, risk"
       />
 
       {/* Shared-savings hero — this IS the purchase decision in one tile.
           R0 until you save R1, presented as a single readable line. */}
-      <Card className="p-6" style={{ background: 'rgba(163, 177, 138, 0.06)', borderColor: 'rgba(163, 177, 138, 0.30)' }}>
+      <Card className="p-6" style={{ background: 'rgb(var(--accent-rgb) / 0.05)', borderColor: 'rgb(var(--accent-rgb) / 0.25)' }}>
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp size={18} style={{ color: 'var(--accent)' }} />
           <h2 className="text-headline-md font-semibold t-primary">Shared-savings to date</h2>
@@ -118,7 +117,7 @@ export default function BoardDigestPage(): JSX.Element {
                 notes: [{ label: 'Currency', value: currency }],
               }} />
             </div>
-            <p className="text-headline-xl font-bold text-emerald-500 tabular-nums font-mono mt-1">{formatCurrency(recovered, currency)}</p>
+            <p className="text-headline-xl font-bold tabular-nums font-mono mt-1 text-accent">{formatCurrency(recovered, currency)}</p>
           </div>
           <div>
             <div className="flex items-center justify-between">
@@ -145,7 +144,7 @@ export default function BoardDigestPage(): JSX.Element {
                 query: 'total_realised_savings / NULLIF(total_atheon_revenue, 0)',
               }} />
             </div>
-            <p className="text-headline-xl font-bold text-emerald-500 tabular-nums font-mono mt-1">{multiple > 0 ? `${multiple.toFixed(1)}x` : '—'}</p>
+            <p className="text-headline-xl font-bold tabular-nums font-mono mt-1 text-accent">{multiple > 0 ? `${multiple.toFixed(1)}x` : '—'}</p>
           </div>
         </div>
       </Card>
@@ -182,10 +181,10 @@ export default function BoardDigestPage(): JSX.Element {
                 query: "COUNT(*) FROM apex_risks WHERE status IN ('open','monitoring')",
                 sample: risksCount,
               }} />
-              <AlertTriangle size={14} className="text-amber-400" />
+              <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
             </div>
           </div>
-          <p className={`text-headline-lg font-bold tabular-nums font-mono mt-1 ${risksCount === 0 ? 'text-emerald-500' : risksCount > 3 ? 'text-red-400' : 'text-amber-400'}`}>{risksCount}</p>
+          <p className="text-headline-lg font-bold tabular-nums font-mono mt-1" style={{ color: risksCount === 0 ? 'var(--positive)' : risksCount > 3 ? 'var(--neg)' : 'var(--warning)' }}>{risksCount}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between mb-2">
@@ -200,10 +199,10 @@ export default function BoardDigestPage(): JSX.Element {
                 query: "COUNT(*) FROM pulse_anomalies WHERE status = 'active'",
                 sample: anomaliesCount,
               }} />
-              <Activity size={14} className="text-sky-400" />
+              <Activity size={14} style={{ color: 'var(--info)' }} />
             </div>
           </div>
-          <p className={`text-headline-lg font-bold tabular-nums font-mono mt-1 ${anomaliesCount === 0 ? 'text-emerald-500' : 'text-amber-400'}`}>{anomaliesCount}</p>
+          <p className="text-headline-lg font-bold tabular-nums font-mono mt-1" style={{ color: anomaliesCount === 0 ? 'var(--positive)' : 'var(--warning)' }}>{anomaliesCount}</p>
         </Card>
       </div>
 
@@ -211,7 +210,7 @@ export default function BoardDigestPage(): JSX.Element {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <div className="flex items-center gap-2 mb-3">
-            <Activity size={16} style={{ color: 'var(--sky)' }} />
+            <Activity size={16} className="text-accent" />
             <h3 className="text-body font-semibold t-primary">Forecast accuracy</h3>
             <MetricSource source={{
               ...baseProvenance,
@@ -225,7 +224,7 @@ export default function BoardDigestPage(): JSX.Element {
           </div>
           {forecast && forecast.total_graded > 0 ? (
             <div className="flex items-baseline gap-3">
-              <span className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono">
+              <span className="text-headline-lg font-bold tabular-nums font-mono text-accent">
                 {withinBand != null ? `${(withinBand * 100).toFixed(1)}%` : '—'}
               </span>
               <span className="text-caption t-muted">

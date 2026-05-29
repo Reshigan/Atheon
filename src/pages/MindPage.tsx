@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { MindModels, MindStats, MindQueryResult } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import {
-  Brain,
   Settings2,
   Play,
   BarChart3,
@@ -139,15 +138,14 @@ export function MindPage() {
 
   return (
     <div className="space-y-6">
-      <HeroHeader
-        icon={Brain}
+      <PageHeader
+        eyebrow="Mind · Reasoning Engine"
         title="Mind"
-        subtitle="AI Model Governance & Configuration"
-        accent="sky"
+        dek="AI Model Governance & Configuration"
       />
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
+      <div className="flex gap-1 p-1 rounded-md" style={{ background: "var(--bg-secondary)" }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -170,22 +168,22 @@ export function MindPage() {
             </div>
           )}
           {!modelsLoading && modelsError && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/20">
-              <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
-              <p className="text-xs text-red-400 flex-1">{modelsError}</p>
-              <button onClick={loadModels} className="text-xs text-red-300 hover:text-red-200 underline">Retry</button>
+            <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+              <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+              <p className="text-xs flex-1" style={{ color: 'var(--neg)' }}>{modelsError}</p>
+              <button onClick={loadModels} className="text-xs underline" style={{ color: 'var(--neg)' }}>Retry</button>
             </div>
           )}
           {!modelsLoading && !modelsError && models && (
             <>
-              <div className="rounded-xl p-6 space-y-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+              <div className="rounded-md p-6 space-y-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
                 <h2 className="text-sm font-semibold t-primary flex items-center gap-2">
                   <Cpu size={14} /> Available Model Tiers
                 </h2>
                 {models.tiers && models.tiers.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {models.tiers.map((tier) => (
-                      <div key={tier.id} className="p-4 rounded-lg space-y-2" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}>
+                      <div key={tier.id} className="p-4 rounded-md space-y-2" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}>
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium t-primary">{tier.name}</p>
                           <span className="text-caption font-mono t-muted">{tier.id}</span>
@@ -206,7 +204,7 @@ export function MindPage() {
                 )}
               </div>
 
-              <div className="rounded-xl p-6 space-y-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+              <div className="rounded-md p-6 space-y-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
                 <h2 className="text-sm font-semibold t-primary flex items-center gap-2">
                   <Sparkles size={14} /> Industry Adapters
                 </h2>
@@ -218,7 +216,7 @@ export function MindPage() {
                           <p className="text-sm font-medium t-primary">{ad.name}</p>
                           <p className="text-caption t-muted">{ad.metrics?.join(", ") || "No metrics listed"}</p>
                         </div>
-                        <span className="text-caption px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: "var(--bg-card)", color: "var(--accent)" }}>
+                        <span className="text-caption px-2 py-0.5 rounded-sm flex items-center gap-1" style={{ background: "var(--bg-card)", color: "var(--accent)" }}>
                           <CheckCircle2 size={10} /> {ad.status}
                         </span>
                       </div>
@@ -235,7 +233,7 @@ export function MindPage() {
 
       {/* Prompt Playground */}
       {activeTab === "playground" && (
-        <div className="rounded-xl p-6 space-y-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+        <div className="rounded-md p-6 space-y-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
           <h2 className="text-sm font-semibold t-primary">Test Prompts</h2>
 
           <div>
@@ -263,10 +261,10 @@ export function MindPage() {
           />
 
           {playgroundError && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle size={14} className="text-amber-400 flex-shrink-0" />
-              <p className="text-xs text-amber-400 flex-1">{playgroundError}</p>
-              <button onClick={() => setPlaygroundError(null)} className="text-xs text-amber-300 hover:text-amber-200 underline">Dismiss</button>
+            <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--warning-rgb, 154 107 31) / 0.08)', borderColor: 'rgb(var(--warning-rgb, 154 107 31) / 0.25)' }}>
+              <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--warning)' }} />
+              <p className="text-xs flex-1" style={{ color: 'var(--warning)' }}>{playgroundError}</p>
+              <button onClick={() => setPlaygroundError(null)} className="text-xs underline" style={{ color: 'var(--warning)' }}>Dismiss</button>
             </div>
           )}
 
@@ -308,30 +306,30 @@ export function MindPage() {
             </div>
           )}
           {!statsLoading && statsError && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/20">
-              <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
-              <p className="text-xs text-red-400 flex-1">{statsError}</p>
-              <button onClick={loadStats} className="text-xs text-red-300 hover:text-red-200 underline">Retry</button>
+            <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+              <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+              <p className="text-xs flex-1" style={{ color: 'var(--neg)' }}>{statsError}</p>
+              <button onClick={loadStats} className="text-xs underline" style={{ color: 'var(--neg)' }}>Retry</button>
             </div>
           )}
           {!statsLoading && !statsError && stats && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+                <div className="rounded-md p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
                   <p className="text-label">Total Queries</p>
-                  <p className="text-2xl font-semibold t-primary mt-1">{stats.totalQueries.toLocaleString()}</p>
+                  <p className="text-2xl font-semibold font-mono tabular-nums t-primary mt-1">{stats.totalQueries.toLocaleString()}</p>
                 </div>
-                <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+                <div className="rounded-md p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
                   <p className="text-label">Avg Latency</p>
-                  <p className="text-2xl font-semibold t-primary mt-1">{stats.avgLatencyMs}ms</p>
+                  <p className="text-2xl font-semibold font-mono tabular-nums t-primary mt-1">{stats.avgLatencyMs}ms</p>
                 </div>
-                <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+                <div className="rounded-md p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
                   <p className="text-label">Total Tokens</p>
-                  <p className="text-2xl font-semibold t-primary mt-1">{stats.totalTokens.toLocaleString()}</p>
+                  <p className="text-2xl font-semibold font-mono tabular-nums t-primary mt-1">{stats.totalTokens.toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="rounded-xl p-6 space-y-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+              <div className="rounded-md p-6 space-y-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
                 <h2 className="text-sm font-semibold t-primary">Usage by Tier</h2>
                 {stats.tierBreakdown && stats.tierBreakdown.length > 0 ? (
                   <div className="space-y-2">

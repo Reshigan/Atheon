@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Target, Lock, Network, ShieldCheck, AlertTriangle, Loader2, RefreshCw,
 } from 'lucide-react';
@@ -110,21 +111,17 @@ export function TrustPerformancePage(): JSX.Element {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" data-testid="trust-performance-page">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight mb-1">Trust &amp; Performance</h1>
-          <p className="text-sm t-muted max-w-3xl">
-            Three independent claims, three live verifications: predictions calibrated against
-            real outcomes, AI decisions cryptographically chained and auditable, and
-            cross-tenant benchmarks differentially-privatised before they ever leave the
-            contributor.
-          </p>
-        </div>
-        <Button onClick={refreshAll} variant="ghost" size="sm" disabled={refreshing}>
-          <RefreshCw size={14} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Trust · Model Performance"
+        title="Trust &amp; Performance"
+        dek="Three independent claims, three live verifications: predictions calibrated against real outcomes, AI decisions cryptographically chained and auditable, and cross-tenant benchmarks differentially-privatised before they ever leave the contributor."
+        actions={
+          <Button onClick={refreshAll} variant="ghost" size="sm" disabled={refreshing}>
+            <RefreshCw size={14} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* ── 1. Closed-loop calibration ── */}
@@ -134,8 +131,8 @@ export function TrustPerformancePage(): JSX.Element {
             <h2 className="text-lg font-semibold t-primary">Calibration</h2>
             <Badge variant="info" className="text-label">Predicted vs Actual</Badge>
           </div>
-          <div className="text-3xl font-semibold t-primary" data-testid="trust-accuracy">
-            {accuracyDisplay.toFixed(1)}<span className="text-base t-muted">% accuracy</span>
+          <div className="text-3xl font-semibold font-mono tabular-nums t-primary" data-testid="trust-accuracy">
+            {accuracyDisplay.toFixed(1)}<span className="text-base t-muted font-sans">% accuracy</span>
           </div>
           <div className="text-xs t-muted">
             Mean residual deviation from 1.0 across {calibration?.simulationsWithOutcomes ?? 0} closed-loop observations.
@@ -203,13 +200,13 @@ export function TrustPerformancePage(): JSX.Element {
             <div
               className="rounded-md p-3 text-xs flex items-start gap-2"
               style={{
-                background: verifyResult.valid ? 'rgba(20, 184, 166, 0.1)' : 'rgba(220, 38, 38, 0.1)',
-                border: `1px solid ${verifyResult.valid ? 'rgba(20, 184, 166, 0.3)' : 'rgba(220, 38, 38, 0.3)'}`,
+                background: verifyResult.valid ? 'rgb(var(--accent-rgb) / 0.08)' : 'rgb(var(--neg-rgb) / 0.08)',
+                border: `1px solid ${verifyResult.valid ? 'rgb(var(--accent-rgb) / 0.30)' : 'rgb(var(--neg-rgb) / 0.30)'}`,
               }}
             >
               {verifyResult.valid
-                ? <ShieldCheck className="w-4 h-4 text-teal-500 flex-shrink-0 mt-[1px]" />
-                : <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-[1px]" />}
+                ? <ShieldCheck className="w-4 h-4 text-accent flex-shrink-0 mt-[1px]" />
+                : <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-[1px]" style={{ color: 'var(--neg)' }} />}
               <div className="t-secondary">
                 {verifyResult.valid
                   ? `${verifyResult.total_entries} entries — all hashes + signatures valid`
@@ -226,8 +223,8 @@ export function TrustPerformancePage(): JSX.Element {
             <h2 className="text-lg font-semibold t-primary">Peer benchmarks</h2>
             <Badge variant="info" className="text-label">DP ε = 1.0</Badge>
           </div>
-          <div className="text-3xl font-semibold t-primary">
-            {peerActive}<span className="text-base t-muted"> active patterns</span>
+          <div className="text-3xl font-semibold font-mono tabular-nums t-primary">
+            {peerActive}<span className="text-base t-muted font-sans"> active patterns</span>
           </div>
           <div className="text-xs t-muted">
             Each pattern aggregates ≥5 contributing tenants in the same industry. Laplace noise
