@@ -11,14 +11,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { LoadingState, ErrorState } from '@/components/ui/state';
 import { api, ApiError } from '@/lib/api';
 import type { CompanyHealthDetail } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import {
-  Users, BarChart3, Brain, Shield,
+  Users, Brain, Shield,
   Activity, Zap, Clock, AlertCircle, Building2, Wifi, RefreshCw,
 } from 'lucide-react';
 
@@ -87,22 +87,21 @@ export function CompanyHealthPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={BarChart3}
-          title="Company Health"
-          subtitle={<>{data.tenant.name} &middot; plan: <span className="t-primary">{data.tenant.plan}</span></>}
-          accent="sage"
-        />
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
-        >
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Platform · Tenant Health"
+        title="Company Health"
+        dek={`${data.tenant.name} · plan: ${data.tenant.plan}`}
+        actions={
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
+      />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -185,7 +184,7 @@ export function CompanyHealthPage() {
                       className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                       style={{
                         width: `${userPct}%`,
-                        background: userPct >= 90 ? '#ef4444' : userPct >= 70 ? '#f59e0b' : 'var(--accent)',
+                        background: userPct >= 90 ? 'var(--neg)' : userPct >= 70 ? 'var(--warning)' : 'var(--accent)',
                       }}
                     />
                   </div>

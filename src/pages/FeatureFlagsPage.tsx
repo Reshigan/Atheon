@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { LoadingState, EmptyState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
@@ -215,36 +215,36 @@ export function FeatureFlagsPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Flag}
-          title="Feature Flags"
-          subtitle="Control feature rollout across tenants"
-          accent="amber"
-        />
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setShowEvaluator(true)}>
-            <FlaskConical size={14} className="mr-1" /> Evaluate as Tenant
-          </Button>
-          <Button size="sm" onClick={startCreate}>
-            <Plus size={14} className="mr-1" /> New Flag
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Platform · Feature Flags"
+        title="Feature Flags"
+        dek="Control feature rollout across tenants"
+        live
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => setShowEvaluator(true)}>
+              <FlaskConical size={14} className="mr-1" /> Evaluate as Tenant
+            </Button>
+            <Button size="sm" onClick={startCreate}>
+              <Plus size={14} className="mr-1" /> New Flag
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3">
           <p className="text-label">Total Flags</p>
-          <p className="text-xl font-bold t-primary">{flags.length}</p>
+          <p className="text-xl font-bold t-primary font-mono tnum">{flags.length}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Active</p>
-          <p className="text-xl font-bold text-emerald-400">{enabledCount}</p>
+          <p className="text-xl font-bold text-accent font-mono tnum">{enabledCount}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Inactive</p>
-          <p className="text-xl font-bold text-red-400">{flags.length - enabledCount}</p>
+          <p className="text-xl font-bold t-muted font-mono tnum">{flags.length - enabledCount}</p>
         </Card>
       </div>
 
@@ -252,7 +252,7 @@ export function FeatureFlagsPage() {
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
         <input
-          className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+          className="w-full pl-9 pr-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
           placeholder="Search flags by name or description..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -285,7 +285,7 @@ export function FeatureFlagsPage() {
                       {togglingId === f.id ? (
                         <Loader2 size={22} className="animate-spin t-muted" />
                       ) : f.defaultEnabled ? (
-                        <ToggleRight size={22} className="text-emerald-400" />
+                        <ToggleRight size={22} className="text-accent" />
                       ) : (
                         <ToggleLeft size={22} className="t-muted" />
                       )}
@@ -328,7 +328,7 @@ export function FeatureFlagsPage() {
                     <button
                       onClick={() => handleDelete(f)}
                       disabled={deletingId === f.id}
-                      className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-50 active:scale-[0.97]"
+                      className="p-1.5 rounded-md hover:bg-[rgb(var(--neg-rgb)/0.1)] t-muted hover:text-neg transition-colors disabled:opacity-50 active:scale-[0.97]"
                       title="Delete"
                     >
                       {deletingId === f.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -344,7 +344,7 @@ export function FeatureFlagsPage() {
       {/* Create / Edit modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !saving && setShowForm(false)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold t-primary mb-4">
               {editingFlag ? `Edit Flag — ${editingFlag.name}` : 'Create Feature Flag'}
             </h3>
@@ -352,7 +352,7 @@ export function FeatureFlagsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Flag Name</label>
                 <input
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary font-mono disabled:opacity-60"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary font-mono disabled:opacity-60"
                   value={form.name}
                   disabled={!!editingFlag}
                   onChange={(e) => setForm(p => ({ ...p, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') }))}
@@ -363,7 +363,7 @@ export function FeatureFlagsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Description</label>
                 <textarea
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   rows={2}
                   value={form.description}
                   onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
@@ -373,7 +373,7 @@ export function FeatureFlagsPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Type</label>
                 <select
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   value={form.type}
                   onChange={(e) => setForm(p => ({ ...p, type: e.target.value as FeatureFlagType }))}
                 >
@@ -417,7 +417,7 @@ export function FeatureFlagsPage() {
                   <label className="block text-xs font-medium t-primary mb-1">
                     Allowlisted tenants <span className="t-muted">({form.tenantAllowlist.length})</span>
                   </label>
-                  <div className="max-h-40 overflow-y-auto border border-[var(--border-card)] rounded-lg bg-[var(--bg-secondary)] p-2 space-y-1">
+                  <div className="max-h-40 overflow-y-auto border border-[var(--border-card)] rounded-md bg-[var(--bg-secondary)] p-2 space-y-1">
                     {tenants.length === 0 ? (
                       <p className="text-xs t-muted text-center py-2">No tenants loaded</p>
                     ) : tenants.map(t => (
@@ -457,7 +457,7 @@ export function FeatureFlagsPage() {
       {/* Evaluate as tenant dev tool */}
       {showEvaluator && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowEvaluator(false)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-4">
               <FlaskConical className="w-5 h-5 text-accent" />
               <h3 className="text-base font-semibold t-primary">Evaluate flags as tenant</h3>
@@ -465,7 +465,7 @@ export function FeatureFlagsPage() {
             <p className="text-xs t-muted mb-3">Pick a tenant to see which flags resolve true/false with percent + allowlist rules applied.</p>
             <div className="flex gap-2 mb-4">
               <select
-                className="flex-1 px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                className="flex-1 px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                 value={evalTenantId}
                 onChange={(e) => setEvalTenantId(e.target.value)}
               >
@@ -480,7 +480,7 @@ export function FeatureFlagsPage() {
               </Button>
             </div>
             {evalResult && (
-              <div className="space-y-1 border border-[var(--border-card)] rounded-lg bg-[var(--bg-secondary)] p-3 max-h-80 overflow-y-auto">
+              <div className="space-y-1 border border-[var(--border-card)] rounded-md bg-[var(--bg-secondary)] p-3 max-h-80 overflow-y-auto">
                 {Object.keys(evalResult).length === 0 ? (
                   <p className="text-xs t-muted text-center py-3">No flags defined.</p>
                 ) : Object.entries(evalResult).map(([name, val]) => (
