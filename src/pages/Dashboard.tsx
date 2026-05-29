@@ -1,10 +1,8 @@
 import { useState, useEffect, useId, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
-import { Numeric } from "@/components/ui/numeric";
 import { Sparkline } from "@/components/ui/sparkline";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
-import { ScoreRing } from "@/components/ui/score-ring";
 // FlipCard removed per UI cleanup spec
 import { Progress } from "@/components/ui/progress";
 import { api, ApiError } from "@/lib/api";
@@ -13,24 +11,22 @@ import { useToast } from "@/components/ui/toast";
 import { useAppStore, useSelectedCompanyId } from "@/stores/appStore";
 import { ActionQueuePanel } from "@/components/dashboard/ActionQueuePanel";
 import type { HealthScore, Risk, Metric, AnomalyItem, ClusterItem, ActionItem, ControlPlaneHealth, HealthDimensionTraceResponse, DashboardIntelligenceResponse, RadarContextResponse, DiagnosticSummaryResponse, ROITrackingResponse, BaselineComparisonResponse } from "@/lib/api";
-import { AtheonScoreRing } from "@/components/ui/atheon-score-ring";
 import { TraceabilityModal } from "@/components/TraceabilityModal";
 import {
-  TrendingUp, TrendingDown, Minus,
   ChevronRight, AlertTriangle, RefreshCw, Eye, Lightbulb, X,
   CheckCircle2, XCircle, Gauge, Shield, Radar, Stethoscope, Coins, ArrowRight,
 } from "lucide-react";
 import { chartPalette, chartAccentB, chartLight } from "@/lib/chart-theme";
 import { SectionFreshness } from "@/components/common/FreshnessIndicator";
-import { EditorialHero } from "@/components/ui/hero-header";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
+import { PageHeader } from "@/components/ui/page-header";
+import { MetricGrid } from "@/components/ui/metric-grid";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { WorkingCapitalCard } from "@/components/dashboard/WorkingCapitalCard";
 import { CloseCycleCard } from "@/components/dashboard/CloseCycleCard";
 import { KpiGrid } from "./dashboard/KpiCards";
-import { HealthDimensions } from "./dashboard/HealthDimensions";
 import { IntelligencePanel } from "./dashboard/IntelligencePanel";
 import {
   BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -55,12 +51,6 @@ function getGreeting(name?: string): string {
 }
 
 type TimeRange = "today" | "7d" | "30d" | "90d";
-
-const trendIcon = (trend: string) => {
-  if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
-  if (trend === "down" || trend === "declining") return <TrendingDown className="w-3.5 h-3.5 text-red-500" />;
-  return <Minus className="w-3.5 h-3.5 text-gray-400" />;
-};
 
 // DashCard + TintedCard were local re-implementations of the Card primitive
 // (ui/card.tsx) — having both made Dashboard "feel like a different system"
@@ -247,10 +237,25 @@ export function Dashboard() {
     fill: piePalette[i % piePalette.length],
   }));
 
-  // Month-over-month % change on the primary metric. Same source as
-  // metricsOverTime; the worker derives change against the previous month so
-  // we don't recompute on the client.
-  const momData: { month: string; change: number }[] = history?.mom_changes ?? [];
+  // ── Executive band figures (MetricGrid + journey split) ───────────────
+  // Recovered value leads the band; the Atheon score + catalyst counts sit
+  // beside it. The journey panel renders the baseline→current trajectory —
+  // the only honest health time-series we have (two snapshots, not faked).
+  const valueRecovered = roiData?.totalDiscrepancyValueRecovered ?? 0;
+  const catalystCount = clusters.length;
+  const pendingApprovals = actions.filter((a) => a.status === 'pending' || a.status === 'pending_approval').length;
+  const completedActions = actions.filter((a) => a.status === 'completed').length;
+  const scoreDelta = baselineComparison?.improvement?.healthScore ?? Math.round(avgDelta);
+  const baselineScore = baselineComparison?.dayZero?.healthScore ?? null;
+  const topDimensionKey = dimensions.length > 0
+    ? dimensions.reduce((top, d) => (d.score > top.score ? d : top), dimensions[0]).key
+    : null;
+  const journeySeries = baselineComparison?.dayZero?.healthScore != null && baselineComparison?.current?.healthScore != null
+    ? [baselineComparison.dayZero.healthScore, baselineComparison.current.healthScore]
+    : [];
+  const journeyStart = baselineComparison?.dayZero?.capturedAt
+    ? new Date(baselineComparison.dayZero.capturedAt).toLocaleDateString('en-ZA', { month: 'short', year: '2-digit' }).toUpperCase()
+    : 'Baseline';
 
   // U12: Progressive skeleton loading instead of spinner
   if (loading && !health) {
@@ -264,22 +269,23 @@ export function Dashboard() {
           realised savings yet; dismissible per session. */}
       <SharedSavingsStrip />
 
-      {/* HEADER — editorial hero leading with the Atheon Score (the page's
-          signature health figure). The shared-savings proof lives in the
-          SharedSavingsStrip above, so the hero does not duplicate the
-          recovered-rand number. Operating controls sit in the actions slot. */}
-      <EditorialHero
-        kicker={`${getGreeting(user?.name)} · Atheon Score`}
-        figure={`${overallScore}`}
-        deck={`${dimensions.length} business dimensions monitored — ${upCount} improving, ${downCount} declining this period.`}
-        delta={avgDelta > 0 ? `+${avgDelta.toFixed(1)} pts` : undefined}
+      {/* MASTHEAD — Swiss page-band: letterspaced eyebrow + live tick, the
+          greeting set in Archivo display, a single restrained dek, closed by
+          a 1.5px ink rule. The signature figures move into the MetricGrid
+          band below; the masthead carries identity, not numbers. Operating
+          controls (time range + refresh) sit in the actions slot. */}
+      <PageHeader
+        eyebrow="Atheon · Enterprise Intelligence"
+        live
+        title={getGreeting(user?.name)}
+        dek="A real-time operating picture for the people who answer for the numbers."
         actions={
           <div className="flex items-center gap-2">
             <SectionFreshness section="Health" />
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-              className="px-2 py-1 rounded-lg text-xs t-secondary"
+              className="px-2 py-1 rounded-md text-xs t-secondary"
               style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-card)" }}
               aria-label="Time range"
             >
@@ -288,11 +294,11 @@ export function Dashboard() {
               <option value="30d">30 Days</option>
               <option value="90d">90 Days</option>
             </select>
-            <span className={`text-caption t-muted transition-colors duration-500 ${refreshFlash ? 'text-emerald-500' : ''}`}>
+            <span className="text-caption tnum t-muted transition-colors duration-500" style={refreshFlash ? { color: 'var(--positive)' } : undefined}>
               Updated: {lastRefreshed.toLocaleTimeString()}
             </span>
             <button
-              className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+              className="w-8 h-8 rounded-md flex items-center justify-center t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
               style={{ background: "var(--bg-secondary)" }}
               title={`Last refreshed: ${lastRefreshed.toLocaleTimeString()}`}
               onClick={() => loadData().then(() => { setRefreshFlash(true); setTimeout(() => setRefreshFlash(false), 2000); }).catch(() => { /* manual refresh failure handled by loadData */ })}
@@ -307,18 +313,19 @@ export function Dashboard() {
       {mfaEnforcementWarning && (
         <div
           role="alert"
-          className="flex items-start gap-3 p-3 rounded-xl"
+          className="flex items-start gap-3 p-3 rounded-md"
           style={{
-            background: mfaEnforcementWarning.daysRemaining <= 0 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-            border: mfaEnforcementWarning.daysRemaining <= 0 ? '1px solid rgba(239, 68, 68, 0.30)' : '1px solid rgba(245, 158, 11, 0.30)',
+            background: mfaEnforcementWarning.daysRemaining <= 0 ? 'rgb(var(--neg-rgb) / 0.08)' : 'rgba(154, 107, 31, 0.08)',
+            border: mfaEnforcementWarning.daysRemaining <= 0 ? '1px solid rgb(var(--neg-rgb) / 0.30)' : '1px solid rgba(154, 107, 31, 0.30)',
           }}
         >
           <AlertTriangle
             size={16}
-            className={`flex-shrink-0 mt-0.5 ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`}
+            className="flex-shrink-0 mt-0.5"
+            style={{ color: mfaEnforcementWarning.daysRemaining <= 0 ? 'var(--neg)' : 'var(--warning)' }}
           />
           <div className="flex-1">
-            <p className={`text-sm font-semibold ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`}>
+            <p className="text-sm font-semibold" style={{ color: mfaEnforcementWarning.daysRemaining <= 0 ? 'var(--neg)' : 'var(--warning)' }}>
               {mfaEnforcementWarning.daysRemaining <= 0
                 ? 'MFA is now required for your role'
                 : `MFA required for your role — enable within ${mfaEnforcementWarning.daysRemaining} day${mfaEnforcementWarning.daysRemaining === 1 ? '' : 's'} to keep access.`}
@@ -338,10 +345,13 @@ export function Dashboard() {
       )}
 
       {actionError && (
-        <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-          <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
-          <p className="text-sm text-amber-400 flex-1">{actionError}</p>
-          <button type="button" onClick={() => setActionError(null)} className="text-amber-400 hover:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400/50 rounded p-0.5" aria-label="Dismiss error message" title="Dismiss"><X size={14} aria-hidden="true" /></button>
+        <div
+          className="flex items-center gap-3 p-3 rounded-md"
+          style={{ background: 'rgba(154, 107, 31, 0.08)', border: '1px solid rgba(154, 107, 31, 0.25)' }}
+        >
+          <AlertTriangle size={16} className="flex-shrink-0" style={{ color: 'var(--warning)' }} />
+          <p className="text-sm flex-1" style={{ color: 'var(--warning)' }}>{actionError}</p>
+          <button type="button" onClick={() => setActionError(null)} className="hover:t-primary focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] rounded p-0.5" style={{ color: 'var(--warning)' }} aria-label="Dismiss error message" title="Dismiss"><X size={14} aria-hidden="true" /></button>
         </div>
       )}
 
@@ -349,10 +359,11 @@ export function Dashboard() {
         <button
           onClick={loadDashboardIntelligence}
           disabled={dashIntelLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 ml-auto active:scale-[0.97]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium t-secondary hover:t-primary border border-[var(--border-card)] hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 ml-auto active:scale-[0.97]"
+          style={{ background: 'var(--bg-card-solid)' }}
           title="Generate AI-powered dashboard intelligence"
         >
-          <Lightbulb size={12} className={dashIntelLoading ? 'animate-pulse' : ''} />
+          <Lightbulb size={12} className={dashIntelLoading ? 'animate-pulse' : ''} style={{ color: 'var(--accent)' }} />
           {dashIntelLoading ? 'Analyzing...' : 'AI Insights'}
         </button>
       </div>
@@ -372,128 +383,132 @@ export function Dashboard() {
         <CloseCycleCard />
       </div>
 
-      {/* §11.7 Atheon Score + §11.2 Journey Card */}
+      {/* Executive band. One MetricGrid carries the three signature figures
+          (recovered value lead · Atheon score · catalysts), then a hairline
+          split pairs the business-dimension ledger against the single
+          Atheon-journey figure. */}
       <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-1">
-          <h3 className="text-sm font-semibold t-primary mb-3 flex items-center gap-1.5">
-            <Gauge size={14} className="text-accent" /> Atheon Score
-          </h3>
-          <AtheonScoreRing />
-        </Card>
-        <Card className="lg:col-span-2">
-          <h3 className="text-sm font-semibold t-primary mb-3 flex items-center gap-1.5">
-            <TrendingUp size={14} className="text-accent" /> Your Atheon Journey
-          </h3>
-          {baselineComparison?.dayZero && baselineComparison?.improvement ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-label">Baseline Health</p>
-                  <p className="text-lg font-bold t-primary">{baselineComparison.dayZero.healthScore}</p>
-                  <p className="text-caption t-muted">{new Date(baselineComparison.dayZero.capturedAt).toLocaleDateString()}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-label">Current Health</p>
-                  <p className="text-lg font-bold t-primary">{baselineComparison.current?.healthScore ?? '--'}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-label">Improvement</p>
-                  <p className={`text-lg font-bold ${baselineComparison.improvement.healthScore >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {baselineComparison.improvement.healthScore >= 0 ? '+' : ''}{baselineComparison.improvement.healthScore}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs t-secondary">{baselineComparison.narrative}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <TrendingUp className="w-8 h-8 t-muted mb-2 opacity-30" />
-              <p className="text-xs t-muted">No baseline captured yet.</p>
-              <p className="text-caption t-muted">Run your first catalyst to capture a day-zero snapshot.</p>
-            </div>
-          )}
-        </Card>
-      </div>
+      <MetricGrid
+        className="py-1"
+        cells={[
+          {
+            k: 'Value recovered',
+            value: `R${Math.round(valueRecovered).toLocaleString('en-ZA')}`,
+            sub: valueRecovered > 0
+              ? `Verified · traced to ERP record across ${catalystCount} catalyst run${catalystCount === 1 ? '' : 's'}`
+              : 'No recovered value yet · run a catalyst to begin',
+            lead: true,
+          },
+          {
+            k: 'Atheon score',
+            value: overallScore,
+            delta: scoreDelta,
+            sub: baselineScore != null ? `from baseline ${baselineScore}` : `${upCount} improving · ${downCount} declining`,
+          },
+          {
+            k: 'Catalysts run',
+            value: catalystCount,
+            sub: `${pendingApprovals} awaiting your approval`,
+          },
+        ]}
+      />
 
-      {/* Hero: Atheon Score as central KPI (canonical name — see
-          UI_POLISH_PRINCIPLES + WORLD_CLASS_FRONTEND_PROPOSAL §A.4). */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card variant="default" className="lg:col-span-1 flex flex-col items-center justify-center py-6">
-          <ScoreRing score={overallScore} size="xl" label="Atheon Score" />
-          <div className="flex items-center gap-2 mt-4">
-            {trendIcon(healthTrend)}
-            <span className={`text-sm ${avgDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)} pts
-            </span>
-          </div>
-          <div className="w-28 h-8 mt-2">
-            <Sparkline data={dimEntries.map((d) => d.score)} width={112} height={32} color={ACCENT} />
-          </div>
-          <div className="mt-3 pt-2 border-t border-[var(--border-card)] w-full">
-            <div className="space-y-1.5">
-              {dimensions.slice(0, 4).map((dim) => (
-                <div key={dim.key} className="flex items-center gap-2">
-                  <span className="text-caption t-secondary w-20 truncate">{dim.name}</span>
-                  <div className="flex-1">
-                    <Progress value={dim.score} color={dim.score >= 80 ? 'emerald' : dim.score >= 60 ? 'amber' : 'red'} size="sm" />
-                  </div>
-                  <span className="text-caption font-bold t-primary w-6 text-right">{dim.score}</span>
-                </div>
-              ))}
-              {dimensions.length === 0 && <p className="text-caption t-muted text-center py-2">No dimension data yet</p>}
-            </div>
-          </div>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <h3 className="text-lg font-semibold t-primary mb-4">Business Dimensions</h3>
+      {/* Lower split — business-dimension ledger | Atheon journey. The whole
+          dimension row is the trace trigger (Eye affordance on hover); the
+          top-scoring dimension reads in the accent, the rest in ink. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
+        <div className="lg:pr-7 lg:border-r" style={{ borderColor: 'var(--border-card)' }}>
+          <p className="text-label mb-3">Business dimensions</p>
           {dimensions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Gauge className="w-10 h-10 t-muted mb-3 opacity-30" />
-              <p className="text-sm t-muted">No dimensions available yet.</p>
-              <p className="text-xs t-muted mt-1 mb-3">Run a catalyst to start generating health data.</p>
-              <Link
-                to="/catalysts"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
-              >
-                Open Catalysts <ArrowRight size={12} />
+            <div className="flex flex-col items-start gap-2 py-3">
+              <p className="text-sm t-muted">No dimensions yet.</p>
+              <Link to="/catalysts" className="inline-flex items-center gap-1.5 text-caption font-medium t-accent hover:underline">
+                Run a catalyst to start <ArrowRight size={12} />
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
-              {dimensions.map((dim, i) => (
-                <div key={dim.key} className="group flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <div className="sm:w-36 flex-shrink-0 flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: piePalette[i % piePalette.length] }} />
-                    <span className="text-sm t-secondary truncate">{dim.name}</span>
-                  </div>
-                  <div className="flex-1">
-                    <Progress value={dim.score} color={dim.score >= 80 ? 'emerald' : dim.score >= 60 ? 'amber' : 'red'} size="md" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold t-primary w-8 text-right">{dim.score}</span>
-                    <div className="flex items-center gap-1 w-16">
-                      {trendIcon(dim.trend)}
-                      <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {dim.change > 0 ? '+' : ''}{dim.change}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenDimensionTrace(dim.key)}
-                      className="md:opacity-0 md:group-hover:opacity-100 text-caption text-accent hover:text-accent/80 flex items-center gap-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] focus:outline-none focus:opacity-100 focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-0.5 active:scale-[0.97]"
-                      title={`Trace ${dim.name}`}
-                      aria-label={`Open trace for ${dim.name}`}
-                    >
-                      <Eye size={12} aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
+            <div>
+              {dimensions.map((dim) => (
+                <button
+                  key={dim.key}
+                  type="button"
+                  onClick={() => handleOpenDimensionTrace(dim.key)}
+                  className="group w-full flex items-center gap-3.5 py-2.5 border-t first:border-t-0 text-left transition-colors hover:bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] rounded-sm"
+                  style={{ borderColor: 'var(--border-card)' }}
+                  title={`Trace ${dim.name}`}
+                  aria-label={`Open trace for ${dim.name}`}
+                >
+                  <span className="flex-[0_0_132px] text-body-sm font-semibold t-primary truncate flex items-center gap-1.5">
+                    {dim.name}
+                    <Eye size={11} className="md:opacity-0 md:group-hover:opacity-100 t-muted transition-opacity" aria-hidden="true" />
+                  </span>
+                  <span className="flex-1 h-1.5 relative overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+                    <span
+                      className="absolute inset-y-0 left-0"
+                      style={{ width: `${dim.score}%`, background: dim.key === topDimensionKey ? 'var(--accent)' : 'var(--text-primary)' }}
+                    />
+                  </span>
+                  <span className="flex-[0_0_38px] text-right font-mono text-body-sm font-medium tnum t-primary">{dim.score}</span>
+                </button>
               ))}
             </div>
           )}
-        </Card>
+        </div>
+
+        <div className="lg:pl-7 mt-6 lg:mt-0">
+          <p className="text-label mb-3">Your Atheon journey</p>
+          <div className="flex items-end gap-4">
+            <span className="font-black tnum leading-[0.82] tracking-[-0.05em] text-[clamp(56px,7vw,72px)] t-primary">{overallScore}</span>
+            <div className="pb-2">
+              <div className="font-mono text-sm font-bold" style={{ color: scoreDelta >= 0 ? 'var(--positive)' : 'var(--neg)' }}>
+                {scoreDelta >= 0 ? '↑ +' : '↓ '}{Math.abs(scoreDelta)}
+              </div>
+              {baselineScore != null && (
+                <div className="font-mono text-caption t-muted">baseline {baselineScore}</div>
+              )}
+            </div>
+          </div>
+          {journeySeries.length >= 2 && (
+            <div className="mt-4">
+              <Sparkline data={journeySeries} width={300} height={56} className="w-full" />
+              <div className="flex justify-between font-mono text-[9px] t-muted mt-1.5 uppercase tracking-wider">
+                <span>{journeyStart}</span>
+                <span>Today</span>
+              </div>
+            </div>
+          )}
+          {baselineComparison?.narrative && (
+            <p className="text-caption t-secondary mt-3 max-w-[42ch]">{baselineComparison.narrative}</p>
+          )}
+        </div>
+      </div>
+
+      {/* "Changed" strip — overnight movement · what needs you · assurance.
+          1.5px ink top-rule echoes the masthead; the accent flags only the
+          one item that asks for a human decision. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4" style={{ borderTop: '1.5px solid var(--line-strong)' }}>
+        <div>
+          <p className="text-label">Overnight</p>
+          <p className="text-body-sm t-secondary mt-1.5 leading-relaxed">
+            {completedActions > 0
+              ? <><span className="font-mono font-semibold" style={{ color: 'var(--accent)' }}>{completedActions}</span> catalyst{completedActions === 1 ? '' : 's'} closed against flagged transactions.</>
+              : 'No catalysts closed in the last cycle.'}
+          </p>
+        </div>
+        <div>
+          <p className="text-label" style={{ color: 'var(--accent)' }}>Needs you</p>
+          <p className="text-body-sm t-secondary mt-1.5 leading-relaxed">
+            {pendingApprovals > 0
+              ? <>Approve <b className="t-primary font-semibold">{pendingApprovals}</b> write-back{pendingApprovals === 1 ? '' : 's'} awaiting your review — <Link to="/action-layer" className="t-accent hover:underline">open the queue</Link>.</>
+              : 'Nothing awaiting approval right now.'}
+          </p>
+        </div>
+        <div>
+          <p className="text-label">Assurance</p>
+          <p className="text-body-sm t-secondary mt-1.5 leading-relaxed">
+            Every figure traces to an ERP record with field mapping &amp; confidence — audit-ready.
+          </p>
+        </div>
       </div>
 
       {/* TASK-002: Decomposed KPI Grid sub-component */}
@@ -507,9 +522,6 @@ export function Dashboard() {
         anomaliesCount={anomalies.length}
         refreshedAt={lastRefreshed.toISOString()}
       />
-
-      {/* TASK-002: Decomposed Health Dimensions sub-component */}
-      <HealthDimensions dimensions={dimensions} onOpenTrace={handleOpenDimensionTrace} />
 
       {/* Status Breakdown Cards (Static — FlipCards removed per UI cleanup).
           Each card now carries a MetricSource so the operator can audit
@@ -548,7 +560,7 @@ export function Dashboard() {
                 {dimensions.slice(0, 3).map((d) => (
                   <div key={d.key} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{d.name}</span>
-                    <span className={`font-medium ${d.score >= 80 ? 'text-emerald-400' : d.score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>{d.score}</span>
+                    <span className="font-medium font-mono tnum" style={{ color: d.score >= 80 ? 'var(--positive)' : d.score >= 60 ? 'var(--warning)' : 'var(--neg)' }}>{d.score}</span>
                   </div>
                 ))}
               </div>
@@ -565,16 +577,16 @@ export function Dashboard() {
                     sample: healthyCount,
                     notes: [{ label: 'Threshold', value: 'score ≥ 80' }],
                   }} />
-                  <CheckCircle2 size={14} className="text-emerald-400" />
+                  <CheckCircle2 size={14} style={{ color: 'var(--positive)' }} />
                 </div>
               </div>
-              <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{healthyCount}</p>
+              <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--positive)' }}>{healthyCount}</p>
               <p className="text-caption t-muted mt-1">above threshold</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {dimensions.filter(d => d.score >= 80).slice(0, 3).map((d) => (
                   <div key={d.key} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{d.name}</span>
-                    <span className="font-medium text-emerald-400">{d.score}</span>
+                    <span className="font-medium font-mono tnum" style={{ color: 'var(--positive)' }}>{d.score}</span>
                   </div>
                 ))}
               </div>
@@ -591,16 +603,16 @@ export function Dashboard() {
                     sample: atRiskCount,
                     notes: [{ label: 'Threshold', value: '60 ≤ score < 80' }],
                   }} />
-                  <AlertTriangle size={14} className="text-amber-400" />
+                  <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
                 </div>
               </div>
-              <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{atRiskCount}</p>
+              <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{atRiskCount}</p>
               <p className="text-caption t-muted mt-1">needs attention</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {dimensions.filter(d => d.score >= 60 && d.score < 80).slice(0, 3).map((d) => (
                   <div key={d.key} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{d.name}</span>
-                    <span className="font-medium text-amber-400">{d.score}</span>
+                    <span className="font-medium font-mono tnum" style={{ color: 'var(--warning)' }}>{d.score}</span>
                   </div>
                 ))}
               </div>
@@ -617,16 +629,16 @@ export function Dashboard() {
                     sample: criticalCount,
                     notes: [{ label: 'Threshold', value: 'score < 60' }],
                   }} />
-                  <XCircle size={14} className="text-red-400" />
+                  <XCircle size={14} style={{ color: 'var(--neg)' }} />
                 </div>
               </div>
-              <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{criticalCount}</p>
+              <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{criticalCount}</p>
               <p className="text-caption t-muted mt-1">requires action</p>
               <div className="mt-2 pt-2 border-t border-[var(--border-card)] space-y-1 max-h-24 overflow-y-auto">
                 {dimensions.filter(d => d.score < 60).slice(0, 3).map((d) => (
                   <div key={d.key} className="flex items-center justify-between text-caption">
                     <span className="t-secondary truncate mr-2">{d.name}</span>
-                    <span className="font-medium text-red-400">{d.score}</span>
+                    <span className="font-medium font-mono tnum" style={{ color: 'var(--neg)' }}>{d.score}</span>
                   </div>
                 ))}
               </div>
@@ -644,7 +656,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
         {/* Strategic Context Card */}
         <Link to="/apex" className="block">
-          <Card className="h-full hover:border-accent/30 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(163,177,138,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
+          <Card className="h-full hover:border-[var(--accent)]/30 hover:-translate-y-px active:scale-[0.98] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Radar size={16} className="text-accent" />
@@ -676,10 +688,10 @@ export function Dashboard() {
 
         {/* Active Diagnostics Card */}
         <Link to="/pulse" className="block">
-          <Card className="h-full hover:border-purple-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(168,85,247,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
+          <Card className="h-full hover:border-[var(--accent)]/30 hover:-translate-y-px active:scale-[0.98] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Stethoscope size={16} className="text-purple-400" />
+                <Stethoscope size={16} className="text-accent" />
                 <span className="text-sm font-semibold t-primary">Active Diagnostics</span>
               </div>
               <ChevronRight size={14} className="t-muted" />
@@ -693,14 +705,14 @@ export function Dashboard() {
                 <div className="flex items-center gap-3">
                   {diagSummary.criticalFindings > 0 && (
                     <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-red-400" />
-                      <span className="text-xs text-red-400">{diagSummary.criticalFindings} critical</span>
+                      <div className="w-2 h-2 rounded-full" style={{ background: 'var(--neg)' }} />
+                      <span className="text-xs" style={{ color: 'var(--neg)' }}>{diagSummary.criticalFindings} critical</span>
                     </div>
                   )}
                   {diagSummary.pendingAnalyses > 0 && (
                     <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-xs text-amber-400">{diagSummary.pendingAnalyses} pending</span>
+                      <div className="w-2 h-2 rounded-full" style={{ background: 'var(--warning)' }} />
+                      <span className="text-xs" style={{ color: 'var(--warning)' }}>{diagSummary.pendingAnalyses} pending</span>
                     </div>
                   )}
                 </div>
@@ -713,10 +725,10 @@ export function Dashboard() {
 
         {/* ROI Card */}
         <Link to="/catalysts" className="block">
-          <Card className="h-full hover:border-emerald-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(16,185,129,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
+          <Card className="h-full hover:border-[var(--accent)]/30 hover:-translate-y-px active:scale-[0.98] transition-[background-color,color,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Coins size={16} className="text-emerald-400" />
+                <Coins size={16} className="text-accent" />
                 <span className="text-sm font-semibold t-primary">ROI Tracking</span>
               </div>
               <ChevronRight size={14} className="t-muted" />
@@ -724,7 +736,7 @@ export function Dashboard() {
             {roiData?.roiMultiple != null ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">
+                  <span className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--accent)' }}>
                     {roiData.roiMultiple}x
                   </span>
                   <span className="text-xs t-muted">return multiple</span>
@@ -732,13 +744,13 @@ export function Dashboard() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <p className="text-caption t-muted">Recovered</p>
-                    <p className="text-xs font-medium text-emerald-400">
+                    <p className="text-xs font-medium font-mono tnum" style={{ color: 'var(--positive)' }}>
                       R{((roiData.totalDiscrepancyValueRecovered ?? 0) / 1000000).toFixed(1)}M
                     </p>
                   </div>
                   <div>
                     <p className="text-caption t-muted">Prevented</p>
-                    <p className="text-xs font-medium text-accent">
+                    <p className="text-xs font-medium font-mono tnum" style={{ color: 'var(--accent)' }}>
                       R{((roiData.totalPreventedLosses ?? 0) / 1000000).toFixed(1)}M
                     </p>
                   </div>
@@ -780,7 +792,7 @@ export function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "12px", fontSize: "11px" }} />
+                  <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "2px", fontSize: "11px" }} />
                   <Area type="monotone" dataKey="value" name={primaryMetricLabel} stroke={ACCENT} strokeWidth={2} fill={`url(#${pieId}-revGrad)`} />
                   {secondaryMetricLabel && <Area type="monotone" dataKey="secondary" name={secondaryMetricLabel} stroke={CHART_LIGHT} strokeWidth={2} fill="none" />}
                 </AreaChart>
@@ -806,7 +818,7 @@ export function Dashboard() {
                         <Cell key={`${pieId}-${i}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "12px", fontSize: "11px" }} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "2px", fontSize: "11px" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -829,10 +841,10 @@ export function Dashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
                     <XAxis dataKey="severity" tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "12px", fontSize: "11px" }} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", borderRadius: "2px", fontSize: "11px" }} />
                     <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                       {["critical", "high", "medium", "low"].map((sev) => (
-                        <Cell key={sev} fill={sev === "critical" ? "#ef4444" : sev === "high" ? "#f59e0b" : ACCENT} />
+                        <Cell key={sev} fill={sev === "critical" ? "var(--neg)" : sev === "high" ? "var(--warning)" : ACCENT} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -856,8 +868,8 @@ export function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {risks.slice(0, 4).map((risk) => (
-                  <div key={risk.id} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                    <AlertTriangle size={12} className={`mt-0.5 flex-shrink-0 ${risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-amber-400' : 'text-gray-400'}`} />
+                  <div key={risk.id} className="flex items-start gap-2 p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                    <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" style={{ color: risk.severity === 'critical' ? 'var(--neg)' : risk.severity === 'high' ? 'var(--warning)' : 'var(--text-muted)' }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium t-primary truncate">{risk.title}</p>
                       <p className="text-caption t-muted truncate">{risk.description}</p>
@@ -883,7 +895,7 @@ export function Dashboard() {
               {metrics.slice(0, 5).map((metric) => (
                 <div key={metric.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${metric.status === "green" ? "bg-emerald-500" : metric.status === "amber" ? "bg-amber-500" : "bg-red-500"}`} />
+                    <span className="w-2 h-2 rounded-full" style={{ background: metric.status === "green" ? "var(--positive)" : metric.status === "amber" ? "var(--warning)" : "var(--neg)" }} />
                     <span className="text-xs t-secondary">{metric.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -930,206 +942,6 @@ export function Dashboard() {
       </div>
       </>
 
-      {/* HEALTH TREND — inline below overview (tabs removed) */}
-      {/* eslint-disable-next-line no-constant-binary-expression */}
-      {false && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Card variant="default">
-              <p className="text-label mb-1">Overall Score</p>
-              <p className="text-4xl font-bold t-primary">{overallScore}<span className="text-lg t-muted font-normal">/100</span></p>
-              <div className="flex items-center gap-1.5 mt-2">
-                {trendIcon(healthTrend)}
-                <span className={`text-xs ${avgDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)} pts avg change
-                </span>
-              </div>
-            </Card>
-            <Card>
-              <p className="text-label mb-1">Improving</p>
-              <p className="text-4xl font-bold text-emerald-500">{upCount}</p>
-              <p className="text-caption t-muted mt-1">dimensions trending up</p>
-            </Card>
-            <Card>
-              <p className="text-label mb-1">Declining</p>
-              <p className="text-4xl font-bold text-red-500">{downCount}</p>
-              <p className="text-caption t-muted mt-1">dimensions trending down</p>
-            </Card>
-          </div>
-
-          {dimensions.length === 0 ? (
-            <Card>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <TrendingUp className="w-10 h-10 t-muted mb-3 opacity-30" />
-                <p className="text-sm t-muted">No health data yet.</p>
-                <p className="text-xs t-muted mt-1 mb-3">Run a catalyst from the Catalysts page to generate health insights.</p>
-                <Link
-                  to="/catalysts"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
-                >
-                  Open Catalysts <ArrowRight size={12} />
-                </Link>
-              </div>
-            </Card>
-          ) : (
-            <>
-              <Card>
-                <p className="text-sm font-semibold t-primary mb-4">All Dimensions</p>
-                <div className="space-y-4">
-                  {dimensions.map((dim, i) => (
-                    <div key={dim.key}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-sm" style={{ background: piePalette[i % piePalette.length] }} />
-                          <span className="text-xs font-medium t-primary">{dim.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {trendIcon(dim.trend)}
-                          <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {dim.change > 0 ? '+' : ''}{dim.change}
-                          </span>
-                          <span className="text-sm font-bold t-primary w-8 text-right">{dim.score}</span>
-                        </div>
-                      </div>
-                      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
-                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${dim.score}%`, background: piePalette[i % piePalette.length] }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <Card>
-                  <p className="text-sm font-semibold t-primary mb-3">Atheon Score Trend</p>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={metricsOverTime}>
-                        <defs>
-                          <linearGradient id={`${pieId}-htGrad`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={ACCENT} stopOpacity={0.2} />
-                            <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
-                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', borderRadius: '12px', fontSize: '11px' }} />
-                        <Area type="monotone" dataKey="value" name="Health" stroke={ACCENT} strokeWidth={2} fill={`url(#${pieId}-htGrad)`} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-                <Card>
-                  <p className="text-sm font-semibold t-primary mb-3">Month-over-Month Change</p>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={momData} barSize={16}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
-                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', borderRadius: '12px', fontSize: '11px' }} />
-                        <Bar dataKey="change" radius={[4, 4, 0, 0]} fill={ACCENT} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* RISKS — hidden (tabs removed) */}
-      {/* eslint-disable-next-line no-constant-binary-expression */}
-      {false && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-            {(['critical', 'high', 'medium', 'low'] as const).map((sev) => {
-              const count = risks.filter((r) => r.severity === sev).length;
-              const color = sev === 'critical' ? '#ef4444' : sev === 'high' ? '#f59e0b' : sev === 'medium' ? ACCENT : SKY;
-              return (
-                <Card key={sev}>
-                  <p className="text-label mb-1">{sev}</p>
-                  <p className="text-4xl font-bold" style={{ color }}>{count}</p>
-                  <p className="text-caption t-muted mt-1">{sev} severity risks</p>
-                </Card>
-              );
-            })}
-          </div>
-
-          {risks.length === 0 ? (
-            <Card>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <AlertTriangle className="w-10 h-10 t-muted mb-3 opacity-30" />
-                <p className="text-sm t-muted">No risk alerts detected yet.</p>
-                <p className="text-xs t-muted mt-1">Run a catalyst to scan for organisational risks.</p>
-              </div>
-            </Card>
-          ) : (
-            <>
-              <Card>
-                <p className="text-sm font-semibold t-primary mb-3">Risk Distribution</p>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={(['critical', 'high', 'medium', 'low'] as const).map((sev) => ({
-                        severity: sev.charAt(0).toUpperCase() + sev.slice(1),
-                        count: risks.filter((r) => r.severity === sev).length,
-                      }))}
-                      barSize={40}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--divider)" vertical={false} />
-                      <XAxis dataKey="severity" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                      <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)', borderRadius: '12px', fontSize: '11px' }} />
-                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                        {['critical', 'high', 'medium', 'low'].map((sev) => (
-                          <Cell key={sev} fill={sev === 'critical' ? '#ef4444' : sev === 'high' ? '#f59e0b' : sev === 'medium' ? ACCENT : SKY} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card>
-                <p className="text-sm font-semibold t-primary mb-3">All Risk Alerts</p>
-                <div className="space-y-3">
-                  {risks.map((risk) => (
-                    <div key={risk.id} className="flex items-start gap-3 p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                      <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                        risk.severity === 'critical' ? 'text-red-500' : risk.severity === 'high' ? 'text-amber-500' : 'text-gray-400'
-                      }`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-xs font-semibold t-primary">{risk.title}</h4>
-                          <StatusPill status={risk.severity} size="sm" />
-                        </div>
-                        <p className="text-caption t-muted mt-0.5">{risk.description}</p>
-                        <div className="flex items-center gap-3 mt-1 text-caption t-muted">
-                          <span>Probability: {Math.round(risk.probability * 100)}%</span>
-                          <span className="inline-flex items-center gap-1">
-                            Impact:
-                            <Numeric
-                              value={risk.impactValue}
-                              unit={risk.impactUnit === 'currency' ? 'ZAR' : (risk.impactUnit ?? undefined)}
-                              compact
-                              size="sm"
-                              tone="mute"
-                            />
-                          </span>
-                          <Badge variant="outline" size="sm">{risk.category}</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </>
-          )}
-        </div>
-      )}
 
       {/* ANOMALIES & CONTROL PLANE HEALTH — Bug #7 fix: render previously discarded data */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1197,8 +1009,8 @@ export function Dashboard() {
           <Link
             key={item.label}
             to={item.to}
-            className="rounded-xl p-4 transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:-translate-y-0.5 active:scale-[0.98] hover:shadow-[0_8px_20px_-6px_rgba(163,177,138,0.22)]"
-            style={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)", boxShadow: "0 2px 8px rgba(100, 120, 180, 0.06)" }}
+            className="rounded-md p-4 transition-[background-color,color,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:-translate-y-0.5 active:scale-[0.98] hover:border-[var(--accent)]/30"
+            style={{ background: "var(--bg-card-solid)", border: "1px solid var(--border-card)" }}
           >
             <p className="text-sm font-semibold t-primary">{item.label}</p>
             <p className="text-caption t-muted">{item.desc}</p>
