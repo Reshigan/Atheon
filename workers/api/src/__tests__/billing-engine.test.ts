@@ -59,13 +59,15 @@ async function seedResolvedRca(opts: {
   ).run();
 }
 
-async function seedFactor(rcaId: string, impactValue: number): Promise<void> {
+async function seedFactor(rcaId: string, impactValue: number): Promise<string> {
+  const id = crypto.randomUUID();
   await env.DB.prepare(
     `INSERT INTO causal_factors
        (id, rca_id, tenant_id, layer, factor_type, title, description, evidence,
         impact_value, impact_unit, confidence, created_at)
      VALUES (?, ?, ?, 'L1', 'external_driver', 'driver', '', '{}', ?, 'ZAR', 80, datetime('now'))`
-  ).bind(crypto.randomUUID(), rcaId, TENANT, impactValue).run();
+  ).bind(id, rcaId, TENANT, impactValue).run();
+  return id;
 }
 
 async function seedPrescription(rcaId: string): Promise<string> {
@@ -158,6 +160,26 @@ describe('Phase 10-19 — shared-savings billing engine', () => {
       expect(period.line_items[0].confidence).toBeCloseTo(0.9, 2);
     });
 
+    it('records the causal_factor_id that produced the attributed savings', () => {
+      const period = buildBillablePeriod({
+        ...baseInput,
+        rcas: [{ id: 'r1', metric_id: 'm1', metric_name: 'Margin', resolved_at: '2026-04-15', confidence: 90 }],
+        factorAgg: new Map([['r1', { max: 5_000_000, count: 2, factorId: 'cf-top' }]]),
+        verifiedActions: new Map([['r1', ['a1']]]),
+      });
+      expect(period.line_items[0].evidence.causal_factor_id).toBe('cf-top');
+    });
+
+    it('causal_factor_id is null when the aggregate omits it', () => {
+      const period = buildBillablePeriod({
+        ...baseInput,
+        rcas: [{ id: 'r1', metric_id: 'm1', metric_name: 'Margin', resolved_at: '2026-04-15', confidence: 90 }],
+        factorAgg: new Map([['r1', { max: 5_000_000, count: 1 }]]),
+        verifiedActions: new Map([['r1', ['a1']]]),
+      });
+      expect(period.line_items[0].evidence.causal_factor_id).toBeNull();
+    });
+
     it('total + revenue arithmetic', () => {
       const period = buildBillablePeriod({
         ...baseInput,
@@ -200,6 +222,34 @@ describe('Phase 10-19 — shared-savings billing engine', () => {
         `SELECT total_realised_savings, atheon_revenue, currency FROM billable_periods WHERE tenant_id = ?`
       ).bind(TENANT).first<{ total_realised_savings: number; atheon_revenue: number; currency: string }>();
       expect(row?.atheon_revenue).toBe(1_000_000);
+    });
+
+    it('traces attributed_savings to the highest-impact causal factor id', async () => {
+      await seedResolvedRca({ id: 'rca-trace', metricName: 'Margin', resolvedAtOffset: '-12 days' });
+      const lowId = await seedFactor('rca-trace', 2_000_000);
+      const highId = await seedFactor('rca-trace', 5_000_000);
+      const pid = await seedPrescription('rca-trace');
+      await seedVerifiedAction(pid);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const monthAgo = new Date(); monthAgo.setUTCDate(monthAgo.getUTCDate() - 30);
+      const start = monthAgo.toISOString().slice(0, 10);
+
+      const r = await computeBillablePeriod(env.DB, TENANT, {
+        periodStart: start, periodEnd: today, persist: true,
+      });
+      expect(r.lineItemsInserted).toBe(1);
+      expect(r.period.line_items[0].attributed_savings).toBe(5_000_000);
+      expect(r.period.line_items[0].evidence.causal_factor_id).toBe(highId);
+      expect(r.period.line_items[0].evidence.causal_factor_id).not.toBe(lowId);
+
+      // The persisted evidence JSON carries the link so the audit pack can
+      // trace each claimed dollar back to a single quantified causal factor.
+      const row = await env.DB.prepare(
+        `SELECT evidence FROM billable_line_items WHERE tenant_id = ? AND rca_id = 'rca-trace'`
+      ).bind(TENANT).first<{ evidence: string }>();
+      const ev = JSON.parse(row!.evidence) as { causal_factor_id: string };
+      expect(ev.causal_factor_id).toBe(highId);
     });
 
     it('per-tenant share override applied (50%)', async () => {
