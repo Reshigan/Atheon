@@ -3,24 +3,14 @@ import { Numeric } from "@/components/ui/numeric";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
-/**
- * Dashboard KPI tiles — Stitch hover-tint pattern.
- * Each tile gets an `accent` driving the hover border + sparkline colour:
- *   - sage    (default, positive metrics)
- *   - sky     (informational metrics)
- *   - bronze  (operations / catalyst metrics)
- *   - amber   (anomaly / watchlist)
- *   - red     (urgent / risk)
- * Hover border lifts using the same accent — a quiet but persistent cue.
- */
 type Accent = 'sage' | 'sky' | 'bronze' | 'amber' | 'red';
 
 const ACCENT_BORDER: Record<Accent, string> = {
-  sage:   'hover:border-emerald-500/40',
-  sky:    'hover:border-sky-500/40',
-  bronze: 'hover:border-amber-500/40',
-  amber:  'hover:border-amber-500/40',
-  red:    'hover:border-red-500/40',
+  sage:   'hover:border-[var(--accent)]',
+  sky:    'hover:border-[var(--info)]',
+  bronze: 'hover:border-[var(--warning)]',
+  amber:  'hover:border-[var(--warning)]',
+  red:    'hover:border-[var(--neg)]',
 };
 
 const ACCENT_SPARK: Record<Accent, string> = {
@@ -32,9 +22,9 @@ const ACCENT_SPARK: Record<Accent, string> = {
 };
 
 const trendIcon = (trend: string) => {
-  if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
-  if (trend === "down" || trend === "declining") return <TrendingDown className="w-3.5 h-3.5 text-red-500" />;
-  return <Minus className="w-3.5 h-3.5 text-gray-400" />;
+  if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-accent" />;
+  if (trend === "down" || trend === "declining") return <TrendingDown className="w-3.5 h-3.5" style={{ color: 'var(--neg)' }} />;
+  return <Minus className="w-3.5 h-3.5 t-muted" />;
 };
 
 interface KpiCardProps {
@@ -62,7 +52,7 @@ export function KpiCard({
 
   return (
     <div
-      className={`p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] transition-colors group ${ACCENT_BORDER[accent]}`}
+      className={`p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] transition-colors group ${ACCENT_BORDER[accent]}`}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-caption font-medium t-muted uppercase tracking-wider">{label}</span>
@@ -81,7 +71,7 @@ export function KpiCard({
           <div className="flex items-center gap-1.5 mt-1">
             {trendIcon(trend)}
             {delta !== undefined && (
-              <span className={`text-caption font-medium font-mono ${delta > 0 ? 'text-emerald-500' : delta < 0 ? 'text-red-500' : 't-muted'}`}>
+              <span className={`text-caption font-medium font-mono ${delta > 0 ? 'text-accent' : delta < 0 ? '' : 't-muted'}`} style={delta < 0 ? { color: 'var(--neg)' } : undefined}>
                 {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
               </span>
             )}

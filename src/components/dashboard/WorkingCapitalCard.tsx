@@ -185,14 +185,15 @@ function Metric({ label, value, delta, deltaLabel, trend, invertTrend = false, s
   const positive = invertTrend ? trend === 'down' : trend === 'up';
   const negative = invertTrend ? trend === 'up' : trend === 'down';
   const trendIcon = trend === 'up' ? <TrendingUp size={11} /> : trend === 'down' ? <TrendingDown size={11} /> : <Minus size={11} />;
-  const trendColor = positive ? 'text-emerald-500' : negative ? 'text-red-500' : 't-muted';
+  const trendColor = positive ? 'text-accent' : negative ? '' : 't-muted';
+  const trendStyle = negative ? { color: 'var(--neg)' } : undefined;
 
   return (
-    <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+    <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
       <div className="text-caption font-medium t-muted uppercase tracking-wider mb-1">{label}</div>
       <div className="text-body-md font-bold t-primary tabular-nums font-mono leading-tight">{value}</div>
       <div className="flex items-center justify-between mt-1.5">
-        <div className={`flex items-center gap-1 text-caption ${trendColor}`}>
+        <div className={`flex items-center gap-1 text-caption ${trendColor}`} style={trendStyle}>
           {trendIcon}
           <span className="tabular-nums font-mono">{delta === 0 ? deltaLabel : deltaLabel}</span>
         </div>

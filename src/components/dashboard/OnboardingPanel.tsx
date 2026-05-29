@@ -51,7 +51,7 @@ export function OnboardingPanel({ connectionId }: { connectionId: string }): JSX
   const allDone = status.complete_count === status.total_count;
   if (allDone && collapsed) {
     return (
-      <div className="mt-3 p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-2">
+      <div className="mt-3 p-2 rounded-sm text-xs flex items-center gap-2" style={{ background: 'rgb(var(--accent-rgb) / 0.1)', border: '1px solid rgb(var(--accent-rgb) / 0.2)', color: 'var(--accent)' }}>
         <CheckCircle2 size={12} /> Setup complete — every catalyst can run with your full configuration.
       </div>
     );
@@ -74,7 +74,7 @@ export function OnboardingPanel({ connectionId }: { connectionId: string }): JSX
         {status.steps.map((s) => (
           <li key={s.key} className="flex items-start gap-2 text-xs">
             {s.complete ? (
-              <CheckCircle2 size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" />
+              <CheckCircle2 size={14} className="text-accent mt-0.5 flex-shrink-0" />
             ) : (
               <Circle size={14} className="t-muted mt-0.5 flex-shrink-0" />
             )}

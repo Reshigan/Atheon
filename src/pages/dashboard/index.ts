@@ -2,4 +2,3 @@
 export { DashCard, TintedCard } from "./DashCard";
 export { KpiCard, KpiGrid } from "./KpiCards";
 export { IntelligencePanel } from "./IntelligencePanel";
-export { HealthDimensions } from "./HealthDimensions";

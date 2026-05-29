@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { StatusPill } from '@/components/ui/status-pill';
@@ -10,11 +10,11 @@ import { useAppStore } from '@/stores/appStore';
 type CloseResp = Awaited<ReturnType<typeof api.dashboard.closeCycle>>;
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked';
 
-const STATUS_META: Record<TaskStatus, { label: string; icon: typeof CheckCircle2; tone: string }> = {
-  completed:   { label: 'Done',         icon: CheckCircle2, tone: 'text-emerald-500' },
-  in_progress: { label: 'In progress',  icon: Clock,        tone: 'text-sky-400' },
+const STATUS_META: Record<TaskStatus, { label: string; icon: typeof CheckCircle2; tone: string; toneStyle?: CSSProperties }> = {
+  completed:   { label: 'Done',         icon: CheckCircle2, tone: 'text-accent' },
+  in_progress: { label: 'In progress',  icon: Clock,        tone: '' , toneStyle: { color: 'var(--info)' } },
   pending:     { label: 'Pending',      icon: Clock,        tone: 't-muted' },
-  blocked:     { label: 'Blocked',      icon: AlertOctagon, tone: 'text-red-500' },
+  blocked:     { label: 'Blocked',      icon: AlertOctagon, tone: '', toneStyle: { color: 'var(--neg)' } },
 };
 
 export function CloseCycleCard() {
@@ -119,9 +119,9 @@ export function CloseCycleCard() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
-        <SummaryTile label="Tasks complete" value={`${cycle.completedTasks} / ${cycle.totalTasks}`} icon={<CheckCircle2 size={14} className="text-emerald-500" />} />
-        <SummaryTile label="Blocking" value={String(summary.blockingCount)} icon={<AlertOctagon size={14} className={summary.blockingCount > 0 ? 'text-red-500' : 't-muted'} />} tone={summary.blockingCount > 0 ? 'red' : 'neutral'} />
-        <SummaryTile label="Status" value={daysLabel} icon={<Clock size={14} className="text-sky-400" />} stretchValue trailing={onSchedulePill} />
+        <SummaryTile label="Tasks complete" value={`${cycle.completedTasks} / ${cycle.totalTasks}`} icon={<CheckCircle2 size={14} className="text-accent" />} />
+        <SummaryTile label="Blocking" value={String(summary.blockingCount)} icon={<AlertOctagon size={14} className={summary.blockingCount > 0 ? '' : 't-muted'} style={summary.blockingCount > 0 ? { color: 'var(--neg)' } : undefined} />} tone={summary.blockingCount > 0 ? 'red' : 'neutral'} />
+        <SummaryTile label="Status" value={daysLabel} icon={<Clock size={14} style={{ color: 'var(--info)' }} />} stretchValue trailing={onSchedulePill} />
       </div>
 
       <div className="mb-3">
@@ -161,7 +161,7 @@ export function CloseCycleCard() {
                   className="flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.95] transition-transform duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
                   aria-label={`Toggle ${t.taskName} to ${nextStatus}`}
                 >
-                  <Icon size={14} className={meta.tone} />
+                  <Icon size={14} className={meta.tone} style={meta.toneStyle} />
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className={`text-caption font-medium ${t.status === 'completed' ? 't-muted line-through' : 't-primary'}`}>
@@ -182,15 +182,15 @@ export function CloseCycleCard() {
 }
 
 function SummaryTile({ label, value, icon, tone = 'neutral', stretchValue = false, trailing }: {
-  label: string; value: string; icon: React.ReactNode;
-  tone?: 'neutral' | 'red'; stretchValue?: boolean; trailing?: React.ReactNode;
+  label: string; value: string; icon: ReactNode;
+  tone?: 'neutral' | 'red'; stretchValue?: boolean; trailing?: ReactNode;
 }) {
   return (
     <div
-      className="p-2.5 rounded-lg border"
+      className="p-2.5 rounded-md border"
       style={{
-        background: tone === 'red' ? 'rgba(248,113,113,0.06)' : 'var(--bg-card-solid)',
-        borderColor: tone === 'red' ? 'rgba(248,113,113,0.30)' : 'var(--border-card)',
+        background: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.06)' : 'var(--bg-card-solid)',
+        borderColor: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.30)' : 'var(--border-card)',
       }}
     >
       <div className="flex items-center gap-1.5 mb-1">
