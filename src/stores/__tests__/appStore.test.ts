@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useAppStore } from "../appStore";
 
-describe('theme is pinned to dark (Quiet Capital)', () => {
+describe('theme is pinned to light (Swiss Calm Authority)', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.classList.remove('atheon-dark');
@@ -10,18 +10,24 @@ describe('theme is pinned to dark (Quiet Capital)', () => {
 
   // Note: the store is a singleton initialized at module load, so this asserts
   // the hardcoded default rather than re-running init against cleared storage.
-  it('initial theme state is dark', () => {
-    expect(useAppStore.getState().theme).toBe('dark');
+  it('initial theme state is light', () => {
+    expect(useAppStore.getState().theme).toBe('light');
   });
 
-  it('toggleTheme keeps the theme dark', () => {
+  it('toggleTheme keeps the theme light', () => {
     useAppStore.getState().toggleTheme();
-    expect(useAppStore.getState().theme).toBe('dark');
+    expect(useAppStore.getState().theme).toBe('light');
   });
 
-  it('setTheme("light") is ignored and stays dark', () => {
-    useAppStore.getState().setTheme('light');
-    expect(useAppStore.getState().theme).toBe('dark');
+  it('setTheme("dark") is ignored and stays light', () => {
+    useAppStore.getState().setTheme('dark');
+    expect(useAppStore.getState().theme).toBe('light');
+  });
+
+  it('never applies the legacy .atheon-dark class', () => {
+    useAppStore.getState().setTheme('dark');
+    useAppStore.getState().toggleTheme();
+    expect(document.body.classList.contains('atheon-dark')).toBe(false);
   });
 });
 

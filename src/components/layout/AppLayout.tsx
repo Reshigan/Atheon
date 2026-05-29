@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { clearChunkReloadGuard } from "@/lib/lazy-with-retry";
 
 export function AppLayout() {
-  const { user, setUser, theme } = useAppStore();
+  const { user, setUser } = useAppStore();
   const loadCompanies = useAppStore((s) => s.loadCompanies);
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
@@ -91,7 +91,7 @@ export function AppLayout() {
   if (!user) return null;
 
   return (
-    <div className={cn('min-h-screen transition-colors duration-200', theme === 'dark' ? 'atheon-dark' : '')} style={{ background: 'var(--bg-primary)', backgroundImage: 'var(--bg-pattern)', backgroundAttachment: 'fixed' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       {/* TASK-006: Skip to content link */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-md focus:bg-[var(--accent)] focus:text-white focus:text-sm">
         Skip to main content
