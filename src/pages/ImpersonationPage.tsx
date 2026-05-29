@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { useAppStore } from '@/stores/appStore';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError, setTenantOverride } from '@/lib/api';
@@ -209,11 +209,14 @@ export function ImpersonationPage() {
     <div className="space-y-6 animate-fadeIn">
       {/* Active Impersonation Banner */}
       {activeSession && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center justify-between">
+        <div
+          className="border rounded-md p-4 flex items-center justify-between"
+          style={{ background: 'rgb(var(--accent-rgb) / 0.06)', borderColor: 'rgb(var(--accent-rgb) / 0.3)' }}
+        >
           <div className="flex items-center gap-3">
-            <Eye size={18} className="text-amber-400" />
+            <Eye size={18} className="text-accent" />
             <div>
-              <p className="text-sm font-medium text-amber-400">
+              <p className="text-sm font-medium text-accent">
                 Viewing as {activeSession.userName} ({activeSession.userRole})
               </p>
               <p className="text-caption t-muted">
@@ -221,24 +224,23 @@ export function ImpersonationPage() {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={endImpersonation} disabled={ending} className="text-amber-400 border-amber-500/30">
+          <Button variant="outline" size="sm" onClick={endImpersonation} disabled={ending}>
             {ending ? <Loader2 size={12} className="animate-spin mr-1" /> : <LogOut size={12} className="mr-1" />}
             End Session
           </Button>
         </div>
       )}
 
-      <HeroHeader
-        icon={Eye}
+      <PageHeader
+        eyebrow="Access · Impersonation"
         title="User Impersonation"
-        subtitle="View the platform as any user for debugging & support"
-        accent="amber"
+        dek="View the platform as any user for debugging & support"
       />
 
       {/* Warning */}
-      <Card className="p-4 border-amber-500/20 bg-amber-500/5">
+      <Card className="p-4" style={{ borderColor: 'var(--warning)', background: 'rgb(var(--accent-rgb) / 0.03)' }}>
         <div className="flex items-start gap-2">
-          <AlertTriangle size={14} className="text-amber-400 mt-0.5" />
+          <AlertTriangle size={14} style={{ color: 'var(--warning)' }} className="mt-0.5" />
           <div className="text-xs">
             <p className="font-medium t-primary">Impersonation sessions are time-limited and fully audited</p>
             <p className="t-muted mt-0.5">Sessions expire after 15 minutes. All actions taken while impersonating are logged in the audit trail with your identity as the actor. You cannot impersonate users with equal or higher privilege than your own.</p>
@@ -250,7 +252,7 @@ export function ImpersonationPage() {
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
         <input
-          className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+          className="w-full pl-9 pr-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
           placeholder="Search users by name, email, or role..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -311,10 +313,10 @@ export function ImpersonationPage() {
       {/* Confirmation Dialog */}
       {confirmUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setConfirmUser(null)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Eye size={18} className="text-amber-400" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgb(var(--accent-rgb) / 0.1)' }}>
+                <Eye size={18} className="text-accent" />
               </div>
               <div>
                 <h3 className="text-base font-semibold t-primary">Confirm Impersonation</h3>
@@ -329,7 +331,7 @@ export function ImpersonationPage() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setConfirmUser(null)} className="flex-1">Cancel</Button>
-              <Button onClick={() => startImpersonation(confirmUser)} disabled={impersonating} className="flex-1 bg-amber-500 hover:bg-amber-600 text-black">
+              <Button onClick={() => startImpersonation(confirmUser)} disabled={impersonating} className="flex-1 bg-accent hover:bg-[var(--accent-hover)] text-[var(--text-on-accent)]">
                 {impersonating ? <Loader2 size={14} className="animate-spin mr-1" /> : <Eye size={14} className="mr-1" />}
                 Start Session
               </Button>
