@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
@@ -414,39 +414,38 @@ export function TenantsPage() {
 
  return (
  <div className="space-y-6 animate-fadeIn">
- <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
- <HeroHeader
-  icon={Building2}
-  title="Tenants"
-  subtitle="Multi-tenant management — SaaS, On-Premise, Hybrid"
-  accent="sage"
+ <PageHeader
+   eyebrow="Tenants · Accounts"
+   title="Tenants"
+   dek="Multi-tenant management — SaaS, On-Premise, Hybrid"
+   actions={
+     <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)} title="Create a new tenant (client) and initial configuration"><Plus size={14} /> Onboard Tenant</Button>
+   }
  />
- <Button variant="primary" size="sm" onClick={() => setShowOnboard(true)} title="Create a new tenant (client) and initial configuration"><Plus size={14} /> Onboard Tenant</Button>
- </div>
 
  {actionError && (
- <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
- <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
- <p className="text-sm text-red-400 flex-1">{actionError}</p>
- <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+ <div className="flex items-center gap-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'var(--neg)' }}>
+ <AlertCircle size={16} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+ <p className="text-sm flex-1" style={{ color: 'var(--neg)' }}>{actionError}</p>
+ <button onClick={() => setActionError(null)} style={{ color: 'var(--neg)' }}><X size={14} /></button>
  </div>
  )}
 
  {/* Onboard Modal */}
  {showOnboard && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Onboard New Tenant</h3>
- <button onClick={() => setShowOnboard(false)} className="text-gray-400 hover:text-gray-400" title="Close onboarding"> <X size={18} /></button>
+ <button onClick={() => setShowOnboard(false)} className="t-muted hover:t-primary" title="Close onboarding"> <X size={18} /></button>
  </div>
  <div className="space-y-3">
- <div><label className="text-xs t-muted">Company Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
- <div><label className="text-xs t-muted">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
- <div><label className="text-xs t-muted">Industry</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="retail">Retail</option><option value="financial_services">Financial Services</option></select></div>
- <div><label className="text-xs t-muted">Plan</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
- <div><label className="text-xs t-muted">Deployment Model</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
- <div><label className="text-xs t-muted">Region</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
+ <div><label className="text-xs t-muted">Company Name</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={onboardForm.name} onChange={e => setOnboardForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" /></div>
+ <div><label className="text-xs t-muted">Slug (URL-safe ID)</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm font-mono" value={onboardForm.slug} onChange={e => setOnboardForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="acme-corp" /></div>
+ <div><label className="text-xs t-muted">Industry</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={onboardForm.industry} onChange={e => setOnboardForm(p => ({ ...p, industry: e.target.value }))}><option value="general">General</option><option value="fmcg">FMCG</option><option value="healthcare">Healthcare</option><option value="mining">Mining</option><option value="manufacturing">Manufacturing</option><option value="retail">Retail</option><option value="financial_services">Financial Services</option></select></div>
+ <div><label className="text-xs t-muted">Plan</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={onboardForm.plan} onChange={e => setOnboardForm(p => ({ ...p, plan: e.target.value }))}><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></div>
+ <div><label className="text-xs t-muted">Deployment Model</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={onboardForm.deploymentModel} onChange={e => setOnboardForm(p => ({ ...p, deploymentModel: e.target.value }))}><option value="saas">SaaS (Cloud)</option><option value="on-premise">On-Premise</option><option value="hybrid">Hybrid</option></select></div>
+ <div><label className="text-xs t-muted">Region</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={onboardForm.region} onChange={e => setOnboardForm(p => ({ ...p, region: e.target.value }))} placeholder="af-south-1" /></div>
  </div>
  <div className="flex gap-3 pt-2">
  <Button variant="secondary" size="sm" onClick={() => setShowOnboard(false)} title="Cancel onboarding">Cancel</Button>
@@ -463,7 +462,7 @@ export function TenantsPage() {
  <Card>
  <span className="text-xs t-secondary">Total Tenants</span>
  <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{tenants.length}</p>
- <span className="text-xs text-emerald-400">{tenants.filter(t => t.status === 'active').length} active</span>
+ <span className="text-xs text-accent">{tenants.filter(t => t.status === 'active').length} active</span>
  </Card>
  <Card>
  <span className="text-xs t-secondary">SaaS</span>
@@ -495,7 +494,7 @@ export function TenantsPage() {
  >
  <div className="flex items-start justify-between">
  <div className="flex items-start gap-4">
- <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 flex items-center justify-center text-lg font-bold text-accent">
+ <div className="w-12 h-12 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center text-lg font-bold text-accent">
  {tenant.name.charAt(0)}
  </div>
  <div>
@@ -513,29 +512,29 @@ export function TenantsPage() {
  </div>
  <div className="flex items-center gap-3">
  {statusBadge(tenant.status)}
- {expandedTenant === tenant.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+ {expandedTenant === tenant.id ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
  </div>
  </div>
 
  {/* Quick Stats */}
  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
+ <div className="text-center p-2 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Layers</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.layers.length}/5</p>
  </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
+ <div className="text-center p-2 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Catalysts</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.catalystClusters.length}</p>
  </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
+ <div className="text-center p-2 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Max Agents</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.maxAgents}</p>
  </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
+ <div className="text-center p-2 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Max Users</span>
  <p className="text-sm font-bold t-primary">{tenant.entitlements.maxUsers}</p>
  </div>
- <div className="text-center p-2 rounded bg-[var(--bg-secondary)]">
+ <div className="text-center p-2 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Region</span>
  <p className="text-sm font-bold t-primary">{tenant.region}</p>
  </div>
@@ -545,7 +544,7 @@ export function TenantsPage() {
  {expandedTenant === tenant.id && (
  <div className="mt-4 space-y-4 animate-fadeIn">
  {/* Entitlements */}
- <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
  <Shield size={14} className="text-accent" /> Feature Entitlements
  </h4>
@@ -574,13 +573,13 @@ export function TenantsPage() {
  <div>
  <span className="text-caption t-muted">Flags</span>
  <div className="flex gap-2 mt-1 text-xs">
- <span className={tenant.entitlements.ssoEnabled ? 'text-emerald-400' : 'text-gray-400'}>
+ <span className={tenant.entitlements.ssoEnabled ? 'text-accent' : 't-muted'}>
  {tenant.entitlements.ssoEnabled ? <IconCheck size={10} /> : <IconCross size={10} />} SSO
  </span>
- <span className={tenant.entitlements.apiAccess ? 'text-emerald-400' : 'text-gray-400'}>
+ <span className={tenant.entitlements.apiAccess ? 'text-accent' : 't-muted'}>
  {tenant.entitlements.apiAccess ? <IconCheck size={10} /> : <IconCross size={10} />} API
  </span>
- <span className={tenant.entitlements.customBranding ? 'text-emerald-400' : 'text-gray-400'}>
+ <span className={tenant.entitlements.customBranding ? 'text-accent' : 't-muted'}>
  {tenant.entitlements.customBranding ? <IconCheck size={10} /> : <IconCross size={10} />} Branding
  </span>
  </div>
@@ -589,20 +588,20 @@ export function TenantsPage() {
  </div>
 
  {/* Infrastructure */}
- <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <h4 className="text-sm font-semibold t-primary mb-3 flex items-center gap-2">
  <Server size={14} className="text-accent" /> Infrastructure
  </h4>
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
- <div className="p-3 rounded bg-[var(--bg-secondary)]">
+ <div className="p-3 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Deployment</span>
  <p className="text-sm font-medium t-primary">{tenant.deploymentModel}</p>
  </div>
- <div className="p-3 rounded bg-[var(--bg-secondary)]">
+ <div className="p-3 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Plan</span>
  <p className="text-sm font-medium t-primary">{tenant.plan}</p>
  </div>
- <div className="p-3 rounded bg-[var(--bg-secondary)]">
+ <div className="p-3 rounded-sm bg-[var(--bg-secondary)]">
  <span className="text-caption t-muted">Region</span>
  <p className="text-sm font-medium t-primary">{tenant.region}</p>
  </div>
@@ -613,13 +612,13 @@ export function TenantsPage() {
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageUsers(tenant.id); }} title="View and manage users for this tenant"><Users size={12} /> Manage Users</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openManageCatalysts(tenant.id); }} title="Manage catalyst clusters, deploy new ones, and configure data sources"><Bot size={12} /> Manage Catalysts</Button>
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); openEditEntitlements(tenant); }} title="Edit plan entitlements and feature access"><Layers size={12} /> Edit Entitlements</Button>
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowResetConfirm(tenant.id); setResetResult(null); setResetConfirmText(''); }} title="Reset company — delete all insights and start fresh" className="!text-red-500 !border-red-500/30 hover:!bg-red-500/10"><Trash2 size={12} /> Reset Company</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowResetConfirm(tenant.id); setResetResult(null); setResetConfirmText(''); }} title="Reset company — delete all insights and start fresh" className="!text-neg !border-[var(--neg)]/30 hover:!bg-[var(--neg)]/10"><Trash2 size={12} /> Reset Company</Button>
  {tenant.status === 'archived' ? (
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); handleUnarchiveCompany(tenant.id); }} title="Restore this archived company to active status" className="!text-emerald-500 !border-emerald-500/30 hover:!bg-emerald-500/10"><ArchiveRestore size={12} /> Restore</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); handleUnarchiveCompany(tenant.id); }} title="Restore this archived company to active status" className="!text-accent !border-accent/30 hover:!bg-accent/10"><ArchiveRestore size={12} /> Restore</Button>
  ) : (
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowArchiveConfirm(tenant.id); }} title="Archive company — keep data but mark inactive" className="!text-amber-500 !border-amber-500/30 hover:!bg-amber-500/10"><Archive size={12} /> Archive</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowArchiveConfirm(tenant.id); }} title="Archive company — keep data but mark inactive" className="!text-warning !border-[var(--warning)]/30 hover:!bg-[var(--warning)]/10"><Archive size={12} /> Archive</Button>
  )}
- <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(tenant.id); setDeleteResult(null); setDeleteConfirmText(''); }} title="Permanently delete company and ALL data" className="!text-red-600 !border-red-600/30 hover:!bg-red-600/10"><Trash2 size={12} /> Delete Company</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(tenant.id); setDeleteResult(null); setDeleteConfirmText(''); }} title="Permanently delete company and ALL data" className="!text-neg !border-[var(--neg)]/30 hover:!bg-[var(--neg)]/10"><Trash2 size={12} /> Delete Company</Button>
  {tenant.slug === 'vantax' && (
  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowReseedConfirm(true); setReseedResult(null); }} title="Reset and re-seed VantaX with fresh demo data" className="!text-accent !border-accent/30 hover:!bg-accent/10"><RefreshCw size={12} /> Re-seed Demo</Button>
  )}
@@ -640,13 +639,13 @@ export function TenantsPage() {
  <table className="w-full text-sm">
  <thead>
  <tr className="border-b border-[var(--border-card)]">
- <th className="text-left py-3 text-gray-400 font-medium">Feature</th>
- <th className="text-center py-3 text-gray-400 font-medium">Starter</th>
- <th className="text-center py-3 text-gray-400 font-medium">Professional</th>
- <th className="text-center py-3 text-gray-400 font-medium">Enterprise</th>
+ <th className="text-left py-3 t-muted font-medium">Feature</th>
+ <th className="text-center py-3 t-muted font-medium">Starter</th>
+ <th className="text-center py-3 t-muted font-medium">Professional</th>
+ <th className="text-center py-3 t-muted font-medium">Enterprise</th>
  </tr>
  </thead>
- <tbody className="text-gray-400">
+ <tbody className="t-muted">
  {[
  { feature: 'Atheon Layers', starter: '2', pro: '4', enterprise: '5 (all)' },
  { feature: 'Catalyst Clusters', starter: '1', pro: '5', enterprise: 'Unlimited' },
@@ -665,8 +664,8 @@ export function TenantsPage() {
  ].map((row) => (
  <tr key={row.feature} className="border-b border-[var(--border-card)]">
  <td className="py-2.5 font-medium">{row.feature}</td>
- <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.starter}</td>
- <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="text-gray-500 mx-auto" /> : row.pro}</td>
+ <td className="py-2.5 text-center">{row.starter === '—' ? <XCircle size={14} className="t-muted mx-auto" /> : row.starter}</td>
+ <td className="py-2.5 text-center">{row.pro === '—' ? <XCircle size={14} className="t-muted mx-auto" /> : row.pro}</td>
  <td className="py-2.5 text-center text-accent">{row.enterprise}</td>
  </tr>
  ))}
@@ -681,27 +680,22 @@ export function TenantsPage() {
  <TabPanel>
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  {[
- { model: 'SaaS (Cloud)', icon: Cloud, color: 'blue', desc: 'Fully managed on Cloudflare edge. Zero infrastructure management. Automatic scaling and updates.', features: ['Cloudflare Workers', 'D1 Database', 'Vectorize', 'Auto-scaling', 'Global CDN'] },
- { model: 'On-Premise', icon: Server, color: 'amber', desc: 'Deploy within your own infrastructure. Full data sovereignty. Customer manages compute and storage.', features: ['Kubernetes / VM', 'PostgreSQL / SQL Server', 'Weaviate / Local Vector DB', 'Customer-managed', 'Air-gapped option'] },
- { model: 'Hybrid', icon: GitBranch, color: 'sky', desc: 'Sensitive data on-premise, compute at the edge. Best of both worlds for regulated industries.', features: ['Edge compute + Local DB', 'Split data plane', 'Pinecone / Weaviate', 'Compliance-ready', 'Selective sync'] },
+ { model: 'SaaS (Cloud)', icon: Cloud, tone: 'accent', desc: 'Fully managed on Cloudflare edge. Zero infrastructure management. Automatic scaling and updates.', features: ['Cloudflare Workers', 'D1 Database', 'Vectorize', 'Auto-scaling', 'Global CDN'] },
+ { model: 'On-Premise', icon: Server, tone: 'warning', desc: 'Deploy within your own infrastructure. Full data sovereignty. Customer manages compute and storage.', features: ['Kubernetes / VM', 'PostgreSQL / SQL Server', 'Weaviate / Local Vector DB', 'Customer-managed', 'Air-gapped option'] },
+ { model: 'Hybrid', icon: GitBranch, tone: 'info', desc: 'Sensitive data on-premise, compute at the edge. Best of both worlds for regulated industries.', features: ['Edge compute + Local DB', 'Split data plane', 'Pinecone / Weaviate', 'Compliance-ready', 'Selective sync'] },
  ].map((infra) => {
  const Icon = infra.icon;
- const colorMap: Record<string, { bg: string; text: string }> = {
- blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
- amber: { bg: 'bg-accent/10', text: 'text-accent' },
- sky: { bg: 'bg-sky-50', text: 'text-sky-600' }};
- const colors = colorMap[infra.color] || colorMap.blue;
  return (
  <Card key={infra.model}>
- <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center mb-3`}>
- <Icon className={`w-5 h-5 ${colors.text}`} />
+ <div className="w-10 h-10 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] flex items-center justify-center mb-3">
+ <Icon className="w-5 h-5 text-accent" />
  </div>
  <h3 className="text-base font-semibold t-primary">{infra.model}</h3>
  <p className="text-xs t-muted mt-1">{infra.desc}</p>
  <div className="mt-3 space-y-1.5">
  {infra.features.map((f) => (
- <div key={f} className="flex items-center gap-2 text-xs text-gray-400">
- <CheckCircle size={12} className="text-emerald-400" />
+ <div key={f} className="flex items-center gap-2 text-xs t-secondary">
+ <CheckCircle size={12} className="text-accent" />
  {f}
  </div>
  ))}
@@ -716,10 +710,10 @@ export function TenantsPage() {
  {/* Manage Users Modal */}
  {showManageUsers && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Manage Users</h3>
- <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
+ <button onClick={() => { setShowManageUsers(null); setShowAddUser(false); }} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
 
  {loadingUsers ? (
@@ -729,7 +723,7 @@ export function TenantsPage() {
  <div className="space-y-2">
  {tenantUsers.length === 0 && <p className="text-sm t-secondary py-4 text-center">No users found for this tenant.</p>}
  {tenantUsers.map((u) => (
- <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div key={u.id} className="flex items-center justify-between p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div>
  <p className="text-sm font-medium t-primary">{u.name}</p>
  <p className="text-xs t-muted">{u.email}</p>
@@ -738,7 +732,7 @@ export function TenantsPage() {
  <div className="flex items-center gap-2">
  <Badge variant={u.status === 'active' ? 'success' : 'default'} size="sm">{u.status}</Badge>
  <select
- className="px-2 py-1 text-xs rounded border border-[var(--border-card)] bg-[var(--bg-secondary)] t-primary"
+ className="px-2 py-1 text-xs rounded-sm border border-[var(--border-card)] bg-[var(--bg-secondary)] t-primary"
  value={u.role}
  onChange={async (e) => {
  try {
@@ -767,11 +761,11 @@ export function TenantsPage() {
  </div>
 
  {showAddUser ? (
- <div className="space-y-3 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="space-y-3 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <h4 className="text-sm font-semibold t-primary">Add New User</h4>
- <div><label className="text-xs t-muted">Email</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={addUserForm.email} onChange={e => setAddUserForm(p => ({ ...p, email: e.target.value }))} placeholder="user@company.com" /></div>
- <div><label className="text-xs t-muted">Full Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
- <div><label className="text-xs t-muted">Role</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
+ <div><label className="text-xs t-muted">Email</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={addUserForm.email} onChange={e => setAddUserForm(p => ({ ...p, email: e.target.value }))} placeholder="user@company.com" /></div>
+ <div><label className="text-xs t-muted">Full Name</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={addUserForm.name} onChange={e => setAddUserForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" /></div>
+ <div><label className="text-xs t-muted">Role</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={addUserForm.role} onChange={e => setAddUserForm(p => ({ ...p, role: e.target.value }))}><option value="admin">Admin</option><option value="executive">Executive</option><option value="manager">Manager</option><option value="analyst">Analyst</option><option value="operator">Operator</option></select></div>
  <div className="flex gap-3">
  <Button variant="secondary" size="sm" onClick={() => setShowAddUser(false)} title="Cancel add user">Cancel</Button>
  <Button variant="primary" size="sm" onClick={handleAddUser} disabled={!addUserForm.email.trim() || !addUserForm.name.trim() || addingUser}>
@@ -791,13 +785,13 @@ export function TenantsPage() {
  {/* Deploy Catalyst Modal— Enhanced with Industry Templates */}
  {showDeployCatalyst && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-3xl space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-3xl space-y-4 max-h-[90vh] overflow-y-auto">
 
  {/* Header */}
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
  {(deployStep === 'customize' || deployStep === 'manage') && deployStep !== 'manage' && (
- <button onClick={() => { setDeployStep('choose'); setSelectedIndustry(null); }} className="text-gray-400 hover:text-accent"><ArrowLeft size={18} /></button>
+ <button onClick={() => { setDeployStep('choose'); setSelectedIndustry(null); }} className="t-muted hover:text-accent"><ArrowLeft size={18} /></button>
  )}
  <h3 className="text-lg font-semibold t-primary">
  {deployStep === 'choose' && 'Deploy Catalyst Clusters'}
@@ -807,7 +801,7 @@ export function TenantsPage() {
  {deployStep === 'manage' && 'Manage Catalyst Clusters'}
  </h3>
  </div>
- <button onClick={() => setShowDeployCatalyst(null)} className="text-gray-400 hover:text-accent"><X size={18} /></button>
+ <button onClick={() => setShowDeployCatalyst(null)} className="t-muted hover:text-accent"><X size={18} /></button>
  </div>
 
  {/* Step 1: Choose Industry Template */}
@@ -829,10 +823,10 @@ export function TenantsPage() {
  <button
  key={tmpl.industry}
  onClick={() => selectIndustryTemplate(tmpl.industry)}
- className="text-left p-4 rounded-xl border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
+ className="text-left p-4 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] group active:scale-[0.97]"
  >
  <div className="flex items-center gap-2 mb-2">
- <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+ <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center">
  <Zap size={16} className="text-accent" />
  </div>
  <h4 className="text-sm font-semibold t-primary group-hover:text-accent">{tmpl.label}</h4>
@@ -861,9 +855,9 @@ export function TenantsPage() {
  <div className="border-t border-[var(--border-card)] pt-4">
  <p className="text-xs t-muted mb-3">Or deploy a single custom catalyst cluster:</p>
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- <div><label className="text-xs t-muted">Cluster Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
- <div><label className="text-xs t-muted">Domain</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
- <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="supervised">Supervised</option><option value="autonomous">Autonomous</option></select></div>
+ <div><label className="text-xs t-muted">Cluster Name</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={catalystForm.name} onChange={e => setCatalystForm(p => ({ ...p, name: e.target.value }))} placeholder="finance-catalyst-01" /></div>
+ <div><label className="text-xs t-muted">Domain</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={catalystForm.domain} onChange={e => setCatalystForm(p => ({ ...p, domain: e.target.value }))}><option value="finance">Finance</option><option value="procurement">Procurement</option><option value="supply-chain">Supply Chain</option><option value="hr">Human Resources</option><option value="sales">Sales</option><option value="operations">Operations</option></select></div>
+ <div><label className="text-xs t-muted">Autonomy Tier</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={catalystForm.autonomy_tier} onChange={e => setCatalystForm(p => ({ ...p, autonomy_tier: e.target.value }))}><option value="read-only">Read-Only</option><option value="assisted">Assisted</option><option value="supervised">Supervised</option><option value="autonomous">Autonomous</option></select></div>
  </div>
  <div className="flex gap-3 mt-3">
  <Button variant="primary" size="sm" onClick={handleDeployCatalyst} disabled={!catalystForm.name.trim() || deployingCatalyst} title="Deploy a single custom catalyst cluster">
@@ -886,6 +880,7 @@ export function TenantsPage() {
  const active = maturityFilter[tier];
  const label = tier.charAt(0).toUpperCase() + tier.slice(1);
  const count = templateClusters.filter(c => clusterMaturity(c) === tier).length;
+ const dotColor = tier === 'production' ? 'var(--accent)' : tier === 'partial' ? 'var(--warning)' : 'var(--text-muted)';
  return (
  <button
  key={tier}
@@ -899,9 +894,7 @@ export function TenantsPage() {
  title={`Toggle ${label} clusters`}
  aria-pressed={active}
  >
- <span className={`inline-block w-2 h-2 rounded-full ${
- tier === 'production' ? 'bg-emerald-500' : tier === 'partial' ? 'bg-amber-500' : 'bg-gray-500'
- }`} />
+ <span className="inline-block w-2 h-2 rounded-full" style={{ background: dotColor }} />
  {label}
  <span className="t-muted">({count})</span>
  </button>
@@ -915,7 +908,7 @@ export function TenantsPage() {
  No clusters match the selected maturity filters.
  </div>
  ) : visibleTemplateClusters.map(({ c: cluster, originalIndex: idx }) => (
- <div key={cluster.domain + idx} className={`rounded-xl border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
+ <div key={cluster.domain + idx} className={`rounded-md border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
  cluster.selected ? 'border-accent/40 bg-accent/5' : 'border-[var(--border-card)] bg-[var(--bg-secondary)] opacity-60'
  }`}>
  <div className="flex items-center justify-between p-4">
@@ -927,7 +920,7 @@ export function TenantsPage() {
  {cluster.selected ? (
  <ToggleRight size={24} className="text-accent" />
  ) : (
- <ToggleLeft size={24} className="text-gray-400" />
+ <ToggleLeft size={24} className="t-muted" />
  )}
  </button>
  <div>
@@ -952,7 +945,7 @@ export function TenantsPage() {
  <div className="text-xs t-muted mb-2">Sub-Catalysts ({cluster.sub_catalysts.length})</div>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
  {cluster.sub_catalysts.map((sub, subIdx) => (
- <div key={sub.name} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-card)]">
+ <div key={sub.name} className="flex items-start gap-2 p-2 rounded-sm bg-[var(--bg-primary)] border border-[var(--border-card)]">
  <button
  onClick={() => {
  setTemplateClusters(prev => prev.map((c, i) => {
@@ -965,15 +958,15 @@ export function TenantsPage() {
  className="flex-shrink-0 mt-0.5"
  >
  {sub.enabled ? (
- <CheckCircle size={14} className="text-emerald-500" />
+ <CheckCircle size={14} className="text-accent" />
  ) : (
- <XCircle size={14} className="text-gray-400" />
+ <XCircle size={14} className="t-muted" />
  )}
  </button>
  <div className="min-w-0 flex-1">
  <div className="flex items-center gap-1.5">
  {sub.implementation && <ImplementationDot implementation={sub.implementation} />}
- <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 'text-gray-400'}`}>{sub.name}</span>
+ <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 't-muted'}`}>{sub.name}</span>
  </div>
  <p className="text-caption t-muted truncate">{sub.description}</p>
  </div>
@@ -1003,7 +996,7 @@ export function TenantsPage() {
  {/* Step 3: Deploying animation */}
  {deployStep === 'deploying' && (
  <div className="flex flex-col items-center justify-center py-12 space-y-4">
- <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+ <div className="w-16 h-16 rounded-md bg-accent/10 flex items-center justify-center">
  <Loader2 className="w-8 h-8 text-accent animate-spin" />
  </div>
  <p className="text-sm t-primary font-medium">Deploying catalyst clusters...</p>
@@ -1014,14 +1007,14 @@ export function TenantsPage() {
  {/* Step 4: Done */}
  {deployStep === 'done' && deployResult && (
  <div className="flex flex-col items-center justify-center py-8 space-y-4">
- <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
- <CheckCircle className="w-8 h-8 text-emerald-500" />
+ <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
+ <CheckCircle className="w-8 h-8 text-accent" />
  </div>
  <div className="text-center">
  <p className="text-lg font-semibold t-primary">{deployResult.clustersCreated} Catalyst Clusters Deployed</p>
  <p className="text-sm t-muted mt-1">Industry: {templates.find(t => t.industry === selectedIndustry)?.label}</p>
  {deployResult.existingClusters > 0 && (
- <p className="text-xs text-amber-500 mt-1">Note: This tenant already had {deployResult.existingClusters} existing cluster(s)</p>
+ <p className="text-xs t-muted mt-1" style={{ color: 'var(--warning)' }}>Note: This tenant already had {deployResult.existingClusters} existing cluster(s)</p>
  )}
  </div>
  <div className="flex gap-3 pt-2">
@@ -1055,13 +1048,13 @@ export function TenantsPage() {
  </div>
  <div className="space-y-3">
  {tenantClusters.map(cluster => (
- <div key={cluster.id} className="rounded-xl border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+ <div key={cluster.id} className="rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)]">
  <button
  className="w-full flex items-center justify-between p-4 text-left"
  onClick={() => setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)}
  >
  <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+ <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center">
  <Bot size={16} className="text-accent" />
  </div>
  <div>
@@ -1073,7 +1066,7 @@ export function TenantsPage() {
  <Badge variant="outline" size="sm">{cluster.domain}</Badge>
  <Badge variant={cluster.status === 'active' ? 'success' : 'default'} size="sm">{cluster.status}</Badge>
  <Badge variant="info" size="sm">{cluster.autonomyTier}</Badge>
- {expandedCluster === cluster.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+ {expandedCluster === cluster.id ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
  </div>
  </button>
 
@@ -1082,7 +1075,7 @@ export function TenantsPage() {
  {/* Sub-catalysts list */}
  <div className="text-xs font-medium t-primary">Sub-Catalysts ({(cluster.subCatalysts || []).length})</div>
  {(cluster.subCatalysts || []).map((sub: SubCatalyst) => (
- <div key={sub.name} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-card)]">
+ <div key={sub.name} className="flex items-center justify-between p-3 rounded-md bg-[var(--bg-primary)] border border-[var(--border-card)]">
  <div className="flex items-center gap-3">
  <button
  onClick={() => handleToggleSubCatalyst(cluster.id, sub.name)}
@@ -1092,13 +1085,13 @@ export function TenantsPage() {
  {togglingSubCatalyst === `${cluster.id}-${sub.name}` ? (
  <Loader2 size={18} className="text-accent animate-spin" />
  ) : sub.enabled ? (
- <ToggleRight size={22} className="text-emerald-500" />
+ <ToggleRight size={22} className="text-accent" />
  ) : (
- <ToggleLeft size={22} className="text-gray-400" />
+ <ToggleLeft size={22} className="t-muted" />
  )}
  </button>
  <div>
- <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 'text-gray-400 line-through'}`}>{sub.name}</span>
+ <span className={`text-xs font-medium ${sub.enabled ? 't-primary' : 't-muted line-through'}`}>{sub.name}</span>
  <p className="text-caption t-muted">{sub.description}</p>
  {sub.data_source && (
  <div className="flex items-center gap-1 mt-1">
@@ -1122,7 +1115,7 @@ export function TenantsPage() {
  : { type: 'erp', config: {} }
  );
  }}
- className="p-1.5 rounded-lg hover:bg-accent/10 text-gray-400 hover:text-accent transition-colors active:scale-[0.97]"
+ className="p-1.5 rounded-md hover:bg-accent/10 t-muted hover:text-accent transition-colors active:scale-[0.97]"
  title="Configure data source"
  >
  <Database size={14} />
@@ -1130,7 +1123,9 @@ export function TenantsPage() {
  {sub.data_source && (
  <button
  onClick={() => handleRemoveDataSource(cluster.id, sub.name)}
- className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors active:scale-[0.97]"
+ className="p-1.5 rounded-md t-muted hover:text-neg transition-colors active:scale-[0.97]"
+ onMouseEnter={e => (e.currentTarget.style.background = 'rgb(var(--neg-rgb) / 0.1)')}
+ onMouseLeave={e => (e.currentTarget.style.background = '')}
  title="Remove data source"
  >
  <Trash2 size={14} />
@@ -1167,10 +1162,10 @@ export function TenantsPage() {
  {/* Configure Data Source Modal */}
  {configuringSub && (
  <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Configure Data Source</h3>
- <button onClick={() => setConfiguringSub(null)} className="text-gray-400 hover:text-accent"><X size={18} /></button>
+ <button onClick={() => setConfiguringSub(null)} className="t-muted hover:text-accent"><X size={18} /></button>
  </div>
  <p className="text-xs t-muted">Configure the data source for <span className="font-medium t-primary">{configuringSub.subName}</span></p>
 
@@ -1178,7 +1173,7 @@ export function TenantsPage() {
  <div>
  <label className="text-xs t-muted">Source Type</label>
  <select
- className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm"
+ className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm"
  value={dataSourceForm.type}
  onChange={e => setDataSourceForm({ type: e.target.value, config: {} })}
  >
@@ -1193,7 +1188,7 @@ export function TenantsPage() {
  <>
  <div>
  <label className="text-xs t-muted">ERP Type</label>
- <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.erp_type || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, erp_type: e.target.value } }))}>
+ <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.erp_type || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, erp_type: e.target.value } }))}>
  <option value="">Select ERP...</option>
  <option value="xero">Xero</option>
  <option value="sage">Sage</option>
@@ -1206,7 +1201,7 @@ export function TenantsPage() {
  </div>
  <div>
  <label className="text-xs t-muted">Module / Feed</label>
- <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.module || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, module: e.target.value } }))} placeholder="e.g. invoices, payments, contacts" />
+ <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.module || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, module: e.target.value } }))} placeholder="e.g. invoices, payments, contacts" />
  </div>
  </>
  )}
@@ -1215,11 +1210,11 @@ export function TenantsPage() {
  <>
  <div>
  <label className="text-xs t-muted">Mailbox Address</label>
- <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.mailbox || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, mailbox: e.target.value } }))} placeholder="reports@company.com" />
+ <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.mailbox || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, mailbox: e.target.value } }))} placeholder="reports@company.com" />
  </div>
  <div>
  <label className="text-xs t-muted">Folder Filter</label>
- <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.folder || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, folder: e.target.value } }))} placeholder="Inbox/Reports" />
+ <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.folder || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, folder: e.target.value } }))} placeholder="Inbox/Reports" />
  </div>
  </>
  )}
@@ -1228,7 +1223,7 @@ export function TenantsPage() {
  <>
  <div>
  <label className="text-xs t-muted">Provider</label>
- <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.provider || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, provider: e.target.value } }))}>
+ <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.provider || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, provider: e.target.value } }))}>
  <option value="">Select provider...</option>
  <option value="azure_blob">Azure Blob Storage</option>
  <option value="aws_s3">AWS S3</option>
@@ -1239,7 +1234,7 @@ export function TenantsPage() {
  </div>
  <div>
  <label className="text-xs t-muted">Path / Container</label>
- <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.path || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, path: e.target.value } }))} placeholder="/data/reports/" />
+ <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.path || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, path: e.target.value } }))} placeholder="/data/reports/" />
  </div>
  </>
  )}
@@ -1247,7 +1242,7 @@ export function TenantsPage() {
  {dataSourceForm.type === 'upload' && (
  <div>
  <label className="text-xs t-muted">Upload Label</label>
- <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={dataSourceForm.config.label || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, label: e.target.value } }))} placeholder="Monthly financial reports" />
+ <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={dataSourceForm.config.label || ''} onChange={e => setDataSourceForm(p => ({ ...p, config: { ...p.config, label: e.target.value } }))} placeholder="Monthly financial reports" />
  </div>
  )}
  </div>
@@ -1265,15 +1260,15 @@ export function TenantsPage() {
  {/* Edit Entitlements Modal */}
  {showEditEntitlements && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary">Edit Entitlements</h3>
- <button onClick={() => setShowEditEntitlements(null)} className="text-gray-400 hover:text-gray-400"><X size={18} /></button>
+ <button onClick={() => setShowEditEntitlements(null)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- <div><label className="text-xs t-muted">Max Users</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={String(entitlementForm.maxUsers)} onChange={e => setEntitlementForm(p => ({ ...p, maxUsers: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
- <div><label className="text-xs t-muted">Max Agents</label><input type="number" min={1} className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={String(entitlementForm.maxAgents)} onChange={e => setEntitlementForm(p => ({ ...p, maxAgents: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
- <div><label className="text-xs t-muted">Data Retention (days)</label><input type="number" min={30} className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm" value={String(entitlementForm.dataRetentionDays)} onChange={e => setEntitlementForm(p => ({ ...p, dataRetentionDays: Math.max(30, parseInt(e.target.value || '90', 10) || 90) }))} /></div>
+ <div><label className="text-xs t-muted">Max Users</label><input type="number" min={1} className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={String(entitlementForm.maxUsers)} onChange={e => setEntitlementForm(p => ({ ...p, maxUsers: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
+ <div><label className="text-xs t-muted">Max Agents</label><input type="number" min={1} className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={String(entitlementForm.maxAgents)} onChange={e => setEntitlementForm(p => ({ ...p, maxAgents: Math.max(1, parseInt(e.target.value || '1', 10) || 1) }))} /></div>
+ <div><label className="text-xs t-muted">Data Retention (days)</label><input type="number" min={30} className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm" value={String(entitlementForm.dataRetentionDays)} onChange={e => setEntitlementForm(p => ({ ...p, dataRetentionDays: Math.max(30, parseInt(e.target.value || '90', 10) || 90) }))} /></div>
  </div>
 
  <div className="space-y-3">
@@ -1284,8 +1279,8 @@ export function TenantsPage() {
  { key: 'apiAccess' as const, label: 'API Access' },
  { key: 'customBranding' as const, label: 'Custom Branding' },
  ].map(({ key, label }) => (
- <label key={key} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] cursor-pointer">
- <input type="checkbox" checked={entitlementForm[key]} onChange={() => setEntitlementForm(p => ({ ...p, [key]: !p[key] }))} className="rounded border-[var(--border-card)]" />
+ <label key={key} className="flex items-center gap-2 p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] cursor-pointer">
+ <input type="checkbox" checked={entitlementForm[key]} onChange={() => setEntitlementForm(p => ({ ...p, [key]: !p[key] }))} className="rounded-sm border-[var(--border-card)]" />
  <span className="text-xs t-primary">{label}</span>
  </label>
  ))}
@@ -1303,7 +1298,7 @@ export function TenantsPage() {
  autonomyTiers: p.autonomyTiers.includes(tier)
  ? p.autonomyTiers.filter(t => t !== tier)
  : [...p.autonomyTiers, tier]}))}
- className={`px-3 py-1.5 rounded-lg text-xs border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-500'}`}
+ className={`px-3 py-1.5 rounded-md text-xs border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${entitlementForm.autonomyTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] t-muted'}`}
  >
  {tier}
  </button>
@@ -1322,7 +1317,7 @@ export function TenantsPage() {
  llmTiers: p.llmTiers.includes(tier)
  ? p.llmTiers.filter(t => t !== tier)
  : [...p.llmTiers, tier]}))}
- className={`px-3 py-1.5 rounded-lg text-xs border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${entitlementForm.llmTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] text-gray-500'}`}
+ className={`px-3 py-1.5 rounded-md text-xs border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${entitlementForm.llmTiers.includes(tier) ? 'bg-accent/10 border-accent text-accent' : 'bg-[var(--bg-secondary)] border-[var(--border-card)] t-muted'}`}
  >
  {tier}
  </button>
@@ -1343,12 +1338,12 @@ export function TenantsPage() {
  {/* Reset Company Confirmation Modal */}
  {showResetConfirm && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4">
  {resetResult ? (
  <>
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
- <CheckCircle size={20} className="text-emerald-500" />
+ <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+ <CheckCircle size={20} className="text-accent" />
  </div>
  <div>
  <h3 className="text-lg font-semibold t-primary">Company Reset Complete</h3>
@@ -1361,15 +1356,15 @@ export function TenantsPage() {
  ) : (
  <>
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
- <Trash2 size={20} className="text-red-500" />
+ <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgb(var(--neg-rgb) / 0.1)' }}>
+ <Trash2 size={20} style={{ color: 'var(--neg)' }} />
  </div>
  <div>
  <h3 className="text-lg font-semibold t-primary">Reset Company</h3>
  <p className="text-sm t-muted">This action cannot be undone</p>
  </div>
  </div>
- <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+ <div className="p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.05)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
  <p className="text-sm t-primary">This will permanently delete all:</p>
  <ul className="text-xs t-muted mt-2 space-y-1 list-disc list-inside">
  <li>Health scores and risk alerts</li>
@@ -1382,7 +1377,7 @@ export function TenantsPage() {
  <div>
  <label className="text-xs t-muted block mb-1">Type the company name to confirm: <strong className="t-primary">{tenants.find(t => t.id === showResetConfirm)?.name}</strong></label>
  <input
- className="w-full px-3 py-2 rounded-lg border text-sm"
+ className="w-full px-3 py-2 rounded-md border text-sm"
  style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)', color: 'var(--text-primary)' }}
  value={resetConfirmText}
  onChange={e => setResetConfirmText(e.target.value)}
@@ -1394,7 +1389,8 @@ export function TenantsPage() {
  <button
  onClick={handleResetCompany}
  disabled={resetting || resetConfirmText !== (tenants.find(t => t.id === showResetConfirm)?.name || '')}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600 active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white active:scale-[0.97]"
+ style={{ backgroundColor: 'var(--neg)' }}
  title="Confirm and delete all insights for this company"
  >
  {resetting ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Trash2 size={14} className="inline mr-1" />}
@@ -1410,17 +1406,17 @@ export function TenantsPage() {
  {/* Archive Company Confirmation Modal */}
  {showArchiveConfirm && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
- <Archive size={20} className="text-amber-500" />
+ <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgb(var(--warning-rgb, 180 130 50) / 0.1)' }}>
+ <Archive size={20} style={{ color: 'var(--warning)' }} />
  </div>
  <div>
  <h3 className="text-lg font-semibold t-primary">Archive Company</h3>
  <p className="text-sm t-muted">Data will be preserved but company will be inactive</p>
  </div>
  </div>
- <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+ <div className="p-3 rounded-md border" style={{ background: 'rgb(var(--warning-rgb, 180 130 50) / 0.05)', borderColor: 'rgb(var(--warning-rgb, 180 130 50) / 0.2)' }}>
  <p className="text-sm t-primary">This will:</p>
  <ul className="text-xs t-muted mt-2 space-y-1 list-disc list-inside">
  <li>Set the company status to <strong>archived</strong></li>
@@ -1434,7 +1430,8 @@ export function TenantsPage() {
  <button
  onClick={handleArchiveCompany}
  disabled={archiving}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white active:scale-[0.97]"
+ style={{ backgroundColor: 'var(--warning)' }}
  title="Archive this company"
  >
  {archiving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Archive size={14} className="inline mr-1" />}
@@ -1448,12 +1445,12 @@ export function TenantsPage() {
  {/* Delete Company Confirmation Modal */}
  {showDeleteConfirm && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4">
  {deleteResult ? (
  <>
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
- <CheckCircle size={20} className="text-emerald-500" />
+ <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+ <CheckCircle size={20} className="text-accent" />
  </div>
  <div>
  <h3 className="text-lg font-semibold t-primary">Company Deleted</h3>
@@ -1466,15 +1463,15 @@ export function TenantsPage() {
  ) : (
  <>
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
- <Trash2 size={20} className="text-red-600" />
+ <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgb(var(--neg-rgb) / 0.1)' }}>
+ <Trash2 size={20} style={{ color: 'var(--neg)' }} />
  </div>
  <div>
  <h3 className="text-lg font-semibold t-primary">Delete Company</h3>
  <p className="text-sm t-muted">This action is permanent and cannot be undone</p>
  </div>
  </div>
- <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+ <div className="p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.05)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
  <p className="text-sm t-primary">This will permanently delete:</p>
  <ul className="text-xs t-muted mt-2 space-y-1 list-disc list-inside">
  <li>The company record and entitlements</li>
@@ -1485,12 +1482,12 @@ export function TenantsPage() {
  <li>All ERP connections and sync data</li>
  <li>All audit logs and governance data</li>
  </ul>
- <p className="text-xs text-red-400 mt-2 font-medium">This cannot be reversed. Consider archiving instead if you want to preserve data.</p>
+ <p className="text-xs t-muted mt-2 font-medium" style={{ color: 'var(--neg)' }}>This cannot be reversed. Consider archiving instead if you want to preserve data.</p>
  </div>
  <div>
  <label className="text-xs t-muted block mb-1">Type the company name to confirm: <strong className="t-primary">{tenants.find(t => t.id === showDeleteConfirm)?.name}</strong></label>
  <input
- className="w-full px-3 py-2 rounded-lg border text-sm"
+ className="w-full px-3 py-2 rounded-md border text-sm"
  style={{ background: 'var(--bg-input)', borderColor: 'var(--border-card)', color: 'var(--text-primary)' }}
  value={deleteConfirmText}
  onChange={e => setDeleteConfirmText(e.target.value)}
@@ -1502,7 +1499,8 @@ export function TenantsPage() {
  <button
  onClick={handleDeleteCompany}
  disabled={deleting || deleteConfirmText !== (tenants.find(t => t.id === showDeleteConfirm)?.name || '')}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700 active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white active:scale-[0.97]"
+ style={{ backgroundColor: 'var(--neg)' }}
  title="Permanently delete this company and all data"
  >
  {deleting ? <Loader2 size={14} className="animate-spin inline mr-1" /> : <Trash2 size={14} className="inline mr-1" />}
@@ -1518,12 +1516,12 @@ export function TenantsPage() {
  {/* Re-seed VantaX Confirmation Modal */}
  {showReseedConfirm && (
  <Portal><div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => !reseeding && setShowReseedConfirm(false)}>
- <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-md p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
  {reseedResult ? (
  <>
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
- <CheckCircle size={20} className="text-emerald-400" />
+ <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+ <CheckCircle size={20} className="text-accent" />
  </div>
  <div>
  <h3 className="text-lg font-semibold t-primary">Demo Data Re-seeded</h3>
@@ -1531,23 +1529,23 @@ export function TenantsPage() {
  </div>
  </div>
  <div className="grid grid-cols-3 gap-3">
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.clusters}</p>
  <p className="text-caption t-muted">Clusters</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.subCatalysts}</p>
  <p className="text-caption t-muted">Sub-Catalysts</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.positiveRuns.count + reseedResult.negativeRuns.count}</p>
  <p className="text-caption t-muted">Runs</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.metrics + reseedResult.risks}</p>
  <p className="text-caption t-muted">Metrics & Risks</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)]">
  <p className="text-lg font-bold text-accent">{reseedResult.healthScore}</p>
  <p className="text-caption t-muted">Health Score</p>
  </div>
@@ -1565,7 +1563,7 @@ export function TenantsPage() {
  <p className="text-sm t-muted">Reset VantaX with fresh demo data</p>
  </div>
  </div>
- <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+ <div className="p-3 rounded-md bg-accent/5 border border-accent/20">
  <p className="text-sm t-primary">This will:</p>
  <ul className="text-xs t-muted mt-2 space-y-1 list-disc list-inside">
  <li>Delete all existing VantaX catalyst data</li>
@@ -1580,7 +1578,7 @@ export function TenantsPage() {
   <button
  onClick={handleReseedVantax}
  disabled={reseeding}
- className="px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white hover:opacity-90 active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white hover:opacity-90 active:scale-[0.97]"
  style={{ backgroundColor: 'var(--accent)' }}
  title="Reset and re-seed VantaX demo data"
  >
