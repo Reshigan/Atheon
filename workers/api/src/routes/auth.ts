@@ -794,8 +794,14 @@ auth.post('/sso', async (c) => {
   // Use SSO_REDIRECT_URI from env var if available, otherwise default to production URL
   const redirectUri = c.env.SSO_REDIRECT_URI || 'https://atheon.vantax.co.za/login';
   
+  // Replay protection: a per-request nonce is bound into the signed state and
+  // emitted on the authorize URL; the callback verifies the ID token echoes it.
+  const nonceBytes = new Uint8Array(16);
+  crypto.getRandomValues(nonceBytes);
+  const ssoNonce = Array.from(nonceBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
   // Sign SSO state with HMAC to prevent tampering (CSRF protection)
-  const statePayload = JSON.stringify({ tenant_slug: slug, provider: body.provider, ts: Date.now() });
+  const statePayload = JSON.stringify({ tenant_slug: slug, provider: body.provider, nonce: ssoNonce, ts: Date.now() });
   const stateHmacKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(c.env.JWT_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const stateSignature = await crypto.subtle.sign('HMAC', stateHmacKey, new TextEncoder().encode(statePayload));
   const stateSig = Array.from(new Uint8Array(stateSignature)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -832,6 +838,7 @@ auth.post('/sso', async (c) => {
         state,
         scope: 'openid profile email',
         domainHint: (sso.domain_hint as string | null) || null,
+        nonce: ssoNonce,
       });
       return c.json({ redirect_url: authorizeUrl });
     } catch (err) {
@@ -854,7 +861,7 @@ auth.post('/sso/callback', async (c) => {
     return c.json({ error: 'Invalid input', details: errors }, 400);
   }
 
-  let stateData: { tenant_slug: string; provider: string; ts?: number; sig?: string };
+  let stateData: { tenant_slug: string; provider: string; nonce?: string; ts?: number; sig?: string };
   try {
     stateData = JSON.parse(atob(body.state));
   } catch {
@@ -917,6 +924,7 @@ auth.post('/sso/callback', async (c) => {
         idToken: tokens.id_token,
         discovery,
         expectedAudience: clientId,
+        expectedNonce: stateData.nonce,
         cacheKv: c.env.CACHE,
       });
       idPayload = {

@@ -55,6 +55,7 @@ interface IdTokenClaims {
   preferred_username?: string;
   given_name?: string;
   family_name?: string;
+  nonce?: string;
 }
 
 const DISCOVERY_CACHE_TTL_S = 600;   // 10 min
@@ -89,6 +90,7 @@ export function buildAuthorizeUrl(opts: {
   state: string;
   scope?: string;
   domainHint?: string | null;
+  nonce?: string | null;
 }): string {
   const params = new URLSearchParams({
     client_id: opts.clientId,
@@ -100,6 +102,11 @@ export function buildAuthorizeUrl(opts: {
   if (opts.domainHint) {
     // login_hint is the OIDC-standard equivalent of Azure's domain_hint.
     params.set('login_hint', opts.domainHint);
+  }
+  if (opts.nonce) {
+    // Replay protection: the IdP echoes this into the ID token's nonce claim,
+    // which the callback verifies against the value bound into the signed state.
+    params.set('nonce', opts.nonce);
   }
   return `${opts.discovery.authorization_endpoint}?${params.toString()}`;
 }
@@ -169,6 +176,7 @@ export async function verifyIdToken(opts: {
   idToken: string;
   discovery: DiscoveryDocument;
   expectedAudience: string;
+  expectedNonce?: string;
   cacheKv?: KVNamespace;
   clockSkewSeconds?: number;
 }): Promise<IdTokenClaims> {
@@ -198,6 +206,11 @@ export async function verifyIdToken(opts: {
   const nowS = Math.floor(Date.now() / 1000);
   if (claims.exp + skew < nowS) {
     throw new Error(`ID token expired at ${claims.exp}, now ${nowS}`);
+  }
+  // Nonce match — when the caller bound a nonce into the authorize request,
+  // the ID token must echo exactly that value (replay/injection protection).
+  if (opts.expectedNonce !== undefined && claims.nonce !== opts.expectedNonce) {
+    throw new Error('ID token nonce mismatch');
   }
 
   // Signature verify against the JWK whose kid matches the header's kid.

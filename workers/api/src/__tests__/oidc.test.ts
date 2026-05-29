@@ -130,6 +130,27 @@ describe('OIDC buildAuthorizeUrl', () => {
     });
     expect(url).toContain('login_hint=acme.com');
   });
+
+  it('includes nonce when provided', () => {
+    const url = buildAuthorizeUrl({
+      discovery: DISCOVERY_DOC,
+      clientId: CLIENT_ID,
+      redirectUri: 'https://atheon.example.com/login',
+      state: 'state-123',
+      nonce: 'nonce-abc',
+    });
+    expect(url).toContain('nonce=nonce-abc');
+  });
+
+  it('omits nonce when not provided', () => {
+    const url = buildAuthorizeUrl({
+      discovery: DISCOVERY_DOC,
+      clientId: CLIENT_ID,
+      redirectUri: 'https://atheon.example.com/login',
+      state: 'state-123',
+    });
+    expect(url).not.toContain('nonce=');
+  });
 });
 
 describe('OIDC verifyIdToken', () => {
@@ -224,6 +245,40 @@ describe('OIDC verifyIdToken', () => {
       discovery: DISCOVERY_DOC,
       expectedAudience: CLIENT_ID,
     })).rejects.toThrow(/signature verification failed/);
+  });
+
+  it('accepts a token whose nonce matches the expected nonce', async () => {
+    const signed = await signTestIdToken(baseClaims({ nonce: 'expected-nonce' }));
+    mockResponses[DISCOVERY_DOC.jwks_uri] = { keys: [signed.jwk] };
+    const claims = await verifyIdToken({
+      idToken: signed.token,
+      discovery: DISCOVERY_DOC,
+      expectedAudience: CLIENT_ID,
+      expectedNonce: 'expected-nonce',
+    });
+    expect(claims.nonce).toBe('expected-nonce');
+  });
+
+  it('rejects a token whose nonce does not match (replay/injection)', async () => {
+    const signed = await signTestIdToken(baseClaims({ nonce: 'attacker-nonce' }));
+    mockResponses[DISCOVERY_DOC.jwks_uri] = { keys: [signed.jwk] };
+    await expect(verifyIdToken({
+      idToken: signed.token,
+      discovery: DISCOVERY_DOC,
+      expectedAudience: CLIENT_ID,
+      expectedNonce: 'expected-nonce',
+    })).rejects.toThrow(/nonce mismatch/);
+  });
+
+  it('rejects a token missing the nonce claim when a nonce is expected', async () => {
+    const signed = await signTestIdToken(baseClaims()); // no nonce
+    mockResponses[DISCOVERY_DOC.jwks_uri] = { keys: [signed.jwk] };
+    await expect(verifyIdToken({
+      idToken: signed.token,
+      discovery: DISCOVERY_DOC,
+      expectedAudience: CLIENT_ID,
+      expectedNonce: 'expected-nonce',
+    })).rejects.toThrow(/nonce mismatch/);
   });
 });
 
