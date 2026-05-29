@@ -264,7 +264,7 @@ export function KnowledgeGraphViz({
                   textAnchor="middle"
                   dy={3.5}
                   style={{
-                    fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                     fontSize: 9,
                     fontWeight: 600,
                     fill: tone.stroke,

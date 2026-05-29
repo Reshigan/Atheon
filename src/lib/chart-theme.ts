@@ -17,12 +17,12 @@ export const chartTheme = {
   text: {
     fill: 'var(--chart-text)',
     fontSize: 12,
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Archivo', system-ui, sans-serif",
   },
   tooltip: {
     background: 'var(--chart-tooltip-bg)',
     border: 'var(--chart-tooltip-border)',
-    borderRadius: 8,
+    borderRadius: 2,
     padding: 12,
   },
   axis: {
