@@ -12,7 +12,10 @@ name: Go-Live Gate
 # Required secrets (repo-level, or scoped to the `environment` chosen):
 #   VERIFY_ADMIN_EMAIL     - seeded admin login (accuracy/isolation/rbac/load)
 #   VERIFY_ADMIN_PASSWORD  - its password
-#   CLOUDFLARE_API_TOKEN   - wrangler auth: accuracy's live D1 queries + DR export
+#   CLOUDFLARE_API_KEY     - wrangler auth (Global API Key): accuracy's live D1
+#                            queries + DR export. Used instead of a scoped token
+#                            because D1 query needs full account access.
+#   CLOUDFLARE_EMAIL       - account email paired with the Global API Key
 #   CLOUDFLARE_ACCOUNT_ID  - wrangler account scope for the same
 #
 # Optional repo/environment vars (config.ts falls back to vantax prod defaults
@@ -84,8 +87,14 @@ jobs:
           VERIFY_APP_URL: ${{ vars.VERIFY_APP_URL }}
           VERIFY_TENANT_SLUG: ${{ vars.VERIFY_TENANT_SLUG }}
           VERIFY_D1_DB: ${{ vars.VERIFY_D1_DB }}
-          # accuracy queries live D1 through wrangler.
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # accuracy queries live D1 through wrangler. We authenticate with the
+          # Global API Key (full account access, incl. D1) rather than a scoped
+          # CLOUDFLARE_API_TOKEN: the scoped token lacks D1 query permission and
+          # makes wrangler fail with Cloudflare error 10000. wrangler prefers a
+          # token over the Global key when both are set, so we deliberately omit
+          # CLOUDFLARE_API_TOKEN here to force the Global-key path.
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Load gate
@@ -101,5 +110,8 @@ jobs:
         run: npm run verify:dr
         env:
           VERIFY_D1_DB: ${{ vars.VERIFY_D1_DB }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Global API Key auth (see "Accuracy, isolation & RBAC matrices" above):
+          # the scoped token lacks D1 permission, so wrangler's export needs the key.
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
