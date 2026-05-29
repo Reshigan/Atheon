@@ -44,6 +44,10 @@ export interface BillableLineItem {
   evidence: {
     causal_factors_count: number;
     max_factor_impact: number;
+    /** The single quantified causal factor whose impact_value became the
+     *  attributed_savings — the anchor that ties this claimed dollar to one
+     *  ERP record + field mapping. Null only when the aggregate omits it. */
+    causal_factor_id: string | null;
     verified_action_ids: string[];
     resolved_at: string | null;
     metric_id: string | null;
@@ -71,6 +75,7 @@ interface ResolvedRcaRow {
 
 interface CausalFactorAggRow {
   rca_id: string;
+  factor_id: string | null;
   max_impact: number | null;
   count: number;
 }
@@ -128,20 +133,24 @@ async function loadResolvedRcas(
 
 async function loadFactorImpactAgg(
   db: D1Database, tenantId: string, rcaIds: string[],
-): Promise<Map<string, { max: number; count: number }>> {
-  const out = new Map<string, { max: number; count: number }>();
+): Promise<Map<string, { max: number; count: number; factorId: string | null }>> {
+  const out = new Map<string, { max: number; count: number; factorId: string | null }>();
   if (rcaIds.length === 0) return out;
   const placeholders = rcaIds.map(() => '?').join(',');
   try {
+    // The bare `id` column resolves to the row holding MAX(impact_value):
+    // SQLite guarantees bare columns take values from the min/max row when
+    // exactly one min()/max() aggregate is present. That id is the single
+    // causal factor whose dollar amount becomes attributed_savings.
     const r = await db.prepare(
-      `SELECT rca_id, MAX(impact_value) as max_impact, COUNT(impact_value) as count
+      `SELECT rca_id, id AS factor_id, MAX(impact_value) as max_impact, COUNT(impact_value) as count
          FROM causal_factors
         WHERE tenant_id = ? AND rca_id IN (${placeholders})
           AND impact_value IS NOT NULL AND impact_value > 0
         GROUP BY rca_id`
     ).bind(tenantId, ...rcaIds).all<CausalFactorAggRow>();
     for (const row of r.results || []) {
-      out.set(row.rca_id, { max: row.max_impact ?? 0, count: row.count });
+      out.set(row.rca_id, { max: row.max_impact ?? 0, count: row.count, factorId: row.factor_id ?? null });
     }
   } catch (err) {
     logError('billing.load_factors_failed', err, { tenantId }, {});
@@ -192,7 +201,7 @@ interface BuildInput {
   currency: string;
   sharePct: number;
   rcas: ResolvedRcaRow[];
-  factorAgg: Map<string, { max: number; count: number }>;
+  factorAgg: Map<string, { max: number; count: number; factorId?: string | null }>;
   verifiedActions: Map<string, string[]>;
 }
 
@@ -213,6 +222,7 @@ export function buildBillablePeriod(input: BuildInput): BillablePeriod {
       evidence: {
         causal_factors_count: factors.count,
         max_factor_impact: factors.max,
+        causal_factor_id: factors.factorId ?? null,
         verified_action_ids: verifiedIds,
         resolved_at: rca.resolved_at,
         metric_id: rca.metric_id,
