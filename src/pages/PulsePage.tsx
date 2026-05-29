@@ -832,13 +832,13 @@ export function PulsePage() {
           <div className="flex items-center gap-1 flex-wrap">
             <button
               onClick={() => setDomainFilter('all')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${domainFilter === 'all' ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${domainFilter === 'all' ? 'bg-accent text-[var(--text-on-accent)]' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
             >All</button>
             {availableDomains.map(d => (
               <button
                 key={d}
                 onClick={() => setDomainFilter(d)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] capitalize ${domainFilter === d ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] capitalize ${domainFilter === d ? 'bg-accent text-[var(--text-on-accent)]' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
               >{d}</button>
             ))}
           </div>

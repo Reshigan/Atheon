@@ -1389,7 +1389,7 @@ export function TenantsPage() {
  <button
  onClick={handleResetCompany}
  disabled={resetting || resetConfirmText !== (tenants.find(t => t.id === showResetConfirm)?.name || '')}
- className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-on-accent)] active:scale-[0.97]"
  style={{ backgroundColor: 'var(--neg)' }}
  title="Confirm and delete all insights for this company"
  >
@@ -1430,7 +1430,7 @@ export function TenantsPage() {
  <button
  onClick={handleArchiveCompany}
  disabled={archiving}
- className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-on-accent)] active:scale-[0.97]"
  style={{ backgroundColor: 'var(--warning)' }}
  title="Archive this company"
  >
@@ -1499,7 +1499,7 @@ export function TenantsPage() {
  <button
  onClick={handleDeleteCompany}
  disabled={deleting || deleteConfirmText !== (tenants.find(t => t.id === showDeleteConfirm)?.name || '')}
- className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-on-accent)] active:scale-[0.97]"
  style={{ backgroundColor: 'var(--neg)' }}
  title="Permanently delete this company and all data"
  >
@@ -1578,7 +1578,7 @@ export function TenantsPage() {
   <button
  onClick={handleReseedVantax}
  disabled={reseeding}
- className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-white hover:opacity-90 active:scale-[0.97]"
+ className="px-4 py-2 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-on-accent)] hover:opacity-90 active:scale-[0.97]"
  style={{ backgroundColor: 'var(--accent)' }}
  title="Reset and re-seed VantaX demo data"
  >

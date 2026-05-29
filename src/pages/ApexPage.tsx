@@ -678,7 +678,7 @@ export function ApexPage() {
    </div>
    <Link
      to="/pulse"
-     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] shadow-sm flex-shrink-0 active:scale-[0.97]"
+     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium bg-[var(--accent)] text-[var(--text-on-accent)] hover:opacity-90 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] shadow-sm flex-shrink-0 active:scale-[0.97]"
      aria-label="Open the operational action queue in Pulse"
    >
      Review in Pulse <ChevronRight size={14} />
@@ -1752,7 +1752,7 @@ export function ApexPage() {
  {[1, 2, 3].map((s) => (
  <div key={s} className="flex items-center gap-2 flex-1">
  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
- builderStep >= s ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted border border-[var(--border-card)]'
+ builderStep >= s ? 'bg-accent text-[var(--text-on-accent)]' : 'bg-[var(--bg-secondary)] t-muted border border-[var(--border-card)]'
  }`}>{s}</div>
  <span className={`text-caption ${builderStep >= s ? 't-primary font-medium' : 't-muted'}`}>
  {s === 1 ? 'Details' : s === 2 ? 'Model' : 'Variables'}

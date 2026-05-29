@@ -271,7 +271,7 @@ export function MindPage() {
           <button
             onClick={testPrompt}
             disabled={testing || !prompt.trim()}
-            className="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center gap-2"
+            className="px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-2"
             style={{ background: "var(--accent)", opacity: testing || !prompt.trim() ? 0.6 : 1 }}
             title="Run prompt against the selected tier"
           >

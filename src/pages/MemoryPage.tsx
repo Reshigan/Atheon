@@ -277,7 +277,7 @@ export function MemoryPage() {
                 setFormType("Organization");
                 setFormError(null);
               }}
-              className="px-3 py-2 rounded-md text-sm font-medium text-white flex items-center gap-1.5"
+              className="px-3 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-1.5"
               style={{ background: "var(--accent)" }}
               title="Create a new entity"
             >
@@ -352,7 +352,7 @@ export function MemoryPage() {
                 <button
                   onClick={handleSaveEntity}
                   disabled={saving || !formName.trim()}
-                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-white flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center justify-center gap-2"
                   style={{ background: "var(--accent)", opacity: saving || !formName.trim() ? 0.6 : 1 }}
                 >
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
@@ -372,7 +372,7 @@ export function MemoryPage() {
               setShowRelForm(true);
               setRelFormError(null);
             }}
-            className="px-3 py-2 rounded-md text-sm font-medium text-white flex items-center gap-1.5"
+            className="px-3 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-1.5"
             style={{ background: "var(--accent)" }}
             title="Create a new relationship"
             disabled={entities.length < 2}
@@ -474,7 +474,7 @@ export function MemoryPage() {
                 <button
                   onClick={handleSaveRelationship}
                   disabled={relSaving || !relSource || !relTarget}
-                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-white flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center justify-center gap-2"
                   style={{ background: "var(--accent)", opacity: relSaving || !relSource || !relTarget ? 0.6 : 1 }}
                 >
                   {relSaving ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
@@ -512,7 +512,7 @@ export function MemoryPage() {
             <button
               onClick={handleSearch}
               disabled={searching || !searchQuery.trim()}
-              className="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center gap-2"
+              className="px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-2"
               style={{ background: "var(--accent)", opacity: searching || !searchQuery.trim() ? 0.6 : 1 }}
             >
               {searching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
