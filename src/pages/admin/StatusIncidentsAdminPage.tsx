@@ -17,11 +17,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingState, ErrorState } from '@/components/ui/state';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import {
-  AlertOctagon, Plus, CheckCircle2, Clock, MessageSquare, ExternalLink, Loader2,
+  Plus, CheckCircle2, Clock, MessageSquare, ExternalLink, Loader2,
 } from 'lucide-react';
 
 type AdminIncident = Awaited<ReturnType<typeof api.iam.statusIncidents>>['incidents'][number];
@@ -32,11 +32,11 @@ function parseUpdates(s: string): ParsedUpdate[] {
   try { const v = JSON.parse(s); return Array.isArray(v) ? (v as ParsedUpdate[]) : []; } catch { return []; }
 }
 
-const SEVERITY_OPTIONS: Array<{ value: string; label: string; tone: string }> = [
-  { value: 'degraded', label: 'Degraded performance', tone: 'text-amber-500' },
-  { value: 'partial_outage', label: 'Partial outage', tone: 'text-orange-500' },
-  { value: 'major_outage', label: 'Major outage', tone: 'text-red-500' },
-  { value: 'operational', label: 'Informational / resolved', tone: 'text-emerald-500' },
+const SEVERITY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'degraded', label: 'Degraded performance' },
+  { value: 'partial_outage', label: 'Partial outage' },
+  { value: 'major_outage', label: 'Major outage' },
+  { value: 'operational', label: 'Informational / resolved' },
 ];
 const STATUS_OPTIONS = [
   { value: 'investigating', label: 'Investigating' },
@@ -142,24 +142,24 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={AlertOctagon}
-          title="Incident Manager"
-          subtitle="Declare and resolve incidents shown on the public /status page"
-          accent="red"
-        />
-        <div className="flex items-center gap-2">
-          <Link to="/status" target="_blank" rel="noopener noreferrer" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
-            Public status page <ExternalLink size={11} />
-          </Link>
-          {!showCreate && (
-            <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-              <Plus size={12} /> Declare incident
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Platform · Status & Incidents"
+        title="Incident Manager"
+        dek="Declare and resolve incidents shown on the public /status page"
+        live
+        actions={
+          <>
+            <Link to="/status" target="_blank" rel="noopener noreferrer" className="text-caption text-accent hover:underline inline-flex items-center gap-1">
+              Public status page <ExternalLink size={11} />
+            </Link>
+            {!showCreate && (
+              <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+                <Plus size={12} /> Declare incident
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Create form */}
       {showCreate && (
@@ -173,7 +173,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Elevated D1 query latency in af-south-1"
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
                 maxLength={200}
                 autoFocus
               />
@@ -183,7 +183,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
               <select
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
               >
                 {SEVERITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -193,7 +193,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
               >
                 {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -205,7 +205,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                 value={impact}
                 onChange={(e) => setImpact(e.target.value)}
                 placeholder="e.g. Read requests may take 2-5s longer. No data at risk."
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
                 maxLength={1000}
               />
             </label>
@@ -216,7 +216,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                 value={components}
                 onChange={(e) => setComponents(e.target.value)}
                 placeholder="database, api"
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
               />
             </label>
             <label className="block md:col-span-2">
@@ -226,7 +226,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="What customers will see on /status as the first update."
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
                 maxLength={4000}
               />
             </label>
@@ -245,7 +245,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
         <h3 className="text-body font-semibold t-primary mb-2">Open ({open.length})</h3>
         {open.length === 0 ? (
           <Card className="p-8 text-center">
-            <CheckCircle2 size={28} className="text-emerald-500/50 mx-auto mb-2" />
+            <CheckCircle2 size={28} className="text-accent mx-auto mb-2" style={{ opacity: 0.5 }} />
             <p className="text-body-sm font-medium t-primary">No open incidents</p>
             <p className="text-caption t-muted mt-1">Public status page shows all systems operational.</p>
           </Card>
@@ -264,7 +264,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                         <Badge variant="info" size="sm">{i.status}</Badge>
                       </div>
                       {i.impact && <p className="text-body-sm t-secondary mt-1">{i.impact}</p>}
-                      <p className="text-caption t-muted mt-1 inline-flex items-center gap-1"><Clock size={11} /> Started {new Date(i.started_at).toLocaleString()}</p>
+                      <p className="text-caption t-muted mt-1 inline-flex items-center gap-1"><Clock size={11} /> Started <span className="font-mono tnum">{new Date(i.started_at).toLocaleString()}</span></p>
                     </div>
                     <Button variant="primary" size="sm" onClick={() => void resolve(i)}><CheckCircle2 size={12} /> Resolve</Button>
                   </div>
@@ -275,7 +275,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                       <div className="text-caption uppercase tracking-wider t-muted font-medium">Public timeline</div>
                       {updates.slice().reverse().map((u, idx) => (
                         <div key={idx} className="text-caption">
-                          <span className="t-muted">{new Date(u.at).toLocaleString()}</span>
+                          <span className="t-muted font-mono tnum">{new Date(u.at).toLocaleString()}</span>
                           <span className="t-muted"> · </span>
                           <span className="font-medium t-primary uppercase tracking-wider">{u.status}</span>
                           <p className="t-secondary mt-0.5">{u.message}</p>
@@ -292,7 +292,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                         <select
                           value={draft.status}
                           onChange={(e) => setUpdateDraft((d) => ({ ...d, [i.id]: { ...draft, status: e.target.value } }))}
-                          className="px-2 py-1.5 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary"
+                          className="px-2 py-1.5 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary"
                         >
                           {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
@@ -304,7 +304,7 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                           value={draft.message}
                           onChange={(e) => setUpdateDraft((d) => ({ ...d, [i.id]: { ...draft, message: e.target.value } }))}
                           placeholder="e.g. Root cause identified — applying fix"
-                          className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                          className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
                           maxLength={4000}
                         />
                       </label>
@@ -349,8 +349,8 @@ export default function StatusIncidentsAdminPage(): JSX.Element {
                     <tr key={i.id} className="border-b border-[var(--border-card)] last:border-0">
                       <td className="px-4 py-3 t-primary">{i.title}</td>
                       <td className="px-4 py-3"><Badge variant="default" size="sm">{i.severity}</Badge></td>
-                      <td className="px-4 py-3 t-muted">{new Date(i.started_at).toLocaleString()}</td>
-                      <td className="px-4 py-3 t-muted">{i.resolved_at ? new Date(i.resolved_at).toLocaleString() : '—'}</td>
+                      <td className="px-4 py-3 t-muted font-mono tnum">{new Date(i.started_at).toLocaleString()}</td>
+                      <td className="px-4 py-3 t-muted font-mono tnum">{i.resolved_at ? new Date(i.resolved_at).toLocaleString() : '—'}</td>
                       <td className="px-4 py-3 t-secondary tabular-nums font-mono">{durStr}</td>
                     </tr>
                   );

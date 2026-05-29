@@ -19,6 +19,7 @@
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Activity, CheckCircle2, ArrowLeft, ExternalLink, AlertTriangle, GitCommit,
 } from 'lucide-react';
@@ -98,10 +99,28 @@ const REGRESSIONS = [
   },
 ];
 
-function sigTone(s: Run['significance']): { bg: string; border: string; label: string; icon: typeof CheckCircle2; pill: string } {
-  if (s === 'pass') return { bg: 'rgba(52, 211, 153, 0.08)', border: 'rgba(52, 211, 153, 0.30)', label: 'text-emerald-500', icon: CheckCircle2, pill: 'Pass' };
-  if (s === 'note') return { bg: 'rgba(126, 179, 205, 0.08)', border: 'rgba(126, 179, 205, 0.30)', label: 'text-sky-500',     icon: Activity,     pill: 'Observed' };
-  return                    { bg: 'rgba(251, 191, 36, 0.08)',  border: 'rgba(251, 191, 36, 0.30)',  label: 'text-amber-500',   icon: AlertTriangle, pill: 'Discovery' };
+function sigTone(s: Run['significance']): { bg: string; border: string; icon: typeof CheckCircle2; pill: string; iconClass: string } {
+  if (s === 'pass') return {
+    bg: 'rgb(var(--accent-rgb) / 0.08)',
+    border: 'rgb(var(--accent-rgb) / 0.30)',
+    icon: CheckCircle2,
+    pill: 'Pass',
+    iconClass: 'text-accent',
+  };
+  if (s === 'note') return {
+    bg: 'rgb(var(--info-rgb, 100 116 139) / 0.08)',
+    border: 'rgb(var(--info-rgb, 100 116 139) / 0.30)',
+    icon: Activity,
+    pill: 'Observed',
+    iconClass: 't-muted',
+  };
+  return {
+    bg: 'rgb(var(--warning-rgb, 161 120 64) / 0.08)',
+    border: 'rgb(var(--warning-rgb, 161 120 64) / 0.30)',
+    icon: AlertTriangle,
+    pill: 'Discovery',
+    iconClass: 't-secondary',
+  };
 }
 
 function fmtMs(ms: number | null): string {
@@ -114,24 +133,28 @@ export default function PerformancePage(): JSX.Element {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <div className="p-6 max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap mb-2">
           <Link to="/" className="t-muted hover:t-primary text-caption inline-flex items-center gap-1"><ArrowLeft size={12} /> Home</Link>
           <span className="t-muted text-caption">·</span>
           <Link to="/legal/security" className="t-muted hover:t-primary text-caption">Security &amp; Privacy</Link>
           <span className="t-muted text-caption">·</span>
           <Link to="/legal/connectors" className="t-muted hover:t-primary text-caption">Connectors</Link>
-          <span className="t-muted text-caption">·</span>
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight">Performance</h1>
         </div>
 
-        <Card className="p-5" style={{ background: 'rgba(126, 179, 205, 0.06)', borderColor: 'rgba(126, 179, 205, 0.30)' }}>
+        <PageHeader
+          eyebrow="Platform · Performance"
+          title="Performance"
+          dek="Measured load-test results from the Atheon harness — real numbers, not aspirational SLO targets."
+        />
+
+        <Card className="p-5" style={{ background: 'rgb(var(--accent-rgb) / 0.06)', borderColor: 'rgb(var(--accent-rgb) / 0.25)' }}>
           <div className="flex items-start gap-3">
-            <Activity className="text-sky-500 flex-shrink-0 mt-0.5" size={20} />
+            <Activity className="text-accent flex-shrink-0 mt-0.5" size={20} />
             <div>
               <h2 className="text-headline-md font-bold t-primary mb-1">Measured, not aspirational</h2>
               <p className="text-body-sm t-secondary">
                 These are real numbers from the Atheon load-test harness
-                (<code className="font-mono px-1.5 py-0.5 rounded text-caption" style={{ background: 'var(--bg-secondary)' }}>scripts/load-test.mjs</code>)
+                (<code className="font-mono px-1.5 py-0.5 rounded-sm text-caption" style={{ background: 'var(--bg-secondary)' }}>scripts/load-test.mjs</code>)
                 run against the production worker. We publish raw results, not curated marketing copy.
                 For SLA negotiation, the methodology + tooling is open — your SRE team can reproduce these
                 numbers from their own network, or scope a higher-VU test under a maintenance window.
@@ -161,7 +184,7 @@ export default function PerformancePage(): JSX.Element {
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Icon size={14} className={tone.label} />
+                        <Icon size={14} className={tone.iconClass} />
                         <h4 className="text-body font-semibold t-primary">{run.label}</h4>
                         <Badge variant="default" size="sm">{tone.pill}</Badge>
                       </div>
@@ -192,7 +215,7 @@ export default function PerformancePage(): JSX.Element {
                     </div>
                     <div>
                       <div className="text-caption uppercase tracking-wider t-muted">Operational errors</div>
-                      <div className={`tabular-nums font-mono ${run.errorRatePct === 0 ? 'text-emerald-500' : 'text-red-500'}`}>{run.errorRatePct}%</div>
+                      <div className={`tabular-nums font-mono ${run.errorRatePct === 0 ? 'text-accent' : 'text-neg'}`}>{run.errorRatePct}%</div>
                     </div>
                   </div>
                 </Card>
@@ -211,7 +234,7 @@ export default function PerformancePage(): JSX.Element {
             {REGRESSIONS.map((r, i) => (
               <Card key={i} className="p-5">
                 <div className="flex items-start gap-3">
-                  <GitCommit size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                  <GitCommit size={16} className="t-secondary mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <Badge variant="warning" size="sm">Discovered {r.discovered}</Badge>

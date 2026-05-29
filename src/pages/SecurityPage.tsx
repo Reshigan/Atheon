@@ -20,6 +20,7 @@
  */
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Shield, Lock, KeyRound, MapPin, FileText, Mail, Activity,
   CheckCircle2, ArrowLeft, ExternalLink,
@@ -43,23 +44,27 @@ const POSTURE = [
 ];
 
 const FRAMEWORKS = [
-  { name: 'SOC 2 Type II', status: 'Controls implemented · evidence pack live on /compliance for Auditor role', icon: '✓' },
-  { name: 'POPIA (South Africa)', status: 'DSAR endpoints live · 30-day response SLA', icon: '✓' },
-  { name: 'GDPR (EU)', status: 'DSAR + erasure endpoints · Art. 28 DPA available on request', icon: '✓' },
-  { name: 'ISO 27001', status: 'Gap assessment in progress — Q3 2026 target', icon: '◐' },
+  { name: 'SOC 2 Type II', status: 'Controls implemented · evidence pack live on /compliance for Auditor role', certified: true },
+  { name: 'POPIA (South Africa)', status: 'DSAR endpoints live · 30-day response SLA', certified: true },
+  { name: 'GDPR (EU)', status: 'DSAR + erasure endpoints · Art. 28 DPA available on request', certified: true },
+  { name: 'ISO 27001', status: 'Gap assessment in progress — Q3 2026 target', certified: false },
 ];
 
 export default function SecurityPage(): JSX.Element {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <div className="p-6 max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap mb-2">
           <Link to="/" className="t-muted hover:t-primary text-caption inline-flex items-center gap-1"><ArrowLeft size={12} /> Home</Link>
-          <span className="t-muted text-caption">·</span>
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight">Security &amp; Privacy</h1>
         </div>
 
-        <Card className="p-6" style={{ background: 'rgba(163, 177, 138, 0.06)', borderColor: 'rgba(163, 177, 138, 0.30)' }}>
+        <PageHeader
+          eyebrow="Platform · Security"
+          title="Security &amp; Privacy"
+          dek="Enterprise procurement summary — posture, sub-processors, compliance claims, and DPA contact."
+        />
+
+        <Card className="p-6" style={{ background: 'rgb(var(--accent-rgb) / 0.06)', borderColor: 'rgb(var(--accent-rgb) / 0.25)' }}>
           <div className="flex items-start gap-3">
             <Shield className="text-accent flex-shrink-0 mt-0.5" size={22} />
             <div>
@@ -130,7 +135,7 @@ export default function SecurityPage(): JSX.Element {
                     <td className="px-4 py-3 t-primary font-medium">{f.name}</td>
                     <td className="px-4 py-3 t-secondary">
                       <span className="inline-flex items-center gap-2">
-                        <span className={f.icon === '✓' ? 'text-emerald-500' : 'text-amber-500'}>{f.icon}</span>
+                        <span className={f.certified ? 'text-accent' : 't-muted'}>{f.certified ? '✓' : '◐'}</span>
                         {f.status}
                       </span>
                     </td>
@@ -192,15 +197,15 @@ export default function SecurityPage(): JSX.Element {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-body-sm">
-              <div className="p-3 rounded-lg" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+              <div className="p-3 rounded-md" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
                 <div className="text-caption uppercase tracking-wider t-muted mb-1">Primary region</div>
                 <div className="t-primary font-medium">af-south-1 (Johannesburg)</div>
               </div>
-              <div className="p-3 rounded-lg" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+              <div className="p-3 rounded-md" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
                 <div className="text-caption uppercase tracking-wider t-muted mb-1">Compute</div>
                 <div className="t-primary font-medium">Cloudflare global edge</div>
               </div>
-              <div className="p-3 rounded-lg" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+              <div className="p-3 rounded-md" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
                 <div className="text-caption uppercase tracking-wider t-muted mb-1">Backups</div>
                 <div className="t-primary font-medium">Hourly · 30-day retention</div>
               </div>
@@ -218,21 +223,21 @@ export default function SecurityPage(): JSX.Element {
           <Card className="p-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-body-sm">
               <div className="flex items-start gap-2">
-                <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 size={14} className="text-accent flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="text-caption uppercase tracking-wider t-muted">Confirmed breach</div>
                   <div className="t-primary font-medium">Notify affected customers within <strong>24 hours</strong></div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 size={14} className="text-accent flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="text-caption uppercase tracking-wider t-muted">Service outage</div>
                   <div className="t-primary font-medium">Public banner on <Link to="/status" className="text-accent hover:underline">/status</Link> within <strong>15 minutes</strong></div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 size={14} className="text-accent flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="text-caption uppercase tracking-wider t-muted">Post-incident review</div>
                   <div className="t-primary font-medium">RCA published within <strong>5 business days</strong></div>
