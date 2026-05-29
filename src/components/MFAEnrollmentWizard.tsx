@@ -132,10 +132,10 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
           {stepsForProgress.map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-semibold transition-colors ${i <= progressIndex ? 'text-white' : ''}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-semibold transition-colors`}
                 style={{
                   background: i <= progressIndex ? 'var(--accent)' : 'var(--bg-secondary)',
-                  color: i <= progressIndex ? '#fff' : 'var(--text-muted)',
+                  color: i <= progressIndex ? 'var(--text-on-accent)' : 'var(--text-muted)',
                   border: i <= progressIndex ? 'none' : '1px solid var(--border-card)',
                 }}
               >
@@ -151,7 +151,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
       {step === 'install' && (
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
+            <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
               <Smartphone className="w-5 h-5 text-accent" />
             </div>
             <div>
@@ -167,7 +167,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
             <li>Authy (iOS / Android / desktop)</li>
             <li>1Password, Bitwarden, or any other TOTP-capable password manager</li>
           </ul>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-neg">{error}</p>}
           <div className="flex items-center justify-between pt-2">
             {onCancel ? (
               <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
@@ -183,7 +183,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
       {step === 'scan' && (
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
+            <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
               <ScanLine className="w-5 h-5 text-accent" />
             </div>
             <div>
@@ -193,7 +193,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-5">
-            <div className="flex-shrink-0 p-3 rounded-xl bg-white" style={{ minWidth: 240, minHeight: 240 }}>
+            <div className="flex-shrink-0 p-3 rounded-md bg-white" style={{ minWidth: 240, minHeight: 240 }}>
               {qrSvg ? (
                 <div
                   className="w-56 h-56 flex items-center justify-center"
@@ -202,12 +202,12 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
                   dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               ) : qrError ? (
-                <div className="w-56 h-56 flex flex-col items-center justify-center text-center px-2 text-gray-600">
+                <div className="w-56 h-56 flex flex-col items-center justify-center text-center px-2 t-secondary">
                   <p className="text-xs">QR render failed — use the manual entry below.</p>
                 </div>
               ) : (
                 <div className="w-56 h-56 flex items-center justify-center">
-                  <Loader2 size={24} className="animate-spin text-gray-400" />
+                  <Loader2 size={24} className="animate-spin t-muted" />
                 </div>
               )}
             </div>
@@ -215,7 +215,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
             <div className="flex-1 space-y-3 w-full">
               <div>
                 <p className="text-xs t-muted mb-1">Can&apos;t scan? Enter this key manually:</p>
-                <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+                <div className="flex items-center gap-2 p-2 rounded-md" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
                   <code className="text-xs font-mono t-primary flex-1 break-all tracking-wider select-all">{prettySecret || '—'}</code>
                   <button
                     type="button"
@@ -224,7 +224,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
                     title="Copy secret"
                     aria-label="Copy secret to clipboard"
                   >
-                    {copiedSecret ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} className="t-muted" />}
+                    {copiedSecret ? <CheckCircle2 size={14} className="text-accent" /> : <Copy size={14} className="t-muted" />}
                   </button>
                 </div>
               </div>
@@ -242,7 +242,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
             </div>
           </div>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-neg">{error}</p>}
 
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" size="sm" onClick={() => setStep('install')}>
@@ -258,7 +258,7 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
       {step === 'verify' && (
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
+            <div className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-subtle)' }}>
               <KeyRound className="w-5 h-5 text-accent" />
             </div>
             <div>
@@ -276,13 +276,13 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6 && !loading) verify(); }}
             placeholder="000000"
-            className="w-full px-3 py-3 text-center text-2xl font-mono tracking-[0.4em] rounded-lg outline-none"
+            className="w-full px-3 py-3 text-center text-2xl font-mono tracking-[0.4em] rounded-md outline-none"
             style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
             maxLength={6}
             autoFocus
           />
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-neg">{error}</p>}
 
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" size="sm" onClick={() => { setStep('scan'); setError(null); }}>
@@ -306,8 +306,8 @@ export function MFAEnrollmentWizard({ onComplete, onCancel }: MFAEnrollmentWizar
       )}
 
       {step === 'done' && (
-        <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+        <div className="p-4 rounded-md flex items-start gap-3" style={{ background: 'rgb(var(--accent-rgb) / 0.1)', border: '1px solid rgb(var(--accent-rgb) / 0.25)' }}>
+          <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold t-primary">Two-factor authentication enabled</p>
             <p className="text-xs t-muted mt-0.5">Your account is now protected. You&apos;ll be asked for a code from your authenticator the next time you sign in.</p>

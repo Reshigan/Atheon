@@ -100,12 +100,12 @@ export function BackupCodesDisplay({
       {/* Big warning banner */}
       <div
         role="alert"
-        className="flex items-start gap-3 p-4 rounded-xl border-2"
-        style={{ background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.35)' }}
+        className="flex items-start gap-3 p-4 rounded-md border-2"
+        style={{ background: 'rgb(var(--warning-rgb) / 0.1)', borderColor: 'rgb(var(--warning-rgb) / 0.3)' }}
       >
-        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" />
+        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
         <div className="flex-1 space-y-1">
-          <h3 className="text-sm font-semibold text-amber-500">Save these {codes.length} recovery codes NOW</h3>
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--warning)' }}>Save these {codes.length} recovery codes NOW</h3>
           <p className="text-xs t-secondary">
             Atheon <strong>will not show them again</strong>. Each code can be used exactly once to sign in if you lose
             access to your authenticator app. Store them in a password manager or print them and keep in a secure place.
@@ -120,7 +120,7 @@ export function BackupCodesDisplay({
 
       {/* Grid of codes */}
       <div
-        className="grid grid-cols-2 gap-2 p-3 rounded-lg"
+        className="grid grid-cols-2 gap-2 p-3 rounded-md"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
       >
         {codes.map((code, idx) => (
@@ -134,7 +134,7 @@ export function BackupCodesDisplay({
           >
             <span className="select-all tracking-wider">{code}</span>
             {copiedIdx === idx ? (
-              <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0" />
+              <CheckCircle2 size={14} className="text-accent flex-shrink-0" />
             ) : (
               <Copy size={14} className="t-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             )}
@@ -145,11 +145,11 @@ export function BackupCodesDisplay({
       {/* Copy-all + download */}
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" onClick={copyAll} title="Copy all codes to clipboard">
-          {copiedAll ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
+          {copiedAll ? <CheckCircle2 size={14} className="text-accent" /> : <Copy size={14} />}
           {copiedAll ? 'Copied all' : 'Copy all'}
         </Button>
         <Button variant="secondary" size="sm" onClick={downloadTxt} title="Download as a plain-text file">
-          {downloaded ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Download size={14} />}
+          {downloaded ? <CheckCircle2 size={14} className="text-accent" /> : <Download size={14} />}
           {downloaded ? 'Downloaded' : 'Download .txt'}
         </Button>
         <Button variant="secondary" size="sm" onClick={() => window.print()} title="Open print dialog">
@@ -159,7 +159,7 @@ export function BackupCodesDisplay({
       </div>
 
       {/* Acknowledgement gate */}
-      <label className="flex items-start gap-2 p-3 rounded-lg cursor-pointer select-none" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
+      <label className="flex items-start gap-2 p-3 rounded-md cursor-pointer select-none" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
         <input
           type="checkbox"
           className="mt-0.5"

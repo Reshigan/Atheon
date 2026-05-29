@@ -99,11 +99,12 @@ export function WebhookSecretReveal({ webhookId, url, secret, eventTypes, onDone
       {/* Amber alert banner */}
       <div
         role="alert"
-        className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5"
+        className="flex items-start gap-3 p-4 rounded-md border"
+        style={{ background: 'rgb(var(--warning-rgb) / 0.1)', borderColor: 'rgb(var(--warning-rgb) / 0.3)' }}
       >
-        <AlertTriangle size={20} className="text-amber-500 mt-0.5 flex-shrink-0" />
+        <AlertTriangle size={20} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-amber-500">
+          <p className="text-sm font-semibold" style={{ color: 'var(--warning)' }}>
             This is the only time you will see this secret.
           </p>
           <p className="text-xs t-secondary">
@@ -116,10 +117,10 @@ export function WebhookSecretReveal({ webhookId, url, secret, eventTypes, onDone
       {/* Monospace secret display */}
       <div className="space-y-2">
         <label className="text-xs font-medium t-secondary flex items-center gap-1.5">
-          <ShieldAlert size={12} className="text-amber-500" /> Signing secret
+          <ShieldAlert size={12} style={{ color: 'var(--warning)' }} /> Signing secret
         </label>
         <div
-          className="p-4 rounded-xl border font-mono text-sm break-all select-all"
+          className="p-4 rounded-md border font-mono text-sm break-all select-all"
           style={{
             background: "var(--bg-secondary)",
             borderColor: "var(--border-card)",
@@ -135,7 +136,7 @@ export function WebhookSecretReveal({ webhookId, url, secret, eventTypes, onDone
           <Button variant="secondary" size="sm" onClick={handleCopy}>
             {copied ? (
               <>
-                <CheckCircle2 size={14} className="text-emerald-500" /> Copied!
+                <CheckCircle2 size={14} className="text-accent" /> Copied!
               </>
             ) : (
               <>
@@ -150,7 +151,7 @@ export function WebhookSecretReveal({ webhookId, url, secret, eventTypes, onDone
       </div>
 
       {/* Webhook summary */}
-      <div className="p-3 rounded-lg text-xs space-y-1" style={{ background: "var(--bg-secondary)" }}>
+      <div className="p-3 rounded-md text-xs space-y-1" style={{ background: "var(--bg-secondary)" }}>
         <div className="flex gap-2">
           <span className="t-muted w-20">Webhook ID</span>
           <span className="t-primary font-mono">{webhookId}</span>
@@ -166,7 +167,7 @@ export function WebhookSecretReveal({ webhookId, url, secret, eventTypes, onDone
       </div>
 
       {/* Acknowledgement checkbox */}
-      <label className="flex items-start gap-2 cursor-pointer select-none p-3 rounded-lg border border-[var(--border-card)]">
+      <label className="flex items-start gap-2 cursor-pointer select-none p-3 rounded-md border border-[var(--border-card)]">
         <input
           type="checkbox"
           checked={acknowledged}

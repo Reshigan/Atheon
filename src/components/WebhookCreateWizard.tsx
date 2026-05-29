@@ -123,7 +123,7 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
           aria-invalid={url !== "" && !validUrl ? true : undefined}
         />
         {url && !validUrl && (
-          <p className="text-caption text-red-500">Must be a valid http(s) URL.</p>
+          <p className="text-caption text-neg">Must be a valid http(s) URL.</p>
         )}
         <p className="text-caption t-muted flex items-center gap-1">
           <Link2 size={10} /> We'll POST signed JSON payloads here.
@@ -163,7 +163,7 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
           </div>
         </div>
         <div
-          className="max-h-56 overflow-y-auto rounded-lg border p-2 space-y-1"
+          className="max-h-56 overflow-y-auto rounded-md border p-2 space-y-1"
           style={{ background: "var(--bg-secondary)", borderColor: "var(--border-card)" }}
         >
           {availableEvents.map((ev) => {
@@ -185,7 +185,7 @@ export function WebhookCreateWizard({ onCompleted, onCancel }: WebhookCreateWiza
           })}
         </div>
         {selectedEvents.size === 0 && (
-          <p className="text-caption text-red-500">Select at least one event type.</p>
+          <p className="text-caption text-neg">Select at least one event type.</p>
         )}
       </div>
 

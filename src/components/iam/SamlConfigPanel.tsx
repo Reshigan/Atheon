@@ -90,7 +90,7 @@ export function SamlConfigPanel({ ssoConfigs, onSaved }: Props): JSX.Element {
     <Card className="p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-md bg-accent/10 flex items-center justify-center">
             <Globe className="w-5 h-5 text-accent" />
           </div>
           <div>
@@ -113,10 +113,10 @@ export function SamlConfigPanel({ ssoConfigs, onSaved }: Props): JSX.Element {
             value={connectionId}
             onChange={(e) => setConnectionId(e.target.value)}
             placeholder="conn_01H..."
-            className={`w-full px-3 py-2 rounded-lg text-body-sm font-mono bg-[var(--bg-input)] border t-primary focus:outline-none ${connectionValid ? 'border-[var(--border-card)] focus:border-accent' : 'border-red-400'}`}
+            className={`w-full px-3 py-2 rounded-md text-body-sm font-mono bg-[var(--bg-input)] border t-primary focus:outline-none ${connectionValid ? 'border-[var(--border-card)] focus:border-accent' : 'border-neg'}`}
             maxLength={64}
           />
-          <p className={`text-caption mt-1 ${connectionValid ? 't-muted' : 'text-red-400'}`}>
+          <p className={`text-caption mt-1 ${connectionValid ? 't-muted' : 'text-neg'}`}>
             {connectionValid ? 'Paste the Connection ID from your WorkOS dashboard.' : 'Format: conn_ followed by ≥ 20 alphanumeric characters.'}
           </p>
         </label>
@@ -127,7 +127,7 @@ export function SamlConfigPanel({ ssoConfigs, onSaved }: Props): JSX.Element {
             value={domainHint}
             onChange={(e) => setDomainHint(e.target.value)}
             placeholder="acme.com"
-            className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+            className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
             maxLength={120}
           />
           <p className="text-caption t-muted mt-1">Restricts SAML to users whose email matches this domain.</p>
@@ -137,7 +137,7 @@ export function SamlConfigPanel({ ssoConfigs, onSaved }: Props): JSX.Element {
           <select
             value={defaultRole}
             onChange={(e) => setDefaultRole(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+            className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
           >
             {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
@@ -181,7 +181,7 @@ export function SamlConfigPanel({ ssoConfigs, onSaved }: Props): JSX.Element {
       </div>
 
       {showSetup && (
-        <div className="mt-4 p-4 rounded-lg text-body-sm space-y-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+        <div className="mt-4 p-4 rounded-md text-body-sm space-y-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
           <h4 className="text-caption uppercase tracking-wider t-muted font-medium">How to wire SAML</h4>
           <ol className="space-y-2 list-decimal list-inside t-secondary">
             <li>
