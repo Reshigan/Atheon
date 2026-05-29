@@ -223,9 +223,9 @@ export function PortfolioPanel({ tenantId }: PortfolioPanelProps) {
           {/* Stacked RAG bar — width-only animation acceptable here:
               this bar paints once on data load, not on every interaction. */}
           <div className="mt-3 h-2 w-full rounded-full overflow-hidden flex bg-[var(--bg-secondary)]">
-            {summary.green > 0 && <div className="bg-emerald-500" style={{ width: `${(summary.green / Math.max(summary.active, 1)) * 100}%` }} />}
-            {summary.amber > 0 && <div className="bg-amber-500" style={{ width: `${(summary.amber / Math.max(summary.active, 1)) * 100}%` }} />}
-            {summary.red > 0 && <div className="bg-red-500" style={{ width: `${(summary.red / Math.max(summary.active, 1)) * 100}%` }} />}
+            {summary.green > 0 && <div className="bg-accent" style={{ width: `${(summary.green / Math.max(summary.active, 1)) * 100}%` }} />}
+            {summary.amber > 0 && <div style={{ background: 'var(--warning)', width: `${(summary.amber / Math.max(summary.active, 1)) * 100}%` }} />}
+            {summary.red > 0 && <div className="bg-neg" style={{ width: `${(summary.red / Math.max(summary.active, 1)) * 100}%` }} />}
           </div>
         </Card>
       )}
@@ -414,7 +414,7 @@ function InitiativeRow({ initiative, canEdit, onEdit, onDelete }: {
             {init.planned_value_zar > 0 && <div className="t-muted">{valueRealised}% realised</div>}
             <div className="t-muted mt-1">Spend <span className="t-primary tabular-nums">{fmtZAR(init.spend_to_date_zar)}</span> / {fmtZAR(init.budget_zar)}</div>
             {init.budget_zar > 0 && (
-              <div className={budgetUsed > 100 ? 'text-red-400' : budgetUsed > 90 ? 'text-amber-400' : 't-muted'}>
+              <div className={budgetUsed > 100 ? 'text-neg' : budgetUsed > 90 ? 'text-[var(--warning)]' : 't-muted'}>
                 {budgetUsed}% of budget
               </div>
             )}
@@ -428,7 +428,7 @@ function InitiativeRow({ initiative, canEdit, onEdit, onDelete }: {
             <Pencil size={12} /> <span className="ml-1">Edit</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={onDelete}>
-            <Trash2 size={12} /> <span className="ml-1 text-red-400">Delete</span>
+            <Trash2 size={12} /> <span className="ml-1 text-neg">Delete</span>
           </Button>
         </div>
       )}
@@ -454,7 +454,7 @@ function GateProgressionBar({ gate }: { gate: Gate }) {
           >
             <span
               className={`h-2 w-2 rounded-full transition-colors ${
-                i < activeIdx ? 'bg-emerald-500' :
+                i < activeIdx ? 'bg-accent' :
                 i === activeIdx ? 'bg-[var(--accent)] ring-2 ring-[var(--accent)]/30' :
                 'bg-[var(--bg-secondary)] border border-[var(--border-subtle)]'
               }`}
@@ -464,7 +464,7 @@ function GateProgressionBar({ gate }: { gate: Gate }) {
             </span>
           </div>
           {i < stages.length - 1 && (
-            <span className={`h-px w-3 ${i < activeIdx ? 'bg-emerald-500' : 'bg-[var(--border-subtle)]'}`} aria-hidden="true" />
+            <span className={`h-px w-3 ${i < activeIdx ? 'bg-accent' : 'bg-[var(--border-subtle)]'}`} aria-hidden="true" />
           )}
         </div>
       ))}
@@ -585,7 +585,7 @@ function InitiativeFormModal({ initiative, onClose, onSaved }: InitiativeFormMod
               <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={selectCls()} />
             </Field>
           </div>
-          {err && <p className="text-sm text-red-400">{err}</p>}
+          {err && <p className="text-sm text-neg">{err}</p>}
         </form>
       </Modal.Body>
       <Modal.Footer>
@@ -603,7 +603,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   return (
     <label className="block">
       <span className="text-caption font-medium t-secondary block mb-1">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+        {label}{required && <span className="text-neg ml-0.5">*</span>}
       </span>
       {children}
     </label>
