@@ -58,7 +58,7 @@ export function CompanySwitcher() {
 
       {open && (
         <div
-          className="absolute left-0 top-full mt-1 w-72 rounded-lg overflow-hidden z-50"
+          className="absolute left-0 top-full mt-1 w-72 rounded-md overflow-hidden z-50"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-dropdown)' }}
           role="listbox"
         >

@@ -187,7 +187,7 @@ export function KnowledgeGraphViz({
   if (entities.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center rounded-2xl ${className}`}
+        className={`flex items-center justify-center rounded-md ${className}`}
         style={{
           height,
           background: 'var(--bg-card-solid)',
@@ -205,7 +205,7 @@ export function KnowledgeGraphViz({
   return (
     <div
       ref={containerRef}
-      className={`relative rounded-2xl overflow-hidden ${className}`}
+      className={`relative rounded-md overflow-hidden ${className}`}
       style={{
         height,
         background: 'var(--bg-card-solid)',

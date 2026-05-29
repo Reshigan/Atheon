@@ -24,7 +24,7 @@ export function SubCatalystPanel({ subCatalysts, onRun, onConfigure, onViewAnaly
         <p className="text-sm t-muted text-center py-6">No sub-catalysts configured.</p>
       ) : (
         subCatalysts.map((sc) => (
-          <div key={sc.name} className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-card)]">
+          <div key={sc.name} className="p-3 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium t-primary">{sc.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>

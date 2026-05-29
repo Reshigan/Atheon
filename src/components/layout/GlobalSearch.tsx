@@ -172,7 +172,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps): JSX.Element | n
   return (
     <div ref={containerRef} className="hidden lg:flex relative items-center">
       <div
-        className="flex items-center rounded-full pl-3 pr-2 py-1.5"
+        className="flex items-center rounded-md pl-3 pr-2 py-1.5"
         style={{
           background: 'var(--bg-secondary)',
           border: '1px solid var(--border-card)',
@@ -225,7 +225,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps): JSX.Element | n
         <div
           id="global-search-results"
           role="listbox"
-          className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-50"
+          className="absolute top-full left-0 right-0 mt-2 rounded-md overflow-hidden z-50"
           style={{
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border-card)',

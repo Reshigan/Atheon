@@ -52,7 +52,7 @@ export function ProvenanceTimeline({ entries, className = '' }: ProvenanceTimeli
   if (entries.length === 0) {
     return (
       <div
-        className={`rounded-2xl p-10 text-center ${className}`}
+        className={`rounded-md p-10 text-center ${className}`}
         style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}
       >
         <p className="text-body-sm t-muted">No entries match the current filters.</p>
@@ -118,7 +118,7 @@ export function ProvenanceTimeline({ entries, className = '' }: ProvenanceTimeli
                       }}
                     />
                     <div
-                      className="rounded-xl px-4 py-3 transition-colors hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
+                      className="rounded-md px-4 py-3 transition-colors hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
                       style={{
                         background: 'var(--bg-card-solid)',
                         border: '1px solid var(--border-card)',
