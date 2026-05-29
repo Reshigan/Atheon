@@ -15,6 +15,7 @@ import { getValidatedJsonBody } from '../middleware/validation';
 import { encrypt, decrypt, isEncrypted } from '../services/encryption';
 import { sendOrQueueEmail, getPasswordResetEmailTemplate } from '../services/email';
 import { logInfo, logWarn } from '../services/logger';
+import { withStorageRetry } from '../services/storage-retry';
 
 // ── Backup Code helpers (v40) ──
 //
@@ -78,7 +79,7 @@ const LOCKOUT_DURATION_SECONDS = 900; // 15 minutes
 
 async function checkAndIncrementLoginAttempts(cache: KVNamespace, email: string): Promise<{ locked: boolean; attempts: number }> {
   const key = `login_attempts:${email}`;
-  const current = await cache.get(key);
+  const current = await withStorageRetry(() => cache.get(key));
   const attempts = current ? parseInt(current, 10) : 0;
   if (attempts >= MAX_LOGIN_ATTEMPTS) return { locked: true, attempts };
   return { locked: false, attempts };
@@ -233,27 +234,28 @@ auth.post('/login', async (c) => {
   // If not provided and email exists in multiple tenants, require tenant_slug
   let user;
   if (body.tenant_slug) {
-    const loginTenantRow = await c.env.DB.prepare('SELECT id FROM tenants WHERE slug = ?').bind(body.tenant_slug).first();
+    const loginTenantRow = await withStorageRetry(() =>
+      c.env.DB.prepare('SELECT id FROM tenants WHERE slug = ?').bind(body.tenant_slug).first());
     if (!loginTenantRow) {
       await recordFailedLogin(c.env.CACHE, body.email);
       return c.json({ error: 'Invalid credentials' }, 401);
     }
     // industry column removed from tenants; tenantIndustry defaults to 'general' in response.
-    user = await c.env.DB.prepare(
+    user = await withStorageRetry(() => c.env.DB.prepare(
       'SELECT u.*, t.slug as tenant_slug, t.name as tenant_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = ? AND u.tenant_id = ? AND u.status = ?'
-    ).bind(body.email, loginTenantRow.id, 'active').first();
+    ).bind(body.email, loginTenantRow.id, 'active').first());
   } else {
-    const tenantRows = await c.env.DB.prepare(
+    const tenantRows = await withStorageRetry(() => c.env.DB.prepare(
       'SELECT t.slug, t.name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = ? AND u.status = ?'
-    ).bind(body.email, 'active').all();
+    ).bind(body.email, 'active').all());
     if ((tenantRows?.results?.length || 0) > 1) {
       const tenants = tenantRows.results.map((r: Record<string, unknown>) => ({ slug: r.slug as string, name: r.name as string }));
       return c.json({ error: 'Tenant selection required', tenantSelectionRequired: true, tenants, message: 'This email exists in multiple workspaces. Please select one.' }, 400);
     }
     // industry column removed from tenants; tenantIndustry defaults to 'general' in response.
-    user = await c.env.DB.prepare(
+    user = await withStorageRetry(() => c.env.DB.prepare(
       'SELECT u.*, t.slug as tenant_slug, t.name as tenant_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = ? AND u.status = ?'
-    ).bind(body.email, 'active').first();
+    ).bind(body.email, 'active').first());
   }
 
   if (!user) {

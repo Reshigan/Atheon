@@ -164,6 +164,22 @@ function captureRequestId(res: Response): string | null {
   return id;
 }
 
+// A freshly-deployed / cold worker isolate intermittently 5xx's on its first
+// D1/KV binding access under a burst of concurrent calls (the "lots of errors,
+// then it works on retry" symptom right after a deploy). Once warm, the same
+// call succeeds. We absorb that here so the user never sees it. We retry ONLY
+// requests that are safe to repeat: idempotent reads (GET/HEAD) and login —
+// login is idempotent (at worst it writes one extra audit-log row). Mutating
+// verbs (POST/PUT/PATCH/DELETE) are NOT retried, because a 5xx can mask a write
+// that actually committed and a blind retry would risk a double-submit.
+const TRANSIENT_RETRY_ATTEMPTS = 3;
+const retrySleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+function isTransientRetryable(method: string, path: string): boolean {
+  const m = method.toUpperCase();
+  if (m === 'GET' || m === 'HEAD') return true;
+  return m === 'POST' && path.startsWith('/api/auth/login');
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   // Client-generated request-id correlates browser-side logs with the server's
   // X-Request-ID middleware. The server echoes a valid inbound id, so this
@@ -187,10 +203,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     finalPath = `${path}${sep}tenant_id=${encodeURIComponent(tenantOverrideId)}`;
   }
 
-  const res = await fetch(`${API_URL}${finalPath}`, {
-    ...options,
-    headers,
-  });
+  const retryable = isTransientRetryable(options?.method ?? 'GET', finalPath);
+  let res: Response;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      res = await fetch(`${API_URL}${finalPath}`, { ...options, headers });
+    } catch (networkErr) {
+      // fetch() rejects on network failure / connection reset — also transient
+      // for an idempotent request. Exhaust attempts, then surface the error.
+      if (retryable && attempt < TRANSIENT_RETRY_ATTEMPTS) {
+        await retrySleep(attempt * 300);
+        continue;
+      }
+      throw networkErr;
+    }
+    if (res.status >= 500 && retryable && attempt < TRANSIENT_RETRY_ATTEMPTS) {
+      await retrySleep(attempt * 300);
+      continue;
+    }
+    break;
+  }
 
   // Capture response request-id (server may echo ours or generate its own)
   const responseRequestId = captureRequestId(res);

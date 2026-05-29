@@ -107,12 +107,13 @@ describe('api fetch wrapper — request-ID capture', () => {
 
   it('throws ApiError with null requestId when server omits the header', async () => {
     const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
-    mockFetch.mockResolvedValueOnce(
+    // GETs retry transient 5xx, so the failure must persist across attempts.
+    mockFetch.mockImplementation(() => Promise.resolve(
       new Response(JSON.stringify({ error: 'Server blew up' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }, // no X-Request-ID
       }),
-    );
+    ));
 
     let caught: unknown = null;
     try {
@@ -128,13 +129,14 @@ describe('api fetch wrapper — request-ID capture', () => {
 
   it('falls back to res.statusText when error body is not JSON', async () => {
     const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
-    mockFetch.mockResolvedValueOnce(
+    // 504 is transient — a GET retries it; return it on every attempt.
+    mockFetch.mockImplementation(() => Promise.resolve(
       new Response('<html>Gateway Timeout</html>', {
         status: 504,
         statusText: 'Gateway Timeout',
         headers: { 'Content-Type': 'text/html', 'X-Request-ID': 'srv-504' },
       }),
-    );
+    ));
 
     let caught: unknown = null;
     try {
@@ -149,5 +151,61 @@ describe('api fetch wrapper — request-ID capture', () => {
     expect(err.requestId).toBe('srv-504');
     // Message falls back to statusText
     expect(err.message).toBe('Gateway Timeout');
+  });
+});
+
+describe('api fetch wrapper — transient cold-start retry', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it('retries a transient 5xx on a GET, then resolves once the isolate is warm', async () => {
+    const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'cold isolate' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+    const result = await api.get<{ ok: boolean }>('/api/warming-up');
+
+    expect(result).toEqual({ ok: true });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does NOT retry a mutating POST on 5xx (avoids double-submit)', async () => {
+    const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Server blew up' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    let caught: unknown = null;
+    try {
+      await api.post('/api/catalysts/actions', { foo: 'bar' });
+    } catch (e) {
+      caught = e;
+    }
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect((caught as ApiError).status).toBe(500);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
