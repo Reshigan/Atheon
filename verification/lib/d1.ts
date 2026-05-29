@@ -42,5 +42,13 @@ export async function queryD1<T = Record<string, unknown>>(sql: string): Promise
       if (attempt < MAX_ATTEMPTS) await sleep(attempt * 1000);
     }
   }
-  throw lastErr;
+  // execFile rejects with the child's stderr/stdout attached but a generic
+  // "Command failed" message. Surface wrangler's own diagnostics (auth scope,
+  // D1 errors) so a gate failure is actionable instead of opaque.
+  const e = lastErr as { stderr?: string; stdout?: string; message?: string };
+  const detail = [e?.stderr, e?.stdout].filter(Boolean).join('\n').trim();
+  throw new Error(
+    `queryD1 failed after ${MAX_ATTEMPTS} attempts: ${e?.message ?? lastErr}` +
+      (detail ? `\n--- wrangler output ---\n${detail}` : ''),
+  );
 }
