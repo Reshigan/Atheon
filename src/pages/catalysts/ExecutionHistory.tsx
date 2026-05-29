@@ -19,9 +19,9 @@ interface ExecutionHistoryProps {
 
 export function ExecutionHistory({ runs, onViewDetail }: ExecutionHistoryProps) {
   const statusIcon = (status: string) => {
-    if (status === 'completed') return <CheckCircle2 size={14} className="text-emerald-500" />;
-    if (status === 'failed') return <XCircle size={14} className="text-red-500" />;
-    if (status === 'running') return <Loader2 size={14} className="text-blue-400 animate-spin" />;
+    if (status === 'completed') return <CheckCircle2 size={14} className="text-accent" />;
+    if (status === 'failed') return <XCircle size={14} className="text-neg" />;
+    if (status === 'running') return <Loader2 size={14} className="text-[var(--info)] animate-spin" />;
     return <Clock size={14} className="t-muted" />;
   };
 
@@ -36,7 +36,7 @@ export function ExecutionHistory({ runs, onViewDetail }: ExecutionHistoryProps) 
             <button
               key={run.id}
               onClick={() => onViewDetail(run.id)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] text-left active:scale-[0.97]"
+              className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] text-left active:scale-[0.97]"
             >
               {statusIcon(run.status)}
               <div className="flex-1 min-w-0">
@@ -47,7 +47,7 @@ export function ExecutionHistory({ runs, onViewDetail }: ExecutionHistoryProps) 
                 <div className="text-right">
                   <p className="text-xs t-primary">{run.matched || 0}/{run.source_record_count} matched</p>
                   {(run.discrepancies || 0) > 0 && (
-                    <p className="text-caption text-amber-400">{run.discrepancies} issues</p>
+                    <p className="text-caption" style={{ color: 'var(--warning)' }}>{run.discrepancies} issues</p>
                   )}
                 </div>
               )}

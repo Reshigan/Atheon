@@ -121,7 +121,7 @@ export function ApprovalQueuePanel() {
         </div>
         <button
           onClick={load}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
         >
           <RefreshCw size={12} /> Refresh
         </button>
@@ -166,14 +166,14 @@ export function ApprovalQueuePanel() {
                   <button
                     disabled={isBusy}
                     onClick={() => handleAction(ap.id, 'reject')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-[var(--neg)]/30 text-neg hover:bg-neg/10 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
                   >
                     <XCircle size={12} /> Reject
                   </button>
                   <button
                     disabled={isBusy}
                     onClick={() => handleAction(ap.id, 'approve')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-500/90 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-accent text-[var(--text-on-accent)] hover:bg-accent/90 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
                   >
                     <CheckCircle2 size={12} /> Approve
                   </button>
@@ -199,7 +199,7 @@ export function ApprovalQueuePanel() {
           onClick={onCancelStepUp}
         >
           <div
-            className="w-[min(92vw,420px)] rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card-solid)] p-5 shadow-2xl"
+            className="w-[min(92vw,420px)] rounded-md border border-[var(--border-card)] bg-[var(--bg-card-solid)] p-5"
             onClick={(e) => e.stopPropagation()}
             style={{ animation: 'pop 200ms cubic-bezier(0.23,1,0.32,1)' }}
           >
@@ -220,20 +220,20 @@ export function ApprovalQueuePanel() {
               value={mfaCode}
               onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               onKeyDown={(e) => { if (e.key === 'Enter' && mfaCode.length === 6) onConfirmStepUp(); }}
-              className="w-full h-11 px-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-card-solid)] t-primary font-mono text-lg tabular-nums tracking-[0.4em] text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
+              className="w-full h-11 px-3 rounded-md border border-[var(--border-card)] bg-[var(--bg-card-solid)] t-primary font-mono text-lg tabular-nums tracking-[0.4em] text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
               placeholder="000000"
               aria-label="One-time code"
             />
-            {mfaError && <p className="text-caption text-red-500 mt-2">{mfaError}</p>}
+            {mfaError && <p className="text-caption text-neg mt-2">{mfaError}</p>}
             <div className="flex items-center justify-end gap-2 mt-4">
               <button
                 onClick={onCancelStepUp}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium t-secondary hover:t-primary transition-[color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
+                className="px-3 py-1.5 rounded-md text-xs font-medium t-secondary hover:t-primary transition-[color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
               >Cancel</button>
               <button
                 disabled={mfaCode.length !== 6 || busyId !== null}
                 onClick={onConfirmStepUp}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-white hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-accent text-[var(--text-on-accent)] hover:bg-accent/90 transition-[background-color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
               >Confirm</button>
             </div>
           </div>
