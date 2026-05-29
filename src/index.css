@@ -110,6 +110,7 @@
     /* ── Semantic — status only ────────────────────────── */
     --positive: #0a7d4f;
     --warning: #9a6b1f;
+    --warning-rgb: 154, 107, 31;
     --critical: #b03423;
     --info: #3b3f47;
     --teal: #0a7d4f;
