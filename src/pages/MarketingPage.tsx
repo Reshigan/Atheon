@@ -1,941 +1,1013 @@
 import { useEffect, useRef, useState } from "react";
 
 /* ============================================================
-   ATHEON MARKETING PAGE - Exact match to reference design
+   ATHEON MARKETING PAGE — Swiss Editorial (UI-v3)
+   Warm white field. Ledger green accent. Hairline grid.
+   Archivo grotesk + IBM Plex Mono. Light-only.
    ============================================================ */
 
 const marketingCSS = `
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
-
 .mk5-body {
-  --void: #0A0E2A;
-  --abyss: #0E1430;
-  --deep: #161D3A;
-  --sage: #A3B18A;
-  --sage-b: #5d8a6f;
-  --sage-d: rgba(163,177,138,.08);
-  --bronze: #A3B18A;
-  --sky: #A3B18A;
-  --cream: #EEF1F8;
-  --chalk: #AEB8D4;
-  --slate: #8C98B8;
-  --line: rgba(163,177,138,.1);
-  --line-b: rgba(163,177,138,.25);
-  font-family: 'Hanken Grotesk', sans-serif;
-  background: var(--void);
-  color: var(--cream);
+  --field: var(--bg-primary, #fbfaf7);
+  --field-2: var(--bg-secondary, #f4f2ec);
+  --paper: var(--bg-card-solid, #ffffff);
+  --paper-hover: var(--bg-card-hover, #f7f6f1);
+  --ink: var(--text-primary, #0f1115);
+  --ink-2: var(--text-secondary, #6c7079);
+  --ink-3: var(--text-muted, #9a9ea6);
+  --rule: var(--border-card, #e4e2db);
+  --rule-strong: var(--line-strong, #0f1115);
+  --accent: var(--accent, #0a7d4f);
+  --accent-hover: var(--accent-hover, #096a43);
+  --accent-tint: rgba(10, 125, 79, 0.06);
+  --bronze: var(--warning, #9a6b1f);
+  --neg: var(--neg, #b03423);
+  font-family: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-feature-settings: "ss01", "ss02";
+  background: var(--field);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  cursor: auto;
 }
-.mk5-body ::selection { background: var(--sage); color: var(--void); }
+.mk5-body ::selection { background: var(--accent); color: #fff; }
 .mk5-body a { color: inherit; text-decoration: none; }
-
-/* GRAIN */
-.mk5-grain {
-  position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: .035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px;
+.mk5-body h1, .mk5-body h2, .mk5-body h3, .mk5-body h4 {
+  font-family: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  color: var(--ink);
 }
+.mk5-body em, .mk5-body i { font-style: italic; font-weight: 500; color: var(--accent); }
+.mk5-body strong { font-weight: 600; color: var(--ink); }
+.mk5-mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-feature-settings: "tnum", "zero"; }
 
-/* CURSOR */
+/* Section frame helper */
+.mk5-frame { border-top: 1px solid var(--rule); }
 
-
-
+/* Hairline horizontal rule */
+.mk5-hr { height: 1px; background: var(--rule); border: 0; }
 
 /* NAV */
 .mk5-nav {
-  position: fixed; top: 0; width: 100%; z-index: 300;
+  position: sticky; top: 0; width: 100%; z-index: 60;
   display: flex; justify-content: space-between; align-items: center;
-  padding: 2rem 3.5rem; mix-blend-mode: difference;
+  padding: 1.25rem 3rem;
+  background: rgba(251, 250, 247, 0.92);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--rule);
 }
 .mk5-nav-logo {
-  display: flex; align-items: center; gap: .6rem;
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.4rem; letter-spacing: .15em;
-  text-decoration: none; color: var(--cream);
+  display: flex; align-items: center; gap: .55rem;
+  font-family: 'Archivo', sans-serif; font-weight: 600;
+  font-size: 1.0625rem; letter-spacing: -0.005em; color: var(--ink);
 }
-.mk5-nav-links { display: flex; gap: 3rem; align-items: center; }
+.mk5-nav-links { display: flex; gap: 2.25rem; align-items: center; }
 .mk5-nav-links a {
-  font-size: .72rem; font-weight: 500; letter-spacing: .2em; text-transform: uppercase;
-  color: var(--chalk); opacity: .6; transition: opacity .3s; text-decoration: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; font-weight: 400;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-2);
+  transition: color 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.mk5-nav-links a:hover { opacity: 1; }
+.mk5-nav-links a:hover { color: var(--ink); }
 .mk5-nav-cta {
-  font-size: .68rem !important; font-weight: 600 !important; letter-spacing: .25em !important;
-  padding: .7rem 2rem; border: 1px solid var(--sage); color: var(--sage) !important;
-  opacity: 1 !important; position: relative; overflow: hidden;
-  transition: all .4s cubic-bezier(.16,1,.3,1) !important;
-  background: transparent; cursor: auto; text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem !important; font-weight: 500 !important;
+  letter-spacing: 0.16em !important; text-transform: uppercase;
+  padding: .55rem 1.1rem !important;
+  border: 1px solid var(--ink);
+  color: var(--ink) !important;
+  background: transparent;
+  border-radius: 2px;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), color 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.mk5-nav-cta::before {
-  content: ''; position: absolute; inset: 0; background: var(--sage);
-  transform: translateY(100%); transition: transform .4s cubic-bezier(.16,1,.3,1);
-}
-.mk5-nav-cta:hover { color: var(--void) !important; }
-.mk5-nav-cta:hover::before { transform: translateY(0); }
+.mk5-nav-cta:hover { background: var(--ink); color: var(--field) !important; }
 .mk5-nav-cta span { position: relative; z-index: 1; }
 
 /* MOBILE HAMBURGER */
 .mk5-hamburger {
-  display: none; background: none; border: none; cursor: pointer; padding: .5rem;
-  flex-direction: column; gap: 5px; z-index: 201;
+  display: none; background: none; border: 0; cursor: pointer; padding: .5rem;
+  width: 36px; height: 36px;
 }
 .mk5-hamburger span {
-  display: block; width: 24px; height: 2px; background: var(--cream);
-  transition: all .3s cubic-bezier(.16,1,.3,1);
+  display: block; width: 18px; height: 1px; background: var(--ink); margin: 4px auto;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.mk5-hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.mk5-hamburger.open span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
 .mk5-hamburger.open span:nth-child(2) { opacity: 0; }
-.mk5-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+.mk5-hamburger.open span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
 
 /* MOBILE MENU OVERLAY */
 .mk5-mobile-menu {
-  display: none; position: fixed; inset: 0; z-index: 200;
-  background: var(--void); flex-direction: column; align-items: center;
-  justify-content: center; gap: 2rem;
+  position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+  background: var(--field);
+  border-top: 1px solid var(--rule);
+  display: none; flex-direction: column; gap: 1rem;
+  padding: 2rem; z-index: 55;
 }
 .mk5-mobile-menu.open { display: flex; }
 .mk5-mobile-menu a {
-  font-size: 1rem; font-weight: 500; letter-spacing: .2em; text-transform: uppercase;
-  color: var(--chalk); opacity: .8; transition: opacity .3s; text-decoration: none;
-}
-.mk5-mobile-menu a:hover { opacity: 1; }
-.mk5-mobile-menu .mk5-nav-cta {
-  font-size: .8rem !important; padding: 1rem 2.5rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink); padding: .75rem 0; border-bottom: 1px solid var(--rule);
 }
 
 /* HERO */
 .mk5-hero {
-  height: 100vh; min-height: 700px; display: flex; align-items: flex-end;
-  padding: 0 3.5rem 6rem; position: relative; overflow: hidden;
+  position: relative;
+  min-height: calc(100vh - 64px);
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  padding: 6rem 3rem 5rem;
+  align-items: end;
+  border-bottom: 1px solid var(--rule);
 }
-.mk5-hero canvas { position: absolute; inset: 0; z-index: 0; }
-.mk5-hero::after {
-  content: ''; position: absolute; inset: 0; z-index: 1;
-  background:
-    radial-gradient(ellipse 60% 50% at 65% 40%, rgba(74,107,90,.06) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 60% at 30% 70%, rgba(163,177,138,.03) 0%, transparent 60%),
-    linear-gradient(180deg, transparent 50%, var(--void) 100%);
-}
-.mk5-hero-content {
-  position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr;
-  gap: 4rem; width: 100%; align-items: end;
-}
-.mk5-hero-left { max-width: 680px; }
 .mk5-hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 1rem;
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .62rem; letter-spacing: .35em;
-  text-transform: uppercase; color: var(--sage); margin-bottom: 2.5rem;
-  opacity: 0; animation: mk5revUp 1s cubic-bezier(.16,1,.3,1) .5s forwards;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 2.5rem;
+  display: flex; align-items: center; gap: .75rem;
 }
 .mk5-hero-eyebrow::before {
-  content: ''; width: 50px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--sage));
+  content: ""; display: inline-block; width: 24px; height: 1px; background: var(--ink-2);
 }
-.mk5-hero h1 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3.5rem, 7.5vw, 7rem);
-  font-weight: 400; line-height: .95; letter-spacing: -.02em; margin: 0;
-  opacity: 0; animation: mk5revUp 1.2s cubic-bezier(.16,1,.3,1) .7s forwards;
+.mk5-hero-left h1 {
+  font-size: clamp(2.75rem, 6.5vw, 6.25rem);
+  line-height: 0.96; letter-spacing: -0.03em;
+  font-weight: 500;
 }
-.mk5-hero h1 i {
-  font-style: italic;
-  background: linear-gradient(135deg, var(--sage-b), var(--sky));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.mk5-hero h1 .thin {
-  font-family: 'Hanken Grotesk', sans-serif; font-weight: 200; font-size: .7em;
-  -webkit-text-fill-color: var(--chalk); letter-spacing: .02em;
-}
-.mk5-hero-right { display: flex; flex-direction: column; gap: 2.5rem; padding-bottom: .5rem; }
+.mk5-hero-left h1 .thin { font-weight: 300; color: var(--ink-3); }
+.mk5-hero-left h1 i { font-style: italic; color: var(--accent); font-weight: 500; }
 .mk5-hero-desc {
-  font-size: 1.05rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
-  max-width: 420px; opacity: 0; animation: mk5revUp 1s cubic-bezier(.16,1,.3,1) 1s forwards;
+  font-size: 1.0625rem; line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 32rem;
+  margin-bottom: 2.5rem;
 }
-.mk5-hero-actions {
-  display: flex; gap: 2rem; align-items: center;
-  opacity: 0; animation: mk5revUp 1s cubic-bezier(.16,1,.3,1) 1.2s forwards;
-}
-.mk5-btn-main {
-  display: inline-flex; align-items: center; gap: 1rem;
-  padding: 1.1rem 2.8rem; background: var(--sage); color: var(--void);
-  font-weight: 600; font-size: .75rem; letter-spacing: .2em; text-transform: uppercase;
-  overflow: hidden; transition: all .5s cubic-bezier(.16,1,.3,1);
-  border: none; cursor: auto;
-}
-.mk5-btn-main::after {
-  content: '\\2192'; font-size: 1.2rem;
-  transition: transform .4s cubic-bezier(.16,1,.3,1);
-}
-.mk5-btn-main:hover::after { transform: translateX(6px); }
-.mk5-btn-main:hover { letter-spacing: .3em; }
-.mk5-btn-line {
-  font-size: .75rem; font-weight: 400; letter-spacing: .15em; text-transform: uppercase;
-  color: var(--chalk); padding-bottom: .3rem; border: none; background: transparent;
-  border-bottom: 1px solid var(--line-b); transition: all .3s; cursor: auto;
-}
-.mk5-btn-line:hover { color: var(--cream); border-bottom-color: var(--cream); }
+.mk5-hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 .mk5-hero-scroll {
-  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
-  z-index: 3; display: flex; flex-direction: column; align-items: center; gap: .5rem;
-  opacity: 0; animation: mk5revUp 1s ease 2s forwards;
+  position: absolute; left: 3rem; bottom: 2rem;
+  display: flex; align-items: center; gap: .75rem;
+  font-family: 'IBM Plex Mono', monospace; font-size: .6875rem;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3);
 }
-.mk5-scroll-line {
-  width: 1px; height: 50px; position: relative; overflow: hidden; background: var(--line);
-}
-.mk5-scroll-line::after {
-  content: ''; position: absolute; top: -100%; left: 0; width: 1px; height: 100%;
-  background: var(--sage); animation: mk5scrollP 2s ease-in-out infinite;
-}
-.mk5-hero-scroll span {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem; letter-spacing: .3em;
-  text-transform: uppercase; color: var(--slate);
-}
+.mk5-scroll-line { width: 36px; height: 1px; background: var(--ink-3); }
 
-/* TICKER */
+/* BUTTONS */
+.mk5-btn-main {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: .85rem 1.6rem;
+  background: var(--accent);
+  color: #fff !important;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
+  display: inline-block;
+}
+.mk5-btn-main:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.mk5-btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+.mk5-btn-line {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: .85rem 1.6rem;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), color 120ms cubic-bezier(0.23, 1, 0.32, 1);
+  display: inline-block;
+}
+.mk5-btn-line:hover { background: var(--ink); color: var(--field); }
+
+/* TICKER (kept as a single hairline marquee strip) */
 .mk5-ticker {
-  padding: 3rem 0; overflow: hidden;
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--field);
+  overflow: hidden; padding: 1.1rem 0;
 }
 .mk5-ticker-track {
-  display: flex; white-space: nowrap; animation: mk5tickScroll 40s linear infinite;
+  display: flex; gap: 3rem; white-space: nowrap;
+  animation: mk5-marquee 60s linear infinite;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-2);
 }
-.mk5-ticker-item {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5rem);
-  padding: 0 2rem; flex-shrink: 0; display: flex; align-items: center; gap: 2rem;
-  -webkit-text-fill-color: transparent; -webkit-text-stroke: 1px rgba(74,107,90,.15);
-}
+.mk5-ticker-item { display: inline-flex; align-items: center; gap: 3rem; }
 .mk5-ticker-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--sage);
-  opacity: .3; flex-shrink: 0; display: inline-block;
+  display: inline-block; width: 4px; height: 4px;
+  background: var(--accent); border-radius: 999px;
+}
+@keyframes mk5-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* SHARED-SAVINGS STRIP (new — persistent CFO ledger) */
+.mk5-ss {
+  display: grid; grid-template-columns: auto 1fr auto auto auto;
+  gap: 2.5rem; align-items: end;
+  padding: 2.5rem 3rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--field);
+}
+.mk5-ss-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mk5-ss-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.mk5-ss-figure {
+  display: flex; flex-direction: column; gap: .25rem;
+  min-width: 9rem; padding-left: 2rem; border-left: 1px solid var(--rule);
+}
+.mk5-ss-amount {
+  font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
+  font-size: 1.625rem; font-weight: 500; letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.mk5-ss-amount.accent { color: var(--accent); }
+.mk5-ss-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-2);
 }
 
 /* MANIFESTO */
 .mk5-manifesto {
-  padding: 14rem 3.5rem; display: flex; justify-content: center; position: relative;
-}
-.mk5-manifesto::before {
-  content: '01'; position: absolute; top: 6rem; left: 3.5rem;
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
-  color: var(--sage); opacity: .4;
+  padding: 9rem 3rem;
+  max-width: 80rem; margin: 0 auto;
+  border-bottom: 1px solid var(--rule);
 }
 .mk5-manifesto-text {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2rem, 4.5vw, 3.8rem);
-  font-weight: 400; line-height: 1.4; text-align: center; max-width: 1000px;
-  color: var(--chalk);
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  line-height: 1.32; letter-spacing: -0.012em;
+  color: var(--ink);
+  font-weight: 400;
+  max-width: 56rem;
 }
-.mk5-manifesto-text em {
-  font-style: italic;
-  background: linear-gradient(135deg, var(--sage-b), var(--sky));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.mk5-manifesto-text strong {
-  color: var(--cream); font-weight: 400; -webkit-text-fill-color: var(--cream);
-}
+.mk5-manifesto-text em { color: var(--accent); font-style: italic; }
+.mk5-manifesto-text strong { color: var(--ink); font-weight: 600; }
 
 /* EVOLUTION STRIP */
 .mk5-evo {
-  padding: 0 3.5rem; display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 1px; background: var(--line); margin-bottom: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
 }
 .mk5-evo-item {
-  background: var(--abyss); padding: 4rem 3rem; position: relative; transition: all .5s;
+  padding: 3rem 2.5rem;
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column; gap: 1rem;
+  position: relative;
+  background: var(--field);
 }
-.mk5-evo-item:hover { background: var(--deep); }
-.mk5-evo-item::before {
-  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-  transition: background .4s;
-}
-.mk5-evo-item.past::before { background: var(--slate); }
-.mk5-evo-item.present::before { background: var(--sky); }
-.mk5-evo-item.future::before { background: var(--sage); height: 3px; }
+.mk5-evo-item:last-child { border-right: 0; }
+.mk5-evo-item.future { background: var(--accent-tint); }
 .mk5-evo-era {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .5rem; letter-spacing: .35em;
-  text-transform: uppercase; margin-bottom: 1.5rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-3);
 }
-.mk5-evo-era.past { color: var(--slate); }
-.mk5-evo-era.present { color: var(--sky); }
-.mk5-evo-era.future { color: var(--sage); }
+.mk5-evo-era.future { color: var(--accent); }
 .mk5-evo-name {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 2.5rem; font-weight: 400;
-  margin-bottom: 1rem;
+  font-size: 2rem; font-weight: 500; letter-spacing: -0.015em;
+  color: var(--ink);
 }
-.mk5-evo-item.future .mk5-evo-name {
-  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+.mk5-evo-desc {
+  font-size: .9375rem; line-height: 1.55; color: var(--ink-2);
 }
-.mk5-evo-desc { font-size: .9rem; font-weight: 300; line-height: 1.8; color: var(--chalk); }
-.mk5-evo-arrow {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.5rem; color: var(--slate);
-  margin-top: 1.5rem; opacity: .3;
-}
+.mk5-evo-arrow { display: none; }
 
 /* LAYERS SECTION */
-.mk5-layers { padding: 0 3.5rem 10rem; }
+.mk5-layers, .mk5-ethos {
+  padding: 7rem 3rem;
+  border-bottom: 1px solid var(--rule);
+}
 .mk5-layers-intro {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
-  margin-bottom: 10rem; padding-top: 4rem; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr 2fr;
+  gap: 4rem; margin-bottom: 5rem;
 }
 .mk5-layers-intro-left {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .35em;
-  text-transform: uppercase; color: var(--sage); padding-top: .3rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-2);
+  position: sticky; top: 5rem; align-self: start;
 }
 .mk5-layers-intro-right h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 5vw, 4.5rem);
-  font-weight: 400; line-height: 1.1; margin-bottom: 2rem;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1.05; letter-spacing: -0.022em; margin-bottom: 1.5rem;
 }
 .mk5-layers-intro-right p {
-  font-size: 1.05rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
-  max-width: 500px;
+  font-size: 1.0625rem; line-height: 1.55; color: var(--ink-2);
+  max-width: 42rem;
 }
 .mk5-layer-block {
-  display: grid; grid-template-columns: 120px 1fr 1.2fr; gap: 4rem;
-  padding: 5rem 0; border-top: 1px solid var(--line);
-  opacity: 0; transform: translateY(40px);
-  transition: all .8s cubic-bezier(.16,1,.3,1);
+  display: grid; grid-template-columns: 80px 1fr 280px;
+  gap: 3rem; align-items: start;
+  padding: 3.5rem 0;
+  border-top: 1px solid var(--rule);
 }
-.mk5-layer-block.visible { opacity: 1; transform: translateY(0); }
+.mk5-layer-block:last-child { border-bottom: 1px solid var(--rule); }
 .mk5-layer-num {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 8rem; font-weight: 400;
-  line-height: .8; -webkit-text-stroke: 1px var(--line-b);
-  -webkit-text-fill-color: transparent; user-select: none;
+  font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
+  font-size: 2.5rem; font-weight: 400; color: var(--ink-3);
+  letter-spacing: -0.01em;
 }
 .mk5-layer-name {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 2.2rem; font-weight: 400;
-  line-height: 1.2; margin-bottom: .5rem;
+  font-size: 1.75rem; font-weight: 500; letter-spacing: -0.015em;
+  color: var(--ink); margin-bottom: .25rem;
 }
 .mk5-layer-role {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
-  text-transform: uppercase; margin-bottom: 2rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-2); margin-bottom: 1.25rem;
 }
 .mk5-layer-role.bronze { color: var(--bronze); }
-.mk5-layer-role.sky { color: var(--sky); }
-.mk5-layer-role.sage { color: var(--sage); }
+.mk5-layer-role.sky, .mk5-layer-role.sage { color: var(--accent); }
 .mk5-layer-desc {
-  font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
-  margin-bottom: 2.5rem;
+  font-size: .9375rem; line-height: 1.6; color: var(--ink-2);
+  margin-bottom: 1.5rem; max-width: 36rem;
 }
 .mk5-layer-tags { display: flex; flex-wrap: wrap; gap: .5rem; }
 .mk5-layer-tag {
-  padding: .4rem 1rem; font-size: .7rem; font-weight: 500; letter-spacing: .05em;
-  border: 1px solid var(--line); color: var(--chalk); transition: all .3s;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.1em;
+  padding: .35rem .75rem;
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  background: var(--paper);
+  border-radius: 2px;
 }
-.mk5-layer-tag:hover { border-color: var(--sage); color: var(--sage); background: var(--sage-d); }
 .mk5-layer-visual {
-  display: flex; align-items: center; justify-content: center; position: relative;
-  min-height: 300px;
+  width: 100%; aspect-ratio: 4/3;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  display: flex; align-items: center; justify-content: center;
 }
-.mk5-layer-visual canvas { width: 100%; height: 100%; }
 
 /* BIG STATEMENT */
-.mk5-big-stmt { padding: 16rem 3.5rem; text-align: center; }
+.mk5-big-stmt {
+  padding: 9rem 3rem; text-align: left;
+  border-bottom: 1px solid var(--rule);
+  max-width: 80rem; margin: 0 auto;
+}
 .mk5-big-stmt h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3rem, 8vw, 8rem);
-  font-weight: 400; line-height: .95; letter-spacing: -.02em;
+  font-size: clamp(3rem, 8vw, 7rem);
+  line-height: 0.95; letter-spacing: -0.035em;
+  font-weight: 400;
 }
-.mk5-big-stmt .stroke {
-  -webkit-text-fill-color: transparent; -webkit-text-stroke: 1.5px var(--chalk);
+.mk5-big-stmt h2 .stroke {
+  color: var(--ink-3); font-weight: 300;
 }
-.mk5-big-stmt .glow {
-  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+.mk5-big-stmt h2 .glow {
+  color: var(--accent); font-style: italic; font-weight: 500;
 }
 
 /* STATS */
 .mk5-stats {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
 }
 .mk5-stat-item {
-  padding: 4rem 3rem; border-right: 1px solid var(--line); text-align: center;
-  transition: background .4s;
+  padding: 3rem 2.5rem;
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column; gap: .75rem;
+  background: var(--field);
 }
-.mk5-stat-item:last-child { border-right: none; }
-.mk5-stat-item:hover { background: var(--sage-d); }
+.mk5-stat-item:last-child { border-right: 0; }
 .mk5-stat-num {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 4.5rem; font-weight: 400; line-height: 1;
+  font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
+  font-size: 3rem; font-weight: 500; letter-spacing: -0.02em;
+  color: var(--ink);
 }
-.mk5-stat-num .accent { color: var(--sage-b); }
+.mk5-stat-num .accent { color: var(--accent); }
 .mk5-stat-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .25em;
-  text-transform: uppercase; color: var(--slate); margin-top: 1rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* PERSONAS (new — auditor + board roles surfaced) */
+.mk5-personas {
+  padding: 6rem 3rem;
+  border-bottom: 1px solid var(--rule);
+}
+.mk5-personas-header {
+  display: grid; grid-template-columns: 1fr 2fr;
+  gap: 4rem; margin-bottom: 3rem;
+}
+.mk5-personas-header .left {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mk5-personas-header h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05; letter-spacing: -0.022em; margin-bottom: 1.25rem;
+}
+.mk5-personas-header p {
+  font-size: 1rem; line-height: 1.55; color: var(--ink-2); max-width: 42rem;
+}
+.mk5-personas-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--rule);
+}
+.mk5-persona {
+  padding: 2.25rem 1.75rem;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--field);
+  display: flex; flex-direction: column; gap: .75rem;
+}
+.mk5-persona:last-child { border-right: 0; }
+.mk5-persona-role {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mk5-persona-name {
+  font-size: 1.25rem; font-weight: 500; letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.mk5-persona-desc {
+  font-size: .8125rem; line-height: 1.55; color: var(--ink-2);
+}
+.mk5-persona-want {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.04em;
+  color: var(--accent);
+  padding-top: .75rem;
+  border-top: 1px solid var(--rule);
 }
 
 /* COMPARISON */
-.mk5-comp { padding: 10rem 3.5rem; position: relative; }
-.mk5-comp::before {
-  content: '02'; position: absolute; top: 4rem; left: 3.5rem;
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
-  color: var(--sage); opacity: .4;
+.mk5-comp {
+  padding: 6rem 3rem;
+  border-bottom: 1px solid var(--rule);
 }
-.mk5-comp-header { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 5rem; }
+.mk5-comp-header {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 4rem; margin-bottom: 3rem;
+}
 .mk5-comp-header h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 4vw, 4rem);
-  font-weight: 400; line-height: 1.1;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05; letter-spacing: -0.022em;
 }
-.mk5-comp-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); align-self: end; }
+.mk5-comp-header p {
+  font-size: 1rem; line-height: 1.55; color: var(--ink-2);
+}
 .mk5-cg {
-  display: grid; grid-template-columns: 2fr repeat(4, 1fr); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr;
+  border: 1px solid var(--rule);
+  background: var(--paper);
 }
 .mk5-ch {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; font-weight: 500;
-  letter-spacing: .2em; text-transform: uppercase; color: var(--slate);
-  padding: 1.2rem 1.5rem; border-bottom: 2px solid var(--line); border-right: 1px solid var(--line);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 1rem; color: var(--ink-2);
+  border-bottom: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  background: var(--field-2);
 }
-.mk5-ch:nth-child(5n) { border-right: none; }
-.mk5-ch.ath { color: var(--sage); border-bottom-color: var(--sage); }
+.mk5-ch:last-child { border-right: 0; }
+.mk5-ch.rl { text-align: left; }
+.mk5-ch.ath { color: var(--accent); }
 .mk5-cc {
-  padding: 1.4rem 1.5rem; font-size: .85rem; border-bottom: 1px solid var(--line);
-  border-right: 1px solid var(--line); transition: background .3s;
+  font-size: .8125rem;
+  padding: .9rem 1rem;
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+  display: flex; align-items: center;
 }
-.mk5-cc:nth-child(5n) { border-right: none; }
-.mk5-cc.rl { font-weight: 500; color: var(--cream); }
-.mk5-cc.ca { background: var(--sage-d); color: var(--sage-b); font-weight: 600; }
-.mk5-cc.cy { color: var(--sage); }
-.mk5-cc.cn { color: var(--slate); opacity: .3; }
-.mk5-cc.cp { color: var(--slate); font-style: italic; }
+.mk5-cc:last-child { border-right: 0; }
+.mk5-cc.rl { font-weight: 500; color: var(--ink); }
+.mk5-cc.cy { color: var(--ink-2); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; }
+.mk5-cc.cp { color: var(--bronze); font-family: 'IBM Plex Mono', monospace; font-size: .75rem; }
+.mk5-cc.cn { color: var(--ink-3); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; }
+.mk5-cc.ca { color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; font-weight: 500; background: var(--accent-tint); }
+
+/* PROOF LEDGER (new — evidenced shared-savings rows) */
+.mk5-proof {
+  padding: 6rem 3rem;
+  border-bottom: 1px solid var(--rule);
+}
+.mk5-proof-header {
+  display: grid; grid-template-columns: 1fr 2fr;
+  gap: 4rem; margin-bottom: 2.5rem;
+}
+.mk5-proof-header .left {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mk5-proof-header h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05; letter-spacing: -0.022em; margin-bottom: 1.25rem;
+}
+.mk5-proof-header p {
+  font-size: 1rem; line-height: 1.55; color: var(--ink-2); max-width: 42rem;
+}
+.mk5-pl {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr .9fr .7fr;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+.mk5-plh {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 1rem; color: var(--ink-2);
+  border-bottom: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  background: var(--field-2);
+}
+.mk5-plh:last-child { border-right: 0; }
+.mk5-plc {
+  font-size: .8125rem; line-height: 1.5;
+  padding: 1rem; color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column; gap: .25rem;
+}
+.mk5-plc:last-child { border-right: 0; }
+.mk5-plc .title { font-weight: 500; color: var(--ink); }
+.mk5-plc .sub {
+  font-family: 'IBM Plex Mono', monospace; font-size: .6875rem;
+  letter-spacing: 0.04em; color: var(--ink-3);
+}
+.mk5-plc .amount {
+  font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
+  font-weight: 500; color: var(--accent); font-size: .9375rem;
+}
+.mk5-plc.muted { color: var(--ink-2); }
 
 /* INTEGRATIONS */
-.mk5-int { padding: 10rem 3.5rem; }
-.mk5-int-header { margin-bottom: 5rem; padding-bottom: 3rem; border-bottom: 1px solid var(--line); }
+.mk5-int {
+  padding: 6rem 3rem;
+  border-bottom: 1px solid var(--rule);
+}
+.mk5-int-header {
+  margin-bottom: 3rem;
+}
 .mk5-int-header h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2rem, 3.5vw, 3rem);
-  font-weight: 400; line-height: 1.2;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05; letter-spacing: -0.022em;
 }
 .mk5-int-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
 }
 .mk5-int-item {
-  background: var(--abyss); padding: 3rem 2rem; text-align: center;
-  transition: all .4s; display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  padding: 1.75rem 1.25rem;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  display: flex; flex-direction: column; gap: .5rem;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.mk5-int-item:hover { background: var(--sage-d); }
-.mk5-int-icon { font-size: 1.6rem; opacity: .25; transition: opacity .3s; }
-.mk5-int-item:hover .mk5-int-icon { opacity: .6; }
-.mk5-int-name { font-size: .75rem; font-weight: 500; letter-spacing: .1em; color: var(--chalk); }
+.mk5-int-item:hover { background: var(--paper-hover); }
+.mk5-int-icon {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.25rem; color: var(--accent);
+  line-height: 1;
+}
+.mk5-int-name {
+  font-size: .9375rem; font-weight: 500; color: var(--ink);
+  letter-spacing: -0.005em;
+}
 .mk5-int-type {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .5rem; letter-spacing: .2em;
-  text-transform: uppercase; color: var(--slate);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .625rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-3);
 }
 
-/* INDUSTRY SOLUTIONS */
-.mk5-ind { padding: 10rem 3.5rem; position: relative; }
-.mk5-ind::before {
-  content: '03'; position: absolute; top: 4rem; left: 3.5rem;
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
-  color: var(--sage); opacity: .4;
+/* COVERAGE (INDUSTRIES) */
+.mk5-ind {
+  padding: 6rem 3rem;
+  border-bottom: 1px solid var(--rule);
 }
-.mk5-ind-header { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 5rem; }
+.mk5-ind-header {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 4rem; margin-bottom: 3rem;
+}
 .mk5-ind-header h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 4vw, 4rem);
-  font-weight: 400; line-height: 1.1;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05; letter-spacing: -0.022em;
 }
-.mk5-ind-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); align-self: end; }
+.mk5-ind-header p {
+  font-size: 1rem; line-height: 1.55; color: var(--ink-2);
+}
 .mk5-ind-featured {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line);
-  margin-bottom: 4rem;
+  display: grid; grid-template-columns: 1.6fr 1fr;
+  gap: 0;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  margin-bottom: 3rem;
 }
 .mk5-ind-featured-main {
-  background: var(--abyss); padding: 4rem 3rem; position: relative;
-  border-left: 3px solid var(--sage); transition: all .5s;
+  padding: 2.5rem;
+  border-right: 1px solid var(--rule);
 }
-.mk5-ind-featured-main:hover { background: var(--deep); }
 .mk5-ind-featured-badge {
-  display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .5rem;
-  letter-spacing: .3em; text-transform: uppercase; color: var(--void);
-  background: var(--sage); padding: .3rem .8rem; margin-bottom: 1.5rem;
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.16em; text-transform: uppercase;
+  padding: .35rem .75rem;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-radius: 2px;
+  margin-bottom: 1.25rem;
 }
 .mk5-ind-featured-title {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 2.2rem; font-weight: 400;
-  line-height: 1.2; margin-bottom: 1rem;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  line-height: 1.08; letter-spacing: -0.02em;
+  font-weight: 500; margin-bottom: 1rem;
 }
 .mk5-ind-featured-desc {
-  font-size: .95rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
-  margin-bottom: 2rem;
+  font-size: .9375rem; line-height: 1.6;
+  color: var(--ink-2); margin-bottom: 1.5rem;
+  max-width: 38rem;
 }
 .mk5-ind-featured-caps {
   display: flex; flex-wrap: wrap; gap: .5rem;
 }
 .mk5-ind-featured-cap {
-  padding: .4rem 1rem; font-size: .7rem; font-weight: 500; letter-spacing: .05em;
-  border: 1px solid var(--sage); color: var(--sage); background: var(--sage-d);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.08em;
+  padding: .35rem .75rem;
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  background: var(--field);
+  border-radius: 2px;
 }
 .mk5-ind-featured-stats {
-  background: var(--abyss); padding: 4rem 3rem;
-  display: flex; flex-direction: column; justify-content: center; gap: 2.5rem;
+  padding: 2.5rem;
+  display: flex; flex-direction: column; gap: 1.75rem;
+  background: var(--field-2);
 }
 .mk5-ind-stat-row {
-  display: flex; align-items: baseline; gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rule);
 }
+.mk5-ind-stat-row:last-child { border-bottom: 0; padding-bottom: 0; }
 .mk5-ind-stat-num {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 3rem; font-weight: 400;
-  line-height: 1; color: var(--sage-b);
+  font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
+  font-size: 2.5rem; font-weight: 500; letter-spacing: -0.02em;
+  color: var(--accent); margin-bottom: .25rem;
 }
 .mk5-ind-stat-label {
-  font-size: .85rem; font-weight: 300; color: var(--chalk); line-height: 1.4;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-2); line-height: 1.5;
 }
+
 .mk5-ind-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
 }
 .mk5-ind-card {
-  background: var(--abyss); padding: 3rem 2.5rem; transition: all .5s; position: relative;
+  padding: 2rem 1.75rem;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  display: flex; flex-direction: column; gap: .85rem;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.mk5-ind-card:hover { background: var(--deep); }
-.mk5-ind-card::before {
-  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-  background: transparent; transition: background .4s;
-}
-.mk5-ind-card:hover::before { background: var(--sage); }
+.mk5-ind-card:hover { background: var(--paper-hover); }
 .mk5-ind-card-icon {
-  font-size: 1.4rem; margin-bottom: 1.5rem; opacity: .4;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.25rem; color: var(--accent); line-height: 1;
 }
 .mk5-ind-card-name {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.5rem; font-weight: 400;
-  margin-bottom: .5rem;
+  font-size: 1.125rem; font-weight: 500; letter-spacing: -0.01em;
+  color: var(--ink);
 }
 .mk5-ind-card-desc {
-  font-size: .85rem; font-weight: 300; line-height: 1.8; color: var(--chalk);
-  margin-bottom: 1.5rem;
+  font-size: .875rem; line-height: 1.55; color: var(--ink-2);
 }
 .mk5-ind-card-cats {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem; letter-spacing: .15em;
-  color: var(--slate); line-height: 1.8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.04em;
+  color: var(--ink-3);
+  padding-top: .75rem;
+  border-top: 1px solid var(--rule);
 }
 
 /* FEATURES DEEP-DIVE */
-.mk5-feat { padding: 10rem 3.5rem; border-top: 1px solid var(--line); position: relative; }
-.mk5-feat::before {
-  content: '04'; position: absolute; top: 4rem; left: 3.5rem;
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .3em;
-  color: var(--sage); opacity: .4;
+.mk5-feat {
+  padding: 6rem 3rem;
+  border-bottom: 1px solid var(--rule);
 }
-.mk5-feat-header { margin-bottom: 5rem; }
+.mk5-feat-header { margin-bottom: 3rem; max-width: 56rem; }
 .mk5-feat-header h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(2.5rem, 4vw, 4rem);
-  font-weight: 400; line-height: 1.1; margin-bottom: 1.5rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05; letter-spacing: -0.022em; margin-bottom: 1rem;
 }
-.mk5-feat-header p { font-size: 1rem; font-weight: 300; line-height: 1.9; color: var(--chalk); max-width: 600px; }
+.mk5-feat-header p {
+  font-size: 1rem; line-height: 1.55; color: var(--ink-2);
+}
 .mk5-feat-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line);
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
 }
 .mk5-feat-item {
-  background: var(--abyss); padding: 3.5rem 3rem; transition: all .5s;
+  padding: 2.25rem 2rem;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
 }
-.mk5-feat-item:hover { background: var(--deep); }
 .mk5-feat-item-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem; letter-spacing: .3em;
-  text-transform: uppercase; color: var(--sage); margin-bottom: 1rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: .75rem;
 }
 .mk5-feat-item-title {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.6rem; font-weight: 400;
-  margin-bottom: 1rem;
+  font-size: 1.25rem; font-weight: 500; letter-spacing: -0.012em;
+  color: var(--ink); margin-bottom: .85rem; line-height: 1.25;
 }
 .mk5-feat-item-desc {
-  font-size: .9rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
-  margin-bottom: 1.5rem;
+  font-size: .875rem; line-height: 1.6; color: var(--ink-2);
+  margin-bottom: 1.25rem;
 }
 .mk5-feat-item-bullets {
   list-style: none; padding: 0; margin: 0;
+  border-top: 1px solid var(--rule);
 }
 .mk5-feat-item-bullets li {
-  font-size: .8rem; font-weight: 300; color: var(--chalk); padding: .3rem 0;
-  padding-left: 1.2rem; position: relative;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.02em;
+  color: var(--ink-2);
+  padding: .55rem 0;
+  border-bottom: 1px solid var(--rule);
+  padding-left: 1rem; position: relative;
 }
 .mk5-feat-item-bullets li::before {
-  content: ''; position: absolute; left: 0; top: .7rem;
-  width: 5px; height: 1px; background: var(--sage);
+  content: ""; position: absolute; left: 0; top: 50%;
+  width: 6px; height: 1px; background: var(--accent);
 }
+.mk5-feat-item-bullets li:last-child { border-bottom: 0; }
 
 /* ETHOS */
-.mk5-ethos { padding: 10rem 3.5rem; border-top: 1px solid var(--line); }
 .mk5-ethos-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
-  background: var(--line); margin-top: 5rem;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
 }
 .mk5-ethos-card {
-  background: var(--abyss); padding: 4rem 3rem; position: relative; transition: all .5s;
+  padding: 2.5rem 2rem;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  position: relative;
 }
-.mk5-ethos-card:hover { background: var(--deep); }
-.mk5-ethos-card::before {
-  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-  background: var(--sage); opacity: 0; transition: opacity .4s;
-}
-.mk5-ethos-card:hover::before { opacity: 1; }
 .mk5-ethos-num {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 3.5rem; font-weight: 400;
-  line-height: 1; -webkit-text-stroke: 1px var(--line-b); -webkit-text-fill-color: transparent;
-  margin-bottom: 2rem; user-select: none;
+  font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
+  font-size: 1rem; letter-spacing: 0.06em;
+  color: var(--ink-3); margin-bottom: 1.5rem;
 }
 .mk5-ethos-title {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.8rem; font-weight: 400;
-  line-height: 1.2; margin-bottom: 1rem;
+  font-size: 1.5rem; font-weight: 500; letter-spacing: -0.015em;
+  color: var(--ink); margin-bottom: .85rem;
 }
 .mk5-ethos-desc {
-  font-size: .9rem; font-weight: 300; line-height: 1.9; color: var(--chalk);
+  font-size: .9375rem; line-height: 1.6; color: var(--ink-2);
 }
 .mk5-ethos-accent {
-  display: inline-block; width: 30px; height: 1px; margin-top: 2rem;
-  transition: width .4s, background .4s;
+  position: absolute; top: 0; left: 0;
+  width: 32px; height: 1px;
+  background: var(--accent);
 }
-.mk5-ethos-card:nth-child(1) .mk5-ethos-accent { background: var(--bronze); }
-.mk5-ethos-card:nth-child(2) .mk5-ethos-accent { background: var(--sky); }
-.mk5-ethos-card:nth-child(3) .mk5-ethos-accent { background: var(--sage-b); }
-.mk5-ethos-card:hover .mk5-ethos-accent { width: 60px; }
 
 /* CTA */
 .mk5-cta {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; text-align: center; position: relative; padding: 4rem;
+  padding: 7rem 3rem 9rem;
+  border-bottom: 1px solid var(--rule);
 }
-.mk5-cta::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(74,107,90,.06) 0%, transparent 70%);
+.mk5-cta-content {
+  max-width: 56rem; margin: 0 auto; text-align: center;
 }
-.mk5-cta-content { position: relative; z-index: 2; }
 .mk5-cta-ey {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; letter-spacing: .4em;
-  text-transform: uppercase; color: var(--sage); margin-bottom: 3rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-2); margin-bottom: 2rem;
+  display: inline-flex; align-items: center; gap: .75rem;
+}
+.mk5-cta-ey::before, .mk5-cta-ey::after {
+  content: ""; display: inline-block; width: 24px; height: 1px; background: var(--ink-2);
 }
 .mk5-cta h2 {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: clamp(3rem, 7vw, 6.5rem);
-  font-weight: 400; line-height: .95; letter-spacing: -.02em; margin-bottom: 2rem;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.98; letter-spacing: -0.03em;
+  font-weight: 500; margin-bottom: 1.5rem;
 }
-.mk5-cta h2 i {
-  font-style: italic;
-  background: linear-gradient(135deg, var(--sage-b), var(--bronze));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
+.mk5-cta h2 i { color: var(--accent); font-style: italic; }
 .mk5-cta-sub {
-  font-size: 1.1rem; font-weight: 300; line-height: 1.8; color: var(--chalk);
-  max-width: 480px; margin: 0 auto 3.5rem;
+  font-size: 1.0625rem; line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 38rem; margin: 0 auto 2.5rem;
 }
 .mk5-cta-actions {
-  display: flex; gap: 2rem; justify-content: center; align-items: center;
+  display: flex; gap: 1rem; justify-content: center;
   margin-bottom: 4rem; flex-wrap: wrap;
 }
 
 /* CONTACT FORM */
 .mk5-contact {
-  display: flex; flex-direction: column; gap: 1.25rem;
-  max-width: 560px; margin: 0 auto; text-align: left;
-  padding: 2.5rem; background: var(--abyss); border: 1px solid var(--line);
+  max-width: 36rem; margin: 0 auto; text-align: left;
+  display: flex; flex-direction: column; gap: 1rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 2.5rem;
 }
 .mk5-contact-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
 }
-.mk5-contact-field { display: flex; flex-direction: column; gap: .5rem; }
-.mk5-contact-field > span {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem;
-  letter-spacing: .3em; text-transform: uppercase; color: var(--sage);
+.mk5-contact-field { display: flex; flex-direction: column; gap: .35rem; }
+.mk5-contact-field span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-2);
 }
 .mk5-contact-field input,
 .mk5-contact-field textarea {
-  background: var(--void); border: 1px solid var(--line-b);
-  color: var(--cream); font-family: 'Hanken Grotesk', sans-serif; font-size: .9rem;
-  padding: .75rem 1rem; outline: none; transition: border-color .2s;
-  font-weight: 300; resize: vertical;
+  font-family: 'Archivo', sans-serif;
+  font-size: .9375rem; color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: .75rem .85rem;
+  resize: vertical;
+  transition: border-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .mk5-contact-field input:focus,
-.mk5-contact-field textarea:focus { border-color: var(--sage); }
-.mk5-contact-field textarea { min-height: 100px; }
+.mk5-contact-field textarea:focus {
+  outline: none; border-color: var(--accent);
+}
 .mk5-contact-error {
-  font-size: .8rem; color: var(--bronze); padding: .5rem .75rem;
-  border-left: 2px solid var(--bronze); background: rgba(163,177,138,.05);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; color: var(--neg);
+  padding: .75rem; border: 1px solid var(--neg);
+  background: rgba(176, 52, 35, 0.04);
+  border-radius: 2px;
 }
-.mk5-contact button[type="submit"] {
-  align-self: flex-start; margin-top: .5rem;
-}
-.mk5-contact button[type="submit"]:disabled { opacity: .5; cursor: not-allowed; }
 .mk5-contact-success {
-  max-width: 560px; margin: 0 auto; padding: 3rem 2rem; text-align: center;
-  background: var(--abyss); border: 1px solid var(--sage);
+  max-width: 36rem; margin: 0 auto;
+  padding: 2rem;
+  border: 1px solid var(--accent);
+  background: var(--accent-tint);
+  text-align: left;
+  border-radius: 2px;
 }
 .mk5-contact-success-title {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 1.8rem; color: var(--sage-b);
-  margin-bottom: .75rem;
+  font-size: 1.25rem; font-weight: 500; color: var(--accent);
+  margin-bottom: .5rem;
 }
 .mk5-contact-success p {
-  font-size: .95rem; color: var(--chalk); line-height: 1.7;
-}
-@media(max-width: 640px) {
-  .mk5-contact { padding: 1.75rem; }
-  .mk5-contact-row { grid-template-columns: 1fr; }
-  .mk5-cta-actions { gap: 1.25rem; }
+  font-size: .9375rem; line-height: 1.55; color: var(--ink-2);
 }
 
 /* FOOTER */
 .mk5-footer {
-  padding: 3rem 3.5rem; border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center;
+  padding: 3rem; max-width: 80rem; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 2fr 1fr;
+  gap: 2rem; align-items: end;
 }
-.mk5-fl { font-family: 'Hanken Grotesk', sans-serif; font-size: 1.2rem; letter-spacing: .15em; }
-.mk5-fc { text-align: center; font-size: .75rem; font-weight: 300; color: var(--slate); }
+.mk5-fl {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 600; font-size: 1rem; color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.mk5-fc {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .75rem; letter-spacing: 0.06em;
+  color: var(--ink-2); line-height: 1.6;
+}
+.mk5-fc a { color: var(--ink-2); }
+.mk5-fc a:hover { color: var(--ink); }
 .mk5-fr {
-  text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .55rem;
-  letter-spacing: .2em; text-transform: uppercase; color: var(--slate);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .6875rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3); text-align: right;
 }
 
-/* ANIMATIONS */
-@keyframes mk5revUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes mk5scrollP { 0% { top: -100%; } 100% { top: 200%; } }
-@keyframes mk5tickScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-.mk5-reveal { opacity: 0; transform: translateY(50px); transition: all 1s cubic-bezier(.16,1,.3,1); }
+/* ANIMATIONS — restrained */
+.mk5-reveal { opacity: 0; transform: translateY(8px); transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1), transform 400ms cubic-bezier(0.23, 1, 0.32, 1); }
 .mk5-reveal.visible { opacity: 1; transform: translateY(0); }
-.mk5-rd1 { transition-delay: .1s; }
-.mk5-rd2 { transition-delay: .2s; }
-.mk5-rd3 { transition-delay: .3s; }
+.mk5-rd1 { transition-delay: 80ms; }
+.mk5-rd2 { transition-delay: 160ms; }
+.mk5-rd3 { transition-delay: 240ms; }
 
 /* RESPONSIVE */
-@media(max-width: 1024px) {
-  .mk5-hero-content { grid-template-columns: 1fr; }
-  .mk5-layers-intro { grid-template-columns: 1fr; gap: 2rem; }
-  .mk5-layer-block { grid-template-columns: 60px 1fr; gap: 2rem; }
-  .mk5-layer-visual { display: none; }
-  .mk5-stats { grid-template-columns: repeat(2, 1fr); }
+@media(max-width: 1100px) {
+  .mk5-hero { grid-template-columns: 1fr; gap: 2rem; padding: 4rem 2rem 3rem; align-items: start; min-height: 0; }
+  .mk5-ss { grid-template-columns: 1fr; gap: 1rem; padding: 2rem; }
+  .mk5-ss-figure { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule); padding-top: 1rem; }
   .mk5-evo { grid-template-columns: 1fr; }
+  .mk5-evo-item { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .mk5-layers-intro { grid-template-columns: 1fr; gap: 1.5rem; }
+  .mk5-layer-block { grid-template-columns: 1fr; gap: 1.25rem; padding: 2.5rem 0; }
+  .mk5-layer-num { font-size: 1.75rem; }
+  .mk5-stats { grid-template-columns: 1fr 1fr; }
+  .mk5-stat-item:nth-child(2n) { border-right: 0; }
+  .mk5-personas-header { grid-template-columns: 1fr; gap: 1.5rem; }
+  .mk5-personas-grid { grid-template-columns: 1fr 1fr; }
+  .mk5-persona:nth-child(2n) { border-right: 0; }
+  .mk5-comp-header { grid-template-columns: 1fr; gap: 1.5rem; }
+  .mk5-cg { grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr; min-width: 720px; }
+  .mk5-comp { overflow-x: auto; }
+  .mk5-proof-header { grid-template-columns: 1fr; gap: 1.5rem; }
+  .mk5-pl { min-width: 720px; }
+  .mk5-proof { overflow-x: auto; }
   .mk5-int-grid { grid-template-columns: repeat(3, 1fr); }
-  .mk5-comp-header { grid-template-columns: 1fr; }
-  .mk5-ethos-grid { grid-template-columns: 1fr; }
-  .mk5-ind-header { grid-template-columns: 1fr; }
+  .mk5-ind-header { grid-template-columns: 1fr; gap: 1.5rem; }
   .mk5-ind-featured { grid-template-columns: 1fr; }
-  .mk5-ind-grid { grid-template-columns: 1fr; }
+  .mk5-ind-featured-main { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .mk5-ind-grid { grid-template-columns: repeat(2, 1fr); }
+  .mk5-ind-card:nth-child(2n) { border-right: 0; }
   .mk5-feat-grid { grid-template-columns: 1fr; }
+  .mk5-feat-item { border-right: 0; }
+  .mk5-ethos-grid { grid-template-columns: 1fr; }
+  .mk5-ethos-card { border-right: 0; }
 }
 @media(max-width: 768px) {
-  .mk5-nav { padding: 1.5rem 2rem; }
+  .mk5-nav { padding: 1rem 1.25rem; }
   .mk5-nav-links { display: none; }
-  .mk5-hamburger { display: flex; }
-  .mk5-hero { padding: 0 2rem 4rem; }
-  .mk5-manifesto { padding: 8rem 2rem; }
-  .mk5-layers, .mk5-comp, .mk5-int, .mk5-ind, .mk5-feat, .mk5-ethos { padding-left: 2rem; padding-right: 2rem; }
-  .mk5-layer-block { grid-template-columns: 1fr; }
-  .mk5-layer-num { font-size: 4rem; }
-  .mk5-stats { grid-template-columns: 1fr 1fr; }
+  .mk5-hamburger { display: flex; flex-direction: column; justify-content: center; }
+  .mk5-ss, .mk5-manifesto, .mk5-layers, .mk5-comp, .mk5-int, .mk5-ind, .mk5-feat, .mk5-ethos, .mk5-personas, .mk5-proof { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .mk5-personas-grid { grid-template-columns: 1fr; }
+  .mk5-persona { border-right: 0; }
   .mk5-int-grid { grid-template-columns: repeat(2, 1fr); }
-  .mk5-footer { grid-template-columns: 1fr; gap: 1.5rem; text-align: center; }
-  .mk5-fr { text-align: center; }
-  .mk5-big-stmt { padding: 8rem 2rem; }
-  .mk5-cg { min-width: 700px; }
-  .mk5-comp { overflow-x: auto; }
-  .mk5-ethos-grid { grid-template-columns: 1fr; }
-  .mk5-body { cursor: auto; }
-  
+  .mk5-int-item:nth-child(2n) { border-right: 0; }
+  .mk5-ind-grid { grid-template-columns: 1fr; }
+  .mk5-ind-card { border-right: 0; }
+  .mk5-stats { grid-template-columns: 1fr; }
+  .mk5-stat-item { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .mk5-contact-row { grid-template-columns: 1fr; }
+  .mk5-footer { grid-template-columns: 1fr; gap: 1.5rem; text-align: left; padding: 2rem 1.25rem; }
+  .mk5-fr { text-align: left; }
+  .mk5-big-stmt { padding: 6rem 1.25rem; }
 }
 `;
 
 /* ---- SVG Components ---- */
 
 const AtheonLogo = ({ size = 28 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-    <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
-    <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
-    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#A3B18A" strokeWidth=".8" opacity=".5" />
-    <circle cx="16" cy="9" r="1.5" fill="#A3B18A" />
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
+    <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="var(--accent, #0a7d4f)" strokeWidth="1.5" />
+    <line x1="9" y1="20" x2="23" y2="20" stroke="var(--accent, #0a7d4f)" strokeWidth=".8" opacity=".6" />
+    <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="var(--accent, #0a7d4f)" strokeWidth=".8" opacity=".45" />
+    <circle cx="16" cy="9" r="1.5" fill="var(--accent, #0a7d4f)" />
   </svg>
 );
 
-/* ---- Canvas: Particle Pyramid (Hero) ---- */
+/* ---- Static layer pictogram (replaces dark canvas) ---- */
 
-function HeroCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let w = 0, h = 0;
-    const particles: Array<{
-      tx: number; ty: number; x: number; y: number; s: number; a: number;
-      sp: number; an: number; dr: number; c: string; fx: number; fy: number;
-    }> = [];
-
-    function resize() {
-      w = canvas!.width = window.innerWidth;
-      h = canvas!.height = window.innerHeight;
-      for (const p of particles) {
-        p.tx = w * p.fx;
-        p.ty = h * p.fy;
-      }
-    }
-    resize();
-    window.addEventListener("resize", resize);
-
-    for (let i = 0; i < 200; i++) {
-      const row = Math.random();
-      const halfW = row * 0.35;
-      const fx = 0.62 + (Math.random() - 0.5) * halfW * 2;
-      const fy = 0.15 + row * 0.7;
-      const tx = w * fx;
-      const ty = h * fy;
-      const c = Math.random();
-      particles.push({
-        tx, ty, fx, fy,
-        x: tx + (Math.random() - 0.5) * 200,
-        y: ty + (Math.random() - 0.5) * 200,
-        s: Math.random() * 1.5 + 0.3,
-        a: Math.random() * 0.3 + 0.05,
-        sp: Math.random() * 0.003 + 0.001,
-        an: Math.random() * Math.PI * 2,
-        dr: Math.random() * 20 + 10,
-        c: c < 0.6 ? "124,138,104" : c < 0.85 ? "163,177,138" : "196,206,178",
-      });
-    }
-
-    let raf = 0;
-    function animate() {
-      ctx!.clearRect(0, 0, w, h);
-      for (const p of particles) {
-        p.an += p.sp;
-        p.x = p.tx + Math.sin(p.an) * p.dr;
-        p.y = p.ty + Math.cos(p.an * 0.7) * p.dr * 0.5;
-        ctx!.beginPath();
-        ctx!.arc(p.x, p.y, p.s, 0, Math.PI * 2);
-        ctx!.fillStyle = "rgba(" + p.c + "," + p.a + ")";
-        ctx!.fill();
-      }
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 100) {
-            ctx!.beginPath();
-            ctx!.moveTo(particles[i].x, particles[i].y);
-            ctx!.lineTo(particles[j].x, particles[j].y);
-            ctx!.strokeStyle = "rgba(74,107,90," + (0.03 * (1 - d / 100)) + ")";
-            ctx!.lineWidth = 0.5;
-            ctx!.stroke();
-          }
-        }
-      }
-      raf = requestAnimationFrame(animate);
-    }
-    raf = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} />;
-}
-
-/* ---- Canvas: Layer Viz (Architecture section) ---- */
-
-function LayerViz({ color }: { color: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const x = c.getContext("2d");
-    if (!x) return;
-    c.width = 400;
-    c.height = 300;
-
-    const pts: Array<{ x: number; y: number; vx: number; vy: number; r: number }> = [];
-    for (let i = 0; i < 40; i++) {
-      pts.push({
-        x: Math.random() * 400,
-        y: Math.random() * 300,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        r: Math.random() * 2 + 0.5,
-      });
-    }
-
-    let raf = 0;
-    function draw() {
-      x!.clearRect(0, 0, 400, 300);
-      for (const p of pts) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > 400) p.vx *= -1;
-        if (p.y < 0 || p.y > 300) p.vy *= -1;
-        x!.beginPath();
-        x!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        x!.fillStyle = color + "0.25)";
-        x!.fill();
-      }
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dd = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
-          if (dd < 80) {
-            x!.beginPath();
-            x!.moveTo(pts[i].x, pts[i].y);
-            x!.lineTo(pts[j].x, pts[j].y);
-            x!.strokeStyle = color + (0.1 * (1 - dd / 80)).toFixed(2) + ")";
-            x!.lineWidth = 0.5;
-            x!.stroke();
-          }
-        }
-      }
-      raf = requestAnimationFrame(draw);
-    }
-    raf = requestAnimationFrame(draw);
-
-    return () => cancelAnimationFrame(raf);
-  }, [color]);
-
-  return <canvas ref={canvasRef} width={400} height={300} />;
-}
-
-/* ---- Custom Cursor ---- */
-
-function CustomCursor() {
-  const curRef = useRef<HTMLDivElement>(null);
-  const dotRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const cur = curRef.current;
-    const dot = dotRef.current;
-    if (!cur || !dot) return;
-
-    let mx = 0, my = 0, cx = 0, cy = 0;
-    let raf = 0;
-
-    function onMove(e: MouseEvent) {
-      mx = e.clientX;
-      my = e.clientY;
-      dot!.style.left = mx + "px";
-      dot!.style.top = my + "px";
-    }
-    document.addEventListener("mousemove", onMove);
-
-    function ac() {
-      cx += (mx - cx) * 0.15;
-      cy += (my - cy) * 0.15;
-      cur!.style.left = cx + "px";
-      cur!.style.top = cy + "px";
-      raf = requestAnimationFrame(ac);
-    }
-    raf = requestAnimationFrame(ac);
-
-    const interactives = document.querySelectorAll("a, button, .mk5-layer-tag, .mk5-int-item, .mk5-stat-item");
-    const enter = () => cur!.classList.add("active");
-    const leave = () => cur!.classList.remove("active");
-    interactives.forEach((el) => {
-      el.addEventListener("mouseenter", enter);
-      el.addEventListener("mouseleave", leave);
-    });
-
-    return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener("mousemove", onMove);
-      interactives.forEach((el) => {
-        el.removeEventListener("mouseenter", enter);
-        el.removeEventListener("mouseleave", leave);
-      });
-    };
-  }, []);
-
+function LayerPictogram({ tier }: { tier: 1 | 2 | 3 }) {
+  const rows = tier === 1 ? 1 : tier === 2 ? 2 : 3;
   return (
-    <>
-      <div ref={curRef} className="mk5-cur" />
-      <div ref={dotRef} className="mk5-cur-dot" />
-    </>
+    <svg viewBox="0 0 240 180" width="100%" height="100%" aria-hidden>
+      {Array.from({ length: rows }).map((_, r) => {
+        const y = 60 + r * 32;
+        const dots = 7 + r * 4;
+        const spread = 40 + r * 24;
+        return (
+          <g key={r}>
+            {Array.from({ length: dots }).map((_, i) => {
+              const cx = 120 + ((i - (dots - 1) / 2) * spread) / (dots - 1);
+              return <circle key={i} cx={cx} cy={y} r="1.6" fill="var(--accent, #0a7d4f)" opacity={0.55 - r * 0.12} />;
+            })}
+            <line x1="40" y1={y} x2="200" y2={y} stroke="var(--border-card, #e4e2db)" strokeWidth="1" />
+          </g>
+        );
+      })}
+      <text x="200" y="170" fontFamily="IBM Plex Mono, monospace" fontSize="9" letterSpacing="0.18em" fill="var(--text-muted, #9a9ea6)" textAnchor="end">
+        L{tier.toString().padStart(2, "0")}
+      </text>
+    </svg>
   );
 }
 
@@ -1055,53 +1127,67 @@ export function MarketingPage() {
   const tickerItems = ["Catalyst", "Not an Agent", "Three Layers", "Governed", "Correlated", "One Truth"];
 
   const integrations = [
-    { icon: "\u25C6", name: "SAP S/4HANA", type: "ERP" },
-    { icon: "\u25C6", name: "SAP Business One", type: "ERP" },
-    { icon: "\u25C7", name: "Dynamics 365", type: "ERP + CRM" },
-    { icon: "\u25C6", name: "Sage 300", type: "ERP" },
-    { icon: "\u25C6", name: "SYSPRO", type: "ERP" },
-    { icon: "\u25C7", name: "Odoo 18", type: "ERP" },
-    { icon: "\u25C6", name: "Oracle Fusion", type: "ERP" },
-    { icon: "\u25C6", name: "NetSuite", type: "ERP" },
-    { icon: "\u25C6", name: "QuickBooks", type: "Accounting" },
-    { icon: "\u25CB", name: "SuccessFactors", type: "HCM" },
-    { icon: "\u25CB", name: "Salesforce", type: "CRM" },
-    { icon: "\u25CB", name: "Xero", type: "Accounting" },
-    { icon: "\u25CB", name: "Workday", type: "HCM" },
-    { icon: "\u2750", name: "REST APIs", type: "Custom" },
-    { icon: "\u2750", name: "Webhooks", type: "Custom" },
+    { icon: "◆", name: "SAP S/4HANA", type: "ERP" },
+    { icon: "◆", name: "SAP Business One", type: "ERP" },
+    { icon: "◇", name: "Dynamics 365", type: "ERP + CRM" },
+    { icon: "◆", name: "Sage 300", type: "ERP" },
+    { icon: "◆", name: "SYSPRO", type: "ERP" },
+    { icon: "◇", name: "Odoo 18", type: "ERP" },
+    { icon: "◆", name: "Oracle Fusion", type: "ERP" },
+    { icon: "◆", name: "NetSuite", type: "ERP" },
+    { icon: "◆", name: "QuickBooks", type: "Accounting" },
+    { icon: "○", name: "SuccessFactors", type: "HCM" },
+    { icon: "○", name: "Salesforce", type: "CRM" },
+    { icon: "○", name: "Xero", type: "Accounting" },
+    { icon: "○", name: "Workday", type: "HCM" },
+    { icon: "❐", name: "REST APIs", type: "Custom" },
+    { icon: "❐", name: "Webhooks", type: "Custom" },
   ];
 
   const coverageDomains = [
-    { icon: "\u25C6", name: "Finance & Controlling", desc: "AP, AR, reconciliation, cash flow, budget vs actual, cost allocation, and inventory valuation.", catalysts: "Finance \u00B7 Finance Ops \u00B7 Treasury \u00B7 Tax \u00B7 Audit \u00B7 GL Close" },
-    { icon: "\u25C7", name: "Supply Chain & Operations", desc: "Procurement, supplier risk, inventory optimisation, 3-way matching, and production scheduling.", catalysts: "Procurement \u00B7 Supplier \u00B7 Inventory \u00B7 Production \u00B7 Logistics" },
-    { icon: "\u25C6", name: "Commercial & Revenue", desc: "Pipeline hygiene, quote-to-cash, pricing intelligence, trade promotion, and revenue ops.", catalysts: "Sales \u00B7 Pricing \u00B7 Trade Promotion \u00B7 CDP \u00B7 Customer Success" },
-    { icon: "\u25C6", name: "People & Workforce", desc: "Recruitment funnel, engagement signals, payroll variance, and workforce planning.", catalysts: "HR \u00B7 Recruitment \u00B7 Engagement \u00B7 Payroll \u00B7 Workforce Planning" },
-    { icon: "\u25C7", name: "Governance, Risk & Compliance", desc: "Audit trails, tax compliance, regulatory reporting, policy monitoring, and DSAR handling.", catalysts: "Audit \u00B7 Tax \u00B7 Compliance \u00B7 ESG \u00B7 Risk" },
-    { icon: "\u25C6", name: "Data Quality & MDM", desc: "Master data hygiene, duplicate detection, entity resolution, and reference data governance.", catalysts: "DQ/MDM \u00B7 Reference Data \u00B7 Entity Resolution" },
-    { icon: "\u25C7", name: "Lean / Continuous Improvement", desc: "Process mining, bottleneck detection, cycle-time reduction, and waste elimination.", catalysts: "Lean/CI \u00B7 Process Mining \u00B7 Cycle Time" },
-    { icon: "\u25C6", name: "Sustainability & ESG", desc: "Scope 1/2/3 tracking, energy and water intensity, and sustainability disclosures.", catalysts: "ESG \u00B7 Energy \u00B7 Emissions \u00B7 Disclosures" },
-    { icon: "\u25CB", name: "IT, Platform & Security", desc: "Connectivity health, integration monitoring, and security posture across the estate.", catalysts: "Integration Health \u00B7 Security Posture \u00B7 Platform Health" },
+    { icon: "◆", name: "Finance & Controlling", desc: "AP, AR, reconciliation, cash flow, budget vs actual, cost allocation, and inventory valuation.", catalysts: "Finance · Finance Ops · Treasury · Tax · Audit · GL Close" },
+    { icon: "◇", name: "Supply Chain & Operations", desc: "Procurement, supplier risk, inventory optimisation, 3-way matching, and production scheduling.", catalysts: "Procurement · Supplier · Inventory · Production · Logistics" },
+    { icon: "◆", name: "Commercial & Revenue", desc: "Pipeline hygiene, quote-to-cash, pricing intelligence, trade promotion, and revenue ops.", catalysts: "Sales · Pricing · Trade Promotion · CDP · Customer Success" },
+    { icon: "◆", name: "People & Workforce", desc: "Recruitment funnel, engagement signals, payroll variance, and workforce planning.", catalysts: "HR · Recruitment · Engagement · Payroll · Workforce Planning" },
+    { icon: "◇", name: "Governance, Risk & Compliance", desc: "Audit trails, tax compliance, regulatory reporting, policy monitoring, and DSAR handling.", catalysts: "Audit · Tax · Compliance · ESG · Risk" },
+    { icon: "◆", name: "Data Quality & MDM", desc: "Master data hygiene, duplicate detection, entity resolution, and reference data governance.", catalysts: "DQ/MDM · Reference Data · Entity Resolution" },
+    { icon: "◇", name: "Lean / Continuous Improvement", desc: "Process mining, bottleneck detection, cycle-time reduction, and waste elimination.", catalysts: "Lean/CI · Process Mining · Cycle Time" },
+    { icon: "◆", name: "Sustainability & ESG", desc: "Scope 1/2/3 tracking, energy and water intensity, and sustainability disclosures.", catalysts: "ESG · Energy · Emissions · Disclosures" },
+    { icon: "○", name: "IT, Platform & Security", desc: "Connectivity health, integration monitoring, and security posture across the estate.", catalysts: "Integration Health · Security Posture · Platform Health" },
+  ];
+
+  const personas = [
+    { role: "Executive", name: "Chief Financial Officer", desc: "Owns the shared-savings ledger. Needs a single living truth across legal entities, with every claim traceable to a source record.", want: "Realised savings, weekly" },
+    { role: "Finance", name: "Group Controller", desc: "Closes the books across subsidiaries. Wants reconciliation, cost variance, and inventory valuation visible before audit asks.", want: "Variance with citation" },
+    { role: "Assurance", name: "Internal Auditor", desc: "Tests the controls behind every autonomous decision. Needs the audit trail, confidence band, and reviewer record for every catalyst run.", want: "Append-only audit log" },
+    { role: "Governance", name: "Board Member", desc: "Reviews material risk and capital allocation. Needs a one-page synthesis with the underlying evidence one click away.", want: "Board-ready synthesis" },
+    { role: "Operations", name: "VP Operations", desc: "Runs the catalysts that actually move cash. Wants schedules, autonomy tiers, and recommendations grounded in ERP signal.", want: "Run health, by domain" },
+  ];
+
+  const proofRows = [
+    { area: "Standard cost variance", source: "SAP S/4HANA · CKMLCR / ACDOCA", field: "vprs_cogm × menge", amount: "$1,820,400", confidence: "High" },
+    { area: "Duplicate remittances", source: "Oracle Fusion AP · ap_invoices_all", field: "invoice_num + supplier + amount", amount: "$412,180", confidence: "High" },
+    { area: "Trade promotion leakage", source: "NetSuite + Salesforce", field: "promo_lift vs baseline_units", amount: "$268,540", confidence: "Medium" },
+    { area: "Payroll overtime drift", source: "Workday · hours / rate / cost_center", field: "ot_hours × burdened_rate", amount: "$134,260", confidence: "Medium" },
   ];
 
   return (
     <div ref={mainRef} className="mk5-body">
-      <div className="mk5-grain" />
-      <CustomCursor />
 
       {/* NAV */}
       <nav className="mk5-nav">
         <a href="/" className="mk5-nav-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-          <AtheonLogo size={28} />
+          <AtheonLogo size={26} />
           Atheon
         </a>
         <div className="mk5-nav-links">
           <a href="#layers">Architecture</a>
+          <a href="#personas">Roles</a>
           <a href="#coverage">Coverage</a>
           <a href="#features">Features</a>
           <a href="#security">Security</a>
           <a href="#compare">Compare</a>
-          <a href="#ethos">Ethos</a>
+          <a href="#proof">Proof</a>
           <a href="/login" className="mk5-nav-cta" style={{ marginRight: '0.5rem' }}>
             <span>Login</span>
           </a>
@@ -1117,11 +1203,12 @@ export function MarketingPage() {
       {/* MOBILE MENU */}
       <div className={`mk5-mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
         <a href="#layers" onClick={() => setMobileMenuOpen(false)}>Architecture</a>
+        <a href="#personas" onClick={() => setMobileMenuOpen(false)}>Roles</a>
         <a href="#coverage" onClick={() => setMobileMenuOpen(false)}>Coverage</a>
         <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
         <a href="#security" onClick={() => setMobileMenuOpen(false)}>Security</a>
         <a href="#compare" onClick={() => setMobileMenuOpen(false)}>Compare</a>
-        <a href="#ethos" onClick={() => setMobileMenuOpen(false)}>Ethos</a>
+        <a href="#proof" onClick={() => setMobileMenuOpen(false)}>Proof</a>
         <a href="/login" className="mk5-nav-cta" onClick={() => setMobileMenuOpen(false)}>
           <span>Login</span>
         </a>
@@ -1132,30 +1219,27 @@ export function MarketingPage() {
 
       {/* HERO */}
       <section className="mk5-hero">
-        <HeroCanvas />
-        <div className="mk5-hero-content">
-          <div className="mk5-hero-left">
-            <div className="mk5-hero-eyebrow">Introducing the Catalyst</div>
-            <h1>
-              <span className="thin">Agents evolve.</span><br />
-              <i>Catalysts</i> <span className="thin">emerge.</span>
-            </h1>
-          </div>
-          <div className="mk5-hero-right">
-            <p className="mk5-hero-desc">
-              Agents automate tasks. Copilots assist individuals. A Catalyst does what neither
-              can&nbsp;&mdash; it governs, correlates, and synthesises across your entire
-              organisation. Atheon is the world&rsquo;s first Catalyst platform. Three layers of
-              intelligence. One living truth.
-            </p>
-            <div className="mk5-hero-actions">
-              <button className="mk5-btn-main" onClick={() => document.getElementById("cta-s")?.scrollIntoView({ behavior: "smooth" })}>
-                Request Access
-              </button>
-              <button className="mk5-btn-line" onClick={() => document.getElementById("layers")?.scrollIntoView({ behavior: "smooth" })}>
-                See the architecture
-              </button>
-            </div>
+        <div className="mk5-hero-left">
+          <div className="mk5-hero-eyebrow">01 &mdash; The Catalyst Platform</div>
+          <h1>
+            <span className="thin">Agents evolve.</span><br />
+            <i>Catalysts</i> <span className="thin">emerge.</span>
+          </h1>
+        </div>
+        <div className="mk5-hero-right">
+          <p className="mk5-hero-desc">
+            Agents automate tasks. Copilots assist individuals. A Catalyst does what neither
+            can&nbsp;&mdash; it governs, correlates, and synthesises across your entire
+            organisation. Atheon is the world&rsquo;s first Catalyst platform. Three layers of
+            intelligence. One living truth, ledgered against your ERP.
+          </p>
+          <div className="mk5-hero-actions">
+            <button className="mk5-btn-main" onClick={() => document.getElementById("cta-s")?.scrollIntoView({ behavior: "smooth" })}>
+              Request Access
+            </button>
+            <button className="mk5-btn-line" onClick={() => document.getElementById("layers")?.scrollIntoView({ behavior: "smooth" })}>
+              See the architecture
+            </button>
           </div>
         </div>
         <div className="mk5-hero-scroll">
@@ -1163,6 +1247,29 @@ export function MarketingPage() {
           <span>Scroll</span>
         </div>
       </section>
+
+      {/* SHARED-SAVINGS STRIP — persistent CFO ledger */}
+      <div className="mk5-ss" aria-label="Shared-savings ledger">
+        <div>
+          <div className="mk5-ss-label">Shared-Savings Ledger</div>
+          <div className="mk5-ss-meta mk5-mono">Trailing 90 days &middot; Q2 2026</div>
+        </div>
+        <div className="mk5-ss-meta mk5-mono" style={{ alignSelf: "end" }}>
+          Every claimed dollar traces to ERP record &middot; field &middot; confidence band.
+        </div>
+        <div className="mk5-ss-figure">
+          <div className="mk5-ss-amount mk5-mono">$12.4m</div>
+          <div className="mk5-ss-tag">Identified</div>
+        </div>
+        <div className="mk5-ss-figure">
+          <div className="mk5-ss-amount mk5-mono">$8.6m</div>
+          <div className="mk5-ss-tag">Approved</div>
+        </div>
+        <div className="mk5-ss-figure">
+          <div className="mk5-ss-amount mk5-mono accent">$6.1m</div>
+          <div className="mk5-ss-tag">Realised</div>
+        </div>
+      </div>
 
       {/* TICKER */}
       <div className="mk5-ticker">
@@ -1198,7 +1305,6 @@ export function MarketingPage() {
             Automates a single task. Operates in a silo. No awareness of what other agents
             are doing. No governance. No organisational context.
           </div>
-          <div className="mk5-evo-arrow">&rarr;</div>
         </div>
         <div className="mk5-evo-item present mk5-reveal mk5-rd1">
           <div className="mk5-evo-era present">Today</div>
@@ -1207,7 +1313,6 @@ export function MarketingPage() {
             Assists one person at a time. Answers questions from a knowledge base. Cannot
             correlate across departments or govern autonomous processes.
           </div>
-          <div className="mk5-evo-arrow">&rarr;</div>
         </div>
         <div className="mk5-evo-item future mk5-reveal mk5-rd2">
           <div className="mk5-evo-era future">The Evolution</div>
@@ -1252,7 +1357,7 @@ export function MarketingPage() {
             </div>
           </div>
           <div className="mk5-layer-visual">
-            <LayerViz color="rgba(163,177,138," />
+            <LayerPictogram tier={1} />
           </div>
         </div>
 
@@ -1274,7 +1379,7 @@ export function MarketingPage() {
             </div>
           </div>
           <div className="mk5-layer-visual">
-            <LayerViz color="rgba(122,172,181," />
+            <LayerPictogram tier={2} />
           </div>
         </div>
 
@@ -1297,7 +1402,7 @@ export function MarketingPage() {
             </div>
           </div>
           <div className="mk5-layer-visual">
-            <LayerViz color="rgba(74,107,90," />
+            <LayerPictogram tier={3} />
           </div>
         </div>
       </section>
@@ -1313,22 +1418,47 @@ export function MarketingPage() {
       {/* STATS */}
       <div className="mk5-stats">
         <div className="mk5-stat-item mk5-reveal">
-          <div className="mk5-stat-num">75<span className="accent">+</span></div>
+          <div className="mk5-stat-num mk5-mono">75<span className="accent">+</span></div>
           <div className="mk5-stat-label">Catalyst Clusters</div>
         </div>
         <div className="mk5-stat-item mk5-reveal mk5-rd1">
-          <div className="mk5-stat-num">445<span className="accent">+</span></div>
+          <div className="mk5-stat-num mk5-mono">445<span className="accent">+</span></div>
           <div className="mk5-stat-label">Sub-Catalysts</div>
         </div>
         <div className="mk5-stat-item mk5-reveal mk5-rd2">
-          <div className="mk5-stat-num">50<span className="accent">+</span></div>
+          <div className="mk5-stat-num mk5-mono">50<span className="accent">+</span></div>
           <div className="mk5-stat-label">Real Handlers Shipping</div>
         </div>
         <div className="mk5-stat-item mk5-reveal mk5-rd3">
-          <div className="mk5-stat-num"><span className="accent">3</span></div>
+          <div className="mk5-stat-num mk5-mono"><span className="accent">3</span></div>
           <div className="mk5-stat-label">Intelligence Layers</div>
         </div>
       </div>
+
+      {/* PERSONAS — auditor + board surfaced */}
+      <section className="mk5-personas" id="personas">
+        <div className="mk5-personas-header">
+          <div className="left">Designed for</div>
+          <div className="mk5-reveal">
+            <h2>Roles that own the result.</h2>
+            <p>
+              Atheon isn&rsquo;t a horizontal copilot. Every layer is shaped around the people
+              who own the outcome &mdash; including the auditor and the board, who other platforms
+              treat as afterthoughts.
+            </p>
+          </div>
+        </div>
+        <div className="mk5-personas-grid">
+          {personas.map((p, i) => (
+            <div key={p.name} className={`mk5-persona mk5-reveal mk5-rd${Math.min(i, 3)}`}>
+              <div className="mk5-persona-role">{p.role}</div>
+              <div className="mk5-persona-name">{p.name}</div>
+              <div className="mk5-persona-desc">{p.desc}</div>
+              <div className="mk5-persona-want">&rarr; {p.want}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* COMPARISON */}
       <section className="mk5-comp" id="compare">
@@ -1336,7 +1466,8 @@ export function MarketingPage() {
           <h2 className="mk5-reveal">Agents and copilots<br />were chapter one.</h2>
           <p className="mk5-reveal">
             Every competitor built agents or copilots. None evolved beyond. Atheon is the
-            world&rsquo;s first Catalyst&nbsp;&mdash; the only platform with all three layers of enterprise intelligence.
+            world&rsquo;s first Catalyst&nbsp;&mdash; the only platform with all three layers of enterprise intelligence,
+            ledgered against your ERP.
           </p>
         </div>
         <div className="mk5-cg mk5-reveal">
@@ -1370,6 +1501,12 @@ export function MarketingPage() {
           <div className="mk5-cc cn">&mdash;</div>
           <div className="mk5-cc ca">&#10003;</div>
 
+          <div className="mk5-cc rl">Shared-Savings Billing</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc cn">&mdash;</div>
+          <div className="mk5-cc ca">&#10003;</div>
+
           <div className="mk5-cc rl">Agent Governance</div>
           <div className="mk5-cc cp">Partial</div>
           <div className="mk5-cc cp">Partial</div>
@@ -1380,7 +1517,7 @@ export function MarketingPage() {
           <div className="mk5-cc cp">M365</div>
           <div className="mk5-cc cp">SFDC</div>
           <div className="mk5-cc cp">Custom</div>
-          <div className="mk5-cc ca">SAP · Oracle · MS · NetSuite · Odoo · Xero · Workday +</div>
+          <div className="mk5-cc ca">SAP &middot; Oracle &middot; MS &middot; NetSuite &middot; Odoo &middot; Xero &middot; Workday +</div>
 
           <div className="mk5-cc rl">Organisation Health Score</div>
           <div className="mk5-cc cn">&mdash;</div>
@@ -1411,6 +1548,47 @@ export function MarketingPage() {
           <div className="mk5-cc cn">&mdash;</div>
           <div className="mk5-cc cn">&mdash;</div>
           <div className="mk5-cc ca">&#10003;</div>
+        </div>
+      </section>
+
+      {/* PROOF LEDGER — evidenced shared-savings rows */}
+      <section className="mk5-proof" id="proof">
+        <div className="mk5-proof-header">
+          <div className="left">Proof Ledger</div>
+          <div className="mk5-reveal">
+            <h2>Every claim, traceable to a record.</h2>
+            <p>
+              Shared-savings means we get paid on what you keep. So every line on this ledger
+              maps to a specific ERP source, the field calculation that produced it, and the
+              confidence band the catalyst assigned. No black boxes.
+            </p>
+          </div>
+        </div>
+        <div className="mk5-pl mk5-reveal">
+          <div className="mk5-plh">Area</div>
+          <div className="mk5-plh">ERP Source</div>
+          <div className="mk5-plh">Field Mapping</div>
+          <div className="mk5-plh">Amount</div>
+          <div className="mk5-plh">Confidence</div>
+          {proofRows.map((r) => (
+            <span key={r.area} style={{ display: "contents" }}>
+              <div className="mk5-plc">
+                <span className="title">{r.area}</span>
+              </div>
+              <div className="mk5-plc muted">
+                <span className="sub">{r.source}</span>
+              </div>
+              <div className="mk5-plc muted">
+                <span className="sub">{r.field}</span>
+              </div>
+              <div className="mk5-plc">
+                <span className="amount">{r.amount}</span>
+              </div>
+              <div className="mk5-plc muted">
+                <span className="sub">{r.confidence}</span>
+              </div>
+            </span>
+          ))}
         </div>
       </section>
 
@@ -1461,15 +1639,15 @@ export function MarketingPage() {
           </div>
           <div className="mk5-ind-featured-stats">
             <div className="mk5-ind-stat-row">
-              <div className="mk5-ind-stat-num">75</div>
+              <div className="mk5-ind-stat-num mk5-mono">75</div>
               <div className="mk5-ind-stat-label">Catalyst clusters in the<br />shared catalog</div>
             </div>
             <div className="mk5-ind-stat-row">
-              <div className="mk5-ind-stat-num">445</div>
+              <div className="mk5-ind-stat-num mk5-mono">445</div>
               <div className="mk5-ind-stat-label">Sub-catalysts, each with<br />its own schedule and tier</div>
             </div>
             <div className="mk5-ind-stat-row">
-              <div className="mk5-ind-stat-num">3</div>
+              <div className="mk5-ind-stat-num mk5-mono">3</div>
               <div className="mk5-ind-stat-label">Autonomy tiers from<br />read-only to transactional</div>
             </div>
           </div>
@@ -1551,7 +1729,7 @@ export function MarketingPage() {
             </ul>
           </div>
           <div className="mk5-feat-item mk5-reveal">
-            <div className="mk5-feat-item-label">Governance & Trust</div>
+            <div className="mk5-feat-item-label">Governance &amp; Trust</div>
             <div className="mk5-feat-item-title">Enforced MFA, signed webhooks, encrypted exports</div>
             <p className="mk5-feat-item-desc">
               Every catalyst action is logged. MFA is enforced for privileged roles. Outbound
@@ -1585,7 +1763,7 @@ export function MarketingPage() {
             </ul>
           </div>
           <div className="mk5-feat-item mk5-reveal">
-            <div className="mk5-feat-item-label">Knowledge & Memory</div>
+            <div className="mk5-feat-item-label">Knowledge &amp; Memory</div>
             <div className="mk5-feat-item-title">Enterprise knowledge graph</div>
             <p className="mk5-feat-item-desc">
               Every entity, relationship, and decision is mapped into a living knowledge graph.
@@ -1763,18 +1941,18 @@ export function MarketingPage() {
         <div className="mk5-fl">Atheon</div>
         <div className="mk5-fc">
           The World&rsquo;s First Catalyst Platform&nbsp;&mdash; A Vanta X Platform
-          <div style={{ marginTop: '0.5rem', fontSize: '0.85em', opacity: 0.8 }}>
-            <a href="/status" style={{ color: 'inherit', textDecoration: 'underline' }}>Status</a>
+          <div style={{ marginTop: '0.5rem', fontSize: '0.85em' }}>
+            <a href="/status">Status</a>
             {' · '}
-            <a href="/legal/security" style={{ color: 'inherit', textDecoration: 'underline' }}>Security &amp; Privacy</a>
+            <a href="/legal/security">Security &amp; Privacy</a>
             {' · '}
-            <a href="/legal/connectors" style={{ color: 'inherit', textDecoration: 'underline' }}>Connectors</a>
+            <a href="/legal/connectors">Connectors</a>
             {' · '}
-            <a href="/legal/performance" style={{ color: 'inherit', textDecoration: 'underline' }}>Performance</a>
+            <a href="/legal/performance">Performance</a>
             {' · '}
-            <a href="/pricing" style={{ color: 'inherit', textDecoration: 'underline' }}>Pricing</a>
+            <a href="/pricing">Pricing</a>
             {' · '}
-            <a href="/login" style={{ color: 'inherit', textDecoration: 'underline' }}>Sign in</a>
+            <a href="/login">Sign in</a>
           </div>
         </div>
         <div className="mk5-fr">&copy; 2026 Atheon. All rights reserved.</div>
