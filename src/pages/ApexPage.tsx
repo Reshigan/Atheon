@@ -10,7 +10,7 @@ import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
-import { EditorialHero } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 
@@ -44,9 +44,9 @@ import { ExecutiveActionsCallout } from "@/components/apex/ExecutiveActionsCallo
 
 
 const trendIcon = (trend: string, size = 14) => {
- if (trend === 'up' || trend === 'improving') return <TrendingUp size={size} className="text-emerald-400" />;
- if (trend === 'down' || trend === 'declining') return <TrendingDown size={size} className="text-red-400" />;
- return <Minus size={size} className="text-gray-400" />;
+ if (trend === 'up' || trend === 'improving') return <TrendingUp size={size} style={{ color: 'var(--positive)' }} />;
+ if (trend === 'down' || trend === 'declining') return <TrendingDown size={size} style={{ color: 'var(--neg)' }} />;
+ return <Minus size={size} className="t-muted" />;
 };
 
 const riskImpactLabel = (probability: number) => probability >= 0.7 ? 'Very High' : probability >= 0.5 ? 'High' : probability >= 0.3 ? 'Medium' : 'Low';
@@ -175,14 +175,14 @@ function ExecutiveBriefHero({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger" data-testid="apex-brief-hero">
       {/* ── Health ── */}
-      <Card className="p-5 cursor-pointer hover:border-accent/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(163,177,138,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('health')}>
+      <Card className="p-5 cursor-pointer hover:border-accent/40 hover:-translate-y-px active:scale-[0.98] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('health')}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Crown className="w-4 h-4 text-accent" />
             <h3 className="text-sm font-semibold t-primary">Atheon Score</h3>
           </div>
           {delta !== null && (
-            <span className={`text-xs font-medium ${deltaPositive ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 't-muted'}`}>
+            <span className="text-xs font-medium font-mono tnum" style={{ color: deltaPositive ? 'var(--positive)' : (delta ?? 0) < 0 ? 'var(--neg)' : undefined }}>
               {deltaPositive ? '+' : ''}{delta} pts
             </span>
           )}
@@ -202,10 +202,10 @@ function ExecutiveBriefHero({
       </Card>
 
       {/* ── Top Risks ── */}
-      <Card className="p-5 cursor-pointer hover:border-red-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(239,68,68,0.25)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('risks')}>
+      <Card className="p-5 cursor-pointer hover:border-[var(--border-card)] hover:-translate-y-px active:scale-[0.98] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('risks')}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <AlertTriangle className="w-4 h-4" style={{ color: 'var(--neg)' }} />
             <h3 className="text-sm font-semibold t-primary">Top Risks</h3>
           </div>
           <span className="text-xs t-muted">{risks.length} active</span>
@@ -242,7 +242,7 @@ function ExecutiveBriefHero({
       </Card>
 
       {/* ── Strategic Signal ── */}
-      <Card className="p-5 cursor-pointer hover:border-sky-400/40 hover:-translate-y-px active:scale-[0.98] hover:shadow-[0_10px_24px_-8px_rgba(56,189,248,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('strategic-context')}>
+      <Card className="p-5 cursor-pointer hover:border-accent/40 hover:-translate-y-px active:scale-[0.98] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]" onClick={() => onJumpToTab('strategic-context')}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Radar className="w-4 h-4 text-accent" />
@@ -617,12 +617,13 @@ export function ApexPage() {
           executive intelligence header. Hidden for tenants without
           realised savings yet; dismissible per session. */}
       <SharedSavingsStrip />
-      <EditorialHero
-        kicker="Apex · Business Health"
-        figure={`${overallScore}`}
-        deck={dimensions.length > 0
+      <PageHeader
+        eyebrow="Apex · Executive Intelligence"
+        title="Executive intelligence"
+        dek={dimensions.length > 0
           ? `${dimensions.length} business dimensions monitored — ${heroCriticalDims} critical · ${risks.length} active risk ${risks.length === 1 ? 'alert' : 'alerts'}.`
           : 'No business-health data yet. Run a catalyst to populate executive dimensions.'}
+        live
         actions={
           <div className="flex items-center gap-2 flex-shrink-0">
             <SectionFreshness section="Health" />
@@ -677,7 +678,7 @@ export function ApexPage() {
    </div>
    <Link
      to="/pulse"
-     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] shadow-sm flex-shrink-0 active:scale-[0.97]"
+     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium bg-[var(--accent)] text-white hover:opacity-90 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] shadow-sm flex-shrink-0 active:scale-[0.97]"
      aria-label="Open the operational action queue in Pulse"
    >
      Review in Pulse <ChevronRight size={14} />
@@ -685,10 +686,10 @@ export function ApexPage() {
  </div>
 
  {actionError && (
- <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
- <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
- <p className="text-sm text-red-400 flex-1">{actionError}</p>
- <button type="button" onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/50 rounded p-0.5" aria-label="Dismiss error message" title="Dismiss error"><X size={14} aria-hidden="true" /></button>
+ <div className="flex items-center gap-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'var(--neg)' }}>
+ <AlertCircle size={16} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+ <p className="text-sm flex-1" style={{ color: 'var(--neg)' }}>{actionError}</p>
+ <button type="button" onClick={() => setActionError(null)} className="focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] rounded p-0.5" style={{ color: 'var(--neg)' }} aria-label="Dismiss error message" title="Dismiss error"><X size={14} aria-hidden="true" /></button>
  </div>
  )}
 
@@ -715,7 +716,7 @@ export function ApexPage() {
   <button
    onClick={loadExecInsights}
    disabled={execInsightsLoading}
-   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
+   className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-accent border border-[var(--border-card)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 flex-shrink-0 active:scale-[0.97]"
    title="Generate AI-powered executive insights"
   >
    <Lightbulb size={12} className={execInsightsLoading ? 'animate-pulse' : ''} />
@@ -725,10 +726,10 @@ export function ApexPage() {
 
  {/* AI Executive Insights Panel */}
  {execInsights && (
-  <Card className="border-purple-500/20 bg-purple-500/5">
+  <Card>
    <div className="flex items-center justify-between mb-3">
     <div className="flex items-center gap-2">
-     <Lightbulb size={16} className="text-purple-400" />
+     <Lightbulb size={16} className="text-accent" />
      <h3 className="text-sm font-semibold t-primary">Atheon Intelligence — Executive Summary</h3>
     </div>
     <span className="text-caption t-muted">{execInsights.poweredBy}</span>
@@ -739,7 +740,7 @@ export function ApexPage() {
      <p className="text-xs font-medium t-primary mb-1.5">Performance Drivers</p>
      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
       {execInsights.performanceDrivers.map((d, i) => (
-       <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+       <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
         <div className="flex-1">
          <p className="text-xs font-medium t-primary">{d.dimension}</p>
          <p className="text-caption t-muted">{d.driver}</p>
@@ -756,7 +757,7 @@ export function ApexPage() {
      <div className="space-y-1.5">
       {execInsights.issues.map((issue, i) => (
        <div key={i} className="flex items-start gap-2 text-xs">
-        <AlertTriangle size={10} className={issue.severity === 'critical' ? 'text-red-400' : issue.severity === 'high' ? 'text-amber-400' : 'text-gray-400'} />
+        <AlertTriangle size={10} style={{ color: issue.severity === 'critical' ? 'var(--neg)' : issue.severity === 'high' ? 'var(--warning)' : undefined }} className={!(issue.severity === 'critical' || issue.severity === 'high') ? 't-muted' : ''} />
         <div>
          <span className="font-medium t-primary">{issue.title}</span>
          <span className="t-muted"> — {issue.description}</span>
@@ -785,7 +786,7 @@ export function ApexPage() {
      <ul className="space-y-1">
       {execInsights.strategicImplications.map((s, i) => (
        <li key={i} className="text-xs t-secondary flex items-start gap-1.5">
-        <ArrowRight size={10} className="text-purple-400 mt-0.5 flex-shrink-0" />
+        <ArrowRight size={10} className="text-accent mt-0.5 flex-shrink-0" />
         {s}
        </li>
       ))}
@@ -811,11 +812,11 @@ export function ApexPage() {
      <p className="text-caption t-muted mt-1 text-center">Health</p>
     </Card>
     <Card className="flex flex-col items-center justify-center py-3 px-2">
-     <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{risks.length}</p>
+     <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{risks.length}</p>
      <p className="text-caption t-muted text-center">Risks</p>
     </Card>
     <Card className="flex flex-col items-center justify-center py-3 px-2">
-     <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{dimensions.filter(d => d.score < 60).length}</p>
+     <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{dimensions.filter(d => d.score < 60).length}</p>
      <p className="text-caption t-muted text-center">Critical</p>
     </Card>
    </div>
@@ -830,7 +831,7 @@ export function ApexPage() {
       <button
        key={dim.key}
        onClick={() => handleOpenDimensionTrace(dim.key)}
-       className="snap-center flex-shrink-0 w-[140px] rounded-xl p-4 text-left hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
+       className="snap-center flex-shrink-0 w-[140px] rounded-md p-4 text-left hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', minHeight: 44 }}
        aria-label={`${dim.name} dimension — open traceability`}
       >
@@ -870,9 +871,9 @@ export function ApexPage() {
       <Sparkline
         data={healthHistory.history.map(h => h.overallScore)}
         width={180} height={28}
-        color={healthHistory.delta >= 0 ? '#10b981' : '#ef4444'}
+        color={healthHistory.delta >= 0 ? 'var(--positive)' : 'var(--neg)'}
       />
-      <span className={`text-caption font-medium ${healthHistory.delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+      <span className="text-caption font-medium font-mono tnum" style={{ color: healthHistory.delta >= 0 ? 'var(--positive)' : 'var(--neg)' }}>
         {healthHistory.delta >= 0 ? '▲' : '▼'} {healthHistory.deltaLabel}
       </span>
     </div>
@@ -901,11 +902,11 @@ export function ApexPage() {
          </div>
          <div className="flex items-center gap-1 w-20">
           {trendIcon(dim.trend, 12)}
-          <span className={`text-xs ${dim.change >= 0 ? 'text-emerald-400' : dim.change < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+          <span className="text-xs font-mono tnum" style={{ color: dim.change > 0 ? 'var(--positive)' : dim.change < 0 ? 'var(--neg)' : undefined }}>
            {dim.change > 0 ? '+' : ''}{dim.change}
           </span>
          </div>
-         <Sparkline data={dim.sparkline} width={60} height={20} color={dim.score >= 80 ? '#10b981' : dim.score >= 60 ? '#f59e0b' : '#ef4444'} />
+         <Sparkline data={dim.sparkline} width={60} height={20} color={dim.score >= 80 ? 'var(--positive)' : dim.score >= 60 ? 'var(--warning)' : 'var(--neg)'} />
          <button
           type="button"
           onClick={() => toggleDimensionCompare(dim.key)}
@@ -976,8 +977,8 @@ export function ApexPage() {
       </div>
      ) : (
       risks.slice(0, 4).map((risk, i) => (
-       <div key={risk.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-        <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: risk.severity === 'critical' ? 'rgba(239,68,68,0.15)' : 'var(--accent)', color: risk.severity === 'critical' ? '#ef4444' : 'var(--text-on-accent)' }}>
+       <div key={risk.id} className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+        <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: risk.severity === 'critical' ? 'rgb(var(--neg-rgb) / 0.12)' : 'var(--accent)', color: risk.severity === 'critical' ? 'var(--neg)' : 'var(--text-on-accent)' }}>
          {i + 1}
         </div>
         <div className="flex-1 min-w-0">
@@ -1021,7 +1022,7 @@ export function ApexPage() {
    <h3 className="text-headline-md font-semibold t-primary">Daily Briefing Narrative</h3>
   </div>
   <span className="text-caption font-mono t-muted flex items-center gap-1.5">
-   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#34D399' }} aria-hidden="true" />
+   <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent)' }} aria-hidden="true" />
    {briefing?.generatedAt
      ? `Generated ${new Date(briefing.generatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`
      : 'Generating…'}
@@ -1040,7 +1041,7 @@ export function ApexPage() {
    };
    return <>
  {briefing.healthDelta !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
+ <div className="p-3 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">Health Delta</span>
    <MetricSource source={{
@@ -1053,13 +1054,13 @@ export function ApexPage() {
      drillTo: '/pulse',
    }} />
  </div>
- <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.healthDelta ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+ <p className="text-headline-lg font-bold mt-1 font-mono tabular-nums" style={{ color: (briefing.healthDelta ?? 0) >= 0 ? 'var(--positive)' : 'var(--neg)' }}>
  {(briefing.healthDelta ?? 0) > 0 ? '+' : ''}{briefing.healthDelta}<span className="text-body-sm font-normal t-muted ml-0.5">pts</span>
  </p>
  </div>
  )}
  {briefing.redMetricCount !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors active:scale-[0.97]">
+ <div className="p-3 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">RED Metrics</span>
    <MetricSource source={{
@@ -1073,11 +1074,11 @@ export function ApexPage() {
      drillTo: '/pulse',
    }} />
  </div>
- <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.redMetricCount ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{briefing.redMetricCount}</p>
+ <p className="text-headline-lg font-bold mt-1 font-mono tabular-nums" style={{ color: (briefing.redMetricCount ?? 0) > 0 ? 'var(--neg)' : 'var(--positive)' }}>{briefing.redMetricCount}</p>
  </div>
  )}
  {briefing.anomalyCount !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
+ <div className="p-3 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">Anomalies</span>
    <MetricSource source={{
@@ -1090,11 +1091,11 @@ export function ApexPage() {
      drillTo: '/pulse',
    }} />
  </div>
- <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.anomalyCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.anomalyCount}</p>
+ <p className="text-headline-lg font-bold mt-1 font-mono tabular-nums" style={{ color: (briefing.anomalyCount ?? 0) > 0 ? 'var(--warning)' : 'var(--positive)' }}>{briefing.anomalyCount}</p>
  </div>
  )}
  {briefing.activeRiskCount !== null && (
- <div className="p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
+ <div className="p-3 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
  <div className="flex items-center justify-between">
    <span className="text-caption uppercase tracking-wider t-muted">Active Risks</span>
    <MetricSource source={{
@@ -1106,7 +1107,7 @@ export function ApexPage() {
      sample: briefing.activeRiskCount,
    }} />
  </div>
- <p className={`text-headline-lg font-bold mt-1 font-mono tabular-nums ${(briefing.activeRiskCount ?? 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{briefing.activeRiskCount}</p>
+ <p className="text-headline-lg font-bold mt-1 font-mono tabular-nums" style={{ color: (briefing.activeRiskCount ?? 0) > 0 ? 'var(--warning)' : 'var(--positive)' }}>{briefing.activeRiskCount}</p>
  </div>
  )}
    </>;
@@ -1142,7 +1143,7 @@ export function ApexPage() {
 
  <Card>
  <h3 className="text-base font-semibold t-primary mb-3 flex items-center gap-2">
- <AlertTriangle className="w-4 h-4 text-red-400" /> Top Risks
+ <AlertTriangle className="w-4 h-4" style={{ color: 'var(--neg)' }} /> Top Risks
  </h3>
  <div className="space-y-3">
  {(briefing?.risks || []).map((risk, i) => {
@@ -1150,7 +1151,7 @@ export function ApexPage() {
   const sev = (r.severity || '').toLowerCase();
   const badgeVariant = sev === 'critical' ? 'danger' : sev === 'high' ? 'warning' : sev === 'medium' ? 'info' : 'warning';
   return (
-   <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+   <div key={i} className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
     <div className="flex items-start justify-between gap-2">
      <h4 className="text-sm font-medium t-primary">{r.title}</h4>
      <Badge variant={badgeVariant} size="sm">{r.severity || 'risk'}</Badge>
@@ -1171,7 +1172,7 @@ export function ApexPage() {
 
  <Card variant="default">
  <h3 className="text-base font-semibold t-primary mb-3 flex items-center gap-2">
- <Lightbulb className="w-4 h-4 text-emerald-400" /> Opportunities
+ <Lightbulb className="w-4 h-4 text-accent" /> Opportunities
  </h3>
  <div className="space-y-3">
  {(briefing?.opportunities || []).map((opp, i) => {
@@ -1180,7 +1181,7 @@ export function ApexPage() {
    ? `${o.currency || 'ZAR'} ${o.estimated_savings.toLocaleString()}`
    : null;
   return (
-   <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+   <div key={i} className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
     <div className="flex items-start justify-between gap-2">
      <h4 className="text-sm font-medium t-primary">{o.title}</h4>
      <Badge variant="success" size="sm">opportunity</Badge>
@@ -1219,7 +1220,7 @@ export function ApexPage() {
   const urg = (d.urgency || '').toLowerCase();
   const urgVariant = urg === 'critical' ? 'danger' : urg === 'high' ? 'warning' : urg === 'medium' ? 'info' : 'info';
   return (
-   <div key={i} className="p-4 rounded-lg bg-accent/5 border border-accent/10 mt-3">
+   <div key={i} className="p-4 rounded-md bg-accent/5 border border-accent/10 mt-3">
     <div className="flex items-start justify-between gap-2">
      <h4 className="text-sm font-semibold t-primary">{d.decision}</h4>
      {d.urgency && <Badge variant={urgVariant} size="sm">{d.urgency}</Badge>}
@@ -1261,7 +1262,7 @@ export function ApexPage() {
  </div>
  )}
  {riskHeatFilter && visibleRisks.length === 0 && risks.length > 0 && (
-  <div className="flex items-center gap-3 py-6 px-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+  <div className="flex items-center gap-3 py-6 px-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
    <AlertCircle className="w-4 h-4 t-muted flex-shrink-0" />
    <p className="text-sm t-muted flex-1">No risks match the selected filter.</p>
    <button onClick={() => setRiskHeatFilter(null)} className="text-xs text-accent hover:text-accent/80">Clear filter</button>
@@ -1271,20 +1272,22 @@ export function ApexPage() {
  <div
  key={risk.id}
   onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
- className="group rounded-2xl p-5 cursor-pointer hover:-translate-y-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+ className="group rounded-md p-5 cursor-pointer hover:-translate-y-0.5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
  style={{
   background: 'var(--bg-card-solid)',
   border: expandedRisk === risk.id ? '1px solid rgba(163, 177, 138, 0.20)' : '1px solid var(--border-card)',
-  boxShadow: '0 2px 12px rgba(100, 120, 180, 0.07), 0 0 0 1px rgba(255,255,255,0.5)',
+  boxShadow: 'none',
  }}
  >
  <div className="flex items-start gap-4">
- <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
- risk.severity === 'critical' ? 'bg-red-500/10' : risk.severity === 'high' ? 'bg-accent/10' : 'bg-accent/10'
- }`}>
- <AlertTriangle className={`w-5 h-5 ${
- risk.severity === 'critical' ? 'text-red-400' : risk.severity === 'high' ? 'text-accent' : 'text-accent'
- }`} />
+ <div
+  className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0"
+  style={{ background: risk.severity === 'critical' ? 'rgb(var(--neg-rgb) / 0.08)' : 'rgb(var(--accent-rgb) / 0.08)' }}
+ >
+ <AlertTriangle
+  className="w-5 h-5"
+  style={{ color: risk.severity === 'critical' ? 'var(--neg)' : 'var(--accent)' }}
+ />
  </div>
  <div className="flex-1 min-w-0">
   <div className="flex items-start justify-between gap-3">
@@ -1302,7 +1305,7 @@ export function ApexPage() {
  </div>
  <p className="text-sm t-muted mt-1">{risk.description}</p>
  <div className="flex items-center justify-between gap-3 mt-2">
-   <div className="flex items-center gap-4 text-xs text-gray-400">
+   <div className="flex items-center gap-4 text-xs t-muted">
      <span>Probability: {Math.round(risk.probability * 100)}%</span>
      <span className="inline-flex items-center gap-1">
        Impact:
@@ -1335,7 +1338,7 @@ export function ApexPage() {
  {expandedRisk === risk.id && (
  <div className="mt-4 space-y-4 animate-fadeIn">
  {/* Risk Report Header */}
- <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div className="flex items-center gap-2 mb-3">
  <FileText className="w-4 h-4 text-accent" />
  <h4 className="text-sm font-semibold t-primary">Risk Review</h4>
@@ -1343,22 +1346,22 @@ export function ApexPage() {
 
  {/* Risk Matrix Summary */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
- <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <span className="text-label">Likelihood</span>
  <p className="text-sm font-bold t-primary mt-0.5">{riskImpactLabel(risk.probability)}</p>
  <div className="h-1.5 rounded-full mt-1.5 overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
- <div className="h-full rounded-full" style={{ width: `${riskLikelihoodBar(risk.probability)}%`, background: risk.severity === 'critical' ? '#ef4444' : risk.severity === 'high' ? '#f59e0b' : 'var(--accent)' }} />
+ <div className="h-full" style={{ width: `${riskLikelihoodBar(risk.probability)}%`, background: risk.severity === 'critical' ? 'var(--neg)' : risk.severity === 'high' ? 'var(--warning)' : 'var(--accent)' }} />
  </div>
  </div>
- <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <span className="text-label">Financial Impact</span>
  <p className="text-sm font-bold t-primary mt-0.5">{risk.impactValue.toLocaleString()} {risk.impactUnit}</p>
  </div>
- <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <span className="text-label">Risk Category</span>
  <p className="text-sm font-bold t-primary mt-0.5 capitalize">{risk.category}</p>
  </div>
- <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <span className="text-label">Detected</span>
  <p className="text-sm font-bold t-primary mt-0.5">{risk.detectedAt ? new Date(risk.detectedAt).toLocaleDateString() : '--'}</p>
  </div>
@@ -1382,7 +1385,7 @@ export function ApexPage() {
  <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-card-solid)' }}>
  <div className="h-full rounded-full transition-all duration-700" style={{
  width: `${Math.round(risk.probability * 100)}%`,
- background: risk.severity === 'critical' ? 'linear-gradient(90deg, #ef4444, #dc2626)' : risk.severity === 'high' ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, var(--accent), var(--accent))'
+ background: risk.severity === 'critical' ? 'var(--neg)' : risk.severity === 'high' ? 'var(--warning)' : 'var(--accent)'
  }} />
  </div>
  <span className="text-xs font-bold t-primary w-10 text-right">{Math.round(risk.probability * 100)}/100</span>
@@ -1391,14 +1394,14 @@ export function ApexPage() {
  </div>
 
  {/* Recommended Actions */}
- <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div className="flex items-center gap-2 mb-3">
  <Shield className="w-4 h-4 text-accent" />
  <h4 className="text-sm font-semibold t-primary">Recommended Next Steps</h4>
  </div>
  <div className="space-y-2.5">
  {risk.recommendedActions.map((action, i) => (
- <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+ <div key={i} className="flex items-start gap-3 p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
  <div className="w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold flex-shrink-0" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>
  {i + 1}
  </div>
@@ -1497,7 +1500,7 @@ export function ApexPage() {
        disabled={askingApex}
        placeholder="What if we cut DSO from 56 to 45 days over the next two quarters?"
        rows={2}
-       className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary placeholder:t-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/40 transition-colors duration-150 resize-none"
+       className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary placeholder:t-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/40 transition-colors duration-150 resize-none"
        data-testid="apex-ask-input"
        onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runAgenticPrompt(); }}
      />
@@ -1515,7 +1518,7 @@ export function ApexPage() {
        </Button>
      </div>
      {lastPlan && (
-       <div className="mt-2 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]" data-testid="apex-ask-plan">
+       <div className="mt-2 p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]" data-testid="apex-ask-plan">
          <div className="flex items-center gap-2 mb-1">
            <span className="text-caption font-semibold t-primary">Plan</span>
            <Badge variant={lastPlan.source === 'llm' ? 'success' : 'warning'} size="sm">
@@ -1548,7 +1551,7 @@ export function ApexPage() {
          key={t.id}
          onClick={() => runScenarioTemplate(t)}
          disabled={!!runningTemplate}
-         className="text-left p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 disabled:cursor-wait active:scale-[0.97]"
+         className="text-left p-3 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 disabled:cursor-wait active:scale-[0.97]"
          data-testid={`scenario-template-${t.id}`}
        >
          <div className="flex items-start justify-between gap-2 mb-1">
@@ -1620,7 +1623,7 @@ export function ApexPage() {
      <button
       type="button"
       onClick={() => toggleScenarioCompare(scenario.id)}
-      className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-caption font-medium transition-colors ${selectedScenarios.includes(scenario.id) ? 'bg-accent/20 text-accent border border-accent/40' : 'bg-[var(--bg-secondary)] text-accent border border-[var(--border-card)] hover:bg-accent/10'}`}
+      className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-caption font-medium transition-colors ${selectedScenarios.includes(scenario.id) ? 'bg-accent/20 text-accent border border-accent/40' : 'bg-[var(--bg-secondary)] text-accent border border-[var(--border-card)] hover:bg-accent/10'}`}
       title={selectedScenarios.includes(scenario.id) ? 'Remove from comparison' : 'Add to comparison'}
       aria-pressed={selectedScenarios.includes(scenario.id)}
      >
@@ -1632,7 +1635,7 @@ export function ApexPage() {
     {/* Scenario Report */}
     {hasResults && (
      <div className="mt-4 space-y-4 animate-fadeIn">
-      <div className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+      <div className="p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
        <div className="flex items-center gap-2 mb-3">
         <BarChart3 className="w-4 h-4 text-accent" />
         <h4 className="text-sm font-semibold t-primary">Results Overview</h4>
@@ -1646,7 +1649,7 @@ export function ApexPage() {
        {resultEntries.length > 0 && (
        <div className={`grid grid-cols-2 ${resultEntries.length >= 3 ? 'md:grid-cols-3' : ''} gap-3 mb-4`}>
         {resultEntries.map(([key, val]) => (
-         <div key={key} className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+         <div key={key} className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
           <span className="text-label">{key.replace(/[_-]/g, ' ')}</span>
           <p className="text-lg font-bold t-primary mt-0.5">{typeof val === 'number' ? val.toLocaleString() : val}</p>
          </div>
@@ -1693,14 +1696,14 @@ export function ApexPage() {
          {scenario.variables.map((variable, i) => {
           const varName = resolveScenarioVariableName(variable);
           return (
-          <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+          <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
            <Lightbulb className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
            <span className="text-sm t-secondary">Monitor <span className="font-medium t-primary">{varName}</span> closely and review thresholds if deviation exceeds projected ranges.</span>
           </div>
           );
          })}
          {scenario.variables.length === 0 && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+          <div className="flex items-start gap-2 p-2 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
            <Lightbulb className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
            <span className="text-sm t-secondary">Review the projected outcomes and incorporate findings into strategic planning.</span>
           </div>
@@ -1713,7 +1716,7 @@ export function ApexPage() {
 
     {/* Pending state */}
     {!hasResults && scenario.status !== 'completed' && (
-     <div className="mt-4 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
+     <div className="mt-4 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
       <Loader2 className="w-5 h-5 text-accent animate-spin mx-auto mb-2" />
       <p className="text-sm t-muted">Scenario is being processed...</p>
       <p className="text-caption t-muted mt-1">Results will appear here once the analysis completes.</p>
@@ -1722,7 +1725,7 @@ export function ApexPage() {
 
     {/* Completed but no results */}
     {!hasResults && scenario.status === 'completed' && (
-     <div className="mt-4 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
+     <div className="mt-4 p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-center">
       <BarChart3 className="w-5 h-5 t-muted mx-auto mb-2 opacity-40" />
       <p className="text-sm t-muted">No results were generated for this scenario.</p>
      </div>
@@ -1736,12 +1739,12 @@ export function ApexPage() {
  {/* Scenario Builder Modal */}
  {showScenarioBuilder && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-5 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md shadow-sm p-6 w-full max-w-lg space-y-5 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
  <BarChart3 size={18} className="text-accent" /> Scenario Builder
  </h3>
- <button type="button" onClick={() => setShowScenarioBuilder(false)} className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-1" aria-label="Close scenario builder"><X size={18} aria-hidden="true" /></button>
+ <button type="button" onClick={() => setShowScenarioBuilder(false)} className="t-muted hover:t-primary focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-1 rounded p-1" aria-label="Close scenario builder"><X size={18} aria-hidden="true" /></button>
  </div>
 
  {/* Step Indicator */}
@@ -1765,7 +1768,7 @@ export function ApexPage() {
  <div>
  <label className="text-xs t-muted">Scenario Title</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={scenarioTitle}
  onChange={e => setScenarioTitle(e.target.value)}
  placeholder="e.g. Revenue decline impact analysis"
@@ -1775,7 +1778,7 @@ export function ApexPage() {
  <div>
  <label className="text-xs t-muted">Description</label>
  <textarea
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary resize-none"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary resize-none"
  rows={3}
  value={scenarioDescription}
  onChange={e => setScenarioDescription(e.target.value)}
@@ -1799,7 +1802,7 @@ export function ApexPage() {
  <button
  key={m.id}
  onClick={() => setScenarioModelType(m.id)}
- className={`p-3 rounded-lg border text-left transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
+ className={`p-3 rounded-md border text-left transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
  scenarioModelType === m.id
  ? 'bg-accent/10 border-accent/40 ring-1 ring-accent/30'
  : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
@@ -1813,7 +1816,7 @@ export function ApexPage() {
  <div>
  <label className="text-xs t-muted">Analysis Query</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={scenarioQuery}
  onChange={e => setScenarioQuery(e.target.value)}
  placeholder="e.g. What if revenue drops by 10%?"
@@ -1834,19 +1837,19 @@ export function ApexPage() {
  {scenarioVariables.map((v, idx) => (
  <div key={idx} className="flex items-center gap-2">
  <input
- className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="flex-1 px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={v.name}
  onChange={e => updateVariable(idx, 'name', e.target.value)}
  placeholder="Variable name (e.g. revenue)"
  />
  <input
- className="w-32 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-32 px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={v.baseValue}
  onChange={e => updateVariable(idx, 'baseValue', e.target.value)}
  placeholder="Base value"
  />
  {scenarioVariables.length > 1 && (
- <button onClick={() => removeVariable(idx)} className="text-red-400 hover:text-red-300 p-1">
+ <button onClick={() => removeVariable(idx)} className="t-muted hover:t-primary p-1" style={{ color: 'var(--neg)' }}>
  <Trash2 size={14} />
  </button>
  )}
@@ -1901,16 +1904,16 @@ export function ApexPage() {
      {/* Summary Cards */}
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <Card><div className="text-center"><p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{radarContext.summary.totalSignals}</p><p className="text-label">Total Signals</p></div></Card>
-      <Card><div className="text-center"><p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono">{radarContext.summary.activeSignals}</p><p className="text-label">Active Signals</p></div></Card>
-      <Card><div className="text-center"><p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{radarContext.summary.criticalImpacts}</p><p className="text-label">Critical Impacts</p></div></Card>
-      <Card><div className="text-center"><p className="text-2xl font-bold text-purple-400 capitalize">{radarContext.summary.overallSentiment}</p><p className="text-label">Sentiment</p></div></Card>
+      <Card><div className="text-center"><p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{radarContext.summary.activeSignals}</p><p className="text-label">Active Signals</p></div></Card>
+      <Card><div className="text-center"><p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{radarContext.summary.criticalImpacts}</p><p className="text-label">Critical Impacts</p></div></Card>
+      <Card><div className="text-center"><p className="text-headline-lg font-bold t-secondary capitalize font-mono">{radarContext.summary.overallSentiment}</p><p className="text-label">Sentiment</p></div></Card>
      </div>
 
      {/* Strategic Context Card */}
      {radarContext.context && (
-      <Card className="border-purple-500/20 bg-purple-500/5">
+      <Card>
        <div className="flex items-center gap-2 mb-2">
-        <Globe size={16} className="text-purple-400" />
+        <Globe size={16} className="text-accent" />
         <h3 className="text-sm font-semibold t-primary">{radarContext.context.title}</h3>
         <Badge variant={radarContext.context.sentiment === 'positive' ? 'success' : radarContext.context.sentiment === 'negative' ? 'danger' : 'info'} size="sm">{radarContext.context.sentiment}</Badge>
        </div>
@@ -1919,7 +1922,7 @@ export function ApexPage() {
         <div className="flex flex-wrap gap-1.5">
          {radarContext.context.factors.map((f, i) => (
           <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-caption t-muted border border-[var(--border-card)]">
-           {f.direction === 'positive' ? <TrendingUp size={10} className="text-emerald-400" /> : f.direction === 'negative' ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} />}
+           {f.direction === 'positive' ? <TrendingUp size={10} style={{ color: 'var(--positive)' }} /> : f.direction === 'negative' ? <TrendingDown size={10} style={{ color: 'var(--neg)' }} /> : <Minus size={10} className="t-muted" />}
            {f.name}
           </span>
          ))}
@@ -1945,7 +1948,7 @@ export function ApexPage() {
       {boardReports.length > 0 && (
        <div className="mt-3 pt-3 border-t border-[var(--border-card)] space-y-1">
         {boardReports.slice(0, 3).map(report => (
-         <div key={report.id} className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-secondary)]">
+         <div key={report.id} className="flex items-center justify-between p-2 rounded-md bg-[var(--bg-secondary)]">
           <div className="flex items-center gap-2">
            <Badge variant={report.status === 'completed' ? 'success' : report.status === 'generating' ? 'warning' : 'danger'} size="sm">{report.status}</Badge>
            <span className="text-xs t-primary">{report.title || report.reportMonth}</span>
@@ -1958,7 +1961,7 @@ export function ApexPage() {
          </div>
         ))}
         {showBoardReport && boardReports.find(r => r.id === showBoardReport)?.contentMarkdown && (
-         <div className="mt-2 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-64 overflow-y-auto">
+         <div className="mt-2 p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-64 overflow-y-auto">
           <pre className="text-xs t-secondary whitespace-pre-wrap">{boardReports.find(r => r.id === showBoardReport)?.contentMarkdown}</pre>
          </div>
         )}
@@ -1980,25 +1983,25 @@ export function ApexPage() {
        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
          <label className="text-label block mb-1">Title *</label>
-         <input className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.title} onChange={e => setRadarSignalForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. SARB Rate Hike Expected" />
+         <input className="w-full px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.title} onChange={e => setRadarSignalForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. SARB Rate Hike Expected" />
         </div>
         <div>
          <label className="text-label block mb-1">Source</label>
-         <input className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.source_name} onChange={e => setRadarSignalForm(p => ({ ...p, source_name: e.target.value }))} placeholder="e.g. Reuters, Bloomberg" />
+         <input className="w-full px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.source_name} onChange={e => setRadarSignalForm(p => ({ ...p, source_name: e.target.value }))} placeholder="e.g. Reuters, Bloomberg" />
         </div>
         <div className="md:col-span-2">
          <label className="text-label block mb-1">Description</label>
-         <textarea className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" rows={2} value={radarSignalForm.summary} onChange={e => setRadarSignalForm(p => ({ ...p, summary: e.target.value }))} placeholder="Describe the external signal..." />
+         <textarea className="w-full px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" rows={2} value={radarSignalForm.summary} onChange={e => setRadarSignalForm(p => ({ ...p, summary: e.target.value }))} placeholder="Describe the external signal..." />
         </div>
         <div>
          <label className="text-label block mb-1">Type</label>
-         <select className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.category} onChange={e => setRadarSignalForm(p => ({ ...p, category: e.target.value }))}>
+         <select className="w-full px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.category} onChange={e => setRadarSignalForm(p => ({ ...p, category: e.target.value }))}>
           <option value="regulatory">Regulatory</option><option value="market">Market</option><option value="competitor">Competitor</option><option value="economic">Economic</option><option value="technology">Technology</option><option value="geopolitical">Geopolitical</option>
          </select>
         </div>
         <div>
          <label className="text-label block mb-1">Sentiment</label>
-         <select className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.sentiment} onChange={e => setRadarSignalForm(p => ({ ...p, sentiment: e.target.value }))}>
+         <select className="w-full px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={radarSignalForm.sentiment} onChange={e => setRadarSignalForm(p => ({ ...p, sentiment: e.target.value }))}>
           <option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Negative</option><option value="mixed">Mixed</option>
          </select>
         </div>
@@ -2053,7 +2056,7 @@ export function ApexPage() {
           <div className="flex items-center justify-between mb-1">
            <Badge variant="info" size="sm">{impact.dimension}</Badge>
            <div className="flex items-center gap-1">
-            {impact.impactDirection === 'positive' ? <TrendingUp size={12} className="text-emerald-400" /> : impact.impactDirection === 'negative' ? <TrendingDown size={12} className="text-red-400" /> : <Minus size={12} />}
+            {impact.impactDirection === 'positive' ? <TrendingUp size={12} style={{ color: 'var(--positive)' }} /> : impact.impactDirection === 'negative' ? <TrendingDown size={12} style={{ color: 'var(--neg)' }} /> : <Minus size={12} className="t-muted" />}
             <span className="text-xs t-primary">{Math.round(impact.impactMagnitude)}%</span>
            </div>
           </div>
