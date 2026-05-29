@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState, EmptyState } from "@/components/ui/state";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   ShieldCheck, KeyRound, ClipboardList, AlertTriangle, UserMinus,
   Lock, FileArchive, Download, RefreshCw, FileText, Database,
@@ -34,9 +34,9 @@ type EvidencePack = Awaited<ReturnType<typeof api.compliance.evidencePack>>;
 
 function StatChip({ label, value, tone, source }: { label: string; value: string | number; tone?: 'good' | 'warn' | 'bad' | 'neutral'; source?: MetricProvenance }) {
   const colors: Record<string, string> = {
-    good: 'text-emerald-400',
-    warn: 'text-amber-400',
-    bad: 'text-red-400',
+    good: 'text-accent',
+    warn: 'text-[var(--warning)]',
+    bad: 'text-neg',
     neutral: 't-primary',
   };
   return (
@@ -155,28 +155,27 @@ function ComplianceEvidence(): JSX.Element {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" data-testid="compliance-page">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <HeroHeader
-          icon={ShieldCheck}
-          title="Compliance"
-          subtitle={`SOC 2 Evidence Pack · Generated ${new Date(pack.generatedAt).toLocaleString()}`}
-          accent="sage"
-        />
-        <div className="flex items-center gap-2">
-          <Button onClick={() => { setRefreshing(true); load(); }} variant="ghost" size="sm" disabled={refreshing}>
-            <RefreshCw size={14} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button onClick={() => setShareOpen(true)} variant="ghost" size="sm">
-            <Share2 size={14} className="mr-2" />
-            Share with auditor
-          </Button>
-          <Button onClick={downloadJson} variant="primary" size="sm">
-            <Download size={14} className="mr-2" />
-            Download JSON
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Compliance · Controls"
+        title="Compliance"
+        dek={`SOC 2 Evidence Pack · Generated ${new Date(pack.generatedAt).toLocaleString()}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button onClick={() => { setRefreshing(true); load(); }} variant="ghost" size="sm" disabled={refreshing}>
+              <RefreshCw size={14} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button onClick={() => setShareOpen(true)} variant="ghost" size="sm">
+              <Share2 size={14} className="mr-2" />
+              Share with auditor
+            </Button>
+            <Button onClick={downloadJson} variant="primary" size="sm">
+              <Download size={14} className="mr-2" />
+              Download JSON
+            </Button>
+          </div>
+        }
+      />
       <ShareWithAuditorModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       {/* Access reviews */}
@@ -289,7 +288,7 @@ function ComplianceEvidence(): JSX.Element {
       {/* Incident response */}
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-3">
-          <AlertTriangle className="w-4 h-4 text-amber-400" />
+          <AlertTriangle className="w-4 h-4" style={{ color: 'var(--warning)' }} />
           <h2 className="text-sm font-semibold t-primary">Incident response (P0/P1)</h2>
           <Badge variant="info" size="sm">CC7.3, CC7.4</Badge>
         </div>
@@ -471,7 +470,7 @@ function ShareWithAuditorModal({ open, onClose }: { open: boolean; onClose: () =
       aria-label="Share with auditor"
     >
       <div
-        className="w-full max-w-2xl rounded-xl border bg-[var(--bg-primary)] border-[var(--border-card)] shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl rounded-md border bg-[var(--bg-primary)] border-[var(--border-card)] overflow-hidden"
         style={{ animation: 'auditShareEnter 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -500,7 +499,7 @@ function ShareWithAuditorModal({ open, onClose }: { open: boolean; onClose: () =
                 {' '}Expires {new Date(freshToken.expires_at).toLocaleString()}.
               </div>
               <div className="flex items-stretch gap-2">
-                <div className="flex-1 px-3 py-2 rounded-lg border bg-[var(--bg-secondary)] border-[var(--border-card)] font-mono text-xs t-primary break-all">
+                <div className="flex-1 px-3 py-2 rounded-md border bg-[var(--bg-secondary)] border-[var(--border-card)] font-mono text-xs t-primary break-all">
                   {shareUrl}
                 </div>
                 <Button onClick={copy} variant={copied ? 'ghost' : 'primary'} size="sm">
@@ -522,7 +521,7 @@ function ShareWithAuditorModal({ open, onClose }: { open: boolean; onClose: () =
                   value={label}
                   onChange={(e) => setLabel(e.target.value.slice(0, 120))}
                   placeholder="e.g. PwC Q2 review, Deloitte SOC 2 evidence"
-                  className="mt-1 w-full px-3 py-2 rounded-lg border bg-[var(--bg-secondary)] border-[var(--border-card)] t-primary text-sm focus:outline-none focus:border-accent transition-colors"
+                  className="mt-1 w-full px-3 py-2 rounded-md border bg-[var(--bg-secondary)] border-[var(--border-card)] t-primary text-sm focus:outline-none focus:border-accent transition-colors"
                 />
               </label>
               <Button onClick={createLink} variant="primary" size="sm" disabled={creating}>
@@ -548,7 +547,7 @@ function ShareWithAuditorModal({ open, onClose }: { open: boolean; onClose: () =
                   return (
                     <div
                       key={lk.id}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border bg-[var(--bg-secondary)] border-[var(--border-card)]"
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border bg-[var(--bg-secondary)] border-[var(--border-card)]"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
