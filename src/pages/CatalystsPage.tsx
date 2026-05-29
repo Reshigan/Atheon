@@ -11,7 +11,7 @@ import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import type { ClusterItem, ActionItem, GovernanceData, SubCatalyst, DataSourceConfig, DataSourceType, ERPConnection, ExecutionLogEntry, FieldMapping, ExecutionConfig, ExecutionResult, HitlConfigListItem, IAMUser, RunAnalytics, RunAnalyticsAggregate, CatalystIntelligenceOverview, ROITrackingResponse, CatalystPrescriptionItem, SuccessStoriesResponse } from "@/lib/api";
 import { SuccessStoryCard } from "@/components/ui/success-story-card";
-import { EditorialHero } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { SharedSavingsStrip } from "@/components/SharedSavingsStrip";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
@@ -36,14 +36,14 @@ import { SectionFreshness } from "@/components/common/FreshnessIndicator";
 const tierConfig: Record<AutonomyTier, { label: string; icon: typeof Eye; color: string }> = {
  'read-only': { label: 'Read-Only', icon: Eye, color: 'text-accent' },
  'assisted': { label: 'Assisted', icon: Wrench, color: 'text-accent' },
- 'transactional': { label: 'Transactional', icon: Send, color: 'text-emerald-400' }};
+ 'transactional': { label: 'Transactional', icon: Send, color: 'text-accent' }};
 
 const statusIcon = (status: string) => {
- if (status === 'completed') return <CheckCircle size={14} className="text-emerald-400" />;
+ if (status === 'completed') return <CheckCircle size={14} style={{ color: 'var(--positive)' }} />;
  if (status === 'pending') return <Clock size={14} className="text-accent" />;
  if (status === 'approved') return <CheckCircle size={14} className="text-accent" />;
- if (status === 'exception') return <AlertTriangle size={14} className="text-red-400" />;
- if (status === 'rejected' || status === 'failed') return <XCircle size={14} className="text-red-400" />;
+ if (status === 'exception') return <AlertTriangle size={14} style={{ color: 'var(--neg)' }} />;
+ if (status === 'rejected' || status === 'failed') return <XCircle size={14} style={{ color: 'var(--neg)' }} />;
  return <Zap size={14} className="text-accent" />;
 };
 
@@ -1019,7 +1019,7 @@ export function CatalystsPage() {
  key={action.id}
  hover
  onClick={() => setExpandedAction(expandedAction === action.id ? null : action.id)}
- className={`cursor-pointer hover:-translate-y-px active:scale-[0.99] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${isException && showExceptionHighlight ? 'ring-1 ring-red-500/40 bg-red-500/[0.03]' : ''}`}
+ className={`cursor-pointer hover:-translate-y-px active:scale-[0.99] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]`} style={isException && showExceptionHighlight ? { boxShadow: '0 0 0 1px rgb(var(--neg-rgb) / 0.3)', background: 'rgb(var(--neg-rgb) / 0.03)' } : undefined}
  >
  <div className="flex items-start justify-between">
  <div className="flex items-start gap-3">
@@ -1037,43 +1037,43 @@ export function CatalystsPage() {
  {action.status}
  </Badge>
  <span className="text-xs t-secondary">{Math.round(action.confidence * 100)}%</span>
- {expandedAction === action.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+ {expandedAction === action.id ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
  </div>
  </div>
  <p className="text-xs t-muted mt-1 line-clamp-2">{action.reasoning || ''}</p>
 
  {expandedAction === action.id && (
  <div className="mt-4 space-y-3 animate-fadeIn">
- <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <h4 className="text-xs font-semibold text-gray-400 mb-1">Reasoning Chain</h4>
+ <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <h4 className="text-xs font-semibold t-muted mb-1">Reasoning Chain</h4>
  <p className="text-xs t-muted">{action.reasoning || 'No reasoning provided'}</p>
  </div>
 
  {isException && outputData && (
- <div className="p-3 rounded-lg bg-red-500/[0.08] border border-red-500/20">
+ <div className="p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.06)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
  <div className="flex items-center gap-2 mb-2">
- <AlertTriangle size={14} className="text-red-400" />
- <h4 className="text-xs font-semibold text-red-400">Exception Details</h4>
+ <AlertTriangle size={14} style={{ color: 'var(--neg)' }} />
+ <h4 className="text-xs font-semibold" style={{ color: 'var(--neg)' }}>Exception Details</h4>
  </div>
  {outputData.exception_type && (
  <Badge variant="danger" size="sm" className="mb-2">{outputData.exception_type.replace(/_/g, ' ')}</Badge>
  )}
- <p className="text-xs text-red-500/80 mt-1">{outputData.exception_detail || ''}</p>
+ <p className="text-xs mt-1" style={{ color: 'rgb(var(--neg-rgb) / 0.8)' }}>{outputData.exception_detail || ''}</p>
  {outputData.suggested_action && (
- <div className="mt-2 p-2 rounded bg-amber-500/[0.06] border border-accent/20">
- <p className="text-xs text-amber-700"><strong>Suggested Action:</strong> {outputData.suggested_action}</p>
+ <div className="mt-2 p-2 rounded-sm border border-[var(--border-card)]" style={{ background: 'rgba(154,107,31,0.06)' }}>
+ <p className="text-xs" style={{ color: 'var(--warning)' }}><strong>Suggested Action:</strong> {outputData.suggested_action}</p>
  </div>
  )}
  </div>
  )}
 
  {inputData && Object.keys(inputData).length > 0 && (
- <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
- <h4 className="text-xs font-semibold text-gray-400 mb-2">Input Data</h4>
+ <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <h4 className="text-xs font-semibold t-muted mb-2">Input Data</h4>
  <div className="grid grid-cols-2 gap-2">
  {Object.entries(inputData).filter(([k]) => k !== 'manual' && k !== 'file_preview').map(([key, val]) => (
  <div key={key}>
- <span className="text-caption text-gray-500">{key.replace(/_/g, ' ')}</span>
+ <span className="text-caption t-muted">{key.replace(/_/g, ' ')}</span>
  <p className="text-xs t-secondary">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</p>
  </div>
  ))}
@@ -1082,9 +1082,9 @@ export function CatalystsPage() {
  )}
 
  {action.status === 'completed' && outputData && !isException && (
- <div className="p-3 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20">
- <h4 className="text-xs font-semibold text-emerald-400 mb-1">Result</h4>
- <p className="text-xs text-emerald-700">{outputData.detail || JSON.stringify(outputData)}</p>
+ <div className="p-3 rounded-md border" style={{ background: 'rgb(var(--accent-rgb) / 0.06)', borderColor: 'rgb(var(--accent-rgb) / 0.2)' }}>
+ <h4 className="text-xs font-semibold text-accent mb-1">Result</h4>
+ <p className="text-xs t-secondary">{outputData.detail || JSON.stringify(outputData)}</p>
  </div>
  )}
 
@@ -1107,10 +1107,10 @@ export function CatalystsPage() {
  return (
  <div className="space-y-6 animate-fadeIn">
  <SharedSavingsStrip />
- <EditorialHero
-  kicker="Catalysts · Autonomous Execution"
-  figure={`${clusters.length}`}
-  deck={clusters.length > 0
+ <PageHeader
+  eyebrow="Catalysts · Autonomous Execution"
+  title={`${clusters.length} Catalyst${clusters.length === 1 ? '' : 's'}`}
+  dek={clusters.length > 0
    ? `${clusters.length} catalyst${clusters.length === 1 ? '' : 's'} live across your close — ${actions.length} action${actions.length === 1 ? '' : 's'} logged${exceptionCount > 0 ? `, ${exceptionCount} need${exceptionCount === 1 ? 's' : ''} review` : ''}.`
    : 'No catalysts configured yet. Connect a source system to orchestrate autonomous execution.'}
   actions={
@@ -1123,19 +1123,19 @@ export function CatalystsPage() {
  />
 
  {actionError && (
- <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
- <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
- <p className="text-sm text-red-400 flex-1">{actionError}</p>
- <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+ <div className="flex items-center gap-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
+ <AlertCircle size={16} style={{ color: 'var(--neg)' }} className="flex-shrink-0" />
+ <p className="text-sm flex-1" style={{ color: 'var(--neg)' }}>{actionError}</p>
+ <button onClick={() => setActionError(null)} style={{ color: 'var(--neg)' }}><X size={14} /></button>
  </div>
  )}
 
  {exceptionCount > 0 && (
- <div className="flex items-center gap-3 p-3 bg-red-500/[0.08] border border-red-500/20 rounded-xl">
- <AlertTriangle size={18} className="text-red-400 flex-shrink-0" />
+ <div className="flex items-center gap-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.06)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
+ <AlertTriangle size={18} style={{ color: 'var(--neg)' }} className="flex-shrink-0" />
  <div className="flex-1">
- <p className="text-sm font-medium text-red-500">{exceptionCount} exception{exceptionCount > 1 ? 's' : ''} require{exceptionCount === 1 ? 's' : ''} attention</p>
- <p className="text-xs text-red-400/70">Review and resolve catalyst exceptions before running new jobs</p>
+ <p className="text-sm font-medium" style={{ color: 'var(--neg)' }}>{exceptionCount} exception{exceptionCount > 1 ? 's' : ''} require{exceptionCount === 1 ? 's' : ''} attention</p>
+ <p className="text-xs t-muted">Review and resolve catalyst exceptions before running new jobs</p>
  </div>
  <Button variant="danger" size="sm" onClick={() => setActiveTab('exceptions')} title="View and resolve catalyst exceptions">View Exceptions</Button>
  </div>
@@ -1143,62 +1143,62 @@ export function CatalystsPage() {
 
  {showManualExec && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md shadow-sm p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary flex items-center gap-2"><Play size={18} className="text-accent" /> Manual Catalyst Execution</h3>
- <button onClick={() => { setShowManualExec(false); setExecError(null); setExecSuccess(null); }} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ <button onClick={() => { setShowManualExec(false); setExecError(null); setExecSuccess(null); }} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
  <div className="space-y-3">
  <div>
  <label className="text-xs t-muted">Catalyst Cluster</label>
- <select className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.cluster_id} onChange={e => setManualForm(p => ({ ...p, cluster_id: e.target.value }))}>
+ <select className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.cluster_id} onChange={e => setManualForm(p => ({ ...p, cluster_id: e.target.value }))}>
  <option value="">Select a cluster...</option>
  {clusters.map(c => <option key={c.id} value={c.id}>{c.name} ({c.domain})</option>)}
  </select>
  </div>
  <div>
  <label className="text-xs t-muted">Catalyst Name</label>
- <input className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.catalyst_name} onChange={e => setManualForm(p => ({ ...p, catalyst_name: e.target.value }))} placeholder="e.g. Invoice Reconciliation" />
+ <input className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.catalyst_name} onChange={e => setManualForm(p => ({ ...p, catalyst_name: e.target.value }))} placeholder="e.g. Invoice Reconciliation" />
  </div>
  <div>
  <label className="text-xs t-muted">Action</label>
- <input className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.action} onChange={e => setManualForm(p => ({ ...p, action: e.target.value }))} placeholder="e.g. Reconcile Feb 2026 invoices" />
+ <input className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.action} onChange={e => setManualForm(p => ({ ...p, action: e.target.value }))} placeholder="e.g. Reconcile Feb 2026 invoices" />
  </div>
  <div className="grid grid-cols-2 gap-3">
  <div>
  <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> Start Date/Time</label>
- <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.start_datetime} onChange={e => setManualForm(p => ({ ...p, start_datetime: e.target.value }))} />
+ <input type="datetime-local" className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.start_datetime} onChange={e => setManualForm(p => ({ ...p, start_datetime: e.target.value }))} />
  </div>
  <div>
  <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> End Date/Time</label>
- <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.end_datetime} onChange={e => setManualForm(p => ({ ...p, end_datetime: e.target.value }))} />
+ <input type="datetime-local" className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={manualForm.end_datetime} onChange={e => setManualForm(p => ({ ...p, end_datetime: e.target.value }))} />
  </div>
  </div>
  <div>
  <label className="text-xs t-muted">Upload File (optional)</label>
- <div className="mt-1 p-4 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-amber-500/30 transition-colors active:scale-[0.97]" onClick={() => fileInputRef.current?.click()}>
+ <div className="mt-1 p-4 border-2 border-dashed border-[var(--border-card)] rounded-md text-center cursor-pointer hover:border-accent/30 transition-colors active:scale-[0.97]" onClick={() => fileInputRef.current?.click()}>
  {manualFile ? (
  <div className="flex items-center justify-center gap-2">
  <FileText size={16} className="text-accent" />
  <span className="text-sm t-secondary">{manualFile.name}</span>
- <button onClick={(e) => { e.stopPropagation(); setManualFile(null); }} className="text-gray-500 hover:text-red-400"><X size={14} /></button>
+ <button onClick={(e) => { e.stopPropagation(); setManualFile(null); }} className="t-muted"><X size={14} /></button>
  </div>
  ) : (
- <div><Upload size={20} className="mx-auto text-gray-500 mb-1" /><p className="text-xs t-muted">Click to upload CSV, Excel, or PDF file</p></div>
+ <div><Upload size={20} className="mx-auto t-muted mb-1" /><p className="text-xs t-muted">Click to upload CSV, Excel, or PDF file</p></div>
  )}
  <input ref={fileInputRef} type="file" className="hidden" accept=".csv,.xlsx,.xls,.pdf,.json,.txt" onChange={e => setManualFile(e.target.files?.[0] || null)} />
  </div>
  </div>
  <div>
  <label className="text-xs t-muted">Reasoning (optional)</label>
- <textarea className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary resize-none" rows={2} value={manualForm.reasoning} onChange={e => setManualForm(p => ({ ...p, reasoning: e.target.value }))} placeholder="Why is this being run manually?" />
+ <textarea className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary resize-none" rows={2} value={manualForm.reasoning} onChange={e => setManualForm(p => ({ ...p, reasoning: e.target.value }))} placeholder="Why is this being run manually?" />
  </div>
  </div>
  {execError && (
- <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertTriangle size={14} /> {execError}</div>
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}><AlertTriangle size={14} /> {execError}</div>
  )}
  {execSuccess && (
- <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm flex items-center gap-2"><CheckCircle size={14} /> {execSuccess}</div>
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'rgb(var(--accent-rgb) / 0.2)', color: 'var(--positive)' }}><CheckCircle size={14} /> {execSuccess}</div>
  )}
  <div className="flex gap-3 pt-2">
  <Button variant="secondary" size="sm" onClick={() => { setShowManualExec(false); setExecError(null); setExecSuccess(null); }}>Cancel</Button>
@@ -1227,10 +1227,10 @@ export function CatalystsPage() {
  const tier = tierConfig[cluster.autonomyTier as AutonomyTier] || tierConfig['read-only'];
  const TierIcon = tier.icon;
  return (
- <Card key={cluster.id} hover className="hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(163,177,138,0.28)] transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]">
+ <Card key={cluster.id} hover className="hover:-translate-y-px transition-[background-color,color,box-shadow,transform,border-color] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)]">
  <div className="flex items-start justify-between">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-md bg-accent/10 flex items-center justify-center">
  <Bot className="w-5 h-5 text-accent" />
  </div>
  <div>
@@ -1257,26 +1257,26 @@ export function CatalystsPage() {
      We surface tasksCompleted as the headline metric and feed agents
      / success rate / trust score into a compact strip below it. */}
  <div className="mt-4 grid grid-cols-3 gap-3">
-  <div className="col-span-1 p-3 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
+  <div className="col-span-1 p-3 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
    <span className="text-caption uppercase tracking-wider t-muted">Tasks Completed</span>
    <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">
     <Numeric value={cluster.tasksCompleted} compact size="lg" />
    </p>
   </div>
   <div className="col-span-2 grid grid-cols-3 gap-2">
-   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors active:scale-[0.97]">
+   <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/20 transition-colors active:scale-[0.97]">
     <span className="text-caption uppercase tracking-wider t-muted">Agents</span>
     <p className="text-body font-bold t-primary tabular-nums font-mono mt-1">
      <Numeric value={cluster.agentCount} size="md" />
     </p>
    </div>
-   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
+   <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
     <span className="text-caption uppercase tracking-wider t-muted">Success</span>
-    <p className="text-body font-bold text-emerald-400 tabular-nums font-mono mt-1">
+    <p className="text-body font-bold tabular-nums font-mono mt-1" style={{ color: 'var(--positive)' }}>
      {Number(cluster.successRate).toFixed(1)}<span className="text-caption">%</span>
     </p>
    </div>
-   <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
+   <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--line-strong)] transition-colors active:scale-[0.97]">
     <span className="text-caption uppercase tracking-wider t-muted">Trust</span>
     <p className="text-body font-bold t-primary tabular-nums font-mono mt-1">
      {Number(cluster.trustScore).toFixed(1)}<span className="text-caption">%</span>
@@ -1301,18 +1301,19 @@ export function CatalystsPage() {
  </h4>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
  {cluster.subCatalysts.map((sub: SubCatalyst) => (
- <div key={sub.name} className={`p-2.5 rounded-lg border space-y-1.5 ${sub.enabled ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-gray-500/5 border-gray-500/20 opacity-60'}`}>
+ <div key={sub.name} className={`p-2.5 rounded-md border space-y-1.5 ${sub.enabled ? 'border-[var(--border-card)]' : 'border-[var(--border-card)] opacity-60'}`} style={sub.enabled ? { background: 'rgb(var(--accent-rgb) / 0.04)' } : { background: 'var(--bg-secondary)' }}>
  {/* Row 1: Name + Toggle */}
  <div className="flex items-center justify-between gap-2">
  <div className="flex items-center gap-2 min-w-0">
- <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.enabled ? 'bg-emerald-400' : 'bg-gray-400'}`} />
+ <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: sub.enabled ? 'var(--positive)' : 'var(--text-muted)' }} />
  <span className="text-xs font-medium t-primary truncate">{sub.name}</span>
  </div>
  {isAdmin && (
  <button
  onClick={(e) => { e.stopPropagation(); handleToggleSubCatalyst(cluster.id, sub.name); }}
  disabled={togglingSubCatalyst === `${cluster.id}:${sub.name}`}
- className={`relative w-8 h-4 rounded-full transition-colors flex-shrink-0 ${sub.enabled ? 'bg-emerald-500' : 'bg-gray-400'} ${togglingSubCatalyst === `${cluster.id}:${sub.name}` ? 'opacity-50' : ''}`}
+ className={`relative w-8 h-4 rounded-full transition-colors flex-shrink-0 ${togglingSubCatalyst === `${cluster.id}:${sub.name}` ? 'opacity-50' : ''}`}
+ style={{ background: sub.enabled ? 'var(--accent)' : 'var(--text-muted)' }}
  title={sub.enabled ? 'Disable this sub-catalyst' : 'Enable this sub-catalyst'}
  >
  <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${sub.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -1325,13 +1326,7 @@ export function CatalystsPage() {
  {(getSubDataSources(sub).length > 0 || (sub.schedule && sub.schedule.frequency !== 'manual') || sub.last_execution) && (
  <div className="flex items-center gap-1.5 flex-wrap pl-4">
  {getSubDataSources(sub).map((ds, dsIdx) => (
- <span key={dsIdx} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium ${
- ds.type === 'erp' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
- ds.type === 'email' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
- ds.type === 'cloud_storage' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
- ds.type === 'custom_system' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
- 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
- }`}>
+ <span key={dsIdx} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-caption font-medium border border-[var(--border-card)] t-secondary bg-[var(--bg-secondary)]">
  {ds.type === 'erp' && <><Database size={8} /> ERP</>}
  {ds.type === 'email' && <><Mail size={8} /> Email</>}
  {ds.type === 'cloud_storage' && <><Cloud size={8} /> Cloud</>}
@@ -1340,7 +1335,7 @@ export function CatalystsPage() {
  </span>
  ))}
  {sub.schedule && sub.schedule.frequency !== 'manual' && (
- <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" title={sub.schedule.next_run ? `Next run: ${new Date(sub.schedule.next_run).toLocaleString()}` : ''}>
+ <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-caption font-medium border border-[var(--border-card)] t-secondary bg-[var(--bg-secondary)]" title={sub.schedule.next_run ? `Next run: ${new Date(sub.schedule.next_run).toLocaleString()}` : ''}>
  <Calendar size={8} />
  {sub.schedule.frequency === 'daily' ? 'Daily' : sub.schedule.frequency === 'weekly' ? 'Weekly' : 'Monthly'}
  {sub.schedule.time_of_day ? ` ${sub.schedule.time_of_day}` : ''}
@@ -1349,11 +1344,12 @@ export function CatalystsPage() {
  {sub.last_execution && (
  <button
  onClick={(e) => { e.stopPropagation(); setExecResult(sub.last_execution as ExecutionResult); setShowExecResult(true); }}
- className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-caption font-medium ${
-   sub.last_execution.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-   sub.last_execution.status === 'partial' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-   'bg-red-500/10 text-red-400 border border-red-500/20'
- }`}
+ className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-caption font-medium border"
+ style={sub.last_execution.status === 'completed'
+   ? { background: 'rgb(var(--accent-rgb) / 0.08)', color: 'var(--positive)', borderColor: 'rgb(var(--accent-rgb) / 0.2)' }
+   : sub.last_execution.status === 'partial'
+   ? { background: 'rgba(154,107,31,0.08)', color: 'var(--warning)', borderColor: 'rgba(154,107,31,0.2)' }
+   : { background: 'rgb(var(--neg-rgb) / 0.08)', color: 'var(--neg)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}
  title={`Last execution: ${sub.last_execution.status} — ${sub.last_execution.summary.matched} matched, ${sub.last_execution.summary.discrepancies} discrepancies`}
  >
  <BarChart3 size={8} />
@@ -1377,7 +1373,7 @@ export function CatalystsPage() {
  <MoreHorizontal size={14} />
  </Button>
  {overflowMenu === `${cluster.id}:${sub.name}` && (
- <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-lg border border-[var(--border-card)] bg-[var(--bg-primary)] shadow-lg py-1">
+ <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-md border border-[var(--border-card)] bg-[var(--bg-primary)] shadow-sm py-1">
  {isAdmin && <button className="w-full text-left px-3 py-1.5 text-xs t-secondary hover:bg-[var(--bg-secondary)] flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setOverflowMenu(null); openDataSourceConfig(cluster.id, sub); }}><Database size={10} /> Configure Data Sources</button>}
   {isAdmin && <button className="w-full text-left px-3 py-1.5 text-xs t-secondary hover:bg-[var(--bg-secondary)] flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setOverflowMenu(null); openScheduleConfig(cluster.id, sub); }}><Calendar size={10} /> Set Schedule</button>}
  {isAdmin && <button className="w-full text-left px-3 py-1.5 text-xs t-secondary hover:bg-[var(--bg-secondary)] flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setOverflowMenu(null); openFieldMappingConfig(cluster.id, sub); }}><Link2 size={10} /> Field Mappings</button>}
@@ -1431,7 +1427,7 @@ export function CatalystsPage() {
  </h3>
  <div className="flex items-center gap-2">
  <select
- className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
+ className="px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
  value={selectedLogAction || ''}
  onChange={(e) => {
  const val = e.target.value || null;
@@ -1472,18 +1468,15 @@ export function CatalystsPage() {
  {executionLogs.map((log) => (
  <div key={log.id} className="relative flex items-start gap-3 pl-1">
  {/* Timeline dot */}
- <div className={`relative z-10 w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
- log.status === 'completed' ? 'bg-emerald-500/20' :
- log.status === 'running' ? 'bg-accent/20' :
- log.status === 'failed' ? 'bg-red-500/20' : 'bg-gray-500/20'
- }`}>
- {log.status === 'completed' ? <CheckCircle size={10} className="text-emerald-400" /> :
+ <div className="relative z-10 w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 mt-1"
+ style={{ background: log.status === 'completed' ? 'rgb(var(--accent-rgb) / 0.15)' : log.status === 'running' ? 'rgb(var(--accent-rgb) / 0.15)' : log.status === 'failed' ? 'rgb(var(--neg-rgb) / 0.15)' : 'var(--bg-secondary)' }}>
+ {log.status === 'completed' ? <CheckCircle size={10} style={{ color: 'var(--positive)' }} /> :
  log.status === 'running' ? <Loader2 size={10} className="text-accent animate-spin" /> :
- log.status === 'failed' ? <XCircle size={10} className="text-red-400" /> :
- <Clock size={10} className="text-gray-400" />}
+ log.status === 'failed' ? <XCircle size={10} style={{ color: 'var(--neg)' }} /> :
+ <Clock size={10} className="t-muted" />}
  </div>
 
- <div className="flex-1 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] min-w-0">
+ <div className="flex-1 p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] min-w-0">
  <div className="flex items-center justify-between gap-2">
  <div className="flex items-center gap-2 min-w-0">
  <Badge variant={log.status === 'completed' ? 'success' : log.status === 'running' ? 'info' : log.status === 'failed' ? 'danger' : 'warning'} size="sm">
@@ -1511,14 +1504,14 @@ export function CatalystsPage() {
  <div className="space-y-4">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
- <AlertTriangle size={18} className="text-red-400" /> Exception Management
+ <AlertTriangle size={18} style={{ color: 'var(--neg)' }} /> Exception Management
  </h3>
  <p className="text-xs t-muted">{exceptionCount} exception{exceptionCount !== 1 ? 's' : ''} requiring review</p>
  </div>
 
  {exceptionCount === 0 && (
   <div className="flex items-center gap-3 py-6 px-4">
- <CheckCircle size={16} className="text-emerald-500 opacity-40 flex-shrink-0" />
+ <CheckCircle size={16} className="t-muted opacity-40 flex-shrink-0" />
  <p className="text-sm t-muted">No exceptions — all clear</p>
  </div>
  )}
@@ -1532,10 +1525,10 @@ export function CatalystsPage() {
   const exSamples = Array.isArray(outputData?.discrepancy_sample) ? outputData.discrepancy_sample as Array<Record<string, string>> : [];
   const exSuggested = typeof outputData?.suggested_action === 'string' ? outputData.suggested_action : '';
   return (
-  <Card key={action.id} className="ring-1 ring-red-500/30 bg-red-500/[0.02]">
+  <Card key={action.id} className="ring-1" style={{ boxShadow: '0 0 0 1px rgb(var(--neg-rgb) / 0.25)', background: 'rgb(var(--neg-rgb) / 0.02)' }}>
   <div className="flex items-start justify-between">
   <div className="flex items-start gap-3">
-  <AlertTriangle size={16} className="text-red-400 mt-0.5" />
+  <AlertTriangle size={16} style={{ color: 'var(--neg)' }} className="mt-0.5" />
   <div>
   <h3 className="text-sm font-semibold t-primary">{action.action}</h3>
   <p className="text-xs t-secondary mt-0.5">{action.catalystName}</p>
@@ -1548,7 +1541,7 @@ export function CatalystsPage() {
   </div>
 
   {outputData && (
-  <div className="mt-3 p-3 rounded-lg bg-red-500/[0.06] border border-red-500/20">
+  <div className="mt-3 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.06)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}>
   <div className="flex items-center gap-2 mb-2 flex-wrap">
   {exType && (
   <Badge variant="danger" size="sm">{exType.replace(/_/g, ' ')}</Badge>
@@ -1557,7 +1550,7 @@ export function CatalystsPage() {
   <StatusPill status={exSeverity} size="sm" />
   )}
   </div>
-  <p className="text-xs text-red-500/80">{exDetail}</p>
+  <p className="text-xs" style={{ color: 'rgb(var(--neg-rgb) / 0.8)' }}>{exDetail}</p>
   {exSummary && (
   <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2 text-caption">
   {([
@@ -1581,15 +1574,15 @@ export function CatalystsPage() {
   <div className="mt-1 space-y-1 max-h-32 overflow-y-auto">
   {exSamples.map((d, i) => (
     <div key={i} className="text-caption p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-      <span className="font-medium t-primary">{d.field || 'field'}</span>: source=<span className="text-emerald-600">{typeof d.source_value === 'number' ? Number(d.source_value).toFixed(2) : String(d.source_value || '—')}</span> vs target=<span className="text-red-500">{typeof d.target_value === 'number' ? Number(d.target_value).toFixed(2) : String(d.target_value || '—')}</span>
+      <span className="font-medium t-primary">{d.field || 'field'}</span>: source=<span style={{ color: 'var(--positive)' }}>{typeof d.source_value === 'number' ? Number(d.source_value).toFixed(2) : String(d.source_value || '—')}</span> vs target=<span style={{ color: 'var(--neg)' }}>{typeof d.target_value === 'number' ? Number(d.target_value).toFixed(2) : String(d.target_value || '—')}</span>
     </div>
   ))}
   </div>
   </details>
   )}
   {exSuggested && (
-  <div className="mt-2 p-2 rounded bg-amber-500/[0.08] border border-accent/20">
-  <p className="text-xs text-amber-700"><strong>Suggested:</strong> {exSuggested}</p>
+  <div className="mt-2 p-2 rounded-sm border border-[var(--border-card)]" style={{ background: 'rgba(154,107,31,0.06)' }}>
+  <p className="text-xs" style={{ color: 'var(--warning)' }}><strong>Suggested:</strong> {exSuggested}</p>
   </div>
   )}
   </div>
@@ -1600,7 +1593,7 @@ export function CatalystsPage() {
  <div className="mt-3 space-y-2">
  <div className="flex items-center gap-2">
  <input
- className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
+ className="flex-1 px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
  placeholder="Resolution notes (optional)..."
  value={activeNotesAction === action.id ? resolveNotes : ''}
  onChange={(e) => { setActiveNotesAction(action.id); setResolveNotes(e.target.value); }}
@@ -1662,19 +1655,19 @@ export function CatalystsPage() {
    </div>
 
    {clusterLevelConfig && (
-   <div className="p-3 rounded-lg bg-accent/5 border border-accent/20 mb-3">
+   <div className="p-3 rounded-md bg-accent/5 border border-accent/20 mb-3">
      <p className="text-label mb-2">Cluster Default Assignments</p>
      <div className="grid grid-cols-3 gap-3 text-xs">
        <div>
-         <span className="text-emerald-400 font-medium">Validators:</span>
+         <span className="font-medium" style={{ color: 'var(--positive)' }}>Validators:</span>
          <p className="t-secondary mt-0.5">{clusterLevelConfig.validatorUserIds.length > 0 ? clusterLevelConfig.validatorUserIds.map(id => hitlUsersMap[id]?.email || id).join(', ') : 'None'}</p>
        </div>
        <div>
-         <span className="text-amber-400 font-medium">Exception Handlers:</span>
+         <span className="font-medium" style={{ color: 'var(--warning)' }}>Exception Handlers:</span>
          <p className="t-secondary mt-0.5">{clusterLevelConfig.exceptionHandlerUserIds.length > 0 ? clusterLevelConfig.exceptionHandlerUserIds.map(id => hitlUsersMap[id]?.email || id).join(', ') : 'None'}</p>
        </div>
        <div>
-         <span className="text-red-400 font-medium">Escalation:</span>
+         <span className="font-medium" style={{ color: 'var(--neg)' }}>Escalation:</span>
          <p className="t-secondary mt-0.5">{clusterLevelConfig.escalationUserIds.length > 0 ? clusterLevelConfig.escalationUserIds.map(id => hitlUsersMap[id]?.email || id).join(', ') : 'None'}</p>
        </div>
      </div>
@@ -1687,9 +1680,9 @@ export function CatalystsPage() {
      {cluster.subCatalysts.map((sub: SubCatalyst) => {
        const subConfig = clusterConfigs.find(c => c.subCatalystName === sub.name);
        return (
-       <div key={sub.name} className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+       <div key={sub.name} className="flex items-center justify-between p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
          <div className="flex items-center gap-2 min-w-0">
-           <div className={`w-2 h-2 rounded-full ${sub.enabled ? 'bg-emerald-400' : 'bg-gray-400'}`} />
+           <div className="w-2 h-2 rounded-full" style={{ background: sub.enabled ? 'var(--positive)' : 'var(--text-muted)' }} />
            <span className="text-xs font-medium t-primary truncate">{sub.name}</span>
            {subConfig && <Badge variant="success" size="sm">Custom</Badge>}
          </div>
@@ -1698,7 +1691,7 @@ export function CatalystsPage() {
              <button
                type="button"
                onClick={() => handleDeleteHitl(cluster.id, sub.name)}
-               className="h-8 w-8 flex items-center justify-center rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors active:scale-[0.97]"
+               className="h-8 w-8 flex items-center justify-center rounded-md focus:outline-none transition-colors active:scale-[0.97]" style={{ color: 'var(--neg)' }}
                aria-label={`Remove custom HITL assignment for ${sub.name}`}
                title="Remove custom assignment"
              >
@@ -1739,7 +1732,7 @@ export function CatalystsPage() {
  </h3>
  <div className="flex items-center gap-2">
    <select
-     className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
+     className="px-3 py-1.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs t-primary"
      value={analyticsCluster}
      onChange={e => setAnalyticsCluster(e.target.value)}
    >
@@ -1762,10 +1755,10 @@ export function CatalystsPage() {
  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
    <Card variant="default"><div className="text-center"><p className="text-label">Total Runs</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalRuns}</p></div></Card>
    <Card variant="default"><div className="text-center"><p className="text-label">Items Processed</p><p className="text-xl font-bold t-primary mt-1">{runAggregate.totalItems}</p></div></Card>
-   <Card variant="default"><div className="text-center"><p className="text-label">Completed</p><p className="text-xl font-bold text-emerald-400 mt-1">{runAggregate.totalCompleted}</p></div></Card>
-   <Card variant="default"><div className="text-center"><p className="text-label">Exceptions</p><p className="text-xl font-bold text-red-400 mt-1">{runAggregate.totalExceptions}</p></div></Card>
-   <Card variant="default"><div className="text-center"><p className="text-label">Escalated</p><p className="text-xl font-bold text-amber-400 mt-1">{runAggregate.totalEscalated}</p></div></Card>
-   <Card variant="default"><div className="text-center"><p className="text-label">Avg Confidence</p><p className="text-xl font-bold text-blue-400 mt-1">{(runAggregate.avgConfidence * 100).toFixed(0)}%</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Completed</p><p className="text-xl font-bold mt-1" style={{ color: 'var(--positive)' }}>{runAggregate.totalCompleted}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Exceptions</p><p className="text-xl font-bold mt-1" style={{ color: 'var(--neg)' }}>{runAggregate.totalExceptions}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Escalated</p><p className="text-xl font-bold mt-1" style={{ color: 'var(--warning)' }}>{runAggregate.totalEscalated}</p></div></Card>
+   <Card variant="default"><div className="text-center"><p className="text-label">Avg Confidence</p><p className="text-xl font-bold mt-1 t-secondary">{(runAggregate.avgConfidence * 100).toFixed(0)}%</p></div></Card>
    <Card variant="default"><div className="text-center"><p className="text-label">Automation Rate</p><p className="text-xl font-bold text-accent mt-1">{(runAggregate.automationRate * 100).toFixed(0)}%</p></div></Card>
  </div>
  )}
@@ -1794,7 +1787,7 @@ export function CatalystsPage() {
      <div className="flex items-center gap-2">
        <Badge variant={run.status === 'completed' ? 'success' : run.status === 'running' ? 'info' : 'warning'}>{run.status}</Badge>
        {run.durationMs && <span className="text-xs t-muted">{(run.durationMs / 1000).toFixed(1)}s</span>}
-       {isExp ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+       {isExp ? <ChevronUp size={14} className="t-muted" /> : <ChevronDown size={14} className="t-muted" />}
      </div>
    </div>
 
@@ -1803,21 +1796,21 @@ export function CatalystsPage() {
        <span className="text-caption t-muted">Total</span>
        <p className="text-sm font-bold t-primary">{run.summary.total}</p>
      </div>
-     <div className="text-center p-2 rounded bg-emerald-500/5 border border-emerald-500/20">
-       <span className="text-caption text-emerald-400">Completed</span>
-       <p className="text-sm font-bold text-emerald-400">{run.summary.completed}</p>
+     <div className="text-center p-2 rounded-sm border" style={{ background: 'rgb(var(--accent-rgb) / 0.05)', borderColor: 'rgb(var(--accent-rgb) / 0.15)' }}>
+       <span className="text-caption" style={{ color: 'var(--positive)' }}>Completed</span>
+       <p className="text-sm font-bold" style={{ color: 'var(--positive)' }}>{run.summary.completed}</p>
      </div>
-     <div className="text-center p-2 rounded bg-red-500/5 border border-red-500/20">
-       <span className="text-caption text-red-400">Exceptions</span>
-       <p className="text-sm font-bold text-red-400">{run.summary.exceptions}</p>
+     <div className="text-center p-2 rounded-sm border" style={{ background: 'rgb(var(--neg-rgb) / 0.05)', borderColor: 'rgb(var(--neg-rgb) / 0.15)' }}>
+       <span className="text-caption" style={{ color: 'var(--neg)' }}>Exceptions</span>
+       <p className="text-sm font-bold" style={{ color: 'var(--neg)' }}>{run.summary.exceptions}</p>
      </div>
-     <div className="text-center p-2 rounded bg-amber-500/5 border border-amber-500/20">
-       <span className="text-caption text-amber-400">Escalated</span>
-       <p className="text-sm font-bold text-amber-400">{run.summary.escalated}</p>
+     <div className="text-center p-2 rounded-sm border" style={{ background: 'rgba(154,107,31,0.05)', borderColor: 'rgba(154,107,31,0.15)' }}>
+       <span className="text-caption" style={{ color: 'var(--warning)' }}>Escalated</span>
+       <p className="text-sm font-bold" style={{ color: 'var(--warning)' }}>{run.summary.escalated}</p>
      </div>
-     <div className="text-center p-2 rounded bg-blue-500/5 border border-blue-500/20">
-       <span className="text-caption text-blue-400">Pending</span>
-       <p className="text-sm font-bold text-blue-400">{run.summary.pending}</p>
+     <div className="text-center p-2 rounded-sm border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+       <span className="text-caption t-muted">Pending</span>
+       <p className="text-sm font-bold t-secondary">{run.summary.pending}</p>
      </div>
      <div className="text-center p-2 rounded bg-accent/5 border border-accent/20">
        <span className="text-caption text-accent">Auto-Approved</span>
@@ -1827,7 +1820,7 @@ export function CatalystsPage() {
 
    {isExp && (
    <div className="mt-4 space-y-3 animate-fadeIn">
-     <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+     <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
        <h5 className="text-xs font-semibold t-primary mb-2">Confidence Distribution</h5>
        <div className="flex items-end gap-1 h-16">
          {Object.entries(run.confidence.distribution).map(([bucket, count]) => {
@@ -1849,7 +1842,7 @@ export function CatalystsPage() {
      </div>
 
      {/* Per-Run Transaction Detail */}
-     <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+     <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
        <div className="flex items-center justify-between mb-2">
          <h5 className="text-xs font-semibold t-primary flex items-center gap-1"><ScrollText size={12} className="text-accent" /> Transaction Detail</h5>
          {!runDetailActions[run.runId] && (
@@ -1896,7 +1889,7 @@ export function CatalystsPage() {
                <span className="col-span-2">
                  <Badge variant={item.status === 'completed' || item.status === 'approved' ? 'success' : item.status === 'exception' || item.status === 'failed' || item.status === 'rejected' ? 'danger' : item.status === 'escalated' ? 'warning' : 'info'} size="sm">{item.status}</Badge>
                </span>
-               <span className={`col-span-2 text-xs font-medium text-right ${item.confidence >= 0.8 ? 'text-emerald-400' : item.confidence >= 0.6 ? 'text-amber-400' : 'text-red-400'}`}>
+               <span className="col-span-2 text-xs font-medium text-right" style={{ color: item.confidence >= 0.8 ? 'var(--positive)' : item.confidence >= 0.6 ? 'var(--warning)' : 'var(--neg)' }}>
                  {(item.confidence * 100).toFixed(0)}%
                </span>
                <span className="col-span-2 text-caption t-muted truncate">{item.assignedTo || '—'}</span>
@@ -1908,7 +1901,7 @@ export function CatalystsPage() {
      </div>
 
      {run.insights.length > 0 && (
-     <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+     <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
        <h5 className="text-xs font-semibold t-primary mb-2 flex items-center gap-1"><Sparkles size={12} className="text-accent" /> AI Insights</h5>
        <ul className="space-y-1">
          {run.insights.map((insight, i) => (
@@ -1948,7 +1941,7 @@ export function CatalystsPage() {
  const Icon = config.icon;
  const count = clusters.filter(c => c.autonomyTier === key).length;
  return (
- <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div key={key} className="flex items-center justify-between p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <div className="flex items-center gap-2">
  <Icon size={14} className={config.color} />
  <span className="text-sm t-secondary">{config.label}</span>
@@ -1982,22 +1975,22 @@ export function CatalystsPage() {
  <Zap className="w-4 h-4 text-accent" /> Governance Metrics
  </h3>
  <div className="space-y-3">
- <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-xs t-secondary">Total Actions</span>
  <p className="text-lg font-bold text-accent">{governance?.totalActions ?? 0}</p>
  <p className="text-caption t-muted">All catalyst executions</p>
  </div>
- <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-xs t-secondary">Pending Approvals</span>
  <p className="text-lg font-bold text-accent">{governance?.pendingApprovals ?? 0}</p>
  <p className="text-caption t-muted">Awaiting human review</p>
  </div>
- <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-xs t-secondary">Approved / Rejected</span>
  <p className="text-lg font-bold t-primary">
- <span className="text-emerald-400">{governance?.approved ?? 0}</span>
+ <span style={{ color: 'var(--positive)' }}>{governance?.approved ?? 0}</span>
  {' / '}
- <span className="text-red-500">{governance?.rejected ?? 0}</span>
+ <span style={{ color: 'var(--neg)' }}>{governance?.rejected ?? 0}</span>
  </p>
  <p className="text-caption t-muted">Human override decisions</p>
  </div>
@@ -2010,13 +2003,13 @@ export function CatalystsPage() {
  {/* Quick Run Modal */}
  {showQuickRun && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md shadow-sm p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
- <h3 className="text-lg font-semibold t-primary flex items-center gap-2"><Play size={18} className="text-emerald-400" /> Run Sub-Catalyst</h3>
- <button onClick={() => { setShowQuickRun(false); setQuickRunError(null); setQuickRunSuccess(null); }} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ <h3 className="text-lg font-semibold t-primary flex items-center gap-2"><Play size={18} className="text-accent" /> Run Sub-Catalyst</h3>
+ <button onClick={() => { setShowQuickRun(false); setQuickRunError(null); setQuickRunSuccess(null); }} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
 
- <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+ <div className="p-3 rounded-md bg-accent/5 border border-accent/20">
  <div className="flex items-center gap-2">
  <Bot size={16} className="text-accent" />
  <div>
@@ -2030,7 +2023,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">What should this catalyst do?</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={quickRunAction}
  onChange={e => setQuickRunAction(e.target.value)}
  placeholder={`e.g. Process all outstanding ${quickRunSubName.toLowerCase()} tasks`}
@@ -2040,21 +2033,21 @@ export function CatalystsPage() {
  <div className="grid grid-cols-2 gap-3">
  <div>
  <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> From</label>
- <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={quickRunStart} onChange={e => setQuickRunStart(e.target.value)} />
+ <input type="datetime-local" className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={quickRunStart} onChange={e => setQuickRunStart(e.target.value)} />
  </div>
  <div>
  <label className="text-xs t-muted flex items-center gap-1"><Calendar size={10} /> To</label>
- <input type="datetime-local" className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={quickRunEnd} onChange={e => setQuickRunEnd(e.target.value)} />
+ <input type="datetime-local" className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary" value={quickRunEnd} onChange={e => setQuickRunEnd(e.target.value)} />
  </div>
  </div>
  <div>
  <label className="text-xs t-muted">Attach file (optional)</label>
- <div className="mt-1 p-3 border-2 border-dashed border-[var(--border-card)] rounded-lg text-center cursor-pointer hover:border-accent/30 transition-colors active:scale-[0.97]" onClick={() => quickRunFileRef.current?.click()}>
+ <div className="mt-1 p-3 border-2 border-dashed border-[var(--border-card)] rounded-md text-center cursor-pointer hover:border-accent/30 transition-colors active:scale-[0.97]" onClick={() => quickRunFileRef.current?.click()}>
  {quickRunFile ? (
  <div className="flex items-center justify-center gap-2">
  <FileText size={14} className="text-accent" />
  <span className="text-xs t-secondary">{quickRunFile.name}</span>
- <button onClick={(e) => { e.stopPropagation(); setQuickRunFile(null); }} className="text-gray-500 hover:text-red-400"><X size={12} /></button>
+ <button onClick={(e) => { e.stopPropagation(); setQuickRunFile(null); }} className="t-muted"><X size={12} /></button>
  </div>
  ) : (
  <div><Upload size={16} className="mx-auto text-gray-500 mb-1" /><p className="text-caption t-muted">CSV, Excel, or PDF</p></div>
@@ -2065,10 +2058,10 @@ export function CatalystsPage() {
  </div>
 
  {quickRunError && (
- <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertTriangle size={14} /> {quickRunError}</div>
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}><AlertTriangle size={14} /> {quickRunError}</div>
  )}
  {quickRunSuccess && (
- <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm flex items-center gap-2"><CheckCircle size={14} /> {quickRunSuccess}</div>
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'rgb(var(--accent-rgb) / 0.2)', color: 'var(--positive)' }}><CheckCircle size={14} /> {quickRunSuccess}</div>
  )}
 
  <div className="flex gap-3 pt-2">
@@ -2084,12 +2077,12 @@ export function CatalystsPage() {
  {/* Data Source Configuration Modal */}
  {showDataSourceConfig && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md shadow-sm p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
  <Settings size={18} className="text-accent" /> Configure Data Sources
  </h3>
- <button onClick={() => setShowDataSourceConfig(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ <button onClick={() => setShowDataSourceConfig(false)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
 
   <p className="text-xs t-secondary">
@@ -2102,26 +2095,26 @@ export function CatalystsPage() {
   <button
  type="button"
  disabled
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/30 disabled:opacity-80"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent/10 text-accent border border-accent/30 disabled:opacity-80"
  >
  <Database size={12} /> Data Sources
  </button>
  <button
  onClick={() => { setShowDataSourceConfig(false); openScheduleConfig(configClusterId, configSub); }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-indigo-500/30 hover:text-indigo-400 transition-colors active:scale-[0.97]"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-accent/30 hover:text-accent transition-colors active:scale-[0.97]"
  >
  <Calendar size={12} /> Schedule
  </button>
  <button
  onClick={() => { setShowDataSourceConfig(false); openExecutionConfig(configClusterId, configSub); }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-orange-500/30 hover:text-orange-400 transition-colors active:scale-[0.97]"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-accent/30 hover:text-accent transition-colors active:scale-[0.97]"
  >
  <Activity size={12} /> Execution Mode
  </button>
  {getSubDataSources(configSub).length >= 2 && (
  <button
  onClick={() => { setShowDataSourceConfig(false); openFieldMappingConfig(configClusterId, configSub); }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-teal-500/30 hover:text-teal-400 transition-colors active:scale-[0.97]"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)] t-secondary hover:border-accent/30 hover:text-accent transition-colors active:scale-[0.97]"
  >
  <Link2 size={12} /> Field Mappings
  </button>
@@ -2136,15 +2129,13 @@ export function CatalystsPage() {
  {dsSources.map((src, i) => {
  const dsIcon = src.type === 'erp' ? Database : src.type === 'email' ? Mail : src.type === 'cloud_storage' ? Cloud : src.type === 'custom_system' ? Cog : HardDrive;
  const DsIcon = dsIcon;
- const dsColor = src.type === 'erp' ? 'text-blue-400' : src.type === 'email' ? 'text-purple-400' : src.type === 'cloud_storage' ? 'text-cyan-400' : src.type === 'custom_system' ? 'text-rose-400' : 'text-amber-400';
- const dsBg = src.type === 'erp' ? 'bg-blue-500/5 border-blue-500/20' : src.type === 'email' ? 'bg-purple-500/5 border-purple-500/20' : src.type === 'cloud_storage' ? 'bg-cyan-500/5 border-cyan-500/20' : src.type === 'custom_system' ? 'bg-rose-500/5 border-rose-500/20' : 'bg-amber-500/5 border-amber-500/20';
  const dsLabel = src.type === 'erp' ? `ERP (${(src.config.erp_type as string) || 'unknown'})` : src.type === 'email' ? `Email${src.config.mailbox ? ` (${String(src.config.mailbox)})` : ''}` : src.type === 'cloud_storage' ? `Cloud${src.config.provider ? ` (${String(src.config.provider)})` : ''}` : src.type === 'custom_system' ? `Custom: ${(src.config.system_name as string) || 'System'}` : 'Manual Upload';
  return (
- <div key={i} className={`flex items-center justify-between p-3 rounded-lg border ${dsBg}`}>
+ <div key={i} className="flex items-center justify-between p-3 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)]">
  <div className="flex items-center gap-2 min-w-0">
- <DsIcon size={16} className={dsColor} />
+ <DsIcon size={16} className="text-accent" />
  <div className="min-w-0">
- <span className={`text-xs font-medium ${dsColor}`}>{dsLabel}</span>
+ <span className="text-xs font-medium text-accent">{dsLabel}</span>
  {src.type === 'erp' && !!src.config.module && <span className="text-caption t-muted block">{String(src.config.module)}</span>}
  {src.type === 'custom_system' && !!src.config.endpoint_url && <span className="text-caption t-muted block truncate">{String(src.config.endpoint_url)}</span>}
  </div>
@@ -2162,11 +2153,12 @@ export function CatalystsPage() {
  <button
    type="button"
    onClick={() => dsRemoveSource(i)}
-   className="h-9 w-9 flex items-center justify-center rounded hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-colors active:scale-[0.97]"
+   className="h-9 w-9 flex items-center justify-center rounded focus:outline-none transition-colors active:scale-[0.97]"
+   style={{ color: 'var(--neg)' }}
    aria-label={`Remove ${dsLabel}`}
    title="Remove"
  >
- <Trash2 size={14} className="text-red-400" aria-hidden="true" />
+ <Trash2 size={14} aria-hidden="true" />
  </button>
  </div>
  </div>
@@ -2177,8 +2169,8 @@ export function CatalystsPage() {
 
  {/* Empty state */}
  {dsSources.length === 0 && dsEditIndex === null && (
- <div className="text-center py-6 border border-dashed border-[var(--border-card)] rounded-lg">
- <Database size={24} className="mx-auto text-gray-400 mb-2" />
+ <div className="text-center py-6 border border-dashed border-[var(--border-card)] rounded-md">
+ <Database size={24} className="mx-auto t-muted mb-2" />
  <p className="text-xs t-muted">No data sources configured yet.</p>
  <p className="text-caption t-muted mt-1">Click &quot;Add Data Source&quot; to connect one.</p>
  </div>
@@ -2188,7 +2180,7 @@ export function CatalystsPage() {
  {dsEditIndex === null && (
  <button
  onClick={dsStartAddNew}
- className="flex items-center gap-2 w-full p-3 rounded-lg border border-dashed border-[var(--border-card)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] text-xs t-secondary active:scale-[0.97]"
+ className="flex items-center gap-2 w-full p-3 rounded-md border border-dashed border-[var(--border-card)] hover:border-accent/40 hover:bg-accent/5 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] text-xs t-secondary active:scale-[0.97]"
  >
  <Plus size={14} className="text-accent" /> Add Data Source
  </button>
@@ -2196,7 +2188,7 @@ export function CatalystsPage() {
 
  {/* Data Source Editor (shown when adding or editing) */}
  {dsEditIndex !== null && (
- <div className="border border-accent/30 rounded-lg p-4 space-y-3 bg-accent/5">
+ <div className="border border-accent/30 rounded-md p-4 space-y-3 bg-accent/5">
  <div className="flex items-center justify-between">
  <span className="text-xs font-semibold t-primary">{dsEditIndex === -1 ? 'Add New Data Source' : `Edit Data Source #${dsEditIndex + 1}`}</span>
  <button onClick={dsCancelEdit} className="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
@@ -2207,26 +2199,23 @@ export function CatalystsPage() {
  <label className="text-xs t-muted block mb-1.5">Data Source Type</label>
  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
  {([
- { type: 'erp' as const, label: 'ERP', icon: Database, selectedBg: 'bg-blue-500/10 border-blue-500/40 ring-1 ring-blue-500/30', selectedText: 'text-blue-400' },
- { type: 'email' as const, label: 'Email', icon: Mail, selectedBg: 'bg-purple-500/10 border-purple-500/40 ring-1 ring-purple-500/30', selectedText: 'text-purple-400' },
- { type: 'cloud_storage' as const, label: 'Cloud', icon: Cloud, selectedBg: 'bg-cyan-500/10 border-cyan-500/40 ring-1 ring-cyan-500/30', selectedText: 'text-cyan-400' },
- { type: 'upload' as const, label: 'Upload', icon: HardDrive, selectedBg: 'bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30', selectedText: 'text-amber-400' },
- { type: 'custom_system' as const, label: 'Custom', icon: Cog, selectedBg: 'bg-rose-500/10 border-rose-500/40 ring-1 ring-rose-500/30', selectedText: 'text-rose-400' },
- ] satisfies Array<{ type: DataSourceType; label: string; icon: typeof Database; selectedBg: string; selectedText: string }>).map((opt) => {
+ { type: 'erp' as const, label: 'ERP', icon: Database },
+ { type: 'email' as const, label: 'Email', icon: Mail },
+ { type: 'cloud_storage' as const, label: 'Cloud', icon: Cloud },
+ { type: 'upload' as const, label: 'Upload', icon: HardDrive },
+ { type: 'custom_system' as const, label: 'Custom', icon: Cog },
+ ] satisfies Array<{ type: DataSourceType; label: string; icon: typeof Database }>).map((opt) => {
  const Icon = opt.icon;
  const selected = dsType === opt.type;
  return (
  <button
  key={opt.type}
  onClick={() => { setDsType(opt.type); setDsConfig({}); }}
- className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
- selected
- ? opt.selectedBg
- : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
- } active:scale-[0.97]`}
+ className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]`}
+ style={selected ? { background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'rgb(var(--accent-rgb) / 0.4)', boxShadow: '0 0 0 1px rgb(var(--accent-rgb) / 0.2)' } : undefined}
  >
- <Icon size={16} className={selected ? opt.selectedText : 'text-gray-400'} />
- <span className={`text-caption font-medium ${selected ? opt.selectedText : 't-secondary'}`}>{opt.label}</span>
+ <Icon size={16} className={selected ? 'text-accent' : 't-muted'} />
+ <span className={`text-caption font-medium ${selected ? 'text-accent' : 't-secondary'}`}>{opt.label}</span>
  </button>
  );
  })}
@@ -2240,7 +2229,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">ERP System</label>
  <select
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.erp_type as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, erp_type: e.target.value }))}
  >
@@ -2262,7 +2251,7 @@ export function CatalystsPage() {
  )}
  </select>
  {erpConnections.length > 0 && (
- <p className="text-caption text-emerald-400 mt-1 flex items-center gap-1">
+ <p className="text-caption mt-1 flex items-center gap-1" style={{ color: 'var(--positive)' }}>
  <CheckCircle size={10} /> Pre-filled from your connected ERP adapter
  </p>
  )}
@@ -2270,7 +2259,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Module (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.module as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, module: e.target.value }))}
  placeholder="e.g. Accounts Payable, General Ledger"
@@ -2279,7 +2268,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Connection ID (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.connection_id as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, connection_id: e.target.value }))}
  placeholder="ERP connection identifier"
@@ -2293,7 +2282,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Mailbox Address</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.mailbox as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, mailbox: e.target.value }))}
  placeholder="e.g. invoices@company.com"
@@ -2302,7 +2291,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Folder (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.folder as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, folder: e.target.value }))}
  placeholder="e.g. Inbox, Remittances"
@@ -2311,7 +2300,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Subject Filter (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.filter as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, filter: e.target.value }))}
  placeholder="e.g. Remittance, Payment Advice"
@@ -2320,7 +2309,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Accepted File Types (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.file_types as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, file_types: e.target.value }))}
  placeholder="e.g. pdf, xlsx, csv"
@@ -2334,7 +2323,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Cloud Provider</label>
  <select
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.provider as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, provider: e.target.value }))}
  >
@@ -2348,7 +2337,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Folder Path</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.path as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, path: e.target.value }))}
  placeholder="e.g. /Finance/Invoices"
@@ -2357,7 +2346,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Accepted File Types (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.file_types as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, file_types: e.target.value }))}
  placeholder="e.g. pdf, xlsx, csv"
@@ -2371,7 +2360,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Accepted File Types (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.file_types as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, file_types: e.target.value }))}
  placeholder="e.g. csv, xlsx, pdf"
@@ -2381,7 +2370,7 @@ export function CatalystsPage() {
  <label className="text-xs t-muted">Max File Size (MB, optional)</label>
  <input
  type="number"
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.max_size_mb as number) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, max_size_mb: e.target.value ? Number(e.target.value) : undefined }))}
  placeholder="e.g. 25"
@@ -2398,7 +2387,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">System Name</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.system_name as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, system_name: e.target.value }))}
  placeholder="e.g. Banking Portal, HR System, Legacy ERP"
@@ -2407,7 +2396,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">System Description (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.description as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, description: e.target.value }))}
  placeholder="e.g. Internal banking reconciliation system"
@@ -2416,7 +2405,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Endpoint URL (optional)</label>
  <input
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.endpoint_url as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, endpoint_url: e.target.value }))}
  placeholder="e.g. https://internal-system.company.com/api"
@@ -2425,7 +2414,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Authentication Type (optional)</label>
  <select
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.auth_type as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, auth_type: e.target.value }))}
  >
@@ -2440,7 +2429,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted">Data Format (optional)</label>
  <select
- className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+ className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
  value={(dsConfig.data_format as string) || ''}
  onChange={e => setDsConfig(prev => ({ ...prev, data_format: e.target.value }))}
  >
@@ -2470,7 +2459,7 @@ export function CatalystsPage() {
  )}
 
  {dsError && (
- <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>
  <AlertTriangle size={14} /> {dsError}
  </div>
  )}
@@ -2482,7 +2471,7 @@ export function CatalystsPage() {
  <button
  onClick={handleRemoveAllDataSources}
  disabled={dsSaving}
- className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
+ className="flex items-center gap-1.5 text-xs transition-colors" style={{ color: 'var(--neg)' }}
  >
  <Trash2 size={12} /> Remove All
  </button>
@@ -2502,16 +2491,16 @@ export function CatalystsPage() {
  {/* Schedule Configuration Modal */}
  {showScheduleConfig && (
  <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
- <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+ <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md shadow-sm p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between">
  <h3 className="text-lg font-semibold t-primary flex items-center gap-2">
- <Calendar size={18} className="text-indigo-400" /> Schedule Configuration
+ <Calendar size={18} className="text-accent" /> Schedule Configuration
  </h3>
- <button onClick={() => setShowScheduleConfig(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+ <button onClick={() => setShowScheduleConfig(false)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
 
  <p className="text-xs t-secondary">
- Configure when <span className="font-semibold text-indigo-400">{schedSubName}</span> should run automatically.
+ Configure when <span className="font-semibold text-accent">{schedSubName}</span> should run automatically.
  </p>
 
  {/* Frequency Selector */}
@@ -2527,13 +2516,10 @@ export function CatalystsPage() {
    <button
      key={opt.value}
      onClick={() => setSchedFrequency(opt.value)}
-     className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
-       schedFrequency === opt.value
-         ? 'bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30'
-         : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-gray-400'
-     } active:scale-[0.97]`}
+     className="flex flex-col items-center gap-1 p-3 rounded-md border transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
+     style={schedFrequency === opt.value ? { background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'rgb(var(--accent-rgb) / 0.4)', boxShadow: '0 0 0 1px rgb(var(--accent-rgb) / 0.2)' } : undefined}
    >
-     <span className={`text-xs font-medium ${schedFrequency === opt.value ? 'text-indigo-400' : 't-secondary'}`}>{opt.label}</span>
+     <span className={`text-xs font-medium ${schedFrequency === opt.value ? 'text-accent' : 't-secondary'}`}>{opt.label}</span>
      <span className="text-caption t-muted">{opt.desc}</span>
    </button>
  ))}
@@ -2545,7 +2531,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted block mb-1.5">Day of Week</label>
  <select
-   className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+   className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
    value={schedDayOfWeek}
    onChange={e => setSchedDayOfWeek(Number(e.target.value))}
  >
@@ -2565,7 +2551,7 @@ export function CatalystsPage() {
  <div>
  <label className="text-xs t-muted block mb-1.5">Day of Month</label>
  <select
-   className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+   className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
    value={schedDayOfMonth}
    onChange={e => setSchedDayOfMonth(Number(e.target.value))}
  >
@@ -2582,7 +2568,7 @@ export function CatalystsPage() {
  <label className="text-xs t-muted block mb-1.5">Time of Day (UTC)</label>
  <input
    type="time"
-   className="w-full px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+   className="w-full px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
    value={schedTimeOfDay}
    onChange={e => setSchedTimeOfDay(e.target.value)}
  />
@@ -2592,9 +2578,9 @@ export function CatalystsPage() {
 
  {/* Current Schedule Info */}
  {schedExisting && schedExisting.frequency !== 'manual' && (
- <div className="p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-lg space-y-1">
+ <div className="p-3 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] space-y-1">
  <p className="text-xs t-secondary">
-   <span className="font-medium text-indigo-400">Current:</span>{' '}
+   <span className="font-medium text-accent">Current:</span>{' '}
    {schedExisting.frequency === 'daily' ? 'Daily' : schedExisting.frequency === 'weekly' ? `Weekly (${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][schedExisting.day_of_week ?? 0]})` : `Monthly (${schedExisting.day_of_month}${schedExisting.day_of_month === 1 ? 'st' : schedExisting.day_of_month === 2 ? 'nd' : schedExisting.day_of_month === 3 ? 'rd' : 'th'})`}
    {schedExisting.time_of_day ? ` at ${schedExisting.time_of_day} UTC` : ''}
  </p>
@@ -2608,7 +2594,7 @@ export function CatalystsPage() {
  )}
 
  {schedError && (
- <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>
  <AlertTriangle size={14} /> {schedError}
  </div>
  )}
@@ -2619,7 +2605,7 @@ export function CatalystsPage() {
    <button
      onClick={handleRemoveSchedule}
      disabled={schedSaving}
-     className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
+     className="flex items-center gap-1.5 text-xs transition-colors" style={{ color: 'var(--neg)' }}
    >
      <Trash2 size={12} /> Remove Schedule
    </button>
@@ -2639,26 +2625,26 @@ export function CatalystsPage() {
  {/* Field Mapping Configuration Modal */}
  {showFieldMappingConfig && (
  <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowFieldMappingConfig(false)}>
- <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-md shadow-sm p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
- <Link2 className="w-5 h-5 text-teal-400" />
+ <Link2 className="w-5 h-5 text-accent" />
  <h3 className="text-lg font-semibold t-primary">Field Mappings</h3>
  </div>
- <button onClick={() => setShowFieldMappingConfig(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ <button onClick={() => setShowFieldMappingConfig(false)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
- <p className="text-xs t-secondary mb-3">Map data elements between sources for <span className="font-medium text-teal-400">{fmSubName}</span></p>
+ <p className="text-xs t-secondary mb-3">Map data elements between sources for <span className="font-medium text-accent">{fmSubName}</span></p>
 
  {/* Data Sources Summary */}
  <div className="flex items-center gap-2 mb-4">
  {fmDataSources.map((ds, i) => (
- <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded text-caption font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-caption font-medium bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="font-bold text-accent">#{i}</span>
- {ds.type === 'erp' && <><Database size={10} className="text-blue-400" /> ERP</>}
- {ds.type === 'email' && <><Mail size={10} className="text-purple-400" /> Email</>}
- {ds.type === 'cloud_storage' && <><Cloud size={10} className="text-cyan-400" /> Cloud</>}
- {ds.type === 'upload' && <><HardDrive size={10} className="text-amber-400" /> Upload</>}
- {ds.type === 'custom_system' && <><Cog size={10} className="text-rose-400" /> {String(ds.config.system_name || 'Custom')}</>}
+ {ds.type === 'erp' && <><Database size={10} className="t-muted" /> ERP</>}
+ {ds.type === 'email' && <><Mail size={10} className="t-muted" /> Email</>}
+ {ds.type === 'cloud_storage' && <><Cloud size={10} className="t-muted" /> Cloud</>}
+ {ds.type === 'upload' && <><HardDrive size={10} className="t-muted" /> Upload</>}
+ {ds.type === 'custom_system' && <><Cog size={10} className="t-muted" /> {String(ds.config.system_name || 'Custom')}</>}
  </span>
  ))}
  </div>
@@ -2669,7 +2655,7 @@ export function CatalystsPage() {
  {fmSuggesting ? <Loader2 size={14} className="animate-spin mr-1" /> : <Sparkles size={14} className="mr-1" />}
  Smart Suggest Mappings
  </Button>
- {fmDataSources.length < 2 && <span className="text-caption text-amber-400 ml-2">Need at least 2 data sources</span>}
+ {fmDataSources.length < 2 && <span className="text-caption ml-2" style={{ color: 'var(--warning)' }}>Need at least 2 data sources</span>}
  </div>
 
  {/* Existing Mappings */}
@@ -2679,14 +2665,14 @@ export function CatalystsPage() {
  <span>Src</span><span>Source Field</span><span></span><span>Target Field</span><span>Match Type</span><span>Conf.</span><span></span>
  </div>
  {fmMappings.map((fm, i) => (
- <div key={fm.id || i} className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 items-center p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div key={fm.id || i} className="grid grid-cols-[40px_1fr_24px_1fr_80px_60px_32px] gap-2 items-center p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-caption font-bold text-accent">#{fm.source_index}</span>
  <input
    className="bg-transparent border border-[var(--border-card)] rounded px-2 py-1 text-xs t-primary"
    value={fm.source_field}
    onChange={e => setFmMappings(prev => prev.map((m, j) => j === i ? { ...m, source_field: e.target.value } : m))}
  />
- <span className="text-center text-gray-400">→</span>
+ <span className="text-center t-muted">→</span>
  <input
    className="bg-transparent border border-[var(--border-card)] rounded px-2 py-1 text-xs t-primary"
    value={fm.target_field}
@@ -2703,18 +2689,18 @@ export function CatalystsPage() {
    <option value="numeric_tolerance">Numeric ±</option>
    <option value="date_range">Date Range</option>
  </select>
- <span className={`text-caption font-medium text-center ${fm.confidence >= 0.8 ? 'text-emerald-400' : fm.confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'}`}>
+ <span className="text-caption font-medium text-center" style={{ color: fm.confidence >= 0.8 ? 'var(--positive)' : fm.confidence >= 0.5 ? 'var(--warning)' : 'var(--neg)' }}>
    {(fm.confidence * 100).toFixed(0)}%
  </span>
- <button onClick={() => handleRemoveMapping(i)} className="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/10 transition-colors active:scale-[0.97]">
-   <Trash2 size={12} className="text-red-400" />
+ <button onClick={() => handleRemoveMapping(i)} className="h-6 w-6 flex items-center justify-center rounded transition-colors active:scale-[0.97]" style={{ color: 'var(--neg)' }}>
+   <Trash2 size={12} />
  </button>
  </div>
  ))}
  </div>
  ) : (
- <div className="p-6 text-center bg-[var(--bg-secondary)] rounded-lg border border-dashed border-[var(--border-card)] mb-4">
- <Link2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+ <div className="p-6 text-center bg-[var(--bg-secondary)] rounded-md border border-dashed border-[var(--border-card)] mb-4">
+ <Link2 className="w-8 h-8 t-muted mx-auto mb-2" />
  <p className="text-xs t-secondary">No field mappings configured</p>
  <p className="text-caption t-muted mt-1">Click &quot;Smart Suggest&quot; to auto-detect matching fields</p>
  </div>
@@ -2727,13 +2713,13 @@ export function CatalystsPage() {
      source_field: '', target_field: '', match_type: 'exact',
      confidence: 1.0, auto_suggested: false,
    }])}
-   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 transition-colors mb-4"
+   className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors mb-4"
  >
    <Plus size={12} /> Add Manual Mapping
  </button>
 
  {fmError && (
- <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2 mb-4">
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2 mb-4" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>
  <AlertTriangle size={14} /> {fmError}
  </div>
  )}
@@ -2751,7 +2737,7 @@ export function CatalystsPage() {
  {/* HITL Permission Assignment Modal */}
  {showHitlModal && (
  <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowHitlModal(false)}>
- <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-md shadow-sm p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <Users className="w-5 h-5 text-accent" />
@@ -2759,7 +2745,7 @@ export function CatalystsPage() {
    {hitlEditSub ? `Assign Users \u2014 ${hitlEditSub}` : 'Cluster Default Permissions'}
  </h3>
  </div>
- <button onClick={() => setShowHitlModal(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ <button onClick={() => setShowHitlModal(false)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
 
  {hitlEditSub && (
@@ -2768,12 +2754,12 @@ export function CatalystsPage() {
 
   <div className="space-y-4">
  <div>
- <label className="text-xs font-medium text-emerald-400 block mb-1.5">Validators (approve actions)</label>
- <div className="w-full rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
+ <label className="text-xs font-medium text-accent block mb-1.5">Validators (approve actions)</label>
+ <div className="w-full rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
    {hitlUsers.length === 0 && <p className="text-xs t-muted p-2">No users available</p>}
    {hitlUsers.map(u => (
-     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-emerald-500/5 cursor-pointer active:scale-[0.97]">
-       <input type="checkbox" className="rounded border-emerald-500/40 text-emerald-500" checked={hitlValidators.includes(u.id)} onChange={e => {
+     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent/5 cursor-pointer active:scale-[0.97]">
+       <input type="checkbox" className="rounded" checked={hitlValidators.includes(u.id)} onChange={e => {
          if (e.target.checked) setHitlValidators(prev => [...prev, u.id]);
          else setHitlValidators(prev => prev.filter(id => id !== u.id));
        }} />
@@ -2785,12 +2771,12 @@ export function CatalystsPage() {
  </div>
 
  <div>
- <label className="text-xs font-medium text-amber-400 block mb-1.5">Exception Handlers</label>
- <div className="w-full rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
+ <label className="text-xs font-medium t-secondary block mb-1.5">Exception Handlers</label>
+ <div className="w-full rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
    {hitlUsers.length === 0 && <p className="text-xs t-muted p-2">No users available</p>}
    {hitlUsers.map(u => (
-     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-amber-500/5 cursor-pointer active:scale-[0.97]">
-       <input type="checkbox" className="rounded border-amber-500/40 text-amber-500" checked={hitlExceptionHandlers.includes(u.id)} onChange={e => {
+     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent/5 cursor-pointer active:scale-[0.97]">
+       <input type="checkbox" className="rounded" checked={hitlExceptionHandlers.includes(u.id)} onChange={e => {
          if (e.target.checked) setHitlExceptionHandlers(prev => [...prev, u.id]);
          else setHitlExceptionHandlers(prev => prev.filter(id => id !== u.id));
        }} />
@@ -2802,12 +2788,12 @@ export function CatalystsPage() {
  </div>
 
  <div>
- <label className="text-xs font-medium text-red-400 block mb-1.5">Escalation Contacts</label>
- <div className="w-full rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
+ <label className="text-xs font-medium t-secondary block mb-1.5">Escalation Contacts</label>
+ <div className="w-full rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] max-h-[120px] overflow-y-auto p-1">
    {hitlUsers.length === 0 && <p className="text-xs t-muted p-2">No users available</p>}
    {hitlUsers.map(u => (
-     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-red-500/5 cursor-pointer active:scale-[0.97]">
-       <input type="checkbox" className="rounded border-red-500/40 text-red-500" checked={hitlEscalation.includes(u.id)} onChange={e => {
+     <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent/5 cursor-pointer active:scale-[0.97]">
+       <input type="checkbox" className="rounded" checked={hitlEscalation.includes(u.id)} onChange={e => {
          if (e.target.checked) setHitlEscalation(prev => [...prev, u.id]);
          else setHitlEscalation(prev => prev.filter(id => id !== u.id));
        }} />
@@ -2833,7 +2819,7 @@ export function CatalystsPage() {
  </div>
 
  {hitlError && (
- <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
+ <div className="mt-3 p-3 rounded-md border text-sm flex items-center gap-2" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>
  <AlertTriangle size={14} /> {hitlError}
  </div>
  )}
@@ -2851,15 +2837,15 @@ export function CatalystsPage() {
  {/* Execution Config Modal */}
  {showExecutionConfig && (
  <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowExecutionConfig(false)}>
- <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-md shadow-sm p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
- <Activity className="w-5 h-5 text-orange-400" />
+ <Activity className="w-5 h-5 text-accent" />
  <h3 className="text-lg font-semibold t-primary">Execution Mode</h3>
  </div>
- <button onClick={() => setShowExecutionConfig(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ <button onClick={() => setShowExecutionConfig(false)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
- <p className="text-xs t-secondary mb-4">Configure how <span className="font-medium text-orange-400">{execSubName}</span> processes data</p>
+ <p className="text-xs t-secondary mb-4">Configure how <span className="font-medium text-accent">{execSubName}</span> processes data</p>
 
  <div className="space-y-2 mb-4">
  {([
@@ -2872,15 +2858,12 @@ export function CatalystsPage() {
    <button
      key={opt.mode}
      onClick={() => setExecMode(opt.mode)}
-     className={`w-full flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${
-       execMode === opt.mode
-         ? 'bg-orange-500/10 border-orange-500/30 ring-1 ring-orange-500/20'
-         : 'bg-[var(--bg-secondary)] border-[var(--border-card)] hover:border-orange-500/20'
-     } active:scale-[0.97]`}
+     className="w-full flex items-start gap-3 p-3 rounded-md border transition-colors text-left active:scale-[0.97]"
+     style={execMode === opt.mode ? { background: 'rgb(var(--accent-rgb) / 0.08)', borderColor: 'rgb(var(--accent-rgb) / 0.3)', boxShadow: '0 0 0 1px rgb(var(--accent-rgb) / 0.15)' } : undefined}
    >
-     <div className={`mt-0.5 ${execMode === opt.mode ? 'text-orange-400' : 'text-gray-400'}`}>{opt.icon}</div>
+     <div className={`mt-0.5 ${execMode === opt.mode ? 'text-accent' : 't-muted'}`}>{opt.icon}</div>
      <div>
-       <p className={`text-sm font-medium ${execMode === opt.mode ? 'text-orange-400' : 't-primary'}`}>{opt.label}</p>
+       <p className={`text-sm font-medium ${execMode === opt.mode ? 'text-accent' : 't-primary'}`}>{opt.label}</p>
        <p className="text-caption t-muted">{opt.desc}</p>
      </div>
    </button>
@@ -2888,7 +2871,7 @@ export function CatalystsPage() {
  </div>
 
  {execCfgError && (
- <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2 mb-4">
+ <div className="p-3 rounded-md border text-sm flex items-center gap-2 mb-4" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>
  <AlertTriangle size={14} /> {execCfgError}
  </div>
  )}
@@ -2906,59 +2889,59 @@ export function CatalystsPage() {
  {/* Execution Result Modal */}
  {showExecResult && execResult && (
  <Portal><div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowExecResult(false)}>
- <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-xl shadow-xl p-6 w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+ <div className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-md shadow-sm p-6 w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
- <BarChart3 className={`w-5 h-5 ${execResult.status === 'completed' ? 'text-emerald-400' : execResult.status === 'partial' ? 'text-amber-400' : 'text-red-400'}`} />
+ <BarChart3 className="w-5 h-5" style={{ color: execResult.status === 'completed' ? 'var(--positive)' : execResult.status === 'partial' ? 'var(--warning)' : 'var(--neg)' }} />
  <h3 className="text-lg font-semibold t-primary">Execution Results</h3>
  <Badge variant={execResult.status === 'completed' ? 'success' : execResult.status === 'partial' ? 'warning' : 'danger'}>
    {execResult.status}
  </Badge>
  </div>
- <button onClick={() => setShowExecResult(false)} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+ <button onClick={() => setShowExecResult(false)} className="t-muted hover:t-primary"><X size={18} /></button>
  </div>
 
  <div className="flex items-center gap-4 text-xs t-secondary mb-4">
  <span><span className="font-medium t-primary">{execResult.sub_catalyst}</span></span>
- <span>Mode: <span className="font-medium text-orange-400">{execResult.mode}</span></span>
+ <span>Mode: <span className="font-medium t-primary">{execResult.mode}</span></span>
  <span>Duration: <span className="font-medium t-primary">{execResult.duration_ms}ms</span></span>
  <span>At: <span className="font-medium t-primary">{new Date(execResult.executed_at).toLocaleString()}</span></span>
  </div>
 
  {execResult.error && (
- <div className={`p-4 ${execResult.status === 'failed' ? 'bg-red-500/15 border-red-500/40' : 'bg-red-500/10 border-red-500/20'} border rounded-lg text-red-400 text-sm mb-4`}>
+ <div className="p-4 border rounded-md text-sm mb-4" style={{ background: execResult.status === 'failed' ? 'rgb(var(--neg-rgb) / 0.12)' : 'rgb(var(--neg-rgb) / 0.08)', borderColor: execResult.status === 'failed' ? 'rgb(var(--neg-rgb) / 0.35)' : 'rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>
  <div className="flex items-center gap-2 font-semibold mb-1">
  <AlertTriangle size={16} /> {execResult.status === 'failed' ? 'Execution Failed' : 'Warning'}
  </div>
- <p className="text-red-300/90 text-xs leading-relaxed">{execResult.error}</p>
+ <p className="text-xs leading-relaxed" style={{ color: 'rgb(var(--neg-rgb) / 0.8)' }}>{execResult.error}</p>
  </div>
  )}
 
  {/* Summary Grid */}
  <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-caption t-muted block">Source Records</span>
  <p className="text-lg font-bold t-primary">{execResult.summary.total_records_source}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+ <div className="text-center p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
  <span className="text-caption t-muted block">Target Records</span>
  <p className="text-lg font-bold t-primary">{execResult.summary.total_records_target}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
- <span className="text-caption text-emerald-400 block">Matched</span>
- <p className="text-lg font-bold text-emerald-400">{execResult.summary.matched}</p>
+ <div className="text-center p-3 rounded-md border" style={{ background: 'rgb(var(--accent-rgb) / 0.05)', borderColor: 'rgb(var(--accent-rgb) / 0.15)' }}>
+ <span className="text-caption block" style={{ color: 'var(--positive)' }}>Matched</span>
+ <p className="text-lg font-bold" style={{ color: 'var(--positive)' }}>{execResult.summary.matched}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
- <span className="text-caption text-amber-400 block">Unmatched (Src)</span>
- <p className="text-lg font-bold text-amber-400">{execResult.summary.unmatched_source}</p>
+ <div className="text-center p-3 rounded-md border" style={{ background: 'rgba(154,107,31,0.05)', borderColor: 'rgba(154,107,31,0.15)' }}>
+ <span className="text-caption block" style={{ color: 'var(--warning)' }}>Unmatched (Src)</span>
+ <p className="text-lg font-bold" style={{ color: 'var(--warning)' }}>{execResult.summary.unmatched_source}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
- <span className="text-caption text-amber-400 block">Unmatched (Tgt)</span>
- <p className="text-lg font-bold text-amber-400">{execResult.summary.unmatched_target}</p>
+ <div className="text-center p-3 rounded-md border" style={{ background: 'rgba(154,107,31,0.05)', borderColor: 'rgba(154,107,31,0.15)' }}>
+ <span className="text-caption block" style={{ color: 'var(--warning)' }}>Unmatched (Tgt)</span>
+ <p className="text-lg font-bold" style={{ color: 'var(--warning)' }}>{execResult.summary.unmatched_target}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-red-500/5 border border-red-500/20">
- <span className="text-caption text-red-400 block">Discrepancies</span>
- <p className="text-lg font-bold text-red-400">{execResult.summary.discrepancies}</p>
+ <div className="text-center p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.05)', borderColor: 'rgb(var(--neg-rgb) / 0.15)' }}>
+ <span className="text-caption block" style={{ color: 'var(--neg)' }}>Discrepancies</span>
+ <p className="text-lg font-bold" style={{ color: 'var(--neg)' }}>{execResult.summary.discrepancies}</p>
  </div>
  </div>
 
@@ -2977,14 +2960,14 @@ export function CatalystsPage() {
  {execResult.discrepancies && execResult.discrepancies.length > 0 && (
  <div>
  <h4 className="text-sm font-semibold t-primary mb-2 flex items-center gap-1.5">
- <AlertCircle size={14} className="text-red-400" /> Discrepancy Details ({execResult.discrepancies.length})
+ <AlertCircle size={14} style={{ color: 'var(--neg)' }} /> Discrepancy Details ({execResult.discrepancies.length})
  </h4>
  <div className="max-h-60 overflow-y-auto space-y-1">
  {execResult.discrepancies.map((d, i) => (
  <div key={i} className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)] text-xs">
  <div className="flex items-center justify-between">
  <span className="font-medium t-primary">{d.field}</span>
- {d.difference && <span className="text-red-400 text-caption">{d.difference}</span>}
+ {d.difference && <span className="text-caption" style={{ color: 'var(--neg)' }}>{d.difference}</span>}
  </div>
  <div className="flex gap-4 mt-1 text-caption">
    <span className="t-secondary">Source: <span className="t-primary">{typeof d.source_value === 'number' ? Number(d.source_value).toFixed(2) : String(d.source_value ?? 'null')}</span></span>
@@ -3037,7 +3020,7 @@ export function CatalystsPage() {
        };
        return (
      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
+      <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Active Patterns</span>
         <MetricSource source={{
@@ -3049,11 +3032,11 @@ export function CatalystsPage() {
           sample: intellOverview.summary.activePatterns,
         }} />
        </div>
-       <p className="text-headline-lg font-bold text-amber-400 tabular-nums font-mono mt-1">
+       <p className="text-headline-lg font-bold tabular-nums font-mono mt-1" style={{ color: 'var(--warning)' }}>
         <Numeric value={intellOverview.summary.activePatterns} size="lg" />
        </p>
       </div>
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 transition-colors active:scale-[0.97]">
+      <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Critical</span>
         <MetricSource source={{
@@ -3066,11 +3049,11 @@ export function CatalystsPage() {
           notes: [{ label: 'Severity', value: 'critical' }],
         }} />
        </div>
-       <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono mt-1">
+       <p className="text-headline-lg font-bold tabular-nums font-mono mt-1" style={{ color: 'var(--neg)' }}>
         <Numeric value={intellOverview.summary.criticalPatterns} size="lg" />
        </p>
       </div>
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
+      <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Value Processed</span>
         <MetricSource source={{
@@ -3086,7 +3069,7 @@ export function CatalystsPage() {
         <Numeric value={intellOverview.summary.totalValueProcessed} unit="ZAR" compact size="lg" />
        </p>
       </div>
-      <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
+      <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] transition-colors active:scale-[0.97]">
        <div className="flex items-center justify-between">
         <span className="text-caption uppercase tracking-wider t-muted">Avg ROI</span>
         <MetricSource source={{
@@ -3097,7 +3080,7 @@ export function CatalystsPage() {
           query: 'AVG(value_recovered / NULLIF(cost_to_resolve, 0)) FROM catalyst_patterns',
         }} />
        </div>
-       <p className={`text-headline-lg font-bold tabular-nums font-mono mt-1 ${intellOverview.summary.avgRoi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+       <p className="text-headline-lg font-bold tabular-nums font-mono mt-1" style={{ color: intellOverview.summary.avgRoi >= 0 ? 'var(--positive)' : 'var(--neg)' }}>
         {intellOverview.summary.avgRoi > 0 ? '+' : ''}{Math.round(intellOverview.summary.avgRoi)}<span className="text-body">%</span>
        </p>
       </div>
@@ -3107,26 +3090,26 @@ export function CatalystsPage() {
 
      {/* ROI Card */}
      {roiData && (
-      <Card className="border-emerald-500/20 bg-emerald-500/5">
+      <Card>
        <div className="flex items-center gap-2 mb-3">
-        <TrendingUp size={16} className="text-emerald-400" />
+        <TrendingUp size={16} style={{ color: 'var(--positive)' }} />
         <h3 className="text-sm font-semibold t-primary">ROI Summary</h3>
         <Badge variant="success" size="sm">{roiData.roiMultiple}x return</Badge>
        </div>
        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
-         <p className="text-lg font-bold text-emerald-400">R{(roiData.totalDiscrepancyValueRecovered / 1000).toFixed(0)}k</p>
+        <div className="text-center p-2 rounded-md bg-[var(--bg-secondary)]">
+         <p className="text-lg font-bold font-mono tabular-nums" style={{ color: 'var(--positive)' }}>R{(roiData.totalDiscrepancyValueRecovered / 1000).toFixed(0)}k</p>
          <p className="text-caption t-muted">Recovered</p>
         </div>
-        <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
-         <p className="text-lg font-bold text-blue-400">R{(roiData.totalPreventedLosses / 1000).toFixed(0)}k</p>
+        <div className="text-center p-2 rounded-md bg-[var(--bg-secondary)]">
+         <p className="text-lg font-bold font-mono tabular-nums t-primary">R{(roiData.totalPreventedLosses / 1000).toFixed(0)}k</p>
          <p className="text-caption t-muted">Prevented</p>
         </div>
-        <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
-         <p className="text-lg font-bold text-purple-400">{roiData.totalPersonHoursSaved}h</p>
+        <div className="text-center p-2 rounded-md bg-[var(--bg-secondary)]">
+         <p className="text-lg font-bold font-mono tabular-nums t-primary">{roiData.totalPersonHoursSaved}h</p>
          <p className="text-caption t-muted">Hours Saved</p>
         </div>
-        <div className="text-center p-2 rounded-lg bg-[var(--bg-secondary)]">
+        <div className="text-center p-2 rounded-md bg-[var(--bg-secondary)]">
          <p className="text-lg font-bold t-primary">R{(roiData.platformCost / 1000).toFixed(0)}k</p>
          <p className="text-caption t-muted">Platform Cost</p>
         </div>
@@ -3147,7 +3130,7 @@ export function CatalystsPage() {
               <span className="text-xs t-muted">R{(row.recoveredValue / 1000).toFixed(0)}k · {Math.round(row.share * 100)}%</span>
              </div>
              <div className="h-1.5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
-              <div className="h-full bg-emerald-500" style={{ width: `${Math.max(2, row.share * 100)}%` }} />
+              <div className="h-full" style={{ width: `${Math.max(2, row.share * 100)}%`, background: 'var(--positive)' }} />
              </div>
             </div>
            </div>
@@ -3166,14 +3149,14 @@ export function CatalystsPage() {
         <div className="mt-4 pt-4 border-t border-[var(--border-card)]">
          <p className="text-xs font-semibold t-muted mb-2">Identified opportunity → realisation pipeline</p>
          <div className="grid grid-cols-3 gap-2">
-          <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+          <div className="p-2 rounded-md border" style={{ background: 'rgb(var(--accent-rgb) / 0.05)', borderColor: 'rgb(var(--accent-rgb) / 0.15)' }}>
            <p className="text-caption t-muted">Automated by Atheon</p>
-           <p className="text-base font-bold text-emerald-400">R{(roiData.breakdown.byActionState.automated_value_zar / 1000).toFixed(0)}k</p>
+           <p className="text-base font-bold font-mono tabular-nums" style={{ color: 'var(--positive)' }}>R{(roiData.breakdown.byActionState.automated_value_zar / 1000).toFixed(0)}k</p>
            <p className="text-caption t-muted">{roiData.breakdown.byActionState.automated_count} actions completed</p>
           </div>
-          <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+          <div className="p-2 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.05)', borderColor: 'rgb(var(--neg-rgb) / 0.15)' }}>
            <p className="text-caption t-muted">Pending approval</p>
-           <p className="text-base font-bold text-amber-400">R{(roiData.breakdown.byActionState.pending_value_zar / 1000).toFixed(0)}k</p>
+           <p className="text-base font-bold font-mono tabular-nums" style={{ color: 'var(--warning)' }}>R{(roiData.breakdown.byActionState.pending_value_zar / 1000).toFixed(0)}k</p>
            <p className="text-caption t-muted">{roiData.breakdown.byActionState.pending_count} awaiting</p>
           </div>
           <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
@@ -3196,7 +3179,7 @@ export function CatalystsPage() {
        <h3 className="text-sm font-semibold t-primary mb-2">Prescription Queue</h3>
        <div className="space-y-2">
         {prescriptions.map(rx => (
-         <Card key={rx.id} className={rx.priority === 'critical' ? 'border-red-500/20' : rx.priority === 'high' ? 'border-amber-500/20' : ''}>
+         <Card key={rx.id}>
           <div className="flex items-center justify-between">
            <div className="flex items-center gap-2">
             <Badge variant={rx.priority === 'critical' ? 'danger' : rx.priority === 'high' ? 'warning' : 'info'} size="sm">{rx.priority}</Badge>
@@ -3209,7 +3192,7 @@ export function CatalystsPage() {
            </div>
           </div>
           <p className="text-caption t-secondary mt-1">{rx.description}</p>
-          {rx.expectedImpact && <p className="text-caption text-emerald-400 mt-1">Expected: {rx.expectedImpact}</p>}
+          {rx.expectedImpact && <p className="text-caption mt-1" style={{ color: 'var(--positive)' }}>Expected: {rx.expectedImpact}</p>}
          </Card>
         ))}
        </div>
@@ -3292,12 +3275,12 @@ export function CatalystsPage() {
            <tr key={eff.id} className="border-b border-[var(--border-card)] hover:bg-[var(--bg-secondary)]">
             <td className="py-2 px-2 t-primary font-medium">{eff.subCatalystName}</td>
             <td className="text-right py-2 px-2 t-secondary">{eff.runsCount}</td>
-            <td className="text-right py-2 px-2"><span className={eff.successRate >= 80 ? 'text-emerald-400' : eff.successRate >= 60 ? 'text-amber-400' : 'text-red-400'}>{Math.round(eff.successRate)}%</span></td>
-            <td className="text-right py-2 px-2 t-secondary">{Math.round(eff.avgMatchRate)}%</td>
+            <td className="text-right py-2 px-2"><span className="font-mono tabular-nums" style={{ color: eff.successRate >= 80 ? 'var(--positive)' : eff.successRate >= 60 ? 'var(--warning)' : 'var(--neg)' }}>{Math.round(eff.successRate)}%</span></td>
+            <td className="text-right py-2 px-2 t-secondary font-mono tabular-nums">{Math.round(eff.avgMatchRate)}%</td>
             <td className="text-right py-2 px-2">
-             {eff.improvementTrend > 0 ? <TrendingUp size={12} className="text-emerald-400 inline" /> : eff.improvementTrend < 0 ? <TrendingDown size={12} className="text-red-400 inline" /> : <span className="text-gray-400">—</span>}
+             {eff.improvementTrend > 0 ? <TrendingUp size={12} style={{ color: 'var(--positive)' }} className="inline" /> : eff.improvementTrend < 0 ? <TrendingDown size={12} style={{ color: 'var(--neg)' }} className="inline" /> : <span className="t-muted">—</span>}
             </td>
-            <td className="text-right py-2 px-2"><span className={eff.roiEstimate > 0 ? 'text-emerald-400' : 'text-red-400'}>{eff.roiEstimate > 0 ? '+' : ''}{Math.round(eff.roiEstimate)}%</span></td>
+            <td className="text-right py-2 px-2"><span className="font-mono tabular-nums" style={{ color: eff.roiEstimate > 0 ? 'var(--positive)' : 'var(--neg)' }}>{eff.roiEstimate > 0 ? '+' : ''}{Math.round(eff.roiEstimate)}%</span></td>
            </tr>
           ))}
          </tbody>
