@@ -188,6 +188,7 @@
   .t-primary { color: var(--text-primary); }
   .t-secondary { color: var(--text-secondary); }
   .t-muted { color: var(--text-muted); }
+  .t-accent { color: var(--accent); }
 
   /* `.tnum` — tabular (monospaced) figures. Use on any column of
      numbers, prices, deltas, or timers so digits align and values
