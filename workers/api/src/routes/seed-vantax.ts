@@ -142,9 +142,37 @@ seed.post('/seed-vantax', async (c) => {
     return c.json({ error: 'Access denied', message: 'This endpoint is restricted to VantaX (Pty) Ltd demo environment' }, 403);
   }
 
+  // Multi-persona demo skin. Allows the same vantax tenant to be reseeded
+  // and re-demoed as a different prospect ("Pick n Pay", "Standard Bank")
+  // without altering the underlying SA fixtures (which provide the realism).
+  // Body is optional; absent values fall back to the canonical VantaX demo.
+  let prospectName = 'VantaX (Pty) Ltd';
+  let prospectIndustry = 'technology';
+  let prospectLegalName = 'VantaX Manufacturing (Pty) Ltd';
+  let prospectTaxId = '4123456789';
+  try {
+    const body = await c.req.json().catch(() => null) as
+      | { prospectName?: string; prospectIndustry?: string; prospectLegalName?: string; prospectTaxId?: string }
+      | null;
+    if (body && typeof body === 'object') {
+      if (typeof body.prospectName === 'string' && body.prospectName.trim().length > 0) {
+        prospectName = body.prospectName.trim().slice(0, 120);
+      }
+      if (typeof body.prospectIndustry === 'string' && body.prospectIndustry.trim().length > 0) {
+        prospectIndustry = body.prospectIndustry.trim().slice(0, 60);
+      }
+      if (typeof body.prospectLegalName === 'string' && body.prospectLegalName.trim().length > 0) {
+        prospectLegalName = body.prospectLegalName.trim().slice(0, 160);
+      }
+      if (typeof body.prospectTaxId === 'string' && body.prospectTaxId.trim().length > 0) {
+        prospectTaxId = body.prospectTaxId.trim().slice(0, 40);
+      }
+    }
+  } catch { /* body parse failure → use defaults */ }
+
   try {
     const now = new Date().toISOString();
-    console.log('[VantaX Seeder] Starting seed for tenant:', tenantId);
+    console.log(`[VantaX Seeder] Starting seed for tenant: ${tenantId} (persona: ${prospectName})`);
 
     // Collect all INSERT/UPDATE statements into one batch to fit D1's per-request CPU budget.
     // Flushed at the end of each major STEP block via flushSeed().
@@ -998,9 +1026,9 @@ seed.post('/seed-vantax', async (c) => {
        VALUES (?, ?, ?, 'sap', ?, ?, ?, 'ZAR', 'ZA', '03-01', ?, 1, 'active', datetime('now'))`
     ).bind(
       `erp-co-${tenantId}-primary`, tenantId, 'VTX-1000',
-      '1000', 'VantaX (Pty) Ltd', 'VantaX Manufacturing (Pty) Ltd', '4123456789'
+      '1000', prospectName, prospectLegalName, prospectTaxId
     ));
-    console.log('[VantaX Seeder] Seeded primary ERP company');
+    console.log(`[VantaX Seeder] Seeded primary ERP company as ${prospectName}`);
 
     // STEP 10: Create Catalyst Clusters with CONFIGURED sub-catalysts
     // Each sub-catalyst has data_sources and field_mappings for real execution
@@ -2230,8 +2258,8 @@ seed.post('/seed-vantax', async (c) => {
     try {
       seedBatch.push(c.env.DB.prepare(
         `INSERT INTO assessments (id, tenant_id, prospect_name, prospect_industry, erp_connection_id, status, config, created_by, completed_at)
-         VALUES (?, ?, 'VantaX (Pty) Ltd', 'technology', ?, 'complete', '{"mode":"full","outcomeFeePercent":20}', 'system', datetime('now'))`
-      ).bind(vaAssessmentId, tenantId, connectionId));
+         VALUES (?, ?, ?, ?, ?, 'complete', '{"mode":"full","outcomeFeePercent":20}', 'system', datetime('now'))`
+      ).bind(vaAssessmentId, tenantId, prospectName, prospectIndustry, connectionId));
     } catch { /* may exist */ }
 
     // Assessment runs (4 domains)
@@ -2343,7 +2371,7 @@ seed.post('/seed-vantax', async (c) => {
         inventory_variance: { immediate: 67800, ongoing: 5650, findings: 1 },
         other: { immediate: 129340, ongoing: 36494, findings: 3 },
       }),
-      `VantaX (Pty) Ltd's SAP S/4HANA environment contains 18 findings across 4 operational domains. The assessment identified R${(totalImmediate/1000).toFixed(0)}k in immediate recoverable value from data cleanup and process fixes, plus R${(totalOngoingMonthly/1000).toFixed(0)}k per month (R${(totalOngoingAnnual/1000).toFixed(0)}k annually) in ongoing value through continuous monitoring and prevention. Critical findings include R218k in uncollected overdue invoices, R89.6k in potential duplicate payments, and R67.8k in inventory shrinkage. At a 20% outcome-based fee, VantaX would pay R${(outcomeFee/1000).toFixed(0)}k/month — achieving full payback in approximately ${paybackDays} days. The 3-year projected value exceeds R4.5M.`,
+      `${prospectName}'s SAP S/4HANA environment contains 18 findings across 4 operational domains. The assessment identified R${(totalImmediate/1000).toFixed(0)}k in immediate recoverable value from data cleanup and process fixes, plus R${(totalOngoingMonthly/1000).toFixed(0)}k per month (R${(totalOngoingAnnual/1000).toFixed(0)}k annually) in ongoing value through continuous monitoring and prevention. Critical findings include R218k in uncollected overdue invoices, R89.6k in potential duplicate payments, and R67.8k in inventory shrinkage. At a 20% outcome-based fee, ${prospectName} would pay R${(outcomeFee/1000).toFixed(0)}k/month — achieving full payback in approximately ${paybackDays} days. The 3-year projected value exceeds R4.5M.`,
     ));
 
     console.log('[VantaX Seeder] Seeded value assessment engine demo data');
@@ -3339,7 +3367,7 @@ seed.post('/seed-vantax', async (c) => {
         c.env.STORAGE,
         tenantId,
         vaAssessmentId,
-        'VantaX (Pty) Ltd',
+        prospectName,
         DEFAULT_VALUE_ASSESSMENT_CONFIG,
       );
       console.log(`[VantaX Seeder] Generated value-assessment report: ${vaReportKey}`);
@@ -3359,8 +3387,9 @@ seed.post('/seed-vantax', async (c) => {
 
     return c.json({
       success: true,
-      message: 'VantaX tenant seeded with realistic SAP S/4HANA demo data',
+      message: `VantaX tenant seeded with realistic SAP S/4HANA demo data (persona: ${prospectName})`,
       tenant: { id: tenantId, slug: 'vantax' },
+      persona: { prospectName, prospectIndustry, prospectLegalName, prospectTaxId },
       cleanup: { tables: cleanupTablesCount, recordsRemoved: cleanupCount },
       seeded: {
         sapConnector: { id: connectionId, name: 'SAP S/4HANA Production', status: 'connected', modules: ['FI', 'CO', 'MM', 'SD', 'PP', 'QM'] },
