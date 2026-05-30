@@ -21,7 +21,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
 import { Numeric } from '@/components/ui/numeric';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { api, ApiError } from '@/lib/api';
 import type { HealthScore, BillingSummary, ForecastAccuracyResp } from '@/lib/api';
@@ -73,8 +73,23 @@ export default function BoardDigestPage(): JSX.Element {
 
   useEffect(() => { void load(); }, [load]);
 
-  if (loading) return <div className="p-6"><LoadingState variant="cards" count={4} /></div>;
-  if (error) return <div className="p-6"><ErrorState title="Couldn't load board digest" error={error} onRetry={() => void load()} /></div>;
+  const status = statusFrom({ loading, error, isEmpty: false });
+  if (status !== 'success') {
+    return (
+      <div className="p-6">
+        <AsyncPageContent
+          status={status}
+          error={error}
+          onRetry={() => void load()}
+          errorTitle="Couldn't load board digest"
+          loadingVariant="cards"
+          loadingCount={4}
+        >
+          {null}
+        </AsyncPageContent>
+      </div>
+    );
+  }
 
   const recovered = billing?.total_realised_savings ?? 0;
   const billed = billing?.total_atheon_revenue ?? 0;

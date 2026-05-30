@@ -5,7 +5,7 @@ import { api, ApiError } from "@/lib/api";
 import type { AuditEntry } from "@/lib/api";
 import { Shield, CheckCircle, XCircle, Clock, Filter, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LoadingState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { useToast } from "@/components/ui/toast";
 import { ProvenanceVerifyPanel } from "@/components/ProvenanceVerifyPanel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -56,7 +56,14 @@ export function AuditPage() {
 
  const activeFilterCount = [filterLayer, filterOutcome, dateFrom, dateTo].filter(Boolean).length;
 
- if (loading) return <LoadingState variant="cards" count={4} />;
+ const status = statusFrom({ loading, error: null, isEmpty: false });
+ if (status !== 'success') {
+  return (
+   <AsyncPageContent status={status} loadingVariant="cards" loadingCount={4}>
+    {null}
+   </AsyncPageContent>
+  );
+ }
 
  return (
  <div className="space-y-6 animate-fadeIn">

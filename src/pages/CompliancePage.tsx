@@ -15,8 +15,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { LoadingState, EmptyState } from "@/components/ui/state";
+import { TabPanel, useTabState } from "@/components/ui/tabs";
+import { PageTabsLayout } from "@/components/ui/page-tabs-layout";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   ShieldCheck, KeyRound, ClipboardList, AlertTriangle, UserMinus,
@@ -73,16 +74,23 @@ export function CompliancePage(): JSX.Element {
 
   return (
     <div data-testid="compliance-page">
-      <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      <TabPanel id="evidence" activeTab={activeTab}>
-        <ComplianceEvidence />
-      </TabPanel>
-      <TabPanel id="audit" activeTab={activeTab}>
-        <AuditPage />
-      </TabPanel>
-      <TabPanel id="governance" activeTab={activeTab}>
-        <DataGovernancePage />
-      </TabPanel>
+      <PageTabsLayout
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        ariaLabel="Compliance sections"
+        syncToUrl="persistent"
+      >
+        <TabPanel id="evidence" activeTab={activeTab}>
+          <ComplianceEvidence />
+        </TabPanel>
+        <TabPanel id="audit" activeTab={activeTab}>
+          <AuditPage />
+        </TabPanel>
+        <TabPanel id="governance" activeTab={activeTab}>
+          <DataGovernancePage />
+        </TabPanel>
+      </PageTabsLayout>
     </div>
   );
 }
@@ -135,14 +143,21 @@ function ComplianceEvidence(): JSX.Element {
     URL.revokeObjectURL(url);
   }
 
-  if (loading) return <LoadingState variant="cards" count={4} />;
-  if (!pack) {
+  const status = statusFrom({ loading, error: null, isEmpty: !pack });
+  if (status !== 'success' || !pack) {
     return (
-      <EmptyState
-        icon={ShieldCheck}
-        title="No evidence pack available"
-        description="The compliance evidence pack will appear here once your tenant has activity."
-      />
+      <AsyncPageContent
+        status={status}
+        loadingVariant="cards"
+        loadingCount={4}
+        emptyState={{
+          icon: ShieldCheck,
+          title: 'No evidence pack available',
+          description: 'The compliance evidence pack will appear here once your tenant has activity.',
+        }}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 
