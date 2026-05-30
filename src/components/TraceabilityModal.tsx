@@ -13,6 +13,25 @@ function formatZAR(n: number): string {
 function formatRunStarted(iso: string): string {
   try { return new Date(iso).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; }
 }
+function runTimeTag(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  } catch { return '—'; }
+}
+function runNarration(r: { matched: number; discrepancies: number; exceptions: number; totalValue: number; startedAt: string }): string {
+  const matched = r.matched || 0;
+  const discrepancies = r.discrepancies || 0;
+  const exceptions = r.exceptions || 0;
+  const total = matched + discrepancies;
+  const parts: string[] = [];
+  parts.push(`${runTimeTag(r.startedAt)} ·`);
+  parts.push(`${total.toLocaleString('en-ZA')} pulled →`);
+  parts.push(`${matched.toLocaleString('en-ZA')} matched`);
+  if (discrepancies > 0) parts.push(`· ${discrepancies.toLocaleString('en-ZA')} discrepancies`);
+  if (exceptions > 0) parts.push(`· ${exceptions.toLocaleString('en-ZA')} exceptions`);
+  if (typeof r.totalValue === 'number' && r.totalValue > 0) parts.push(`· ${formatZAR(r.totalValue)} surfaced`);
+  return parts.join(' ');
+}
 
 interface TraceabilityModalProps {
   data: HealthDimensionTraceResponse | RiskTraceResponse | MetricTraceResponse;
@@ -240,6 +259,9 @@ export function TraceabilityModal({ data, type, onClose }: TraceabilityModalProp
                                 {typeof r.totalValue === 'number' && r.totalValue > 0 && (
                                   <span className="ml-auto t-primary font-medium tabular-nums">{formatZAR(r.totalValue)}</span>
                                 )}
+                              </div>
+                              <div className="mt-1.5 pt-1.5 border-t border-[var(--border-card)] font-mono text-[11px] leading-tight tabular-nums t-muted truncate">
+                                {runNarration(r)}
                               </div>
                             </button>
                           );
