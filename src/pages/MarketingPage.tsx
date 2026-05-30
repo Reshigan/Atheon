@@ -8,20 +8,20 @@ import { useEffect, useRef, useState } from "react";
 
 const marketingCSS = `
 .mk5-body {
-  --field: var(--bg-primary, #fbfaf7);
-  --field-2: var(--bg-secondary, #f4f2ec);
-  --paper: var(--bg-card-solid, #ffffff);
-  --paper-hover: var(--bg-card-hover, #f7f6f1);
-  --ink: var(--text-primary, #0f1115);
-  --ink-2: var(--text-secondary, #6c7079);
-  --ink-3: var(--text-muted, #9a9ea6);
-  --rule: var(--border-card, #e4e2db);
-  --rule-strong: var(--line-strong, #0f1115);
-  --accent: var(--accent, #0a7d4f);
-  --accent-hover: var(--accent-hover, #096a43);
+  --field: #fbfaf7;
+  --field-2: #f4f2ec;
+  --paper: #ffffff;
+  --paper-hover: #f7f6f1;
+  --ink: #0f1115;
+  --ink-2: #6c7079;
+  --ink-3: #9a9ea6;
+  --rule: #e4e2db;
+  --rule-strong: #0f1115;
+  --accent-c: #0a7d4f;
+  --accent-hover-c: #096a43;
   --accent-tint: rgba(10, 125, 79, 0.06);
-  --bronze: var(--warning, #9a6b1f);
-  --neg: var(--neg, #b03423);
+  --bronze: #9a6b1f;
+  --neg-c: #b03423;
   font-family: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-feature-settings: "ss01", "ss02";
   background: var(--field);
@@ -30,7 +30,7 @@ const marketingCSS = `
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
-.mk5-body ::selection { background: var(--accent); color: #fff; }
+.mk5-body ::selection { background: var(--accent-c); color: #fff; }
 .mk5-body a { color: inherit; text-decoration: none; }
 .mk5-body h1, .mk5-body h2, .mk5-body h3, .mk5-body h4 {
   font-family: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -38,7 +38,7 @@ const marketingCSS = `
   letter-spacing: -0.018em;
   color: var(--ink);
 }
-.mk5-body em, .mk5-body i { font-style: italic; font-weight: 500; color: var(--accent); }
+.mk5-body em, .mk5-body i { font-style: italic; font-weight: 500; color: var(--accent-c); }
 .mk5-body strong { font-weight: 600; color: var(--ink); }
 .mk5-mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-feature-settings: "tnum", "zero"; }
 
@@ -140,7 +140,7 @@ const marketingCSS = `
   font-weight: 500;
 }
 .mk5-hero-left h1 .thin { font-weight: 300; color: var(--ink-3); }
-.mk5-hero-left h1 i { font-style: italic; color: var(--accent); font-weight: 500; }
+.mk5-hero-left h1 i { font-style: italic; color: var(--accent-c); font-weight: 500; }
 .mk5-hero-desc {
   font-size: 1.0625rem; line-height: 1.55;
   color: var(--ink-2);
@@ -162,15 +162,15 @@ const marketingCSS = `
   font-size: .75rem; font-weight: 500;
   letter-spacing: 0.14em; text-transform: uppercase;
   padding: .85rem 1.6rem;
-  background: var(--accent);
+  background: var(--accent-c);
   color: #fff !important;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--accent-c);
   border-radius: 2px;
   cursor: pointer;
   transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
   display: inline-block;
 }
-.mk5-btn-main:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.mk5-btn-main:hover { background: var(--accent-hover-c); border-color: var(--accent-hover-c); }
 .mk5-btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 .mk5-btn-line {
   font-family: 'IBM Plex Mono', monospace;
@@ -204,7 +204,7 @@ const marketingCSS = `
 .mk5-ticker-item { display: inline-flex; align-items: center; gap: 3rem; }
 .mk5-ticker-dot {
   display: inline-block; width: 4px; height: 4px;
-  background: var(--accent); border-radius: 999px;
+  background: var(--accent-c); border-radius: 999px;
 }
 @keyframes mk5-marquee {
   from { transform: translateX(0); }
@@ -238,7 +238,7 @@ const marketingCSS = `
   font-size: 1.625rem; font-weight: 500; letter-spacing: -0.01em;
   color: var(--ink);
 }
-.mk5-ss-amount.accent { color: var(--accent); }
+.mk5-ss-amount.accent { color: var(--accent-c); }
 .mk5-ss-tag {
   font-family: 'IBM Plex Mono', monospace;
   font-size: .6875rem; letter-spacing: 0.18em; text-transform: uppercase;
@@ -258,7 +258,7 @@ const marketingCSS = `
   font-weight: 400;
   max-width: 56rem;
 }
-.mk5-manifesto-text em { color: var(--accent); font-style: italic; }
+.mk5-manifesto-text em { color: var(--accent-c); font-style: italic; }
 .mk5-manifesto-text strong { color: var(--ink); font-weight: 600; }
 
 /* EVOLUTION STRIP */
@@ -281,7 +281,7 @@ const marketingCSS = `
   font-size: .6875rem; letter-spacing: 0.22em; text-transform: uppercase;
   color: var(--ink-3);
 }
-.mk5-evo-era.future { color: var(--accent); }
+.mk5-evo-era.future { color: var(--accent-c); }
 .mk5-evo-name {
   font-size: 2rem; font-weight: 500; letter-spacing: -0.015em;
   color: var(--ink);
@@ -336,7 +336,7 @@ const marketingCSS = `
   color: var(--ink-2); margin-bottom: 1.25rem;
 }
 .mk5-layer-role.bronze { color: var(--bronze); }
-.mk5-layer-role.sky, .mk5-layer-role.sage { color: var(--accent); }
+.mk5-layer-role.sky, .mk5-layer-role.sage { color: var(--accent-c); }
 .mk5-layer-desc {
   font-size: .9375rem; line-height: 1.6; color: var(--ink-2);
   margin-bottom: 1.5rem; max-width: 36rem;
@@ -373,7 +373,7 @@ const marketingCSS = `
   color: var(--ink-3); font-weight: 300;
 }
 .mk5-big-stmt h2 .glow {
-  color: var(--accent); font-style: italic; font-weight: 500;
+  color: var(--accent-c); font-style: italic; font-weight: 500;
 }
 
 /* STATS */
@@ -394,7 +394,7 @@ const marketingCSS = `
   font-size: 3rem; font-weight: 500; letter-spacing: -0.02em;
   color: var(--ink);
 }
-.mk5-stat-num .accent { color: var(--accent); }
+.mk5-stat-num .accent { color: var(--accent-c); }
 .mk5-stat-label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: .75rem; letter-spacing: 0.16em; text-transform: uppercase;
@@ -450,7 +450,7 @@ const marketingCSS = `
 .mk5-persona-want {
   font-family: 'IBM Plex Mono', monospace;
   font-size: .6875rem; letter-spacing: 0.04em;
-  color: var(--accent);
+  color: var(--accent-c);
   padding-top: .75rem;
   border-top: 1px solid var(--rule);
 }
@@ -486,7 +486,7 @@ const marketingCSS = `
 }
 .mk5-ch:last-child { border-right: 0; }
 .mk5-ch.rl { text-align: left; }
-.mk5-ch.ath { color: var(--accent); }
+.mk5-ch.ath { color: var(--accent-c); }
 .mk5-cc {
   font-size: .8125rem;
   padding: .9rem 1rem;
@@ -501,7 +501,7 @@ const marketingCSS = `
 .mk5-cc.cy { color: var(--ink-2); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; }
 .mk5-cc.cp { color: var(--bronze); font-family: 'IBM Plex Mono', monospace; font-size: .75rem; }
 .mk5-cc.cn { color: var(--ink-3); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; }
-.mk5-cc.ca { color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; font-weight: 500; background: var(--accent-tint); }
+.mk5-cc.ca { color: var(--accent-c); font-family: 'IBM Plex Mono', monospace; font-size: .875rem; font-weight: 500; background: var(--accent-tint); }
 
 /* PROOF LEDGER (new — evidenced shared-savings rows) */
 .mk5-proof {
@@ -554,7 +554,7 @@ const marketingCSS = `
 }
 .mk5-plc .amount {
   font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
-  font-weight: 500; color: var(--accent); font-size: .9375rem;
+  font-weight: 500; color: var(--accent-c); font-size: .9375rem;
 }
 .mk5-plc.muted { color: var(--ink-2); }
 
@@ -587,7 +587,7 @@ const marketingCSS = `
 .mk5-int-item:hover { background: var(--paper-hover); }
 .mk5-int-icon {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 1.25rem; color: var(--accent);
+  font-size: 1.25rem; color: var(--accent-c);
   line-height: 1;
 }
 .mk5-int-name {
@@ -632,8 +632,8 @@ const marketingCSS = `
   font-family: 'IBM Plex Mono', monospace;
   font-size: .6875rem; letter-spacing: 0.16em; text-transform: uppercase;
   padding: .35rem .75rem;
-  border: 1px solid var(--accent);
-  color: var(--accent);
+  border: 1px solid var(--accent-c);
+  color: var(--accent-c);
   background: var(--accent-tint);
   border-radius: 2px;
   margin-bottom: 1.25rem;
@@ -673,7 +673,7 @@ const marketingCSS = `
 .mk5-ind-stat-num {
   font-family: 'IBM Plex Mono', monospace; font-feature-settings: "tnum";
   font-size: 2.5rem; font-weight: 500; letter-spacing: -0.02em;
-  color: var(--accent); margin-bottom: .25rem;
+  color: var(--accent-c); margin-bottom: .25rem;
 }
 .mk5-ind-stat-label {
   font-family: 'IBM Plex Mono', monospace;
@@ -698,7 +698,7 @@ const marketingCSS = `
 .mk5-ind-card:hover { background: var(--paper-hover); }
 .mk5-ind-card-icon {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 1.25rem; color: var(--accent); line-height: 1;
+  font-size: 1.25rem; color: var(--accent-c); line-height: 1;
 }
 .mk5-ind-card-name {
   font-size: 1.125rem; font-weight: 500; letter-spacing: -0.01em;
@@ -743,7 +743,7 @@ const marketingCSS = `
 .mk5-feat-item-label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: .6875rem; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: .75rem;
+  color: var(--accent-c); margin-bottom: .75rem;
 }
 .mk5-feat-item-title {
   font-size: 1.25rem; font-weight: 500; letter-spacing: -0.012em;
@@ -767,7 +767,7 @@ const marketingCSS = `
 }
 .mk5-feat-item-bullets li::before {
   content: ""; position: absolute; left: 0; top: 50%;
-  width: 6px; height: 1px; background: var(--accent);
+  width: 6px; height: 1px; background: var(--accent-c);
 }
 .mk5-feat-item-bullets li:last-child { border-bottom: 0; }
 
@@ -800,7 +800,7 @@ const marketingCSS = `
 .mk5-ethos-accent {
   position: absolute; top: 0; left: 0;
   width: 32px; height: 1px;
-  background: var(--accent);
+  background: var(--accent-c);
 }
 
 /* CTA */
@@ -825,7 +825,7 @@ const marketingCSS = `
   line-height: 0.98; letter-spacing: -0.03em;
   font-weight: 500; margin-bottom: 1.5rem;
 }
-.mk5-cta h2 i { color: var(--accent); font-style: italic; }
+.mk5-cta h2 i { color: var(--accent-c); font-style: italic; }
 .mk5-cta-sub {
   font-size: 1.0625rem; line-height: 1.55;
   color: var(--ink-2);
@@ -865,25 +865,25 @@ const marketingCSS = `
 }
 .mk5-contact-field input:focus,
 .mk5-contact-field textarea:focus {
-  outline: none; border-color: var(--accent);
+  outline: none; border-color: var(--accent-c);
 }
 .mk5-contact-error {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: .75rem; color: var(--neg);
-  padding: .75rem; border: 1px solid var(--neg);
+  font-size: .75rem; color: var(--neg-c);
+  padding: .75rem; border: 1px solid var(--neg-c);
   background: rgba(176, 52, 35, 0.04);
   border-radius: 2px;
 }
 .mk5-contact-success {
   max-width: 36rem; margin: 0 auto;
   padding: 2rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--accent-c);
   background: var(--accent-tint);
   text-align: left;
   border-radius: 2px;
 }
 .mk5-contact-success-title {
-  font-size: 1.25rem; font-weight: 500; color: var(--accent);
+  font-size: 1.25rem; font-weight: 500; color: var(--accent-c);
   margin-bottom: .5rem;
 }
 .mk5-contact-success p {
