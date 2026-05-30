@@ -1341,6 +1341,7 @@ ${Object.entries(valueByDomain).map(([domain, val]: [string, unknown]) => {
   // Generate branded PDF for download.
   const pdfBytes = await renderValueReportPDF({
     prospectName,
+    assessmentId,
     config,
     summary,
     findings,
@@ -1363,6 +1364,7 @@ ${Object.entries(valueByDomain).map(([domain, val]: [string, unknown]) => {
 
 interface RenderPDFArgs {
   prospectName: string;
+  assessmentId: string;
   config: ValueAssessmentConfig;
   summary: Record<string, unknown>;
   findings: Array<Record<string, unknown>>;
@@ -1414,6 +1416,12 @@ async function renderValueReportPDF(args: RenderPDFArgs): Promise<Uint8Array> {
   function setText(c: readonly [number, number, number]) { doc.setTextColor(c[0], c[1], c[2]); }
   function setDraw(c: readonly [number, number, number]) { doc.setDrawColor(c[0], c[1], c[2]); }
 
+  // Short, human-readable assessment trace (last 8 chars of the UUID).
+  // Surfaces in every page footer + cover so an auditor can correlate any
+  // photocopied page back to a single canonical assessment in the DB.
+  const assessmentShort = String(args.assessmentId).slice(-8).toUpperCase();
+  const generatedIso = new Date().toISOString();
+
   // ── Atheon "A" letterform — drawn as a stylized monogram ──
   function drawAMark(cx: number, cy: number, size: number, lightOnDark: boolean) {
     const half = size / 2;
@@ -1438,7 +1446,22 @@ async function renderValueReportPDF(args: RenderPDFArgs): Promise<Uint8Array> {
     doc.rect(cx - half * 0.55, cy + half * 0.2, half * 1.1, size * 0.07, 'F');
   }
 
+  // Board-credibility watermark — pale diagonal CONFIDENTIAL across the
+  // page. Subtle enough not to fight the body copy but proves the document
+  // is single-source-of-truth controlled. Drawn behind content; call FIRST
+  // on each new page before any other ink lands.
+  function drawWatermark() {
+    setText([235, 238, 245]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(60);
+    // jsPDF rotates around the baseline anchor — translate to centre, write
+    // with -35° angle so it reads bottom-left → top-right.
+    doc.text('CONFIDENTIAL', pageW / 2, pageH / 2, { align: 'center', angle: 35 });
+    setText(TEXT);
+  }
+
   function pageHeader(title: string, pageNum: number) {
+    drawWatermark();
     setFill(NAVY);
     doc.rect(0, 0, pageW, 16, 'F');
     setFill(SAGE);
@@ -1451,11 +1474,11 @@ async function renderValueReportPDF(args: RenderPDFArgs): Promise<Uint8Array> {
     doc.setFontSize(7);
     doc.text(`${args.prospectName} · Confidential`, pageW - 14, 10.5, { align: 'right' });
     setText(TEXT);
-    // Page number bottom
+    // Page number + assessment trace on bottom — auditors look here first
     setText(MUTED);
     doc.setFontSize(7);
     doc.text(`${pageNum}`, pageW - 14, pageH - 6, { align: 'right' });
-    doc.text('Atheon Intelligence Platform · Value Assessment', 14, pageH - 6);
+    doc.text(`Atheon Intelligence Platform · Assessment ${assessmentShort}`, 14, pageH - 6);
     setText(TEXT);
   }
 
@@ -1543,6 +1566,15 @@ async function renderValueReportPDF(args: RenderPDFArgs): Promise<Uint8Array> {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('BASED ON LIVE ANALYSIS OF YOUR ACTUAL TRANSACTION DATA', pageW / 2, 215.5, { align: 'center' });
+
+  // Assessment trace block — gives auditors a citation handle. Single
+  // source of truth: the assessment ID + generated timestamp, surfaced on
+  // the cover so every copy of the report is forensically attributable.
+  setText([180, 200, 220]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text(`Assessment ID: ${assessmentShort}`, pageW / 2, 232, { align: 'center', charSpace: 1 });
+  doc.text(`Generated: ${generatedIso}`, pageW / 2, 237, { align: 'center', charSpace: 0.4 });
 
   // Confidential bottom band
   setFill(BRONZE);
@@ -1815,21 +1847,28 @@ async function renderValueReportPDF(args: RenderPDFArgs): Promise<Uint8Array> {
     cy = paragraph(String(f.prescription || ''), 20, cy + 4, pageW - 40, 9, TEXT, 3.8);
     cy += 3;
 
-    // Evidence (sample record)
+    // Evidence (sample record + provenance trace for board/auditor)
     try {
       const ev = typeof f.evidence === 'string' ? JSON.parse(f.evidence as string) : f.evidence;
       const sample = ev?.sample_records?.[0];
-      if (sample) {
+      const sampleCount = Array.isArray(ev?.sample_records) ? ev.sample_records.length : 0;
+      if (sample || sampleCount > 0) {
         setText(NAVY);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.text('EVIDENCE', 20, cy);
-        setText(MUTED);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        const evLine = `Ref: ${sample.ref || '—'}  ·  ${sample.source_value || '—'}  →  ${sample.target_value || '—'}  ·  Δ ${sample.difference || '—'}`;
-        const wrapped = doc.splitTextToSize(evLine, pageW - 40) as string[];
-        wrapped.slice(0, 2).forEach((ln, j) => doc.text(ln, 20, cy + 4 + j * 3.6));
+        const traceParts: string[] = ['EVIDENCE'];
+        if (sampleCount > 0) traceParts.push(`${sampleCount} sample record${sampleCount === 1 ? '' : 's'}`);
+        if (ev?.first_occurrence) traceParts.push(`first observed ${String(ev.first_occurrence).slice(0, 10)}`);
+        if (ev?.frequency) traceParts.push(`frequency: ${String(ev.frequency)}`);
+        doc.text(traceParts.join('  ·  '), 20, cy);
+        if (sample) {
+          setText(MUTED);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          const evLine = `Ref: ${sample.ref || '—'}  ·  ${sample.source_value || '—'}  →  ${sample.target_value || '—'}  ·  Δ ${sample.difference || '—'}`;
+          const wrapped = doc.splitTextToSize(evLine, pageW - 40) as string[];
+          wrapped.slice(0, 2).forEach((ln, j) => doc.text(ln, 20, cy + 4 + j * 3.6));
+        }
       }
     } catch { /* evidence parse failed — skip */ }
 
