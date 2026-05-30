@@ -1303,6 +1303,19 @@ export async function runMigrations(db: D1Database): Promise<MigrationResult> {
     await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-viewer','vantax','viewer@vantax.co.za','Lerato Mabaso','viewer','[\"dashboard.read\"]')").run();
     await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-essen-ag','vantax','essen.naidoo@agentum.com.au','Essen Naidoo','superadmin','[\"*\"]')").run();
     await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-reshigan','vantax','reshigan@vantax.co.za','Reshigan','superadmin','[\"*\"]')").run();
+    // ── Executive / Compliance / Board demo personas ──
+    // Used for live demos via Admin → Impersonation. Demonstrates that the
+    // platform serves the full buying committee (CFO, COO, CISO + Internal
+    // Audit + External Auditor + Board) with role-appropriate landing
+    // surfaces — the persona framing referenced in personas_and_roles.md.
+    // No password_hash: these accounts cannot log in directly; superadmin
+    // impersonates them to reveal their scoped view.
+    await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-cfo','vantax','cfo@vantax.co.za','Nomvula Dlamini','executive','[\"dashboard.read\",\"pulse.*\",\"apex.read\",\"roi.read\",\"compliance.read\"]')").run();
+    await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-coo','vantax','coo@vantax.co.za','Pieter van der Merwe','executive','[\"dashboard.read\",\"pulse.*\",\"catalysts.read\",\"apex.read\"]')").run();
+    await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-ciso','vantax','ciso@vantax.co.za','Aisha Patel','admin','[\"compliance.*\",\"audit.*\",\"iam.read\",\"integration_health.read\"]')").run();
+    await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-auditor-int','vantax','audit@vantax.co.za','Sipho Mokoena','auditor','[\"compliance.read\",\"audit.read\"]')").run();
+    await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-auditor-ext','vantax','external.auditor@deloitte.example','Rachel Edwards','auditor','[\"compliance.read\",\"audit.read\"]')").run();
+    await db.prepare("INSERT OR IGNORE INTO users (id, tenant_id, email, name, role, permissions) VALUES ('user-board','vantax','board@vantax.co.za','Dr. Mandla Khumalo','board_member','[\"board_digest.read\",\"roi.read\"]')").run();
   } catch (err) {
     result.errors.push(`Seed users: ${(err as Error).message}`);
   }
