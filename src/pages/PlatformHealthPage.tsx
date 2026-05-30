@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { LoadingState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
@@ -78,9 +78,9 @@ const tenantStatusColor = (s?: string) => {
 };
 
 const alertSeverityIcon = (sev?: string) => {
-  if (sev === 'critical') return <XCircle size={16} className="text-red-400 mt-0.5" />;
-  if (sev === 'warning') return <AlertTriangle size={16} className="text-amber-400 mt-0.5" />;
-  return <Activity size={16} className="text-blue-400 mt-0.5" />;
+  if (sev === 'critical') return <XCircle size={16} className="text-neg mt-0.5" />;
+  if (sev === 'warning') return <AlertTriangle size={16} style={{ color: 'var(--warning)' }} className="mt-0.5" />;
+  return <Activity size={16} style={{ color: 'var(--info)' }} className="mt-0.5" />;
 };
 
 export function PlatformHealthPage() {
@@ -186,29 +186,24 @@ function SuperadminPlatformHealth() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Activity}
-          title="Platform Health"
-          subtitle={
-            <>
-              Real-time infrastructure & tenant monitoring
-              {platformHealth?.timestamp && (
-                <> · updated {new Date(platformHealth.timestamp).toLocaleTimeString()}</>
-              )}
-            </>
-          }
-          accent="sky"
-        />
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 active:scale-[0.97]"
-        >
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Platform · Health"
+        title="Platform Health"
+        dek={platformHealth?.timestamp
+          ? `Real-time infrastructure & tenant monitoring · updated ${new Date(platformHealth.timestamp).toLocaleTimeString()}`
+          : 'Real-time infrastructure & tenant monitoring'}
+        live
+        actions={
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] disabled:opacity-50 active:scale-[0.97]"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -242,7 +237,7 @@ function SuperadminPlatformHealth() {
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle size={14} className="text-amber-400" />
+            <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />
             <span className="text-label">Active Alerts</span>
           </div>
           <p className="text-xl font-bold t-primary">{unacknowledgedAlerts.length}</p>
@@ -255,7 +250,7 @@ function SuperadminPlatformHealth() {
       <TabPanel id="infrastructure" activeTab={activeTab}>
         {!platformHealth ? (
           <Card className="p-8 text-center">
-            <XCircle size={24} className="mx-auto text-red-400 mb-2" />
+            <XCircle size={24} className="mx-auto text-neg mb-2" />
             <p className="text-sm t-primary font-medium">Infrastructure data unavailable</p>
             <p className="text-xs t-muted mt-1">
               /api/v1/admin-tooling/platform-health failed or returned no data. Try refresh.
@@ -286,7 +281,7 @@ function SuperadminPlatformHealth() {
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs t-muted">Requests / Hour</span>
-                <CheckCircle size={14} className="text-emerald-400" />
+                <CheckCircle size={14} className="text-accent" />
               </div>
               <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">
                 {typeof infra.totalRequestsLastHour === 'number'
@@ -357,7 +352,7 @@ function SuperadminPlatformHealth() {
             {tenants.map((t) => (
               <Card key={t.id} className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-sm flex items-center justify-center" style={{ background: 'rgb(var(--accent-rgb) / 0.1)' }}>
                     <Building2 size={14} className="text-accent" />
                   </div>
                   <div>
@@ -388,7 +383,7 @@ function SuperadminPlatformHealth() {
         <div className="space-y-2">
           {alerts.length === 0 ? (
             <Card className="p-8 text-center">
-              <CheckCircle size={24} className="mx-auto text-emerald-400 mb-2" />
+              <CheckCircle size={24} className="mx-auto text-accent mb-2" />
               <p className="text-sm t-muted">No active alerts</p>
               <p className="text-caption t-muted mt-1">
                 Alerts are published to KV (alerts:{'<tenant>'}) by background jobs.

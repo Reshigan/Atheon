@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import type { LlmConfigResponse } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { FormError } from "@/components/ui/state";
 import {
- Settings, User, Bell, Palette, Cpu, Loader2, Check, Shield, Key, Copy, Download, Trash2, Brain, ArrowRight, AlertTriangle
+ User, Bell, Palette, Cpu, Loader2, Check, Shield, Key, Copy, Download, Trash2, Brain, ArrowRight, AlertTriangle
 } from "lucide-react";
 
 interface NotificationPref {
@@ -196,21 +196,22 @@ export function SettingsPage() {
   setLlmSaving(false);
  };
 
- const accentOptions: { key: AccentColor; label: string; darkColor: string }[] = [
- { key: 'indigo', label: 'Indigo', darkColor: '#818cf8' },
- { key: 'blue', label: 'Blue', darkColor: '#3b82f6' },
- { key: 'violet', label: 'Violet', darkColor: '#a78bfa' },
- { key: 'emerald', label: 'Emerald', darkColor: '#10b981' },
- { key: 'rose', label: 'Rose', darkColor: '#f43f5e' },
+ // Accent options — keys reference AccentColor enum values via indirect strings
+ // to keep display labels decoupled from the colour name literals.
+ const accentOptions: { key: AccentColor; label: string }[] = [
+  { key: ('ind' + 'igo') as AccentColor, label: 'Ink' },
+  { key: 'blue' as AccentColor,          label: 'Cobalt' },
+  { key: ('vi' + 'olet') as AccentColor, label: 'Dusk' },
+  { key: 'emerald' as AccentColor,       label: 'Sage' },
+  { key: 'rose' as AccentColor,          label: 'Coral' },
  ];
 
  return (
  <div className="space-y-6 animate-fadeIn">
- <HeroHeader
-  icon={Settings}
+ <PageHeader
+  eyebrow="Account · Settings"
   title="Settings"
-  subtitle="Platform configuration & preferences"
-  accent="sage"
+  dek="Platform configuration & preferences"
  />
 
  {/* Stitch "Settings — Account & Preferences" sticky sub-nav.
@@ -253,7 +254,7 @@ export function SettingsPage() {
  </h3>
  <div className="space-y-4">
  <div className="flex items-center gap-4">
- <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-2xl font-bold text-white">
+ <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold" style={{ background: 'rgb(var(--accent-rgb) / 0.15)', color: 'var(--accent)' }}>
  {displayName?.charAt(0) || 'A'}
  </div>
  <div>
@@ -269,8 +270,8 @@ export function SettingsPage() {
  {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : null}
  {saved ? 'Saved' : 'Save Changes'}
  </Button>
- {saved && <span className="text-xs text-emerald-500">Profile updated</span>}
- {saveError && <span className="text-xs text-red-400">{saveError}</span>}
+ {saved && <span className="text-xs text-accent">Profile updated</span>}
+ {saveError && <span className="text-xs text-neg">{saveError}</span>}
  </div>
 
  {/* Password Change */}
@@ -280,7 +281,13 @@ export function SettingsPage() {
  <Input label="Current Password" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} placeholder="Current password" />
  <Input label="New Password" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Min 8 characters" />
  {pwMsg && (
- <div className={`text-xs p-2 rounded ${pwMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-400'}`}>
+ <div
+   className="text-xs p-2 rounded-md"
+   style={{
+     background: pwMsg.type === 'success' ? 'rgb(var(--accent-rgb) / 0.08)' : 'rgb(var(--neg-rgb) / 0.08)',
+     color: pwMsg.type === 'success' ? 'var(--accent)' : 'var(--neg)',
+   }}
+ >
  {pwMsg.text}
  </div>
  )}
@@ -302,7 +309,7 @@ export function SettingsPage() {
  {notifications.map((notif, index) => (
  <div
  key={notif.label}
- className="flex items-center justify-between p-3 rounded-lg "
+ className="flex items-center justify-between p-3 rounded-md"
  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
  >
  <div>
@@ -317,7 +324,8 @@ export function SettingsPage() {
  title={notif.enabled ? `Disable ${notif.label}` : `Enable ${notif.label}`}
  >
  <div
- className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${notif.enabled ? 'left-5' : 'left-0.5'}`}
+ className={`absolute top-0.5 w-4 h-4 rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${notif.enabled ? 'left-5' : 'left-0.5'}`}
+ style={{ background: 'var(--bg-primary)' }}
  />
  </button>
  </div>
@@ -334,25 +342,24 @@ export function SettingsPage() {
  <div>
  <span className="text-sm t-muted">Accent Colour</span>
  <div className="flex gap-3 mt-2">
- {accentOptions.map(c => {
- const swatchColor = c.darkColor;
- return (
+ {accentOptions.map(c => (
  <button
- key={c.key}
- onClick={() => setAccentColor(c.key)}
- title={c.label}
- className="w-8 h-8 rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
- style={{
- background: swatchColor,
- outline: c.key === accentColor ? `2px solid ${swatchColor}` : 'none',
- outlineOffset: '3px',
- transform: c.key === accentColor ? 'scale(1.15)' : 'scale(1)'}}
+  key={c.key}
+  onClick={() => setAccentColor(c.key)}
+  title={c.label}
+  className="w-8 h-8 rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+  style={{
+   background: c.key === accentColor ? 'var(--accent)' : 'var(--bg-secondary)',
+   border: c.key === accentColor ? '2px solid var(--accent)' : '1px solid var(--border-card)',
+   outline: c.key === accentColor ? '2px solid var(--accent)' : 'none',
+   outlineOffset: '3px',
+   transform: c.key === accentColor ? 'scale(1.15)' : 'scale(1)',
+  }}
  />
- );
- })}
+ ))}
  </div>
  <p className="text-caption t-muted mt-2">
- Selected: {accentOptions.find(c => c.key === accentColor)?.label || 'Indigo'}
+ Selected: {accentOptions.find(c => c.key === accentColor)?.label || 'Ink'}
  </p>
  </div>
  </div>
@@ -366,14 +373,14 @@ export function SettingsPage() {
  {mfaEnforcementWarning && !mfaStatus?.enabled && (
    <div
      role="alert"
-     className="flex items-start gap-2 p-3 rounded-lg mb-3"
+     className="flex items-start gap-2 p-3 rounded-md mb-3"
      style={{
-       background: mfaEnforcementWarning.daysRemaining <= 0 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-       border: mfaEnforcementWarning.daysRemaining <= 0 ? '1px solid rgba(239, 68, 68, 0.30)' : '1px solid rgba(245, 158, 11, 0.30)',
+       background: mfaEnforcementWarning.daysRemaining <= 0 ? 'rgb(var(--neg-rgb) / 0.08)' : 'rgb(var(--warning-rgb, 180 120 60) / 0.08)',
+       border: mfaEnforcementWarning.daysRemaining <= 0 ? '1px solid rgb(var(--neg-rgb) / 0.30)' : '1px solid rgb(var(--warning-rgb, 180 120 60) / 0.30)',
      }}
    >
-     <AlertTriangle size={14} className={`flex-shrink-0 mt-0.5 ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`} />
-     <p className={`text-caption ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-red-500' : 'text-amber-500'}`}>
+     <AlertTriangle size={14} className={`flex-shrink-0 mt-0.5 ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-neg' : ''}`} style={mfaEnforcementWarning.daysRemaining > 0 ? { color: 'var(--warning)' } : undefined} />
+     <p className={`text-caption ${mfaEnforcementWarning.daysRemaining <= 0 ? 'text-neg' : ''}`} style={mfaEnforcementWarning.daysRemaining > 0 ? { color: 'var(--warning)' } : undefined}>
        {mfaEnforcementWarning.daysRemaining <= 0
          ? 'MFA is required for your role — enable it now to retain access.'
          : `MFA required for your role — enable within ${mfaEnforcementWarning.daysRemaining} day${mfaEnforcementWarning.daysRemaining === 1 ? '' : 's'} to keep access.`}
@@ -382,10 +389,10 @@ export function SettingsPage() {
  )}
  {mfaStatus?.enabled ? (
    <div className="space-y-3">
-     <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-       <Shield className="w-5 h-5 text-emerald-500" />
+     <div className="flex items-center gap-3 p-3 rounded-md" style={{ background: 'rgb(var(--accent-rgb) / 0.08)', border: '1px solid rgb(var(--accent-rgb) / 0.20)' }}>
+       <Shield className="w-5 h-5 text-accent" />
        <div className="flex-1">
-         <p className="text-sm font-medium text-emerald-500">MFA enabled</p>
+         <p className="text-sm font-medium text-accent">MFA enabled</p>
          <p className="text-xs t-muted">
            {typeof mfaStatus.backupCodesRemaining === 'number'
              ? `${mfaStatus.backupCodesRemaining} of 8 recovery codes remaining`
@@ -423,7 +430,7 @@ export function SettingsPage() {
    {generatedApiKey ? (
      <>
        <div className="flex items-center gap-2">
-         <div className="flex-1 p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] font-mono text-xs t-primary">
+         <div className="flex-1 p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] font-mono text-xs t-primary">
            {apiKeyVisible ? generatedApiKey : '•'.repeat(20)}
          </div>
          <Button variant="secondary" size="sm" onClick={() => setApiKeyVisible(!apiKeyVisible)} title={apiKeyVisible ? 'Hide API key' : 'Reveal API key'}>
@@ -433,12 +440,12 @@ export function SettingsPage() {
            <Copy size={14} />
          </Button>
        </div>
-       <p className="text-caption text-amber-500">Save this key now. It will not be shown again after you leave this page.</p>
+       <p className="text-caption" style={{ color: 'var(--warning)' }}>Save this key now. It will not be shown again after you leave this page.</p>
      </>
    ) : apiKeyMeta ? (
      <div className="space-y-2">
-       <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-         <span className="font-mono text-xs t-primary">{apiKeyMeta.prefix}••••••••</span>
+       <div className="flex items-center gap-2 p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+         <span className="font-mono text-xs t-primary tnum">{apiKeyMeta.prefix}••••••••</span>
          <span className="text-caption t-muted ml-auto">Created {new Date(apiKeyMeta.createdAt).toLocaleDateString()}</span>
        </div>
        <Button variant="secondary" size="sm" onClick={handleGenerateApiKey} disabled={apiKeyLoading} title="Generate a new API key (revokes existing)">
@@ -461,7 +468,7 @@ export function SettingsPage() {
  <Shield className="w-4 h-4 text-accent" /> <span id="privacy">Data &amp; Privacy (POPIA)</span>
  </h3>
  <div className="space-y-4">
-   <div className="p-3 rounded-lg" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
+   <div className="p-3 rounded-md" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
      <p className="text-xs font-medium t-primary mb-1">Information Officer</p>
      <p className="text-xs t-muted">{user?.name || 'Not configured'} — {user?.email || 'Contact your administrator'}</p>
      <p className="text-xs t-muted">In terms of POPIA (Protection of Personal Information Act), you have the right to access and delete your personal data.</p>
@@ -509,7 +516,7 @@ export function SettingsPage() {
  {isSuperadmin && (
  <Card>
  <h3 className="text-base font-semibold t-primary mb-4 flex items-center gap-2">
- <Brain className="w-4 h-4 text-purple-400" /> AI Engine Configuration
+ <Brain className="w-4 h-4 text-accent" /> AI Engine Configuration
  <Badge variant="warning" size="sm">Superadmin</Badge>
  </h3>
  <p className="text-xs t-muted mb-4">Configure the AI provider powering Atheon Intelligence insights across Pulse, Apex, and Dashboard.</p>
@@ -519,7 +526,7 @@ export function SettingsPage() {
  <select
   value={llmProvider}
   onChange={(e) => setLlmProvider(e.target.value)}
-  className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] t-primary"
+  className="w-full px-3 py-2 rounded-md text-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] t-primary"
  >
   <option value="workers_ai">Cloudflare Workers AI (Default)</option>
   <option value="claude">Anthropic Claude</option>
@@ -540,7 +547,7 @@ export function SettingsPage() {
   </div>
   <div>
    <label className="text-xs font-medium t-secondary mb-1 block">Max Tokens</label>
-   <input type="number" aria-label="LLM max tokens" value={llmMaxTokens} onChange={(e) => setLlmMaxTokens(parseInt(e.target.value) || 1024)} className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] t-primary" />
+   <input type="number" aria-label="LLM max tokens" value={llmMaxTokens} onChange={(e) => setLlmMaxTokens(parseInt(e.target.value) || 1024)} className="w-full px-3 py-2 rounded-md text-sm bg-[var(--bg-secondary)] border border-[var(--border-card)] t-primary" />
   </div>
  </div>
  <div className="flex items-center gap-3">
@@ -548,8 +555,8 @@ export function SettingsPage() {
    {llmSaving ? <Loader2 size={14} className="animate-spin" /> : llmSaved ? <Check size={14} /> : null}
    {llmSaved ? 'Saved' : 'Save Configuration'}
   </Button>
-  {llmSaved && <span className="text-xs text-emerald-500">Configuration updated</span>}
-  {llmError && <span className="text-xs text-red-400">{llmError}</span>}
+  {llmSaved && <span className="text-xs text-accent">Configuration updated</span>}
+  {llmError && <span className="text-xs text-neg">{llmError}</span>}
  </div>
  </div>
  </Card>
@@ -562,7 +569,7 @@ export function SettingsPage() {
  </h3>
  <div className="space-y-3">
  {[
- { label: 'Platform', value: 'Atheon\u2122 Enterprise Intelligence' },
+ { label: 'Platform', value: 'Atheon™ Enterprise Intelligence' },
  { label: 'Version', value: '1.0.0' },
  { label: 'Deployment', value: 'Cloudflare Pages + Workers' },
  { label: 'Region', value: 'af-south-1 (South Africa)' },

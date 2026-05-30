@@ -94,7 +94,8 @@ function ConfirmDialog({
         <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
         <Button
           variant={confirmVariant === 'danger' ? 'ghost' : 'primary'}
-          className={confirmVariant === 'danger' ? 'text-red-400 hover:bg-red-400/10' : undefined}
+          className={confirmVariant === 'danger' ? undefined : undefined}
+          style={confirmVariant === 'danger' ? { color: 'var(--neg)' } : undefined}
           onClick={onConfirm}
           disabled={busy}
         >
@@ -400,7 +401,7 @@ export function CatalystRunDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-8 max-w-md text-center">
-          <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+          <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--warning)' }} />
           <h2 className="text-xl font-semibold t-primary mb-2">Run Not Found</h2>
           <p className="text-sm t-muted mb-4">
             {loadError?.message || "The catalyst run you're looking for doesn't exist or you don't have access to it."}
@@ -433,7 +434,7 @@ export function CatalystRunDetailPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/catalysts')}
-                className="p-2 hover:bg-[var(--bg-card-solid)] rounded-lg transition-[background-color,color,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
+                className="p-2 hover:bg-[var(--bg-card-solid)] rounded-md transition-[background-color,color,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
                 aria-label="Back to Catalysts"
               >
                 <ArrowLeft size={20} className="t-muted" />
@@ -477,7 +478,7 @@ export function CatalystRunDetailPage() {
           };
           return (
         <div className="stagger grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(16,185,129,0.25)] active:scale-[0.97]">
+          <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] hover:-translate-y-px transition-[border-color,transform] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Matched Records</span>
               <div className="flex items-center gap-1">
@@ -489,13 +490,13 @@ export function CatalystRunDetailPage() {
                   sample: run.matched ?? 0,
                   drillTo: `/catalysts/runs/${runId}?status=matched`,
                 }} />
-                <CheckCircle2 size={16} className="text-emerald-400" />
+                <CheckCircle2 size={16} style={{ color: 'var(--positive)' }} />
               </div>
             </div>
             <Numeric value={run.matched ?? 0} size="lg" />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(245,158,11,0.25)] active:scale-[0.97]">
+          <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] hover:-translate-y-px transition-[border-color,transform] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Discrepancies</span>
               <div className="flex items-center gap-1">
@@ -507,13 +508,13 @@ export function CatalystRunDetailPage() {
                   sample: run.discrepancies ?? 0,
                   drillTo: `/catalysts/runs/${runId}?status=discrepancy`,
                 }} />
-                <AlertCircle size={16} className="text-amber-400" />
+                <AlertCircle size={16} style={{ color: 'var(--warning)' }} />
               </div>
             </div>
             <Numeric value={run.discrepancies ?? 0} size="lg" />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-red-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(239,68,68,0.25)] active:scale-[0.97]">
+          <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] hover:-translate-y-px transition-[border-color,transform] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Exceptions</span>
               <div className="flex items-center gap-1">
@@ -525,13 +526,13 @@ export function CatalystRunDetailPage() {
                   sample: run.exceptions ?? 0,
                   drillTo: `/catalysts/runs/${runId}?status=exception`,
                 }} />
-                <XCircle size={16} className="text-red-400" />
+                <XCircle size={16} style={{ color: 'var(--neg)' }} />
               </div>
             </div>
             <Numeric value={run.exceptions ?? 0} size="lg" />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 hover:-translate-y-px transition-[border-color,transform,box-shadow] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] hover:shadow-[0_8px_24px_-12px_rgba(56,189,248,0.25)] active:scale-[0.97]">
+          <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-[var(--border-card)] hover:-translate-y-px transition-[border-color,transform] duration-[var(--dur-quick)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-caption uppercase tracking-wider t-muted">Total Value</span>
               <div className="flex items-center gap-1">
@@ -542,7 +543,7 @@ export function CatalystRunDetailPage() {
                   query: 'total_value FROM sub_catalyst_runs WHERE id = ?',
                   notes: [{ label: 'Currency', value: 'ZAR' }],
                 }} />
-                <Database size={16} style={{ color: 'var(--sky)' }} />
+                <Database size={16} className="t-muted" />
               </div>
             </div>
             <Numeric value={run.totalValue ?? null} unit="ZAR" compact size="lg" />
@@ -561,10 +562,10 @@ export function CatalystRunDetailPage() {
               </h3>
             </div>
             {items?.review_progress && (
-              <div className="flex gap-3 text-xs t-muted">
-                <span className="text-emerald-400">{items.review_progress.approved} approved</span>
-                <span className="text-red-400">{items.review_progress.rejected} rejected</span>
-                <span className="text-amber-400">{items.review_progress.deferred} deferred</span>
+              <div className="flex gap-3 text-xs t-muted font-mono tnum">
+                <span style={{ color: 'var(--positive)' }}>{items.review_progress.approved} approved</span>
+                <span style={{ color: 'var(--neg)' }}>{items.review_progress.rejected} rejected</span>
+                <span style={{ color: 'var(--warning)' }}>{items.review_progress.deferred} deferred</span>
                 <span>{items.review_progress.pending} pending</span>
               </div>
             )}
@@ -585,7 +586,7 @@ export function CatalystRunDetailPage() {
 
           {/* Bulk actions bar */}
           {selectedItemIds.size > 0 && (
-            <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-accent/5 border border-accent/20">
+            <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-accent/5 border border-accent/20">
               <span className="text-xs t-primary">{selectedItemIds.size} selected</span>
               {pendingSelectedCount < selectedItemIds.size && (
                 <span className="text-caption t-muted">
@@ -595,7 +596,8 @@ export function CatalystRunDetailPage() {
               <div className="flex gap-1 ml-auto">
                 <Button
                   size="sm" variant="ghost"
-                  className="text-xs text-emerald-400 hover:bg-emerald-400/10"
+                  className="text-xs"
+                  style={{ color: 'var(--positive)' }}
                   onClick={() => askReview('approved')}
                   disabled={bulkReviewing || selectedItemIds.size === 0}
                 >
@@ -603,7 +605,8 @@ export function CatalystRunDetailPage() {
                 </Button>
                 <Button
                   size="sm" variant="ghost"
-                  className="text-xs text-red-400 hover:bg-red-400/10"
+                  className="text-xs"
+                  style={{ color: 'var(--neg)' }}
                   onClick={() => askReview('rejected')}
                   disabled={bulkReviewing || selectedItemIds.size === 0}
                 >
@@ -621,7 +624,7 @@ export function CatalystRunDetailPage() {
               <Loader2 size={14} className="animate-spin" /> Loading items...
             </div>
           ) : itemsError ? (
-            <div className="text-center py-8 text-sm text-red-400">
+            <div className="text-center py-8 text-sm" style={{ color: 'var(--neg)' }}>
               {itemsError}
               <div className="mt-2">
                 <Button size="sm" variant="ghost" onClick={() => loadItems(itemPage)}>Retry</Button>
@@ -709,9 +712,18 @@ export function CatalystRunDetailPage() {
                         <td className="py-2 px-2 text-right t-primary font-mono">
                           {typeof item.target_amount === 'number' ? item.target_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                         </td>
-                        <td className="py-2 px-2 text-right font-mono">
+                        <td className="py-2 px-2 text-right font-mono tnum">
                           {typeof item.match_confidence === 'number' ? (
-                            <span className={item.match_confidence >= 0.7 ? 'text-emerald-400' : item.match_confidence >= 0.5 ? 'text-amber-400' : 'text-red-400'} title={`Match method: ${item.match_method ?? 'unknown'}`}>
+                            <span
+                              style={{
+                                color: item.match_confidence >= 0.7
+                                  ? 'var(--positive)'
+                                  : item.match_confidence >= 0.5
+                                  ? 'var(--warning)'
+                                  : 'var(--neg)',
+                              }}
+                              title={`Match method: ${item.match_method ?? 'unknown'}`}
+                            >
                               {Math.round(item.match_confidence * 100)}%
                             </span>
                           ) : (
@@ -720,12 +732,12 @@ export function CatalystRunDetailPage() {
                         </td>
                         <td className="py-2 px-2">
                           {typeof item.discrepancy_amount === 'number' && item.discrepancy_amount !== 0 ? (
-                            <span className="text-amber-400">
+                            <span className="font-mono tnum" style={{ color: 'var(--warning)' }}>
                               {item.discrepancy_amount.toFixed(2)}
                               {typeof item.discrepancy_pct === 'number' ? ` (${item.discrepancy_pct.toFixed(1)}%)` : ''}
                             </span>
                           ) : item.exception_type ? (
-                            <span className="text-red-400">{item.exception_type}{item.exception_severity ? ` • ${item.exception_severity}` : ''}</span>
+                            <span style={{ color: 'var(--neg)' }}>{item.exception_type}{item.exception_severity ? ` • ${item.exception_severity}` : ''}</span>
                           ) : (
                             <span className="t-muted">-</span>
                           )}
@@ -745,7 +757,8 @@ export function CatalystRunDetailPage() {
                           {item.review_status === 'pending' ? (
                             <div className="flex gap-1">
                               <button
-                                className="p-1 rounded text-emerald-400 hover:bg-emerald-400/10 disabled:opacity-50"
+                                className="p-1 rounded-sm disabled:opacity-50"
+                                style={{ color: 'var(--positive)' }}
                                 onClick={() => askReview('approved', item.id)}
                                 disabled={isReviewing}
                                 title="Approve"
@@ -754,7 +767,8 @@ export function CatalystRunDetailPage() {
                                 {isReviewing ? <Loader2 size={12} className="animate-spin" /> : <ThumbsUp size={12} />}
                               </button>
                               <button
-                                className="p-1 rounded text-red-400 hover:bg-red-400/10 disabled:opacity-50"
+                                className="p-1 rounded-sm disabled:opacity-50"
+                                style={{ color: 'var(--neg)' }}
                                 onClick={() => askReview('rejected', item.id)}
                                 disabled={isReviewing}
                                 title="Reject"
@@ -807,7 +821,7 @@ export function CatalystRunDetailPage() {
               <p className="text-sm t-muted text-center py-4">No comments yet. Be the first to add one.</p>
             ) : (
               comments.map((c) => (
-                <div key={c.id} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                <div key={c.id} className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-medium t-primary">{c.user_name || c.user_id}</span>
                     <span className="text-xs t-muted">{new Date(c.created_at).toLocaleString()}</span>
@@ -819,7 +833,7 @@ export function CatalystRunDetailPage() {
                         type="button"
                         aria-label="Delete comment"
                         title="Delete comment"
-                        className="ml-auto inline-flex items-center justify-center rounded-md p-1 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                        className="ml-auto inline-flex items-center justify-center rounded-sm p-1 t-muted disabled:opacity-50 hover:opacity-70"
                         disabled={deletingCommentId === c.id}
                         onClick={() => handleDeleteComment(c.id)}
                         data-testid={`delete-comment-${c.id}`}
@@ -839,7 +853,7 @@ export function CatalystRunDetailPage() {
           <div className="flex gap-2">
             <input
               type="text"
-              className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary focus:outline-none focus:border-accent/40"
+              className="flex-1 px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary focus:outline-none focus:border-accent/40"
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
@@ -873,7 +887,7 @@ export function CatalystRunDetailPage() {
             {run.kpis && run.kpis.length > 0 ? (
               <div className="space-y-3">
                 {run.kpis.map((kpi, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                  <div key={i} className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium t-primary">{String(kpi.name)}</span>
                       <Badge variant={kpi.status === 'green' ? 'success' : kpi.status === 'amber' ? 'warning' : 'danger'} className="text-xs">
@@ -903,7 +917,7 @@ export function CatalystRunDetailPage() {
             {run.metrics && run.metrics.length > 0 ? (
               <div className="space-y-3">
                 {run.metrics.map((metric, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                  <div key={i} className="p-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium t-primary">{String(metric.name)}</span>
                       <Badge variant={metric.status === 'green' ? 'success' : metric.status === 'amber' ? 'warning' : 'danger'} className="text-xs">
@@ -992,7 +1006,7 @@ export function CatalystRunDetailPage() {
             </div>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-3 h-3 rounded-full bg-blue-400 mt-1.5" />
+                <div className="w-3 h-3 rounded-sm mt-1.5" style={{ background: 'var(--info)' }} />
                 <div className="flex-1">
                   <p className="text-sm font-medium t-primary">Run Started</p>
                   <p className="text-xs t-muted">{new Date(run.startedAt).toLocaleString()}</p>
@@ -1000,7 +1014,16 @@ export function CatalystRunDetailPage() {
               </div>
               {run.completedAt && (
                 <div className="flex items-start gap-3">
-                  <div className={`w-3 h-3 rounded-full mt-1.5 ${run.status === 'success' ? 'bg-emerald-400' : run.status === 'failed' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                  <div
+                    className="w-3 h-3 rounded-sm mt-1.5"
+                    style={{
+                      background: run.status === 'success'
+                        ? 'var(--positive)'
+                        : run.status === 'failed'
+                        ? 'var(--neg)'
+                        : 'var(--warning)',
+                    }}
+                  />
                   <div className="flex-1">
                     <p className="text-sm font-medium t-primary">Run Completed</p>
                     <p className="text-xs t-muted">{new Date(run.completedAt).toLocaleString()}</p>

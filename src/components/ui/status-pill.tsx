@@ -88,22 +88,22 @@ const STATUS_DEF: Record<StatusKind, StatusVisual> = {
 const TONE_CLASS: Record<StatusVisual['tone'], { solid: string; outline: string; dot: string }> = {
   success:  {
     solid:   'pill-success',
-    outline: 'bg-transparent text-[var(--positive)] border-[rgba(124,255,178,.4)]',
-    dot:     'text-[var(--positive)]',
+    outline: 'bg-transparent text-[var(--accent)] border-[rgb(var(--accent-rgb)/0.4)]',
+    dot:     'text-[var(--accent)]',
   },
   warning:  {
     solid:   'pill-warning',
-    outline: 'bg-transparent text-[var(--warning)] border-[rgba(255,200,87,.4)]',
+    outline: 'bg-transparent text-[var(--warning)] border-[rgba(154,107,31,.4)]',
     dot:     'text-[var(--warning)]',
   },
   critical: {
     solid:   'pill-danger',
-    outline: 'bg-transparent text-[var(--critical)] border-[rgba(255,107,107,.4)]',
-    dot:     'text-[var(--critical)]',
+    outline: 'bg-transparent text-[var(--neg)] border-[rgb(var(--neg-rgb)/0.4)]',
+    dot:     'text-[var(--neg)]',
   },
   info:     {
     solid:   'pill-info',
-    outline: 'bg-transparent text-[var(--info)] border-[rgba(126,179,205,.4)]',
+    outline: 'bg-transparent text-[var(--info)] border-[rgba(59,63,71,.4)]',
     dot:     'text-[var(--info)]',
   },
   neutral:  {
@@ -156,7 +156,7 @@ export function StatusPill({
   const base = density === 'solid' ? tone.solid : tone.outline;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border font-medium ${SIZE_CLASS[size]} ${base} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-sm border font-medium font-mono ${SIZE_CLASS[size]} ${base} ${className}`}
       aria-label={`Status: ${def.label}`}
     >
       {!noGlyph && <span aria-hidden="true">{def.glyph}</span>}

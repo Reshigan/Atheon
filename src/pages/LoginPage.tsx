@@ -320,7 +320,7 @@ export function LoginPage() {
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            'radial-gradient(circle at 50% -10%, rgba(163, 177, 138, 0.10) 0%, transparent 60%),' +
+            'radial-gradient(circle at 50% -10%, rgb(var(--accent-rgb) / 0.10) 0%, transparent 60%),' +
             'radial-gradient(circle at 100% 110%, rgba(205, 163, 126, 0.08) 0%, transparent 55%)',
         }}
       />
@@ -331,18 +331,18 @@ export function LoginPage() {
             soft glow so the emblem feels alive without distracting. */}
         <div className="mb-8 flex flex-col items-center text-center animate-riseIn">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 relative"
+            className="w-14 h-14 rounded-md flex items-center justify-center mb-4 relative"
             style={{
-              background: 'linear-gradient(135deg, #06090d, #0e151c)',
-              boxShadow: '0 8px 32px rgba(163, 177, 138, 0.25), 0 0 0 1px rgba(163, 177, 138, 0.18)',
+              background: 'rgb(var(--accent-rgb) / 0.06)',
+              border: '1px solid var(--border-card)',
             }}
             aria-hidden="true"
           >
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-              <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="#A3B18A" strokeWidth="1.5" />
-              <line x1="9" y1="20" x2="23" y2="20" stroke="#A3B18A" strokeWidth=".8" opacity=".6" />
-              <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="#7EB3CD" strokeWidth=".8" opacity=".5" />
-              <circle cx="16" cy="9" r="1.5" fill="#CDA37E" />
+              <path d="M16 4L27 27H5L16 4Z" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
+              <line x1="9" y1="20" x2="23" y2="20" stroke="var(--accent)" strokeWidth=".8" opacity=".6" />
+              <line x1="11.5" y1="14.5" x2="20.5" y2="14.5" stroke="var(--info)" strokeWidth=".8" opacity=".5" />
+              <circle cx="16" cy="9" r="1.5" fill="var(--bronze)" />
             </svg>
           </div>
           <p className="text-caption t-muted uppercase tracking-[0.32em] mb-2" style={{ color: 'var(--accent)' }}>Atheon Workspace</p>
@@ -354,7 +354,7 @@ export function LoginPage() {
             riseIn lands 80ms after the brand header so the page entrance
             feels conducted, not simultaneous. */}
         <div
-          className="w-full rounded-2xl p-6 sm:p-7 animate-riseIn"
+          className="w-full rounded-md p-6 sm:p-7 animate-riseIn"
           style={{
             background: 'var(--bg-card-solid)',
             border: '1px solid var(--border-card)',
@@ -383,13 +383,13 @@ export function LoginPage() {
                 onChange={(e) => setMfaInput(e.target.value.slice(0, 12))}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !loading) submitMfaChallenge(); }}
                 placeholder="123456 or xxxx-xxxx"
-                className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
+                className="w-full px-3 py-2.5 rounded-md text-center font-mono text-lg tracking-widest outline-none"
                 style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
                 autoFocus
               />
-              {mfaError && <p className="text-xs text-red-400">{mfaError}</p>}
+              {mfaError && <p className="text-xs text-neg">{mfaError}</p>}
               {backupCodesRemaining !== null && backupCodesRemaining < 3 && (
-                <p className="text-caption text-amber-500">
+                <p className="text-caption" style={{ color: 'var(--warning)' }}>
                   You have {backupCodesRemaining} backup code{backupCodesRemaining === 1 ? '' : 's'} left. Consider regenerating them from Settings &rarr; MFA after you sign in.
                 </p>
               )}
@@ -432,7 +432,7 @@ export function LoginPage() {
                         setLoading(false);
                       }
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]"
                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
                   >
                     <Building2 size={14} className="t-muted flex-shrink-0" />
@@ -444,7 +444,7 @@ export function LoginPage() {
             </div>
           )}
           {selectedTenant && (
-            <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg text-xs" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
+            <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-md text-xs" style={{ background: 'rgb(var(--accent-rgb) / 0.06)', border: '1px solid var(--border-card)' }}>
               <Building2 size={12} style={{ color: 'var(--accent)' }} />
               <span className="t-secondary">Workspace: <strong className="t-primary">{selectedTenant}</strong></span>
               <button type="button" onClick={() => setSelectedTenant(null)} className="ml-auto text-caption t-muted hover:t-primary">&times;</button>
@@ -452,8 +452,8 @@ export function LoginPage() {
           )}
           {!tenantOptions && !mfaChallengeActive && mode === 'login' && (
             <div className="space-y-2 mb-5">
-              <button onClick={() => handleSSO('azure')} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
-                <div className="w-4 h-4 rounded bg-sky-600 flex items-center justify-center text-[8px] font-bold text-white">M</div>Continue with Azure AD
+              <button onClick={() => handleSSO('azure')} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center text-[8px] font-mono font-bold" style={{ background: 'rgb(var(--accent-rgb) / 0.12)', color: 'var(--accent)' }}>M</div>Continue with Azure AD
               </button>
               {/* Phase AY: SAML SSO. Enabled when the tenant has set a
                   WorkOS connection_id; backend returns 404 + a clear
@@ -461,11 +461,11 @@ export function LoginPage() {
                   filled so we can route to the right WorkOS connection. */}
               <button
                 onClick={() => void handleSamlSSO()}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-xs font-medium t-secondary transition-[background-color,color,transform,box-shadow] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.98] hover:bg-[var(--bg-secondary)]"
                 style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
                 title="Use your organisation's SAML identity provider (Okta, Azure AD, Ping, etc.)"
               >
-                <div className="w-4 h-4 rounded bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white">S</div>
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center text-[8px] font-mono font-bold" style={{ background: 'rgb(var(--accent-rgb) / 0.12)', color: 'var(--accent)' }}>S</div>
                 Continue with SAML SSO
                 <span className="ml-auto text-[10px] t-muted">enter email first</span>
               </button>
@@ -526,7 +526,7 @@ export function LoginPage() {
                 <div className="space-y-3">
                   <p className="text-caption t-muted">Enter a new password for your account.</p>
                   <input
-                    className="w-full px-3 py-2 rounded-lg text-body"
+                    className="w-full px-3 py-2 rounded-md text-body"
                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
                     type="password"
                     placeholder="Min 10 characters"
@@ -569,7 +569,7 @@ export function LoginPage() {
                 <div className="space-y-3">
                   <p className="text-caption t-muted">Enter your email and we will send you a reset link.</p>
                   <input
-                    className="w-full px-3 py-2 rounded-lg text-body"
+                    className="w-full px-3 py-2 rounded-md text-body"
                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
                     type="email"
                     placeholder="you@company.com"

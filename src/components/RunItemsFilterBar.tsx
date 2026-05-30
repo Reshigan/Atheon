@@ -26,25 +26,25 @@ interface RunItemsFilterBarProps {
 }
 
 const STATUS_OPTIONS: FilterOption<ItemStatus>[] = [
-  { value: "matched", label: "Matched", dotClass: "bg-emerald-500" },
-  { value: "discrepancy", label: "Discrepancy", dotClass: "bg-amber-500" },
-  { value: "unmatched_source", label: "Unmatched (Source)", dotClass: "bg-gray-400" },
-  { value: "unmatched_target", label: "Unmatched (Target)", dotClass: "bg-gray-400" },
-  { value: "exception", label: "Exception", dotClass: "bg-red-500" },
+  { value: "matched", label: "Matched", dotClass: "bg-accent" },
+  { value: "discrepancy", label: "Discrepancy", dotClass: "bg-[var(--warning)]" },
+  { value: "unmatched_source", label: "Unmatched (Source)", dotClass: "bg-[var(--info)]" },
+  { value: "unmatched_target", label: "Unmatched (Target)", dotClass: "bg-[var(--info)]" },
+  { value: "exception", label: "Exception", dotClass: "bg-neg" },
 ];
 
 const REVIEW_OPTIONS: FilterOption<ReviewStatus>[] = [
-  { value: "pending", label: "Pending", dotClass: "bg-blue-400" },
-  { value: "approved", label: "Approved", dotClass: "bg-emerald-500" },
-  { value: "rejected", label: "Rejected", dotClass: "bg-red-500" },
-  { value: "deferred", label: "Deferred", dotClass: "bg-amber-500" },
+  { value: "pending", label: "Pending", dotClass: "bg-[var(--warning)]" },
+  { value: "approved", label: "Approved", dotClass: "bg-accent" },
+  { value: "rejected", label: "Rejected", dotClass: "bg-neg" },
+  { value: "deferred", label: "Deferred", dotClass: "bg-[var(--warning)]" },
 ];
 
 const SEVERITY_OPTIONS: FilterOption<Severity>[] = [
-  { value: "low", label: "Low", dotClass: "bg-emerald-400" },
-  { value: "medium", label: "Medium", dotClass: "bg-amber-400" },
-  { value: "high", label: "High", dotClass: "bg-orange-500" },
-  { value: "critical", label: "Critical", dotClass: "bg-red-500" },
+  { value: "low", label: "Low", dotClass: "bg-accent" },
+  { value: "medium", label: "Medium", dotClass: "bg-[var(--warning)]" },
+  { value: "high", label: "High", dotClass: "bg-[var(--warning)]" },
+  { value: "critical", label: "Critical", dotClass: "bg-neg" },
 ];
 
 export function RunItemsFilterBar({

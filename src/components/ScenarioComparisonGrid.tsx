@@ -125,7 +125,7 @@ export function ScenarioComparisonGrid({
               <button
                 type="button"
                 onClick={() => onRemove(scenario.id)}
-                className="absolute top-3 right-3 text-gray-400 hover:text-red-400 transition-colors"
+                className="absolute top-3 right-3 t-muted hover:text-neg transition-colors"
                 title={`Remove ${scenario.title} from comparison`}
                 aria-label={`Remove ${scenario.title} from comparison`}
               >
@@ -143,32 +143,32 @@ export function ScenarioComparisonGrid({
                 </Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 my-3">
-                <div className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                <div className="p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                   <p className="text-label">Projected Health</p>
                   <p className="text-xl font-bold t-primary mt-0.5">
                     {projected !== null ? projected : "--"}
                   </p>
                 </div>
-                <div className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                <div className="p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                   <p className="text-label">vs Baseline</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     {delta === null ? (
-                      <Minus size={14} className="text-gray-400" />
+                      <Minus size={14} className="t-muted" />
                     ) : delta > 0 ? (
-                      <TrendingUp size={14} className="text-emerald-400" />
+                      <TrendingUp size={14} className="text-accent" />
                     ) : delta < 0 ? (
-                      <TrendingDown size={14} className="text-red-400" />
+                      <TrendingDown size={14} className="text-neg" />
                     ) : (
-                      <Minus size={14} className="text-gray-400" />
+                      <Minus size={14} className="t-muted" />
                     )}
                     <span
                       className={`text-xl font-bold ${
                         delta === null
                           ? "t-muted"
                           : delta > 0
-                          ? "text-emerald-400"
+                          ? "text-accent"
                           : delta < 0
-                          ? "text-red-400"
+                          ? "text-neg"
                           : "t-primary"
                       }`}
                     >

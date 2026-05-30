@@ -8,43 +8,11 @@ const SELECTED_COMPANY_LS_KEY = 'atheon_selected_company_id';
 export type Theme = 'dark' | 'light';
 export type AccentColor = 'indigo' | 'blue' | 'violet' | 'emerald' | 'rose';
 
-type AccentVars = { accent: string; hover: string; glow: string; subtle: string };
-const ACCENT_LIGHT: Record<AccentColor, AccentVars> = {
-  indigo:  { accent: '#4f46e5', hover: '#4338ca', glow: 'rgba(79, 70, 229, 0.10)', subtle: 'rgba(79, 70, 229, 0.05)' },
-  blue:    { accent: '#2563eb', hover: '#1d4ed8', glow: 'rgba(37, 99, 235, 0.10)', subtle: 'rgba(37, 99, 235, 0.05)' },
-  violet:  { accent: '#7c3aed', hover: '#6d28d9', glow: 'rgba(124, 58, 237, 0.10)', subtle: 'rgba(124, 58, 237, 0.05)' },
-  emerald: { accent: '#059669', hover: '#047857', glow: 'rgba(5, 150, 105, 0.10)', subtle: 'rgba(5, 150, 105, 0.05)' },
-  rose:    { accent: '#e11d48', hover: '#be123c', glow: 'rgba(225, 29, 72, 0.10)', subtle: 'rgba(225, 29, 72, 0.05)' },
-};
-const ACCENT_DARK: Record<AccentColor, AccentVars> = {
-  indigo:  { accent: '#818cf8', hover: '#6366f1', glow: 'rgba(129, 140, 248, 0.12)', subtle: 'rgba(129, 140, 248, 0.06)' },
-  blue:    { accent: '#3b82f6', hover: '#2563eb', glow: 'rgba(59, 130, 246, 0.12)', subtle: 'rgba(59, 130, 246, 0.06)' },
-  violet:  { accent: '#a78bfa', hover: '#8b5cf6', glow: 'rgba(167, 139, 250, 0.12)', subtle: 'rgba(167, 139, 250, 0.06)' },
-  emerald: { accent: '#10b981', hover: '#059669', glow: 'rgba(16, 185, 129, 0.12)', subtle: 'rgba(16, 185, 129, 0.06)' },
-  rose:    { accent: '#f43f5e', hover: '#e11d48', glow: 'rgba(244, 63, 94, 0.12)', subtle: 'rgba(244, 63, 94, 0.06)' },
-};
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
-function applyAccentColor(color: AccentColor, theme?: Theme) {
-  const currentTheme = theme || (typeof document !== 'undefined' && document.body.classList.contains('atheon-dark') ? 'dark' : 'light');
-  const map = currentTheme === 'dark' ? ACCENT_DARK : ACCENT_LIGHT;
-  const vars = map[color];
-  if (!vars || typeof document === 'undefined') return;
-  const root = document.documentElement;
-  root.style.setProperty('--accent', vars.accent);
-  root.style.setProperty('--accent-rgb', hexToRgb(vars.accent));
-  root.style.setProperty('--accent-hover', vars.hover);
-  root.style.setProperty('--accent-glow', vars.glow);
-  root.style.setProperty('--accent-subtle', vars.subtle);
-  root.style.setProperty('--ring-focus', vars.glow);
-}
+// Swiss Calm Authority is single-accent (ledger green) + light-only. The
+// runtime accent picker and theme toggle are retired: the accent lives in
+// :root (src/index.css) and is never overridden at runtime. AccentColor is
+// kept only so the settings UI keeps compiling until the shell is restyled.
+const VALID_ACCENTS: readonly AccentColor[] = ['indigo', 'blue', 'violet', 'emerald', 'rose'];
 
 export interface MfaEnforcementWarning {
   daysRemaining: number;
@@ -76,9 +44,9 @@ interface AppState {
   toggleSidebar: () => void;
   setMobileSidebarOpen: (open: boolean) => void;
   setIndustry: (industry: IndustryVertical) => void;
-  /** @deprecated Light mode retired — the `theme` argument is ignored; the app is permanently dark. */
+  /** @deprecated Dark mode retired — the `theme` argument is ignored; the app is permanently light. */
   setTheme: (theme: Theme) => void;
-  /** @deprecated Light mode retired — keeps the theme dark; kept only for existing call sites. */
+  /** @deprecated Dark mode retired — keeps the theme light; kept only for existing call sites. */
   toggleTheme: () => void;
   setAccentColor: (color: AccentColor) => void;
   dismissOnboarding: () => void;
@@ -89,25 +57,21 @@ interface AppState {
   setSelectedCompanyId: (id: string | null) => void;
 }
 
-// Quiet Capital is a dark-first design system; light mode is retired.
-// The .atheon-dark class is always applied so all dark-scoped tokens
-// in index.css are the canonical (and only) theme users see.
-const initialTheme: Theme = 'dark';
+// Swiss Calm Authority is light-only; the legacy .atheon-dark class is
+// never applied, so :root in index.css is the canonical (and only) theme.
+const initialTheme: Theme = 'light';
 // Migrate legacy accent values
 const rawAccent = typeof window !== 'undefined' ? localStorage.getItem('atheon-accent') : null;
 const legacyMap: Record<string, AccentColor> = { amber: 'indigo', teal: 'indigo', sky: 'blue', cyan: 'blue' };
 const migratedAccent = rawAccent && legacyMap[rawAccent] ? legacyMap[rawAccent] : rawAccent;
 if (rawAccent && legacyMap[rawAccent] && typeof window !== 'undefined') { localStorage.setItem('atheon-accent', legacyMap[rawAccent]); }
-const savedAccent = (migratedAccent && ACCENT_LIGHT[migratedAccent as AccentColor] ? migratedAccent : null) as AccentColor | null;
+const savedAccent = (migratedAccent && VALID_ACCENTS.includes(migratedAccent as AccentColor) ? migratedAccent : null) as AccentColor | null;
 const savedOnboarding = typeof window !== 'undefined' ? localStorage.getItem('atheon-onboarding-dismissed') === 'true' : false;
 const savedSelectedCompanyId = typeof window !== 'undefined' ? localStorage.getItem(SELECTED_COMPANY_LS_KEY) : null;
 
-// Always apply dark theme on load — Quiet Capital is dark-only.
+// Light-only (Swiss): defensively clear any persisted dark class on load.
 if (typeof document !== 'undefined') {
-  document.body.classList.add('atheon-dark');
-  if (savedAccent && ACCENT_LIGHT[savedAccent]) {
-    applyAccentColor(savedAccent, 'dark');
-  }
+  document.body.classList.remove('atheon-dark');
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -138,17 +102,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
   setIndustry: (industry) => set({ industry }),
   setTheme: () => {
-    // Light mode retired — the `theme` arg is ignored; always dark.
-    localStorage.setItem('atheon-theme', 'dark');
-    if (typeof document !== 'undefined') document.body.classList.add('atheon-dark');
-    const accent = (localStorage.getItem('atheon-accent') as AccentColor) || 'indigo';
-    applyAccentColor(accent, 'dark');
-    set({ theme: 'dark' });
+    // Dark mode retired — the `theme` arg is ignored; always light.
+    localStorage.setItem('atheon-theme', 'light');
+    if (typeof document !== 'undefined') document.body.classList.remove('atheon-dark');
+    set({ theme: 'light' });
   },
-  toggleTheme: () => get().setTheme('dark'),
+  toggleTheme: () => get().setTheme('light'),
   setAccentColor: (color) => {
+    // Single-accent (ledger green): selection is persisted for the settings
+    // UI but no longer overrides the CSS accent token.
     localStorage.setItem('atheon-accent', color);
-    applyAccentColor(color);
     set({ accentColor: color });
   },
   dismissOnboarding: () => {

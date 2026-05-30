@@ -142,8 +142,8 @@ export function ActionQueuePanel({
     return (
       <Card>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-            <Inbox size={18} className="text-amber-400" />
+          <div className="w-10 h-10 rounded-md flex items-center justify-center" style={{ background: 'rgb(var(--accent-rgb) / 0.1)' }}>
+            <Inbox size={18} className="text-accent" />
           </div>
           <div className="flex-1">
             <p className="text-caption t-muted">Actions awaiting approval</p>
@@ -188,7 +188,7 @@ export function ActionQueuePanel({
       </div>
 
       {error && (
-        <div className="mb-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-caption">{error}</div>
+        <div className="mb-2 p-2 rounded-sm text-caption" style={{ background: 'rgb(var(--neg-rgb) / 0.1)', border: '1px solid rgb(var(--neg-rgb) / 0.2)', color: 'var(--neg)' }}>{error}</div>
       )}
 
       {loading ? (
@@ -282,7 +282,7 @@ export function ActionQueuePanel({
                               title="Approve and execute">
                               {pendingId === a.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Approve
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300"
+                            <Button variant="ghost" size="sm" style={{ color: 'var(--neg)' }}
                               onClick={() => void handleReject(a)} disabled={pendingId === a.id}>
                               <XCircle size={12} /> Reject
                             </Button>

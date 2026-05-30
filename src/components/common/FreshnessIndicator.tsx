@@ -18,9 +18,9 @@ function ageLabel(minutes: number | null): string {
 }
 
 const statusDot: Record<string, string> = {
-  fresh: 'bg-emerald-500',
-  stale: 'bg-amber-500',
-  unknown: 'bg-gray-400',
+  fresh: 'bg-accent',
+  stale: 'bg-[var(--warning)]',
+  unknown: 'bg-[var(--info)]',
 };
 
 /** Compact dot for the header bar */
@@ -49,7 +49,7 @@ export function FreshnessDot() {
 
       {showTooltip && (
         <div
-          className="absolute right-0 top-full mt-1 w-64 rounded-lg z-50 p-3"
+          className="absolute right-0 top-full mt-1 w-64 rounded-sm z-50 p-3"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-dropdown)' }}
         >
           <div className="flex items-center gap-1.5 mb-2">

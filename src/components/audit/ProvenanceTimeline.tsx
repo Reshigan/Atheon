@@ -40,9 +40,9 @@ function timeOnly(iso: string): string {
 
 interface OutcomeStyle { dot: string; ring: string; label: string; symbol: string }
 const OUTCOME_STYLES: Record<string, OutcomeStyle> = {
-  success: { dot: '#34D399', ring: 'rgba(52, 211, 153, 0.25)', label: 'Success', symbol: 'check_circle' },
-  pending: { dot: '#FBBF24', ring: 'rgba(251, 191, 36, 0.25)', label: 'Pending', symbol: 'schedule' },
-  failure: { dot: '#F87171', ring: 'rgba(248, 113, 113, 0.25)', label: 'Failed',  symbol: 'cancel' },
+  success: { dot: 'var(--accent)', ring: 'rgb(var(--accent-rgb) / 0.25)', label: 'Success', symbol: 'check_circle' },
+  pending: { dot: 'var(--warning)', ring: 'rgba(251, 191, 36, 0.25)', label: 'Pending', symbol: 'schedule' },
+  failure: { dot: 'var(--neg)', ring: 'rgb(var(--neg-rgb) / 0.25)', label: 'Failed',  symbol: 'cancel' },
 };
 function outcomeStyle(outcome: string): OutcomeStyle {
   return OUTCOME_STYLES[outcome] ?? OUTCOME_STYLES.success;
@@ -52,7 +52,7 @@ export function ProvenanceTimeline({ entries, className = '' }: ProvenanceTimeli
   if (entries.length === 0) {
     return (
       <div
-        className={`rounded-2xl p-10 text-center ${className}`}
+        className={`rounded-md p-10 text-center ${className}`}
         style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}
       >
         <p className="text-body-sm t-muted">No entries match the current filters.</p>
@@ -81,7 +81,7 @@ export function ProvenanceTimeline({ entries, className = '' }: ProvenanceTimeli
         className="absolute top-0 bottom-0 w-px"
         style={{
           left: 14,
-          background: 'linear-gradient(to bottom, var(--accent) 0%, rgba(163, 177, 138, 0.10) 100%)',
+          background: 'linear-gradient(to bottom, var(--accent) 0%, rgb(var(--accent-rgb) / 0.10) 100%)',
           opacity: 0.45,
         }}
       />
@@ -118,7 +118,7 @@ export function ProvenanceTimeline({ entries, className = '' }: ProvenanceTimeli
                       }}
                     />
                     <div
-                      className="rounded-xl px-4 py-3 transition-colors hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
+                      className="rounded-md px-4 py-3 transition-colors hover:bg-[var(--bg-secondary)] active:scale-[0.97]"
                       style={{
                         background: 'var(--bg-card-solid)',
                         border: '1px solid var(--border-card)',

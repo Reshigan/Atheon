@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/state";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 import { api, ApiError } from "@/lib/api";
 import type { IAMPolicy, SSOConfig, IAMRole, IAMUser } from "@/lib/api";
@@ -247,33 +247,31 @@ export function IAMPage() {
 
  return (
    <div className="space-y-6 animate-fadeIn">
-     {/* Header */}
-     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-       <HeroHeader
-         icon={ShieldCheck}
-         title="Identity & Access"
-         subtitle={
-           isSuperAdmin ? 'Company admins, users, roles, policies' :
-           isCompanyAdmin ? 'Your company users, roles, policies' :
-           'Users, roles, policies'
-         }
-         accent="sage"
-       />
-       {isAdmin && (
-         <div className="flex gap-2">
-           <Button variant="primary" size="sm" onClick={() => { setInviteResult(null); setInviteForm({ name: '', email: '', role: assignableRoles[0] || 'analyst', sendWelcome: true }); setShowInviteUser(true); }} title="Invite a new user">
-             <UserPlus size={14} /> {isSuperAdmin ? 'Add Admin' : 'Add User'}
-           </Button>
-           <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(true)} title="Create a new access policy">
-             <Plus size={14} /> New Policy
-           </Button>
-         </div>
-       )}
-     </div>
+     <PageHeader
+       eyebrow="Access · Identity & Roles"
+       title="Identity & Access"
+       dek={
+         isSuperAdmin ? 'Company admins, users, roles, policies' :
+         isCompanyAdmin ? 'Your company users, roles, policies' :
+         'Users, roles, policies'
+       }
+       actions={
+         isAdmin ? (
+           <div className="flex gap-2">
+             <Button variant="primary" size="sm" onClick={() => { setInviteResult(null); setInviteForm({ name: '', email: '', role: assignableRoles[0] || 'analyst', sendWelcome: true }); setShowInviteUser(true); }} title="Invite a new user">
+               <UserPlus size={14} /> {isSuperAdmin ? 'Add Admin' : 'Add User'}
+             </Button>
+             <Button variant="secondary" size="sm" onClick={() => setShowNewPolicy(true)} title="Create a new access policy">
+               <Plus size={14} /> New Policy
+             </Button>
+           </div>
+         ) : undefined
+       }
+     />
 
      {/* Feedback banner */}
      {actionFeedback && (
-       <div className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${actionFeedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+       <div className={`px-4 py-2 rounded-md text-sm flex items-center gap-2 ${actionFeedback.type === 'success' ? 'border border-[var(--border-card)]' : 'border border-[var(--neg)]'}`} style={actionFeedback.type === 'success' ? { background: 'rgb(var(--accent-rgb) / 0.08)', color: 'var(--accent)' } : { background: 'rgb(var(--neg-rgb) / 0.08)', color: 'var(--neg)' }}>
          {actionFeedback.type === 'success' ? <CheckCircle size={14} /> : <Ban size={14} />}
          {actionFeedback.message}
          <button onClick={() => setActionFeedback(null)} className="ml-auto"><X size={14} /></button>
@@ -283,24 +281,24 @@ export function IAMPage() {
      {/* Invite User Modal */}
      {showInviteUser && (
        <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-         <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+         <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
            <div className="flex items-center justify-between">
              <h3 className="text-lg font-semibold t-primary">{inviteResult ? 'User Created' : isSuperAdmin ? 'Add Company Admin' : 'Add Company User'}</h3>
-             <button onClick={() => { setShowInviteUser(false); setInviteResult(null); }} className="text-gray-400 hover:text-gray-300"><X size={18} /></button>
+             <button onClick={() => { setShowInviteUser(false); setInviteResult(null); }} className="t-muted hover:t-secondary"><X size={18} /></button>
            </div>
 
            {inviteResult ? (
              <div className="space-y-4">
-               <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                 <p className="text-sm text-emerald-400 font-medium mb-2">User created successfully</p>
+               <div className="p-4 rounded-md border border-[var(--border-card)]" style={{ background: 'rgb(var(--accent-rgb) / 0.08)' }}>
+                 <p className="text-sm font-medium mb-2" style={{ color: 'var(--accent)' }}>User created successfully</p>
                  <div className="space-y-2">
                    <div>
-                     <span className="text-xs text-gray-400">Email</span>
+                     <span className="text-xs t-muted">Email</span>
                      <p className="text-sm t-primary font-mono">{inviteResult.email}</p>
                    </div>
                    <div>
-                     <span className="text-xs text-gray-400">Temporary Password</span>
-                     <p className="text-sm t-primary font-mono bg-[var(--bg-secondary)] px-2 py-1 rounded select-all">{inviteResult.tempPassword}</p>
+                     <span className="text-xs t-muted">Temporary Password</span>
+                     <p className="text-sm t-primary font-mono bg-[var(--bg-secondary)] px-2 py-1 rounded-sm select-all">{inviteResult.tempPassword}</p>
                    </div>
                  </div>
                </div>
@@ -312,15 +310,15 @@ export function IAMPage() {
                <div className="space-y-3">
                  <div>
                    <label className="text-xs t-muted block mb-1">Full Name</label>
-                   <input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={inviteForm.name} onChange={e => setInviteForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" />
+                   <input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={inviteForm.name} onChange={e => setInviteForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" />
                  </div>
                  <div>
                    <label className="text-xs t-muted block mb-1">Email Address</label>
-                   <input type="email" className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={inviteForm.email} onChange={e => setInviteForm(p => ({ ...p, email: e.target.value }))} placeholder="john@company.co.za" />
+                   <input type="email" className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={inviteForm.email} onChange={e => setInviteForm(p => ({ ...p, email: e.target.value }))} placeholder="john@company.co.za" />
                  </div>
                  <div>
                    <label className="text-xs t-muted block mb-1">Role</label>
-                   <select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={inviteForm.role} onChange={e => setInviteForm(p => ({ ...p, role: e.target.value }))}>
+                   <select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={inviteForm.role} onChange={e => setInviteForm(p => ({ ...p, role: e.target.value }))}>
                      {roles.filter(r => assignableRoles.includes(r.id)).map(r => (
                        <option key={r.id} value={r.id}>{r.name}</option>
                      ))}
@@ -330,7 +328,7 @@ export function IAMPage() {
                    </p>
                  </div>
                  <div className="flex items-center gap-2">
-                   <input type="checkbox" id="sendWelcome" checked={inviteForm.sendWelcome} onChange={e => setInviteForm(p => ({ ...p, sendWelcome: e.target.checked }))} className="rounded" />
+                   <input type="checkbox" id="sendWelcome" checked={inviteForm.sendWelcome} onChange={e => setInviteForm(p => ({ ...p, sendWelcome: e.target.checked }))} className="rounded-sm" />
                    <label htmlFor="sendWelcome" className="text-xs t-muted">Send welcome email with login credentials</label>
                  </div>
                </div>
@@ -349,15 +347,15 @@ export function IAMPage() {
      {/* New Policy Modal */}
      {showNewPolicy && (
        <Portal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-         <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+         <div style={{ background: "var(--bg-modal)", border: "1px solid var(--border-card)" }} className="rounded-md p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
            <div className="flex items-center justify-between">
              <h3 className="text-lg font-semibold t-primary">Create New Policy</h3>
-             <button onClick={() => setShowNewPolicy(false)} className="text-gray-400 hover:text-gray-300"><X size={18} /></button>
+             <button onClick={() => setShowNewPolicy(false)} className="t-muted hover:t-secondary"><X size={18} /></button>
            </div>
            <div className="space-y-3">
-             <div><label className="text-xs t-muted block mb-1">Policy Name</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.name} onChange={e => setPolicyForm(p => ({ ...p, name: e.target.value }))} placeholder="Read-only analysts" /></div>
-             <div><label className="text-xs t-muted block mb-1">Description</label><input className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.description} onChange={e => setPolicyForm(p => ({ ...p, description: e.target.value }))} placeholder="Policy description" /></div>
-             <div><label className="text-xs t-muted block mb-1">Type</label><select className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.type} onChange={e => setPolicyForm(p => ({ ...p, type: e.target.value }))}><option value="rbac">RBAC (Role-Based)</option><option value="abac">ABAC (Attribute-Based)</option></select></div>
+             <div><label className="text-xs t-muted block mb-1">Policy Name</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.name} onChange={e => setPolicyForm(p => ({ ...p, name: e.target.value }))} placeholder="Read-only analysts" /></div>
+             <div><label className="text-xs t-muted block mb-1">Description</label><input className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.description} onChange={e => setPolicyForm(p => ({ ...p, description: e.target.value }))} placeholder="Policy description" /></div>
+             <div><label className="text-xs t-muted block mb-1">Type</label><select className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] text-sm t-primary" value={policyForm.type} onChange={e => setPolicyForm(p => ({ ...p, type: e.target.value }))}><option value="rbac">RBAC (Role-Based)</option><option value="abac">ABAC (Attribute-Based)</option></select></div>
            </div>
            <p className="text-caption t-muted">Rules can be added after creating the policy.</p>
            <div className="flex gap-3 pt-2">
@@ -470,8 +468,8 @@ export function IAMPage() {
            )}
 
            {users.length === 0 && (
-             <div className="text-center py-12 text-gray-400">
-               <Users className="w-8 h-8 mx-auto mb-3 text-gray-300" />
+             <div className="text-center py-12 t-muted">
+               <Users className="w-8 h-8 mx-auto mb-3 t-muted opacity-40" />
                <p className="text-sm">No users found for this tenant</p>
                {isAdmin && (
                  <Button variant="primary" size="sm" className="mt-4" onClick={() => setShowInviteUser(true)}>
@@ -490,11 +488,11 @@ export function IAMPage() {
                <Card key={user.id}>
                  <div className="flex items-center justify-between flex-wrap gap-2">
                    <div className="flex items-center gap-3 min-w-0">
-                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${user.status === 'active' ? 'bg-accent/10' : 'bg-red-500/10'}`}>
+                     <div className={`w-9 h-9 rounded-md flex items-center justify-center ${user.status === 'active' ? 'bg-accent/10' : ''}`} style={user.status !== 'active' ? { background: 'rgb(var(--neg-rgb) / 0.1)' } : undefined}>
                        {user.status === 'active' ? (
                          <UserCheck className="w-4 h-4 text-accent" />
                        ) : (
-                         <Ban className="w-4 h-4 text-red-400" />
+                         <Ban className="w-4 h-4" style={{ color: 'var(--neg)' }} />
                        )}
                      </div>
                      <div className="min-w-0">
@@ -507,7 +505,7 @@ export function IAMPage() {
                          {user.lastLogin ? (
                            <span className="text-caption t-muted">Last login: {new Date(user.lastLogin).toLocaleDateString()}</span>
                          ) : (
-                           <span className="text-caption text-amber-400">Never logged in</span>
+                           <span className="text-caption" style={{ color: 'var(--warning)' }}>Never logged in</span>
                          )}
                        </div>
                      </div>
@@ -519,14 +517,14 @@ export function IAMPage() {
                          <select
                            value={editRole}
                            onChange={(e) => setEditRole(e.target.value)}
-                           className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
+                           className="px-2 py-1 rounded-md border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
                          >
                            {roles.filter(r => assignableRoles.includes(r.id)).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                          </select>
                          <select
                            value={editStatus}
                            onChange={(e) => setEditStatus(e.target.value)}
-                           className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
+                           className="px-2 py-1 rounded-md border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
                          >
                            <option value="active">Active</option>
                            <option value="suspended">Suspended</option>
@@ -560,7 +558,7 @@ export function IAMPage() {
                                <Pencil size={12} />
                              </Button>
                              <Button variant="secondary" size="sm" onClick={() => handleToggleStatus(user)} title={user.status === 'active' ? 'Suspend user' : 'Reactivate user'}>
-                               {user.status === 'active' ? <Ban size={12} className="text-amber-400" /> : <RotateCcw size={12} className="text-emerald-400" />}
+                               {user.status === 'active' ? <Ban size={12} style={{ color: 'var(--warning)' }} /> : <RotateCcw size={12} className="text-accent" />}
                              </Button>
                              {!user.lastLogin && (
                                <Button variant="secondary" size="sm" onClick={() => handleResendWelcome(user)} title="Resend welcome email">
@@ -568,7 +566,7 @@ export function IAMPage() {
                                </Button>
                              )}
                              <Button variant="secondary" size="sm" onClick={() => handleDeleteUser(user)} title="Delete user">
-                               <Trash2 size={12} className="text-red-400" />
+                               <Trash2 size={12} style={{ color: 'var(--neg)' }} />
                              </Button>
                            </>
                          )}
@@ -618,7 +616,6 @@ export function IAMPage() {
          <div className="space-y-4">
            {roles.map((role) => {
              const Icon = role.name.toLowerCase().includes('admin') ? ShieldCheck : role.name.toLowerCase().includes('exec') ? Shield : role.name.toLowerCase().includes('manager') ? UserCheck : Users;
-             const color = role.name.toLowerCase().includes('admin') ? 'text-red-400' : role.name.toLowerCase().includes('exec') ? 'text-amber-400' : role.name.toLowerCase().includes('manager') ? 'text-accent' : 'text-accent';
              const isExpanded = expandedRoleId === role.id;
              const perms = ROLE_PERMISSIONS[role.id];
 
@@ -626,7 +623,7 @@ export function IAMPage() {
                <Card key={role.id}>
                  <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedRoleId(isExpanded ? null : role.id)}>
                    <div className="flex items-center gap-3">
-                     <Icon className={`w-5 h-5 ${color}`} />
+                     <Icon className="w-5 h-5 t-secondary" />
                      <div>
                        <h3 className="text-base font-semibold t-primary">{role.name}</h3>
                        <p className="text-xs t-muted">{role.description}</p>
@@ -635,7 +632,7 @@ export function IAMPage() {
                    <div className="flex items-center gap-3">
                      <Badge variant="outline" size="sm">Level {role.level}</Badge>
                      <Badge variant="info" size="sm">{role.userCount} user{role.userCount !== 1 ? 's' : ''}</Badge>
-                     {isExpanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                     {isExpanded ? <ChevronUp size={16} className="t-muted" /> : <ChevronDown size={16} className="t-muted" />}
                    </div>
                  </div>
 
@@ -645,8 +642,8 @@ export function IAMPage() {
                        <span className="text-label">Page Access</span>
                        <div className="flex flex-wrap gap-1.5 mt-2">
                          {perms.pages.map(p => (
-                           <div key={p} className="flex items-center gap-1 px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
-                             <Unlock size={10} className="text-emerald-400" />
+                           <div key={p} className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                             <Unlock size={10} className="text-accent" />
                              <span className="text-xs t-secondary">{p}</span>
                            </div>
                          ))}
@@ -656,7 +653,7 @@ export function IAMPage() {
                        <span className="text-label">Allowed Actions</span>
                        <div className="flex flex-wrap gap-1.5 mt-2">
                          {perms.actions.map(a => (
-                           <div key={a} className="flex items-center gap-1 px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                           <div key={a} className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                              <CheckCircle size={10} className="text-accent" />
                              <span className="text-xs t-secondary">{a}</span>
                            </div>
@@ -687,8 +684,8 @@ export function IAMPage() {
        <TabPanel>
          <div className="space-y-4">
            {policies.length === 0 && (
-             <div className="text-center py-12 text-gray-400">
-               <Shield className="w-8 h-8 mx-auto mb-3 text-gray-300" />
+             <div className="text-center py-12 t-muted">
+               <Shield className="w-8 h-8 mx-auto mb-3 t-muted opacity-40" />
                <p className="text-sm">No policies configured</p>
                {isAdmin && (
                  <Button variant="primary" size="sm" className="mt-4" onClick={() => setShowNewPolicy(true)}>
@@ -717,7 +714,7 @@ export function IAMPage() {
                          setPolicies(prev => prev.filter(p => p.id !== policy.id));
                          showFeedback('success', `Policy "${policy.name}" deleted`);
                        } catch (err) { console.error('Failed to delete policy', err); showError('Failed to delete policy', err, 'Failed to delete policy'); }
-                     }} title="Delete policy"><Trash2 size={12} className="text-red-400" /></Button>
+                     }} title="Delete policy"><Trash2 size={12} style={{ color: 'var(--neg)' }} /></Button>
                    )}
                  </div>
                </div>
@@ -726,13 +723,13 @@ export function IAMPage() {
                  {(Array.isArray(policy.rules) ? policy.rules : []).map((rule, idx) => {
                    const r = rule as Record<string, unknown>;
                    return (
-                     <div key={idx} className="flex items-center gap-3 p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                     <div key={idx} className="flex items-center gap-3 p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                        {r.effect === 'allow' ? (
-                         <Unlock size={14} className="text-emerald-400" />
+                         <Unlock size={14} className="text-accent" />
                        ) : (
-                         <Lock size={14} className="text-red-400" />
+                         <Lock size={14} style={{ color: 'var(--neg)' }} />
                        )}
-                       <span className="text-xs font-mono text-gray-400">{String(r.resource || '')}</span>
+                       <span className="text-xs font-mono t-muted">{String(r.resource || '')}</span>
                        <div className="flex gap-1">
                          {(Array.isArray(r.actions) ? r.actions : []).map((a: unknown) => (
                            <Badge key={String(a)} variant={r.effect === 'allow' ? 'success' : 'danger'} size="sm">{String(a)}</Badge>
@@ -763,17 +760,17 @@ export function IAMPage() {
              }}
            />
            {ssoConfigs.length === 0 && (
-             <div className="text-center py-12 text-gray-400">
-               <Globe className="w-8 h-8 mx-auto mb-3 text-gray-300" />
+             <div className="text-center py-12 t-muted">
+               <Globe className="w-8 h-8 mx-auto mb-3 t-muted opacity-40" />
                <p className="text-sm">No SSO providers configured</p>
-               <p className="text-xs text-gray-500 mt-1">Configure SAML/OIDC providers for single sign-on</p>
+               <p className="text-xs t-muted mt-1">Configure SAML/OIDC providers for single sign-on</p>
              </div>
            )}
            {ssoConfigs.map((sso, i) => (
              <Card key={i}>
                <div className="flex items-start justify-between">
                  <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                   <div className="w-10 h-10 rounded-md bg-accent/10 flex items-center justify-center">
                      <Globe className="w-5 h-5 text-accent" />
                    </div>
                    <div>
@@ -784,19 +781,19 @@ export function IAMPage() {
                  <Badge variant={sso.enabled ? 'success' : 'default'}>{sso.enabled ? 'Active' : 'Disabled'}</Badge>
                </div>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                 <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                 <div className="p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                    <span className="text-caption t-muted">Client ID</span>
                    <p className="text-xs t-secondary font-mono truncate">{sso.clientId}</p>
                  </div>
-                 <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                 <div className="p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                    <span className="text-caption t-muted">Issuer URL</span>
                    <p className="text-xs t-secondary font-mono truncate">{sso.issuerUrl}</p>
                  </div>
-                 <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                 <div className="p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                    <span className="text-caption t-muted">Auto-Provision</span>
                    <p className="text-xs t-secondary">{sso.autoProvision ? 'Yes' : 'No'}</p>
                  </div>
-                 <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+                 <div className="p-2 rounded-sm bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                    <span className="text-caption t-muted">Default Role</span>
                    <p className="text-xs t-secondary">{sso.defaultRole}</p>
                  </div>

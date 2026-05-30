@@ -110,7 +110,7 @@ export function HealthTrendChart({ companyId, initialHistory = null }: HealthTre
             </label>
           )}
           <div
-            className="inline-flex rounded-lg border border-[var(--border-card)] overflow-hidden"
+            className="inline-flex rounded-md border border-[var(--border-card)] overflow-hidden"
             role="group"
             aria-label="Time range selector"
           >
@@ -121,7 +121,7 @@ export function HealthTrendChart({ companyId, initialHistory = null }: HealthTre
                 onClick={() => setRange(r)}
                 className={`px-2.5 py-1 text-caption font-medium transition-colors ${
                   range === r
-                    ? "bg-accent text-white"
+                    ? "bg-accent text-[var(--text-on-accent)]"
                     : "bg-[var(--bg-secondary)] t-muted hover:t-primary"
                 }`}
                 aria-pressed={range === r}

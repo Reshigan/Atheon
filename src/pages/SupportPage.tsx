@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import type { SupportTicket, SupportTicketCategory, SupportTicketPriority } from '@/lib/api';
@@ -124,23 +124,22 @@ export function SupportPage() {
 
   return (
     <div className="p-5 max-w-5xl mx-auto space-y-5">
-      <header className="flex items-start justify-between gap-4">
-        <HeroHeader
-          icon={LifeBuoy}
-          title="Support"
-          subtitle="File a ticket and track our response. For urgent outages, escalate via your CSM."
-          accent="sage"
-        />
-        <Button
-          variant="primary"
-          size="md"
-          onClick={() => { setForm(EMPTY_FORM); setShowForm(true); }}
-          data-testid="support-new-ticket-btn"
-        >
-          <Plus size={14} />
-          New ticket
-        </Button>
-      </header>
+      <PageHeader
+        eyebrow="Support · Tickets"
+        title="Support"
+        dek="File a ticket and track our response. For urgent outages, escalate via your CSM."
+        actions={
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => { setForm(EMPTY_FORM); setShowForm(true); }}
+            data-testid="support-new-ticket-btn"
+          >
+            <Plus size={14} />
+            New ticket
+          </Button>
+        }
+      />
 
       {loading ? (
         <Card>
@@ -238,7 +237,7 @@ export function SupportPage() {
                   <select
                     value={form.category}
                     onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as SupportTicketCategory }))}
-                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]"
+                    className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]"
                     style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                     data-testid="support-category-select"
                   >
@@ -252,7 +251,7 @@ export function SupportPage() {
                   <select
                     value={form.priority}
                     onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as SupportTicketPriority }))}
-                    className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]"
+                    className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]"
                     style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                     data-testid="support-priority-select"
                   >
@@ -271,7 +270,7 @@ export function SupportPage() {
                   rows={6}
                   placeholder="Steps to reproduce, expected vs actual, error messages..."
                   onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] resize-y"
+                  className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] resize-y"
                   style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                   data-testid="support-body-textarea"
                 />

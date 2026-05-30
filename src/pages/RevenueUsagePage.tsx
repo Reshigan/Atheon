@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { api, ApiError } from '@/lib/api';
 import type { RevenueUsageResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -20,15 +20,12 @@ import {
   Building2, CreditCard, RefreshCw, Users, Brain, AlertCircle,
 } from 'lucide-react';
 
-const PLAN_COLORS: Record<string, string> = {
-  enterprise: '#818cf8',
-  professional: '#3b82f6',
-  starter: '#10b981',
-  trial: '#6b7280',
-};
-
 function planColor(plan: string): string {
-  return PLAN_COLORS[plan.toLowerCase()] || '#6b7280';
+  const key = plan.toLowerCase();
+  if (key === 'enterprise') return 'var(--accent)';
+  if (key === 'professional') return 'var(--info)';
+  if (key === 'trial') return 'var(--warning)';
+  return 'var(--text-muted)';
 }
 
 export function RevenueUsagePage() {
@@ -90,22 +87,21 @@ export function RevenueUsagePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={DollarSign}
-          title="Revenue & Usage"
-          subtitle="Platform-wide metrics, plan distribution & LLM usage"
-          accent="sage"
-        />
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
-        >
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Revenue · Usage"
+        title="Revenue & Usage"
+        dek="Platform-wide metrics, plan distribution & LLM usage"
+        actions={
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -114,7 +110,7 @@ export function RevenueUsagePage() {
             <span className="text-label">Estimated MRR</span>
             {summary.pricingIsEstimate && <Badge variant="warning" className="text-caption">EST</Badge>}
           </div>
-          <p className="text-xl font-bold t-primary mt-1">${summary.estMrrUsd.toLocaleString()}</p>
+          <p className="text-figure font-mono tnum t-primary mt-1">${summary.estMrrUsd.toLocaleString()}</p>
           <p className="text-caption t-muted">Derived from plan tier</p>
         </Card>
         <Card className="p-3">
@@ -122,7 +118,7 @@ export function RevenueUsagePage() {
             <span className="text-label">Estimated ARR</span>
             {summary.pricingIsEstimate && <Badge variant="warning" className="text-caption">EST</Badge>}
           </div>
-          <p className="text-xl font-bold t-primary mt-1">${summary.estArrUsd.toLocaleString()}</p>
+          <p className="text-figure font-mono tnum t-primary mt-1">${summary.estArrUsd.toLocaleString()}</p>
           <p className="text-caption t-muted">MRR × 12</p>
         </Card>
         <Card className="p-3">
@@ -130,7 +126,7 @@ export function RevenueUsagePage() {
             <Building2 size={14} className="text-accent" />
             <span className="text-label">Total Tenants</span>
           </div>
-          <p className="text-xl font-bold t-primary">{summary.totalTenants.toLocaleString()}</p>
+          <p className="text-figure font-mono tnum t-primary">{summary.totalTenants.toLocaleString()}</p>
           <p className="text-caption t-muted">Active (not deleted)</p>
         </Card>
         <Card className="p-3">
@@ -138,15 +134,15 @@ export function RevenueUsagePage() {
             <Users size={14} className="text-accent" />
             <span className="text-label">Total Users</span>
           </div>
-          <p className="text-xl font-bold t-primary">{summary.totalUsers.toLocaleString()}</p>
+          <p className="text-figure font-mono tnum t-primary">{summary.totalUsers.toLocaleString()}</p>
           <p className="text-caption t-muted">Across all tenants</p>
         </Card>
       </div>
 
       {summary.pricingIsEstimate && (
-        <Card className="p-3 border-l-2 border-amber-400/50">
+        <Card className="p-3 border-l-2" style={{ borderLeftColor: 'var(--warning)' }}>
           <p className="text-caption t-muted flex items-start gap-1.5">
-            <AlertCircle size={12} className="text-amber-400 mt-0.5 flex-shrink-0" />
+            <AlertCircle size={12} style={{ color: 'var(--warning)' }} className="mt-0.5 flex-shrink-0" />
             <span>{summary.pricingNote}</span>
           </p>
         </Card>
@@ -189,7 +185,7 @@ export function RevenueUsagePage() {
             ) : (
               <div className="space-y-2">
                 {llm.topTenants.map((t, i) => (
-                  <div key={t.tenantId || i} className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--bg-secondary)]">
+                  <div key={t.tenantId || i} className="flex items-center justify-between p-2 rounded-md hover:bg-[var(--bg-secondary)]">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-caption t-muted w-4 flex-shrink-0">{i + 1}.</span>
                       <span className="text-xs t-primary truncate">{t.name}</span>

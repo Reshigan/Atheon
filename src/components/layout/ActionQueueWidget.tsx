@@ -117,19 +117,19 @@ export function ActionQueueWidget(): JSX.Element | null {
     <div className="relative" ref={dropdownRef} data-testid="action-queue">
       <button
         onClick={() => setOpen(o => !o)}
-        className="relative w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
+        className="relative w-9 h-9 rounded-md flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
         title={`${total} action${total === 1 ? '' : 's'} pending`}
         aria-label={`Action queue — ${total} pending`}
       >
         <CheckSquare size={18} className="t-secondary" />
-        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-caption font-semibold flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-neg text-[var(--text-on-accent)] text-caption font-semibold flex items-center justify-center">
           {total > 99 ? '99+' : total}
         </span>
       </button>
 
       {open && (
         <div
-          className="absolute right-0 mt-2 w-96 rounded-xl shadow-lg z-50 max-h-[80vh] overflow-y-auto"
+          className="absolute right-0 mt-2 w-96 rounded-md z-50 max-h-[80vh] overflow-y-auto"
           style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-card)' }}
         >
           <div className="px-4 py-3 border-b border-[var(--border-card)] flex items-center justify-between">
@@ -163,7 +163,7 @@ export function ActionQueueWidget(): JSX.Element | null {
           {/* Anomalies */}
           {snap.anomalies.length > 0 && (
             <Section
-              icon={<AlertTriangle size={14} className="text-amber-400" />}
+              icon={<AlertTriangle size={14} style={{ color: 'var(--warning)' }} />}
               title="Critical anomalies"
               count={snap.anomalies.length}
               onJumpAll={() => jump('/pulse')}
@@ -184,7 +184,7 @@ export function ActionQueueWidget(): JSX.Element | null {
           {/* Risks */}
           {snap.risks.length > 0 && (
             <Section
-              icon={<ShieldAlert size={14} className="text-red-400" />}
+              icon={<ShieldAlert size={14} className="text-neg" />}
               title="Open risks"
               count={snap.risks.length}
               onJumpAll={() => jump('/apex')}

@@ -54,14 +54,19 @@ export function ERPOAuthCallbackPage() {
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg-primary)' }}>
       <Card className="max-w-md w-full text-center space-y-6">
         <div className="flex justify-center">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-            status === 'loading' ? 'bg-accent/10' :
-            status === 'success' ? 'bg-emerald-500/10' :
-            'bg-red-500/10'
-          }`}>
+          <div
+            className="w-16 h-16 rounded-md flex items-center justify-center"
+            style={{
+              background: status === 'loading'
+                ? 'rgb(var(--accent-rgb) / 0.10)'
+                : status === 'success'
+                  ? 'rgb(var(--accent-rgb) / 0.10)'
+                  : 'rgb(var(--neg-rgb) / 0.10)',
+            }}
+          >
             {status === 'loading' && <Loader2 className="w-8 h-8 text-accent animate-spin" />}
-            {status === 'success' && <CheckCircle className="w-8 h-8 text-emerald-500" />}
-            {status === 'error' && <XCircle className="w-8 h-8 text-red-400" />}
+            {status === 'success' && <CheckCircle className="w-8 h-8 text-accent" />}
+            {status === 'error' && <XCircle className="w-8 h-8 text-neg" />}
           </div>
         </div>
 

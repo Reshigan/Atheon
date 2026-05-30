@@ -32,15 +32,15 @@ export function usageColor(pct: number): 'emerald' | 'amber' | 'red' {
 }
 
 const barColorClass: Record<'emerald' | 'amber' | 'red', string> = {
-  emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
+  emerald: 'bg-accent',
+  amber: 'bg-[var(--warning)]',
+  red: 'bg-neg',
 };
 
 const textColorClass: Record<'emerald' | 'amber' | 'red', string> = {
-  emerald: 'text-emerald-400',
-  amber: 'text-amber-400',
-  red: 'text-red-400',
+  emerald: 'text-accent',
+  amber: 'text-[var(--warning)]',
+  red: 'text-neg',
 };
 
 const sizeClass: Record<'sm' | 'md', string> = {
@@ -54,12 +54,12 @@ export function UsageBar({ used, budget, showLabel = true, size = 'md', classNam
       <div className={cn('flex flex-col gap-0.5', className)}>
         {showLabel && (
           <div className="flex items-center justify-between gap-2 text-caption">
-            <span className="text-gray-400">{formatTokens(used)} tokens</span>
-            <span className="text-emerald-400 font-medium">Unlimited</span>
+            <span className="t-muted">{formatTokens(used)} tokens</span>
+            <span className="text-accent font-medium">Unlimited</span>
           </div>
         )}
         {!showLabel && (
-          <span className="text-caption text-emerald-400 font-medium">Unlimited</span>
+          <span className="text-caption text-accent font-medium">Unlimited</span>
         )}
       </div>
     );
@@ -72,7 +72,7 @@ export function UsageBar({ used, budget, showLabel = true, size = 'md', classNam
     <div className={cn('flex flex-col gap-1', className)}>
       {showLabel && (
         <div className="flex items-center justify-between gap-2 text-caption">
-          <span className="text-gray-400">
+          <span className="t-muted">
             {formatTokens(used)} / {formatTokens(budget)}
           </span>
           <span className={cn('font-medium', textColorClass[color])}>
@@ -80,9 +80,9 @@ export function UsageBar({ used, budget, showLabel = true, size = 'md', classNam
           </span>
         </div>
       )}
-      <div className={cn('w-full rounded-full overflow-hidden bg-gray-800', sizeClass[size])}>
+      <div className={cn('w-full rounded-sm overflow-hidden bg-[var(--bg-secondary)]', sizeClass[size])}>
         <div
-          className={cn('h-full rounded-full transition-all duration-500 ease-out', barColorClass[color])}
+          className={cn('h-full rounded-sm transition-all duration-500 ease-out', barColorClass[color])}
           style={{ width: `${pct}%` }}
         />
       </div>

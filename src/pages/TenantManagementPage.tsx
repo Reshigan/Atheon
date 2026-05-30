@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -173,7 +174,7 @@ export function TenantManagementPage() {
     if (!confirm(`⚠️ DANGER: PERMANENT DELETION ⚠️\n\nThis will IRREVERSIBLY delete:\n- All tenant data\n- All users\n- All runs, metrics, risks\n- All history and audit logs\n\nThis action CANNOT be undone.\n\nType "DELETE" to confirm:`)) {
       return;
     }
-    
+
     // Additional confirmation
     const confirmation = prompt('Type "DELETE" to confirm permanent deletion:');
     if (confirmation !== 'DELETE') {
@@ -200,15 +201,15 @@ export function TenantManagementPage() {
   };
 
   const filteredTenants = tenants.filter(tenant => {
-    const matchesFilter = 
+    const matchesFilter =
       filter === 'all' ||
       (filter === 'active' && !tenant.is_deleted) ||
       (filter === 'deleted' && tenant.is_deleted);
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tenant.slug.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesFilter && matchesSearch;
   });
 
@@ -232,9 +233,9 @@ export function TenantManagementPage() {
         </div>
 
         {actionLoading === selectedTenant.id && (
-          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-blue-400">Loading...</span>
+          <div className="p-3 border border-[var(--border-card)] rounded-md flex items-center gap-3" style={{ background: 'var(--bg-secondary)' }}>
+            <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+            <span className="text-sm t-muted">Loading...</span>
           </div>
         )}
 
@@ -249,7 +250,7 @@ export function TenantManagementPage() {
                     {selectedTenant.is_deleted ? 'Deleted' : 'Active'}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-400">Slug: {selectedTenant.slug}</p>
+                <p className="text-sm t-muted">Slug: {selectedTenant.slug}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -265,45 +266,45 @@ export function TenantManagementPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+              <div className="p-3 rounded-md border border-[var(--border-card)]" style={{ background: 'var(--bg-secondary)' }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <Building2 size={14} className="text-gray-400" />
-                  <span className="text-xs text-gray-400">Industry</span>
+                  <Building2 size={14} className="t-muted" />
+                  <span className="text-xs t-muted">Industry</span>
                 </div>
-                <p className="text-sm font-medium text-white">{selectedTenant.industry || 'N/A'}</p>
+                <p className="text-sm font-medium t-primary">{selectedTenant.industry || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+              <div className="p-3 rounded-md border border-[var(--border-card)]" style={{ background: 'var(--bg-secondary)' }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <Shield size={14} className="text-gray-400" />
-                  <span className="text-xs text-gray-400">Plan</span>
+                  <Shield size={14} className="t-muted" />
+                  <span className="text-xs t-muted">Plan</span>
                 </div>
-                <p className="text-sm font-medium text-white capitalize">{selectedTenant.plan || 'N/A'}</p>
+                <p className="text-sm font-medium t-primary capitalize">{selectedTenant.plan || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+              <div className="p-3 rounded-md border border-[var(--border-card)]" style={{ background: 'var(--bg-secondary)' }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <HardDrive size={14} className="text-gray-400" />
-                  <span className="text-xs text-gray-400">Deployment</span>
+                  <HardDrive size={14} className="t-muted" />
+                  <span className="text-xs t-muted">Deployment</span>
                 </div>
-                <p className="text-sm font-medium text-white capitalize">{selectedTenant.deployment_model || 'N/A'}</p>
+                <p className="text-sm font-medium t-primary capitalize">{selectedTenant.deployment_model || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+              <div className="p-3 rounded-md border border-[var(--border-card)]" style={{ background: 'var(--bg-secondary)' }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <Calendar size={14} className="text-gray-400" />
-                  <span className="text-xs text-gray-400">Created</span>
+                  <Calendar size={14} className="t-muted" />
+                  <span className="text-xs t-muted">Created</span>
                 </div>
-                <p className="text-sm font-medium text-white">
+                <p className="text-sm font-medium t-primary">
                   {format(new Date(selectedTenant.created_at), 'MMM d, yyyy')}
                 </p>
               </div>
             </div>
 
             {selectedTenant.is_deleted && (
-              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <div className="p-4 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'var(--neg)' }}>
                 <div className="flex items-start gap-3">
-                  <AlertTriangle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle size={20} style={{ color: 'var(--neg)' }} className="flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-red-400 mb-1">Tenant Soft-Deleted</p>
-                    <p className="text-xs text-red-300/80">
+                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--neg)' }}>Tenant Soft-Deleted</p>
+                    <p className="text-xs" style={{ color: 'var(--neg)', opacity: 0.8 }}>
                       Deleted: {format(new Date(selectedTenant.deleted_at!), 'PPP p')}
                       {selectedTenant.deleted_by && ` by ${selectedTenant.deleted_by}`}
                     </p>
@@ -317,7 +318,7 @@ export function TenantManagementPage() {
         {/* Data Statistics */}
         <Card>
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-semibold t-primary mb-4 flex items-center gap-2">
               <Database size={18} className="text-accent" />
               Data Statistics
             </h3>
@@ -332,12 +333,12 @@ export function TenantManagementPage() {
                 { label: 'Health Scores', value: selectedTenant.data.healthScores, icon: CheckCircle },
                 { label: 'Briefings', value: selectedTenant.data.briefings, icon: FileJson },
               ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
+                <div key={label} className="p-4 rounded-md border border-[var(--border-card)]" style={{ background: 'var(--bg-secondary)' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon size={16} className="text-gray-400" />
-                    <span className="text-xs text-gray-400">{label}</span>
+                    <Icon size={16} className="t-muted" />
+                    <span className="text-xs t-muted">{label}</span>
                   </div>
-                  <p className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{value.toLocaleString()}</p>
+                  <p className="text-headline-xl font-bold t-primary tracking-tight leading-tight font-mono tabular-nums">{value.toLocaleString()}</p>
                 </div>
               ))}
             </div>
@@ -347,7 +348,7 @@ export function TenantManagementPage() {
         {/* Actions */}
         <Card>
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-semibold t-primary mb-4 flex items-center gap-2">
               <Shield size={18} className="text-accent" />
               Administrative Actions
             </h3>
@@ -357,7 +358,7 @@ export function TenantManagementPage() {
                   variant="secondary"
                   onClick={() => handleSoftDelete(selectedTenant.id)}
                   disabled={!!actionLoading || selectedTenant.slug === 'vantax'}
-                  className="bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
+                  style={{ background: 'rgb(var(--neg-rgb) / 0.08)', color: 'var(--neg)', borderColor: 'rgb(var(--neg-rgb) / 0.2)' }}
                 >
                   <Trash2 size={14} className="mr-2" />
                   Soft-Delete Tenant
@@ -378,7 +379,7 @@ export function TenantManagementPage() {
                   variant="secondary"
                   onClick={() => handleHardDelete(selectedTenant.id)}
                   disabled={!!actionLoading}
-                  className="bg-red-600 text-white border-red-500 hover:bg-red-700"
+                  style={{ background: 'var(--neg)', color: '#fff', borderColor: 'var(--neg)' }}
                 >
                   <Trash2 size={14} className="mr-2" />
                   Permanently Delete (After 24h)
@@ -403,8 +404,8 @@ export function TenantManagementPage() {
             </div>
 
             {selectedTenant.slug === 'vantax' && (
-              <div className="mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <p className="text-xs text-blue-300">
+              <div className="mt-4 p-3 rounded-md border border-[var(--border-card)]" style={{ background: 'var(--bg-secondary)' }}>
+                <p className="text-xs t-secondary">
                   ℹ️ This is the VantaX demo tenant. Use the seeder endpoint to reset data instead of deletion.
                 </p>
               </div>
@@ -417,59 +418,57 @@ export function TenantManagementPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Tenant Management</h1>
-          <p className="text-sm text-gray-400 mt-1">Superadmin-only tenant administration</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Tenants · Management"
+        title="Tenant Management"
+        dek="Superadmin-only tenant administration"
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Building2 size={16} className="text-gray-400" />
-              <span className="text-xs text-gray-400">Total</span>
+              <Building2 size={16} className="t-muted" />
+              <span className="text-xs t-muted">Total</span>
             </div>
-            <p className="text-headline-xl font-bold t-primary tracking-tight leading-tight">{stats.total}</p>
+            <p className="text-headline-xl font-bold t-primary tracking-tight leading-tight font-mono tabular-nums">{stats.total}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle size={16} className="text-emerald-400" />
-              <span className="text-xs text-gray-400">Active</span>
+              <CheckCircle size={16} className="text-accent" />
+              <span className="text-xs t-muted">Active</span>
             </div>
-            <p className="text-headline-lg font-bold text-emerald-400 tabular-nums font-mono">{stats.active}</p>
+            <p className="text-headline-lg font-bold text-accent tabular-nums font-mono">{stats.active}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <XCircle size={16} className="text-red-400" />
-              <span className="text-xs text-gray-400">Deleted</span>
+              <XCircle size={16} style={{ color: 'var(--neg)' }} />
+              <span className="text-xs t-muted">Deleted</span>
             </div>
-            <p className="text-headline-lg font-bold text-red-400 tabular-nums font-mono">{stats.deleted}</p>
+            <p className="text-headline-lg font-bold tabular-nums font-mono" style={{ color: 'var(--neg)' }}>{stats.deleted}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Activity size={16} className="text-blue-400" />
-              <span className="text-xs text-gray-400">Total Runs</span>
+              <Activity size={16} className="t-muted" />
+              <span className="text-xs t-muted">Total Runs</span>
             </div>
-            <p className="text-headline-lg font-bold text-blue-400 tabular-nums font-mono">{stats.totalRuns.toLocaleString()}</p>
+            <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{stats.totalRuns.toLocaleString()}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Users size={16} className="text-purple-400" />
-              <span className="text-xs text-gray-400">Total Users</span>
+              <Users size={16} className="t-muted" />
+              <span className="text-xs t-muted">Total Users</span>
             </div>
-            <p className="text-headline-lg font-bold text-purple-400 tabular-nums font-mono">{stats.totalUsers.toLocaleString()}</p>
+            <p className="text-headline-lg font-bold t-primary tabular-nums font-mono">{stats.totalUsers.toLocaleString()}</p>
           </div>
         </Card>
       </div>
@@ -478,13 +477,14 @@ export function TenantManagementPage() {
       <Card>
         <div className="p-4 flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
             <input
               type="text"
               placeholder="Search tenants..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:border-accent"
+              className="w-full pl-10 pr-4 py-2 border border-[var(--border-card)] rounded-md text-sm t-primary placeholder:t-muted focus:outline-none focus:border-[var(--accent)]"
+              style={{ background: 'var(--bg-secondary)' }}
             />
           </div>
           <div className="flex gap-2">
@@ -515,10 +515,10 @@ export function TenantManagementPage() {
 
       {/* Error */}
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-          <AlertTriangle size={18} className="text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-400">{error}</p>
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300">
+        <div className="p-4 border rounded-md flex items-center gap-3" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'var(--neg)' }}>
+          <AlertTriangle size={18} style={{ color: 'var(--neg)' }} className="flex-shrink-0" />
+          <p className="text-sm" style={{ color: 'var(--neg)' }}>{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto" style={{ color: 'var(--neg)' }}>
             <XCircle size={16} />
           </button>
         </div>
@@ -527,7 +527,7 @@ export function TenantManagementPage() {
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
         </div>
       )}
 
@@ -537,30 +537,30 @@ export function TenantManagementPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="text-left p-4 text-xs font-medium text-gray-400 uppercase">Tenant</th>
-                  <th className="text-left p-4 text-xs font-medium text-gray-400 uppercase">Plan</th>
-                  <th className="text-left p-4 text-xs font-medium text-gray-400 uppercase">Status</th>
-                  <th className="text-center p-4 text-xs font-medium text-gray-400 uppercase">Runs</th>
-                  <th className="text-center p-4 text-xs font-medium text-gray-400 uppercase">Users</th>
-                  <th className="text-left p-4 text-xs font-medium text-gray-400 uppercase">Created</th>
-                  <th className="text-right p-4 text-xs font-medium text-gray-400 uppercase">Actions</th>
+                <tr className="border-b border-[var(--border-card)]">
+                  <th className="text-left p-4 text-xs font-medium t-muted uppercase">Tenant</th>
+                  <th className="text-left p-4 text-xs font-medium t-muted uppercase">Plan</th>
+                  <th className="text-left p-4 text-xs font-medium t-muted uppercase">Status</th>
+                  <th className="text-center p-4 text-xs font-medium t-muted uppercase">Runs</th>
+                  <th className="text-center p-4 text-xs font-medium t-muted uppercase">Users</th>
+                  <th className="text-left p-4 text-xs font-medium t-muted uppercase">Created</th>
+                  <th className="text-right p-4 text-xs font-medium t-muted uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTenants.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-400">
+                    <td colSpan={7} className="p-8 text-center t-muted">
                       No tenants found
                     </td>
                   </tr>
                 ) : (
                   filteredTenants.map((tenant) => (
-                    <tr key={tenant.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
+                    <tr key={tenant.id} className="border-b border-[var(--border-card)] hover:bg-[var(--bg-secondary)]">
                       <td className="p-4">
                         <div>
-                          <p className="text-sm font-medium text-white">{tenant.name}</p>
-                          <p className="text-xs text-gray-400">{tenant.slug}</p>
+                          <p className="text-sm font-medium t-primary">{tenant.name}</p>
+                          <p className="text-xs t-muted">{tenant.slug}</p>
                         </div>
                       </td>
                       <td className="p-4">
@@ -581,9 +581,9 @@ export function TenantManagementPage() {
                           )}
                         </div>
                       </td>
-                      <td className="p-4 text-center text-sm text-gray-300">{tenant.data.runs.toLocaleString()}</td>
-                      <td className="p-4 text-center text-sm text-gray-300">{tenant.data.users.toLocaleString()}</td>
-                      <td className="p-4 text-sm text-gray-400">
+                      <td className="p-4 text-center text-sm t-secondary font-mono tabular-nums">{tenant.data.runs.toLocaleString()}</td>
+                      <td className="p-4 text-center text-sm t-secondary font-mono tabular-nums">{tenant.data.users.toLocaleString()}</td>
+                      <td className="p-4 text-sm t-muted">
                         {format(new Date(tenant.created_at), 'MMM d, yyyy')}
                       </td>
                       <td className="p-4 text-right">

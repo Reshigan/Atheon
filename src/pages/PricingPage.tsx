@@ -73,13 +73,13 @@ export function PricingPage(): JSX.Element {
           if you need more users or ERP connections, the Enterprise plan covers it.
         </p>
         {/* Billing-cycle toggle */}
-        <div className="inline-flex items-center gap-1 mt-6 p-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+        <div className="inline-flex items-center gap-1 mt-6 p-1 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
           {(['monthly', 'annual'] as const).map(c => (
             <button
               key={c}
               onClick={() => setCycle(c)}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] capitalize ${
-                cycle === c ? 'bg-accent text-white' : 't-secondary hover:t-primary'
+                cycle === c ? 'bg-accent text-[var(--text-on-accent)]' : 't-secondary hover:t-primary'
               }`}
               data-testid={`cycle-${c}`}
             >

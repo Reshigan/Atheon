@@ -31,12 +31,12 @@ interface KnowledgeGraphVizProps {
 
 // ── Type → tone palette ──────────────────────────────────────────
 const TYPE_TONE: Record<string, { fill: string; stroke: string }> = {
-  Organization: { fill: 'rgba(163, 177, 138, 0.20)', stroke: '#A3B18A' }, // sage
-  Person:       { fill: 'rgba(126, 179, 205, 0.20)', stroke: '#7EB3CD' }, // sky
-  Product:      { fill: 'rgba(205, 163, 126, 0.20)', stroke: '#CDA37E' }, // bronze
-  Project:      { fill: 'rgba(163, 177, 138, 0.16)', stroke: '#becda4' },
+  Organization: { fill: 'rgb(var(--accent-rgb) / 0.20)', stroke: 'var(--accent)' }, // accent
+  Person:       { fill: 'rgba(126, 179, 205, 0.20)', stroke: 'var(--info)' }, // info
+  Product:      { fill: 'rgba(205, 163, 126, 0.20)', stroke: 'var(--bronze)' }, // bronze
+  Project:      { fill: 'rgb(var(--accent-rgb) / 0.16)', stroke: '#becda4' },
   Document:     { fill: 'rgba(126, 179, 205, 0.16)', stroke: '#5d92ad' },
-  Concept:      { fill: 'rgba(251, 191, 36, 0.18)',  stroke: '#FBBF24' },
+  Concept:      { fill: 'rgba(251, 191, 36, 0.18)',  stroke: 'var(--warning)' },
   Default:      { fill: 'rgba(126, 132, 145, 0.20)', stroke: '#909287' },
 };
 function toneFor(type: string): { fill: string; stroke: string } {
@@ -187,7 +187,7 @@ export function KnowledgeGraphViz({
   if (entities.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center rounded-2xl ${className}`}
+        className={`flex items-center justify-center rounded-md ${className}`}
         style={{
           height,
           background: 'var(--bg-card-solid)',
@@ -205,12 +205,12 @@ export function KnowledgeGraphViz({
   return (
     <div
       ref={containerRef}
-      className={`relative rounded-2xl overflow-hidden ${className}`}
+      className={`relative rounded-md overflow-hidden ${className}`}
       style={{
         height,
         background: 'var(--bg-card-solid)',
         border: '1px solid var(--border-card)',
-        backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(163, 177, 138, 0.05) 0%, transparent 70%)',
+        backgroundImage: 'radial-gradient(circle at 50% 0%, rgb(var(--accent-rgb) / 0.05) 0%, transparent 70%)',
       }}
     >
       <svg width={width} height={height} role="img" aria-label="Knowledge graph">
@@ -228,7 +228,7 @@ export function KnowledgeGraphViz({
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={involved ? 'var(--accent)' : 'rgba(255,255,255,0.18)'}
+              stroke={involved ? 'var(--accent)' : 'rgba(10,20,30,0.18)'}
               strokeWidth={involved ? 1.5 : 0.8}
               strokeDasharray="3 4"
               opacity={isHighlighted ? (involved ? 0.95 : 0.5) : 0.12}
@@ -264,7 +264,7 @@ export function KnowledgeGraphViz({
                   textAnchor="middle"
                   dy={3.5}
                   style={{
-                    fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                     fontSize: 9,
                     fontWeight: 600,
                     fill: tone.stroke,

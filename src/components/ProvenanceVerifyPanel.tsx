@@ -121,7 +121,7 @@ export function ProvenanceVerifyPanel(): JSX.Element {
 
       {/* Current root */}
       {root && (
-        <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+        <div className="rounded-md p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
             <div>
               <div className="text-label mb-1">Current Merkle root</div>
@@ -146,15 +146,15 @@ export function ProvenanceVerifyPanel(): JSX.Element {
       {/* Verification result */}
       {verifyResult && (
         <div
-          className="rounded-xl p-4 flex items-start gap-3"
+          className="rounded-md p-4 flex items-start gap-3"
           style={{
-            background: verifyResult.valid ? 'rgba(20, 184, 166, 0.1)' : 'rgba(220, 38, 38, 0.1)',
-            border: `1px solid ${verifyResult.valid ? 'rgba(20, 184, 166, 0.3)' : 'rgba(220, 38, 38, 0.3)'}`,
+            background: verifyResult.valid ? 'rgb(var(--accent-rgb) / 0.1)' : 'rgb(var(--neg-rgb) / 0.1)',
+            border: `1px solid ${verifyResult.valid ? 'rgb(var(--accent-rgb) / 0.3)' : 'rgb(var(--neg-rgb) / 0.3)'}`,
           }}
         >
           {verifyResult.valid
-            ? <ShieldCheck className="w-5 h-5 text-teal-500 flex-shrink-0 mt-[2px]" />
-            : <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-[2px]" />}
+            ? <ShieldCheck className="w-5 h-5 text-accent flex-shrink-0 mt-[2px]" />
+            : <AlertTriangle className="w-5 h-5 text-neg flex-shrink-0 mt-[2px]" />}
           <div className="flex-1">
             <div className="font-medium t-primary mb-1">
               {verifyResult.valid

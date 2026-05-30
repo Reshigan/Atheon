@@ -108,7 +108,7 @@ export function CatalystSimulatorCard({ clusterId, subCatalystName, initialStats
 
       {/* Latest prediction */}
       {latest && (
-        <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
+        <div className="rounded-md p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}>
           <div className="text-label mb-2">Predicted recovery</div>
           <div className="flex items-baseline gap-3 flex-wrap">
             <span className="text-3xl font-semibold text-accent" data-testid="predicted-value">
@@ -176,7 +176,7 @@ export function CatalystSimulatorCard({ clusterId, subCatalystName, initialStats
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       {h.residual !== null ? (
-                        <span className={h.residual >= 0.85 && h.residual <= 1.15 ? 'text-teal-500' : 'text-amber-500'}>
+                        <span className={h.residual >= 0.85 && h.residual <= 1.15 ? 'text-accent' : 'text-[var(--warning)]'}>
                           ×{h.residual.toFixed(2)}
                         </span>
                       ) : '—'}

@@ -14,7 +14,7 @@ describe("chartTheme", () => {
   });
 
   it("has tooltip configuration", () => {
-    expect(chartTheme.tooltip.borderRadius).toBe(8);
+    expect(chartTheme.tooltip.borderRadius).toBe(2);
   });
 });
 

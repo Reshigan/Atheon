@@ -104,7 +104,7 @@ export function WebhookDeliveriesTable({ webhookId, pollIntervalMs = 30_000, lim
       <FormError error={error} />
 
       <div
-        className="rounded-lg border overflow-hidden"
+        className="rounded-md border overflow-hidden"
         style={{ borderColor: 'var(--border-card)' }}
       >
         <table className="w-full text-xs">

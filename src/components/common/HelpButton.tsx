@@ -68,7 +68,7 @@ export function HelpButton() {
       {/* Floating help button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-accent hover:bg-accent/80 text-white shadow-lg shadow-accent/20 flex items-center justify-center transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-105 active:scale-[0.97]"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-accent hover:bg-accent/80 text-[var(--text-on-accent)] shadow-lg shadow-accent/20 flex items-center justify-center transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] hover:scale-105 active:scale-[0.97]"
         title="Help & Documentation"
       >
         <HelpCircle size={22} />
@@ -79,16 +79,16 @@ export function HelpButton() {
         <Portal><div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div
-            style={{ background: "rgba(18,18,42,0.98)", borderLeft: "1px solid rgba(255,255,255,0.08)" }}
-            className="relative w-full max-w-sm h-full overflow-y-auto shadow-2xl"
+            className="relative w-full max-w-sm h-full overflow-y-auto"
+            style={{ background: 'var(--bg-card-solid)', borderLeft: '1px solid var(--border-card)' }}
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4" style={{ background: "rgba(18,18,42,0.98)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4" style={{ background: 'var(--bg-card-solid)', borderBottom: '1px solid var(--border-card)' }}>
               <div className="flex items-center gap-2">
                 <Book className="w-5 h-5 text-accent" />
-                <h2 className="text-base font-semibold text-white">Help & Documentation</h2>
+                <h2 className="text-base font-semibold t-primary">Help & Documentation</h2>
               </div>
-              <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors">
+              <button onClick={() => setOpen(false)} className="t-muted hover:t-primary transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -99,13 +99,13 @@ export function HelpButton() {
                 const Icon = topic.icon;
                 return (
                   <details key={i} className="group">
-                    <summary className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors list-none active:scale-[0.97]">
-                                            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                                              <Icon size={16} className="text-accent" />
+                    <summary className="flex items-center gap-3 p-3 rounded-md cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors list-none active:scale-[0.97]">
+                      <div className="w-8 h-8 rounded-sm bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <Icon size={16} className="text-accent" />
                       </div>
-                      <span className="text-sm font-medium text-gray-200">{topic.title}</span>
+                      <span className="text-sm font-medium t-primary">{topic.title}</span>
                     </summary>
-                    <div className="ml-11 mt-1 mb-2 text-xs text-gray-400 leading-relaxed whitespace-pre-line">
+                    <div className="ml-11 mt-1 mb-2 text-xs t-muted leading-relaxed whitespace-pre-line">
                       {topic.content}
                     </div>
                   </details>
@@ -114,8 +114,8 @@ export function HelpButton() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              <p className="text-xs text-gray-500 text-center">
+            <div className="px-5 py-4" style={{ borderTop: '1px solid var(--border-card)' }}>
+              <p className="text-xs t-muted text-center">
                 Atheon v1.0 — Enterprise Intelligence Platform
               </p>
             </div>

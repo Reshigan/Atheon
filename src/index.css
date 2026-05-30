@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 /* ============================================================
-   ATHEON DESIGN SYSTEM — Quiet Capital
-   Navy field. Hanken Grotesk display + Inter body + JetBrains Mono.
-   Single sage accent. Solid surfaces; glass reserved for overlays.
-   Dark-only (light mode retired).
+   ATHEON DESIGN SYSTEM — Swiss Calm Authority
+   Warm-white field. Archivo grotesk + IBM Plex Mono.
+   Single ledger-green accent (= positive). Flat surfaces
+   defined by hairline rules, not shadow. Sharp corners.
+   Light-only.
    ============================================================ */
 
 /* L6: Font imports consolidated in index.html with font-display:swap for better performance */
@@ -29,181 +30,124 @@
     --dur-quick:    200ms;   /* dropdowns, selects, color */
     --dur-medium:   260ms;   /* modal/sheet enter */
     --dur-slow:     360ms;   /* drawer enter, page reveals */
-    --radius: 0.75rem;
-    --bg-primary: #f0f4f8;
-    --bg-secondary: #e8edf5;
+    /* ───────────────────────────────────────────────────────────
+     * SWISS CALM AUTHORITY — warm-white field, ink type, one accent.
+     * Light-only. Flat surfaces defined by hairline rules, not shadow.
+     * Ledger green is the single brand accent and doubles as the
+     * positive signed-delta colour; --neg is reserved for genuine
+     * negatives. Sharp corners. Tabular figures.
+     * ─────────────────────────────────────────────────────────── */
+    --radius: 0.25rem;
+
+    /* ── Field ─────────────────────────────────────────── */
+    --bg-primary: #fbfaf7;     /* warm white */
+    --bg-secondary: #f4f2ec;
+    --bg-pattern: none;        /* Swiss = flat, no atmosphere */
+    --field-gradient: none;
+
+    /* ── Surfaces (flat; hairline border defines the card) ── */
     --bg-card: #ffffff;
     --bg-card-solid: #ffffff;
-    --bg-card-hover: #f8fafc;
-    --bg-sidebar: #ffffff;
-    --bg-header: #ffffff;
-    --bg-input: #f8fafc;
+    --bg-card-hover: #f7f6f1;
+    --bg-elevated: #ffffff;
+    --bg-sidebar: #fbfaf7;
+    --bg-header: #fbfaf7;
+    --bg-input: #ffffff;
     --bg-input-focus: #ffffff;
     --bg-modal: #ffffff;
-    --bg-elevated: #ffffff;
-    --border-primary: #e2e8f0;
-    --border-subtle: #edf2f7;
-    --border-card: #e2e8f0;
-    --divider: rgba(200, 210, 230, 0.35);
-    --text-primary: #1a1f36;
-    --text-secondary: #4a5578;
-    --text-muted: #8892b0;
-    --text-on-accent: #ffffff;
-    --accent: #A3B18A;
-    --accent-rgb: 163, 177, 138;
-    --accent-hover: #8E9C76;
-    --accent-glow: rgba(163, 177, 138, 0.18);
-    --accent-subtle: rgba(163, 177, 138, 0.08);
-    --accent-dark: #1a1f36;
-    --sage: #A3B18A;
-    --sage-b: #8E9C76;
-    --bronze: #CDA37E;
-    --sky: #7EB3CD;
-    --shadow-xs: 0 1px 2px rgba(100, 120, 180, 0.06);
-    --shadow-card: 0 2px 8px rgba(100, 120, 180, 0.08), 0 0 0 1px rgba(255,255,255,0.5);
-    --shadow-card-hover: 0 8px 24px rgba(100, 120, 180, 0.12), 0 0 0 1px rgba(255,255,255,0.6);
-    --shadow-dropdown: 0 12px 36px rgba(80, 100, 160, 0.15), 0 0 0 1px rgba(255,255,255,0.5);
-    --shadow-modal: 0 24px 48px rgba(80, 100, 160, 0.18);
-    --shadow-glass: 0 2px 8px rgba(100, 120, 180, 0.08);
-    --placeholder: #a0aac4;
-    --option-bg: #ffffff;
-    --scrollbar-thumb: rgba(78, 124, 246, 0.12);
-    --scrollbar-thumb-hover: rgba(78, 124, 246, 0.22);
-    --toggle-bg: rgba(200, 210, 230, 0.5);
-    --ring-focus: rgba(78, 124, 246, 0.35);
-    --teal: #0d9488;
-    --teal-light: #f0fdfa;
-    --teal-dark: #0f766e;
-    --glass-blur: 16px;
-    --bg-pattern: radial-gradient(ellipse at 20% 20%, rgba(78, 124, 246, 0.06) 0%, transparent 50%),
-                  radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 50%, rgba(78, 124, 246, 0.02) 0%, transparent 70%);
-    /* Chart theme tokens (TASK-003) */
-    --chart-primary: var(--sage);
-    --chart-secondary: var(--bronze);
-    --chart-tertiary: var(--sky);
-    --chart-success: #10b981;
-    --chart-warning: #f59e0b;
-    --chart-danger: #ef4444;
-    --chart-grid: rgba(200, 210, 230, 0.15);
-    --chart-text: var(--text-secondary);
-    --chart-tooltip-bg: var(--bg-card-solid);
-    --chart-tooltip-border: var(--border-card);
-    /* TASK-014: Light mode polish */
-    --shadow-card-light: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --bg-page-light: #fafbfc;
-    --text-primary-light: #1a1d23;
-    --text-secondary-light: #4a5568;
-  }
 
-  /* ──────────────────────────────────────────────────────────────
-   * .atheon-dark — Stitch "Athens Executive Interface" palette
-   * Source: projects/4059809207181456952 (designed 2026-05-12).
-   * Variable names preserved for backwards-compat with ~500 sites
-   * that reference --bg-primary / --bg-card / --accent etc. Only
-   * the *values* are swapped to the new corporate palette.
-   * ────────────────────────────────────────────────────────────── */
-  .atheon-dark {
-    /* ── Field ─────────────────────────────────────────── */
-    --bg-primary: #0A0E2A;
-    --bg-secondary: #11163A;
-    --bg-pattern: var(--field-gradient);
-    --field-gradient: radial-gradient(130% 110% at 82% -12%, #141A3A 0%, #0A0E2A 60%);
-
-    /* ── Surfaces (solid graded navy — NO blur on content) ── */
-    --bg-card: #161D3A;
-    --bg-card-solid: #161D3A;
-    --bg-card-hover: #1B2344;
-    --bg-elevated: #1B2344;
-    --bg-sidebar: #0C1130;
-    --bg-header: rgba(10,14,42,.85);
-    --bg-input: #11163A;
-    --bg-input-focus: #141A3A;
-    --bg-modal: rgba(20,26,58,.72);
-
-    /* ── Borders ───────────────────────────────────────── */
-    --border-primary: #283157;
-    --border-card: #283157;
-    --border-subtle: rgba(255,255,255,.06);
-    --divider: rgba(255,255,255,.06);
+    /* ── Borders / rules ───────────────────────────────── */
+    --border-primary: #e4e2db;  /* hairline */
+    --border-card: #e4e2db;
+    --border-subtle: #eeece5;
+    --divider: #e4e2db;
+    --line-strong: #0f1115;     /* 1.5px section/header rule */
 
     /* ── Text ──────────────────────────────────────────── */
-    --text-primary: #EEF1F8;
-    --text-secondary: #AEB8D4;
-    --text-muted: #8C98B8;
-    --text-on-accent: #0E1226;
+    --text-primary: #0f1115;    /* ink */
+    --text-secondary: #6c7079;  /* muted */
+    --text-muted: #9a9ea6;      /* faint — eyebrow/label/scale */
+    --text-on-accent: #ffffff;
 
-    /* ── Single signal: sage is the ONLY brand accent ───── */
-    --accent: #A3B18A;
-    --accent-rgb: 163, 177, 138;
-    --accent-hover: #B1BE99;
-    --accent-glow: rgba(163,177,138,.18);
-    --accent-subtle: rgba(163,177,138,.08);
-    --accent-dark: #EEF1F8;
-    --sage: #A3B18A;
-    --sage-b: #B1BE99;
-    --sky: #7EB3CD;
-    --bronze: #CDA37E;
+    /* ── Single accent: ledger green (= positive) ───────── */
+    --accent: #0a7d4f;
+    --accent-rgb: 10, 125, 79;
+    --accent-hover: #096a43;
+    --accent-glow: rgba(10, 125, 79, 0.14);
+    --accent-subtle: rgba(10, 125, 79, 0.07);
+    --accent-dark: #0f1115;
+    --sage: #0a7d4f;            /* legacy alias → accent */
+    --sage-b: #096a43;
+    --bronze: #9a6b1f;          /* chart tertiary / warning family */
+    --sky: #3b3f47;             /* chart secondary / slate */
 
-    /* ── Elevation (solid content) ─────────────────────── */
-    --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
-    --shadow-card: 0 1px 0 rgba(255,255,255,.04) inset, 0 8px 22px rgba(0,0,0,.35);
-    --shadow-card-hover: 0 1px 0 rgba(255,255,255,.05) inset, 0 14px 34px rgba(0,0,0,.42);
-    --shadow-glass: 0 8px 22px rgba(0,0,0,.35);
-    --shadow-dropdown: 0 16px 40px rgba(0,0,0,.5);
-    --shadow-modal: 0 24px 48px rgba(0,0,0,.6);
+    /* ── Reserved negative ─────────────────────────────── */
+    --neg: #b03423;
+    --neg-rgb: 176, 52, 35;
 
-    /* ── Overlay (glass) — floating layers only ────────── */
-    --overlay-bg: rgba(20,26,58,.72);
-    --overlay-blur: 14px;
-    --overlay-border: rgba(163,177,138,.28);
-    --glass-blur: 14px;
+    /* ── Elevation — flat; shadow only on true overlays ── */
+    --shadow-xs: none;
+    --shadow-card: none;
+    --shadow-card-hover: none;
+    --shadow-glass: none;
+    --shadow-dropdown: 0 16px 40px rgba(15, 17, 21, 0.14);
+    --shadow-modal: 0 24px 60px rgba(15, 17, 21, 0.18);
+
+    /* ── Overlay (floating layers only) ────────────────── */
+    --overlay-bg: rgba(255, 255, 255, 0.82);
+    --overlay-blur: 8px;
+    --overlay-border: var(--border-card);
+    --glass-blur: 8px;
 
     /* ── Form & interaction ────────────────────────────── */
-    --placeholder: #5F6A8C;
-    --option-bg: #161D3A;
-    --scrollbar-thumb: rgba(163,177,138,.18);
-    --scrollbar-thumb-hover: rgba(163,177,138,.32);
-    --toggle-bg: rgba(163,177,138,.12);
-    --ring-focus: rgba(163,177,138,.30);
+    --placeholder: #9a9ea6;
+    --option-bg: #ffffff;
+    --scrollbar-thumb: rgba(15, 17, 21, 0.14);
+    --scrollbar-thumb-hover: rgba(15, 17, 21, 0.26);
+    --toggle-bg: #e4e2db;
+    --ring-focus: rgba(10, 125, 79, 0.35);
 
-    /* ── Semantic — RESERVED for status only ───────────── */
-    --positive: #7CFFB2;
-    --warning: #FFC857;
-    --critical: #FF6B6B;
-    --info: #7EB3CD;
-    --teal: #7EB3CD;
-    --teal-light: rgba(126,179,205,.08);
-    --teal-dark: #5d92ad;
+    /* ── Semantic — status only ────────────────────────── */
+    --positive: #0a7d4f;
+    --warning: #9a6b1f;
+    --warning-rgb: 154, 107, 31;
+    --critical: #b03423;
+    --info: #3b3f47;
+    --teal: #0a7d4f;
+    --teal-light: rgba(10, 125, 79, 0.08);
+    --teal-dark: #096a43;
 
-    /* ── Chart theme → repoint to new tokens ───────────── */
-    --chart-primary: var(--sage);
-    --chart-secondary: var(--info);
-    --chart-tertiary: var(--bronze);
-    --chart-success: var(--positive);
+    /* ── Chart theme — restrained: accent + ink + grays ── */
+    --chart-primary: var(--accent);
+    --chart-secondary: #3b3f47;
+    --chart-tertiary: #9a9ea6;
+    --chart-success: var(--accent);
     --chart-warning: var(--warning);
-    --chart-danger: var(--critical);
-    --chart-grid: rgba(255,255,255,.06);
+    --chart-danger: var(--neg);
+    --chart-grid: rgba(15, 17, 21, 0.07);
     --chart-text: var(--text-secondary);
-    --chart-tooltip-bg: var(--bg-card-solid);
+    --chart-tooltip-bg: #ffffff;
     --chart-tooltip-border: var(--border-card);
+
+    /* ── Legacy light-polish aliases (kept; repointed) ──── */
+    --shadow-card-light: none;
+    --bg-page-light: var(--bg-primary);
+    --text-primary-light: var(--text-primary);
+    --text-secondary-light: var(--text-secondary);
   }
 
   * { border-color: var(--divider); }
 
   body {
-    /* Body copy is Inter; Hanken Grotesk is the display face (applied via
-       .font-display / .font-headline on headings and the editorial hero). */
-    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Archivo is the single grotesk for body + display (weight does the
+       work, not a second face). IBM Plex Mono is the data/figure face,
+       applied via .font-mono / Tailwind's mono family on numerals. */
+    font-family: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
-    background-image: var(--bg-pattern);
-    background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background 0.3s ease, color 0.3s ease;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   /* Material Symbols Outlined — used in the Stitch design for inline
@@ -225,12 +169,32 @@
     -webkit-font-smoothing: antialiased;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
+
+  /* Honour the OS "reduce motion" setting: collapse all animation and
+     transition to a near-instant pass so the UI stays responsive
+     without removing state changes entirely. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer utilities {
   .t-primary { color: var(--text-primary); }
   .t-secondary { color: var(--text-secondary); }
   .t-muted { color: var(--text-muted); }
+  .t-accent { color: var(--accent); }
+
+  /* `.tnum` — tabular (monospaced) figures. Use on any column of
+     numbers, prices, deltas, or timers so digits align and values
+     don't shift width as they change. Swiss data tables lean on this. */
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
   /* `.provenance-link` — dotted-underline pattern from the Stitch design
      for inline values that trace to source (e.g. "$412.5M" inside the
@@ -245,11 +209,12 @@
   }
   .provenance-link:hover { color: var(--sage); }
 
-  /* `.glass-card` — solid content card (Quiet Capital: no blur on content surfaces) */
+  /* `.glass-card` — flat content card (Swiss: hairline border defines
+     the surface, no blur, no shadow on content). Sharp corners. */
   .glass-card {
     background: var(--bg-card);
     border: 1px solid var(--border-card);
-    border-radius: 1rem;
+    border-radius: var(--radius);
     box-shadow: var(--shadow-card);
     transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
     position: relative;
@@ -320,22 +285,20 @@
      pages. Single source of truth for severity coding. */
   .pill {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 8px; border-radius: 9999px;
+    padding: 2px 8px; border-radius: 2px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    letter-spacing: 0.01em;
     font-size: 11px; font-weight: 500; line-height: 1.4;
     border: 1px solid transparent;
   }
-  .pill-success { background: rgba(16, 185, 129, 0.10); color: #047857; border-color: rgba(16, 185, 129, 0.20); }
-  .pill-warning { background: rgba(245, 158, 11, 0.10); color: #b45309; border-color: rgba(245, 158, 11, 0.20); }
-  .pill-danger  { background: rgba(239, 68, 68, 0.10);  color: #b91c1c; border-color: rgba(239, 68, 68, 0.20); }
-  .pill-info    { background: rgba(126, 179, 205, 0.10); color: #2c6e8f; border-color: rgba(126, 179, 205, 0.20); }
+  /* Swiss print palette — drawn from the brand tokens, hairline borders. */
+  .pill-success { background: rgb(var(--accent-rgb) / 0.10); color: var(--accent);  border-color: rgb(var(--accent-rgb) / 0.24); }
+  .pill-warning { background: rgba(154, 107, 31, 0.10);      color: var(--warning);  border-color: rgba(154, 107, 31, 0.24); }
+  .pill-danger  { background: rgb(var(--neg-rgb) / 0.10);    color: var(--neg);      border-color: rgb(var(--neg-rgb) / 0.26); }
+  .pill-info    { background: rgba(59, 63, 71, 0.08);        color: var(--info);     border-color: rgba(59, 63, 71, 0.22); }
   .pill-muted   { background: var(--bg-secondary); color: var(--text-muted); border-color: var(--border-subtle); }
-  .pill-accent  { background: var(--accent-subtle); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.20); }
-  /* Dark (canonical) — Quiet Capital severity tokens. */
-  .atheon-dark .pill-success { background: rgba(124, 255, 178, 0.12); color: var(--positive); border-color: rgba(124, 255, 178, 0.22); }
-  .atheon-dark .pill-warning { background: rgba(255, 200, 87, 0.12);  color: var(--warning);  border-color: rgba(255, 200, 87, 0.22); }
-  .atheon-dark .pill-danger  { background: rgba(255, 107, 107, 0.12); color: var(--critical); border-color: rgba(255, 107, 107, 0.22); }
-  .atheon-dark .pill-info    { background: rgba(126, 179, 205, 0.12); color: var(--info);     border-color: rgba(126, 179, 205, 0.22); }
-  .text-gradient { background-image: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .pill-accent  { background: var(--accent-subtle); color: var(--accent); border-color: rgb(var(--accent-rgb) / 0.20); }
+  .text-gradient { color: var(--accent); }
   .bg-theme-primary { background: var(--bg-primary); }
   .bg-theme-secondary { background: var(--bg-secondary); }
   .bg-theme-card { background: var(--bg-card); }
@@ -346,68 +309,39 @@
   .border-theme { border-color: var(--border-card); }
   .border-theme-subtle { border-color: var(--border-subtle); }
 
-  .card-glass {
+  /* Swiss surface — white field, single hairline rule, sharp corners, flat.
+     The card's authority comes from precise alignment and the hairline grid,
+     never from drop shadows or rounded softness. */
+  .card-swiss {
     background: var(--bg-card);
     border: 1px solid var(--border-card);
-    border-radius: 1rem;
+    border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-    position: relative;
-  }
-  .card-glass:hover { box-shadow: var(--shadow-card-hover); }
-  /* v2: hairline sage glow at the top edge — a subtle but unmistakable
-     brand signature that visually anchors every card to the Atheon palette
-     without competing with content. Light theme uses the same accent at
-     reduced alpha for legibility on the soft slate field. */
-  .atheon-dark .card-glass::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 1px;
-    border-radius: 1rem 1rem 0 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(163, 177, 138, 0.45) 50%, transparent 100%);
-    pointer-events: none;
+    transition: background var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out);
   }
 
-  .card-dark {
+  /* Borderless section block anchored by a 1.5px ink top-rule. */
+  .card-panel {
+    background: transparent;
+    border: 0;
+    border-top: 1.5px solid var(--line-strong);
+    border-radius: 0;
+  }
+
+  /* Single-emphasis card — hairline tinted with the ledger accent. */
+  .card-accent {
     background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    border-radius: 1rem;
+    border: 1px solid rgb(var(--accent-rgb) / 0.32);
+    border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
+    transition: background var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out);
   }
-  .card-dark:hover { box-shadow: var(--shadow-card-hover); }
+  .card-accent:hover { border-color: rgb(var(--accent-rgb) / 0.5); }
 
-  .card-black {
-    background: var(--bg-card-hover);
-    border: 1px solid var(--border-card);
-    border-radius: 1rem;
-    color: var(--text-primary);
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-  }
-  .card-black:hover { border-color: rgba(163, 177, 138, 0.22); }
-  .card-black .t-primary, .card-black h3, .card-black h4, .card-black p { color: #e8e4dc; }
-  .card-black .t-secondary { color: #c4bfb4; }
-  .card-black .t-muted { color: #586573; }
-
-  .card-teal {
-    background: var(--bg-card);
-    border: 1px solid rgba(163,177,138,.28);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-  }
-  .card-teal:hover { border-color: rgba(163, 177, 138, 0.30); }
-
-  .card-mint {
-    background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-card);
-    transition: transform var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
-  }
-  .card-mint:hover { border-color: rgba(16, 185, 129, 0.25); }
+  /* Legacy aliases — keep until the page-rollout phases migrate direct
+     className references off them. All resolve to the Swiss surface. */
+  .card-glass, .card-dark, .card-black, .card-mint { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); box-shadow: var(--shadow-card); transition: background var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out); }
+  .card-teal { background: var(--bg-card); border: 1px solid rgb(var(--accent-rgb) / 0.28); border-radius: var(--radius); box-shadow: var(--shadow-card); }
 
   .bg-glass {
     background: var(--bg-card);

@@ -23,6 +23,7 @@
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Plug, ArrowLeft, Mail, ExternalLink, CheckCircle2, Circle,
 } from 'lucide-react';
@@ -70,18 +71,21 @@ const CONNECTORS: Connector[] = [
   { vendor: 'Jaggaer', product: 'Sourcing & Procurement', category: 'Procurement', protocol: 'REST', read: false, writeBack: false, level: 'On request', notes: 'Scoped at engagement.' },
 ];
 
-const LEVEL_TONE: Record<ConformanceLevel, { bg: string; border: string; label: string }> = {
-  GA:           { bg: 'rgba(52, 211, 153, 0.12)',  border: 'rgba(52, 211, 153, 0.40)',  label: 'text-emerald-500' },
-  Beta:         { bg: 'rgba(126, 179, 205, 0.12)', border: 'rgba(126, 179, 205, 0.40)', label: 'text-sky-500' },
-  Preview:      { bg: 'rgba(251, 191, 36, 0.12)',  border: 'rgba(251, 191, 36, 0.40)',  label: 'text-amber-500' },
-  'On request': { bg: 'rgba(160, 160, 180, 0.10)', border: 'rgba(160, 160, 180, 0.30)', label: 't-muted' },
+// Conformance level visual tokens — Swiss two-tier palette only
+const LEVEL_TONE: Record<ConformanceLevel, { bg: string; border: string; textStyle: React.CSSProperties }> = {
+  GA:           { bg: 'rgb(var(--accent-rgb) / 0.12)',  border: 'rgb(var(--accent-rgb) / 0.40)',  textStyle: { color: 'var(--accent)' } },
+  Beta:         { bg: 'rgb(var(--info-rgb, 100 140 180) / 0.12)', border: 'rgb(var(--info-rgb, 100 140 180) / 0.40)', textStyle: { color: 'var(--info)' } },
+  Preview:      { bg: 'rgb(var(--warning-rgb, 180 130 60) / 0.12)',  border: 'rgb(var(--warning-rgb, 180 130 60) / 0.40)',  textStyle: { color: 'var(--warning)' } },
+  'On request': { bg: 'rgba(160, 160, 180, 0.10)', border: 'rgba(160, 160, 180, 0.30)', textStyle: {} },
 };
 
 function LevelBadge({ level }: { level: ConformanceLevel }) {
   const tone = LEVEL_TONE[level];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium ${tone.label}`}
-          style={{ background: tone.bg, border: `1px solid ${tone.border}` }}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium${level === 'On request' ? ' t-muted' : ''}`}
+      style={{ background: tone.bg, border: `1px solid ${tone.border}`, ...tone.textStyle }}
+    >
       {level}
     </span>
   );
@@ -101,8 +105,13 @@ export default function ConnectorsPage(): JSX.Element {
           <span className="t-muted text-caption">·</span>
           <Link to="/legal/security" className="t-muted hover:t-primary text-caption">Security &amp; Privacy</Link>
           <span className="t-muted text-caption">·</span>
-          <h1 className="text-headline-xl font-bold t-primary tracking-tight">Connector Matrix</h1>
         </div>
+
+        <PageHeader
+          eyebrow="Connectors · Catalog"
+          title="Connector Matrix"
+          dek="Honest conformance levels for every ERP / HCM / Accounting / CRM / Procurement connector Atheon ships."
+        />
 
         <Card className="p-5" style={{ background: 'rgba(163, 177, 138, 0.06)', borderColor: 'rgba(163, 177, 138, 0.30)' }}>
           <div className="flex items-start gap-3">
@@ -110,17 +119,16 @@ export default function ConnectorsPage(): JSX.Element {
             <div>
               <h2 className="text-headline-md font-bold t-primary mb-1">Where Atheon plugs in</h2>
               <p className="text-body-sm t-secondary">
-                Honest conformance levels for every ERP / HCM / Accounting / CRM / Procurement
-                connector Atheon ships. Procurement teams: this is the page to bookmark when
+                Procurement teams: this is the page to bookmark when
                 your CIO asks "does Atheon support [system]?".
               </p>
               <div className="flex items-center gap-3 mt-3 flex-wrap text-caption">
                 <span className="t-muted">Inventory:</span>
-                <span><strong className="text-emerald-500 tabular-nums font-mono">{counts.GA}</strong> GA</span>
+                <span><strong className="tabular-nums font-mono" style={{ color: 'var(--accent)' }}>{counts.GA}</strong> GA</span>
                 <span className="t-muted">·</span>
-                <span><strong className="text-sky-500 tabular-nums font-mono">{counts.Beta}</strong> Beta</span>
+                <span><strong className="tabular-nums font-mono" style={{ color: 'var(--info)' }}>{counts.Beta}</strong> Beta</span>
                 <span className="t-muted">·</span>
-                <span><strong className="text-amber-500 tabular-nums font-mono">{counts.Preview}</strong> Preview</span>
+                <span><strong className="tabular-nums font-mono" style={{ color: 'var(--warning)' }}>{counts.Preview}</strong> Preview</span>
                 <span className="t-muted">·</span>
                 <span><strong className="t-muted tabular-nums font-mono">{counts['On request']}</strong> On request</span>
               </div>
@@ -177,10 +185,10 @@ export default function ConnectorsPage(): JSX.Element {
                     </td>
                     <td className="px-4 py-3 t-secondary font-mono text-caption">{c.protocol}</td>
                     <td className="px-4 py-3 text-center">
-                      {c.read ? <CheckCircle2 size={14} className="inline text-emerald-500" /> : <Circle size={14} className="inline t-muted opacity-30" />}
+                      {c.read ? <CheckCircle2 size={14} className="inline" style={{ color: 'var(--accent)' }} /> : <Circle size={14} className="inline t-muted opacity-30" />}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {c.writeBack ? <CheckCircle2 size={14} className="inline text-emerald-500" /> : <Circle size={14} className="inline t-muted opacity-30" />}
+                      {c.writeBack ? <CheckCircle2 size={14} className="inline" style={{ color: 'var(--accent)' }} /> : <Circle size={14} className="inline t-muted opacity-30" />}
                     </td>
                     <td className="px-4 py-3"><LevelBadge level={c.level} /></td>
                     <td className="px-4 py-3 t-secondary text-caption max-w-md">{c.notes}</td>

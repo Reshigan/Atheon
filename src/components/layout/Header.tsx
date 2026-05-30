@@ -1,5 +1,5 @@
 import { useAppStore } from "@/stores/appStore";
-import { Bell, ChevronDown, Menu, LogOut, Settings, X, Check, Sun, Moon, Building2, Factory } from "lucide-react";
+import { Bell, ChevronDown, Menu, LogOut, Settings, X, Check, Building2, Factory } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, setToken, setTenantOverride } from "@/lib/api";
 import type { NotificationItem, Tenant } from "@/lib/api";
@@ -28,11 +28,11 @@ const industries: { value: IndustryVertical; label: string }[] = [
 ];
 
 const severityColors: Record<string, string> = {
-  critical: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-amber-500',
-  low: 'bg-blue-500',
-  info: 'bg-zinc-400',
+  critical: 'bg-[var(--neg)]',
+  high: 'bg-[var(--neg)]',
+  medium: 'bg-[var(--warning)]',
+  low: 'bg-[var(--info)]',
+  info: 'bg-[var(--text-muted)]',
 };
 
 function timeAgo(dateStr: string): string {
@@ -49,7 +49,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function Header() {
-  const { user, industry, setIndustry, setMobileSidebarOpen, setUser, theme, toggleTheme, activeTenantId, activeTenantName, setActiveTenant } = useAppStore();
+  const { user, industry, setIndustry, setMobileSidebarOpen, setUser, activeTenantId, activeTenantName, setActiveTenant } = useAppStore();
   const navigate = useNavigate();
   const isPlatformAdmin = user?.role && PLATFORM_ADMIN_ROLES.includes(user.role);
 
@@ -185,7 +185,7 @@ export function Header() {
   return (
     <header
       className="fixed top-0 right-0 z-30 h-header-height flex items-center justify-between px-4 sm:px-5 transition-colors duration-200 left-0 md:left-sidebar-expanded"
-      style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-card)', boxShadow: '0 2px 12px rgba(100, 120, 180, 0.06)' }}
+      style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-card)' }}
     >
       <div className="flex items-center gap-2.5 flex-1">
         <button
@@ -217,7 +217,7 @@ export function Header() {
 
             {showCompanyDropdown && (
               <div
-                className="absolute left-0 top-full mt-1 w-64 rounded-lg overflow-hidden z-50"
+                className="absolute left-0 top-full mt-1 w-64 rounded-md overflow-hidden z-50"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-dropdown)' }}
               >
                 <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border-card)' }}>
@@ -344,7 +344,7 @@ export function Header() {
 
           {showNotifications && (
             <div
-              className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 rounded-lg overflow-hidden z-50"
+              className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 rounded-md overflow-hidden z-50"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-dropdown)' }}
             >
               <div className="flex items-center justify-between px-3.5 py-2.5" style={{ borderBottom: '1px solid var(--border-card)' }}>
@@ -417,15 +417,6 @@ export function Header() {
         </div>
 
         <button
-          onClick={toggleTheme}
-          className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-
-        <button
           onClick={() => navigate('/settings')}
           className="p-1.5 rounded-md t-muted hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
           title="Settings"
@@ -436,7 +427,7 @@ export function Header() {
 
         <div className="flex items-center gap-1.5 ml-1.5 pl-1.5" style={{ borderLeft: '1px solid var(--border-card)' }}>
           <div
-            className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center text-caption font-semibold text-white flex-shrink-0"
+            className="w-7 h-7 rounded-md overflow-hidden flex items-center justify-center text-caption font-semibold text-[var(--text-on-accent)] flex-shrink-0"
             style={{ background: 'var(--accent)' }}
           >
             {user?.name?.charAt(0) || 'A'}
@@ -444,7 +435,7 @@ export function Header() {
           <button
             onClick={handleLogout}
             title="Sign out"
-            className="p-1 rounded-md t-muted hover:text-red-500 hover:bg-red-500/10 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
+            className="p-1 rounded-md t-muted hover:text-[var(--neg)] hover:bg-[rgb(var(--neg-rgb)/0.10)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.92]"
           >
             <LogOut size={13} />
           </button>

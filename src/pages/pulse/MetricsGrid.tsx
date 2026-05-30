@@ -3,9 +3,9 @@ import { TrendingUp, TrendingDown, Minus, Flame, AlertTriangle } from "lucide-re
 import type { Metric } from "@/lib/api";
 
 const trendIcon = (trend: number[]) => {
-  if (trend.length >= 2 && trend[trend.length - 1] > trend[0]) return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
-  if (trend.length >= 2 && trend[trend.length - 1] < trend[0]) return <TrendingDown className="w-3.5 h-3.5 text-red-500" />;
-  return <Minus className="w-3.5 h-3.5 text-gray-400" />;
+  if (trend.length >= 2 && trend[trend.length - 1] > trend[0]) return <TrendingUp className="w-3.5 h-3.5 text-accent" />;
+  if (trend.length >= 2 && trend[trend.length - 1] < trend[0]) return <TrendingDown className="w-3.5 h-3.5 text-neg" />;
+  return <Minus className="w-3.5 h-3.5 t-muted" />;
 };
 
 const trendLabel = (trend: number[]) => {
@@ -55,7 +55,7 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
       {metrics.map((m, i) => {
         const ca = chronicAcuteLabel(m);
         return (
-          <div key={i} className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-card)]">
+          <div key={i} className="p-4 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium t-muted uppercase tracking-wider">
                 {m.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}

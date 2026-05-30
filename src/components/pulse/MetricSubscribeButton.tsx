@@ -158,7 +158,7 @@ export function MetricSubscribeButton({ metricId, metricName, metricUnit, curren
                   id="comparator"
                   value={comparator}
                   onChange={(e) => setComparator(e.target.value as Comparator)}
-                  className="w-full px-3 py-2 rounded-lg text-sm t-primary"
+                  className="w-full px-3 py-2 rounded-md text-sm t-primary"
                   style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
                 >
                   {(Object.keys(COMPARATOR_LABELS) as Comparator[]).map((c) => (
@@ -188,7 +188,7 @@ export function MetricSubscribeButton({ metricId, metricName, metricUnit, curren
                     id="channel"
                     value={channel}
                     onChange={(e) => setChannel(e.target.value as typeof channel)}
-                    className="w-full px-3 py-2 rounded-lg text-sm t-primary"
+                    className="w-full px-3 py-2 rounded-md text-sm t-primary"
                     style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
                   >
                     <option value="email">Email</option>

@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import { cn } from "@/lib/utils";
 
 interface SparklineProps {
@@ -9,39 +8,39 @@ interface SparklineProps {
   className?: string;
 }
 
-export function Sparkline({ data, color = '#6366f1', width = 80, height = 24, className }: SparklineProps) {
-  const gradId = useId();
+/** Swiss sparkline: a 2px accent stroke over a hairline baseline, terminated
+ *  by a solid end-dot marking the latest value. No gradient fills — the line
+ *  is the data. */
+export function Sparkline({ data, color = 'var(--accent)', width = 80, height = 24, className }: SparklineProps) {
   if (data.length < 2) return null;
 
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const points = data.map((value, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - ((value - min) / range) * (height - 4) - 2;
-    return `${x},${y}`;
-  }).join(' ');
+  const coords = data.map((value, i) => ({
+    x: (i / (data.length - 1)) * width,
+    y: height - ((value - min) / range) * (height - 4) - 2,
+  }));
 
-  const areaPoints = `0,${height} ${points} ${width},${height}`;
+  const points = coords.map((c) => `${c.x},${c.y}`).join(' ');
+  const end = coords[coords.length - 1];
 
   return (
     <svg width={width} height={height} className={cn('inline-block', className)}>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={areaPoints} fill={`url(#${gradId})`} />
+      <line
+        x1="0" y1={height - 1} x2={width} y2={height - 1}
+        stroke="var(--border-card)" strokeWidth="1"
+      />
       <polyline
         points={points}
         fill="none"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      <circle cx={end.x} cy={end.y} r="2" fill={color} />
     </svg>
   );
 }

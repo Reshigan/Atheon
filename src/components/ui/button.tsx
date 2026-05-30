@@ -21,7 +21,7 @@ import { Loader2 } from "lucide-react";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'outline';
+  variant?: 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger' | 'success' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   /** Show a spinner instead of children, but preserve width. */
   loading?: boolean;
@@ -31,12 +31,15 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   trailing?: ReactNode;
 }
 
+// Swiss: the default primary action is ink-filled — the accent is reserved
+// for brand/positive emphasis (`accent` variant) so green stays meaningful.
 const variants: Record<string, string> = {
-  primary:   'text-[var(--text-on-accent)] shadow-sm',
+  primary:   'text-[var(--bg-primary)] hover:opacity-90',
+  accent:    'text-[var(--text-on-accent)] hover:opacity-90',
   secondary: 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-input-focus)] t-primary border border-[var(--border-card)]',
   ghost:     'bg-transparent hover:bg-[var(--bg-secondary)] t-secondary hover:t-primary',
-  danger:    'bg-[rgba(255,107,107,.12)] hover:bg-[rgba(255,107,107,.18)] text-[var(--critical)] border border-[rgba(255,107,107,.25)]',
-  success:   'bg-[rgba(124,255,178,.12)] hover:bg-[rgba(124,255,178,.18)] text-[var(--positive)] border border-[rgba(124,255,178,.25)]',
+  danger:    'bg-[rgb(var(--neg-rgb)/0.10)] hover:bg-[rgb(var(--neg-rgb)/0.16)] text-[var(--neg)] border border-[rgb(var(--neg-rgb)/0.30)]',
+  success:   'bg-[rgb(var(--accent-rgb)/0.10)] hover:bg-[rgb(var(--accent-rgb)/0.16)] text-[var(--accent)] border border-[rgb(var(--accent-rgb)/0.30)]',
   outline:   'bg-transparent hover:bg-[var(--bg-secondary)] t-secondary border border-[var(--border-card)]',
 };
 
@@ -50,8 +53,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   { children, variant = 'primary', size = 'md', loading, leading, trailing, className, style, disabled, ...props },
   ref,
 ) {
-  const mergedStyle: React.CSSProperties = variant === 'primary'
-    ? { background: 'var(--accent)', ...style }
+  const mergedStyle: React.CSSProperties =
+    variant === 'primary' ? { background: 'var(--text-primary)', ...style }
+    : variant === 'accent' ? { background: 'var(--accent)', ...style }
     : (style ?? {});
 
   const isDisabled = disabled || loading;
@@ -61,14 +65,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       disabled={isDisabled}
       className={cn(
-        'relative inline-flex items-center justify-center rounded-lg font-medium',
+        'relative inline-flex items-center justify-center rounded font-medium',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         // Motion: only compositor-friendly properties; press feedback on :active
         'transition-[transform,background-color,color,box-shadow,opacity] duration-150',
         '[transition-timing-function:var(--ease-out)]',
         !isDisabled && 'active:scale-[0.97]',
-        variant === 'primary' && 'hover:opacity-90',
         variants[variant],
         sizes[size],
         className

@@ -6,7 +6,11 @@ export interface CardProps {
   className?: string;
   hover?: boolean;
   glow?: boolean;
-  variant?: 'default' | 'raised' | 'black' | 'mint' | 'accent' | 'glass' | 'outline';
+  /** Swiss surfaces. `default` = white field + 1px hairline + sharp corners,
+   *  no shadow. `panel` = borderless with a 1.5px ink top-rule (section
+   *  blocks). `accent` = hairline tinted with the ledger accent for a single
+   *  emphasis card. `raised`/`outline` retained for compatibility. */
+  variant?: 'default' | 'raised' | 'accent' | 'panel' | 'outline';
   /** Padding scale. `default` = 20px (most cards); `compact` = 12px
    *  (dense bento tiles, KPI mini-cards); `relaxed` = 28px (top-level
    *  hero cards that anchor a screen). Avoid freelance className overrides
@@ -16,14 +20,12 @@ export interface CardProps {
   style?: React.CSSProperties;
 }
 
-const variantClass: Record<string, string> = {
-  default: 'card-glass',          // solid (Task 4)
-  raised:  'card-glass shadow-[var(--shadow-card-hover)] bg-[var(--bg-card-hover)]',
-  black:   'card-black',
-  mint:    'card-mint',
-  accent:  'card-teal',
-  glass:   'overlay-surface',     // ONLY for floating contexts
-  outline: 'bg-transparent border border-[var(--border-card)] rounded-2xl',
+const variantClass: Record<NonNullable<CardProps['variant']>, string> = {
+  default: 'card-swiss',
+  raised:  'card-swiss',
+  accent:  'card-accent',
+  panel:   'card-panel',
+  outline: 'bg-transparent border border-[var(--border-card)] rounded-md',
 };
 
 const sizeClass: Record<NonNullable<CardProps['size']>, string> = {
@@ -40,10 +42,9 @@ export function Card({
   return (
     <div
       className={cn(
-        variantClass[variant] || 'card-glass',
+        variantClass[variant] || 'card-swiss',
         sizeClass[size],
-        'rounded-2xl',
-        hover && 'cursor-pointer hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5',
+        hover && 'cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]',
         glow && 'animate-glow-pulse',
         className
       )}

@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { Shield, Loader2, RefreshCw, XCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAppStore } from '@/stores/appStore';
@@ -117,33 +117,40 @@ export function MFASetupPage() {
         <button
           type="button"
           onClick={() => navigate('/settings')}
-          className="w-8 h-8 rounded-lg flex items-center justify-center t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
-          style={{ background: 'var(--bg-secondary)' }}
+          className="w-8 h-8 rounded-md flex items-center justify-center t-muted hover:t-primary transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-card)' }}
           title="Back to settings"
           aria-label="Back to settings"
         >
           <ArrowLeft size={14} />
         </button>
-        <HeroHeader
-          icon={Shield}
-          title="Two-Factor Authentication"
-          subtitle="Manage MFA & recovery codes for your account"
-          accent="sage"
-        />
+        <span className="text-sm t-muted">Back to Settings</span>
       </div>
+
+      <PageHeader
+        eyebrow="Access · Two-Factor"
+        title="Two-Factor Authentication"
+        dek="Manage MFA & recovery codes for your account"
+      />
 
       {mfaEnforcementWarning && !status?.enabled && (
         <div
           role="alert"
-          className="flex items-start gap-3 p-4 rounded-xl border"
+          className="flex items-start gap-3 p-4 rounded-md border"
           style={{
-            background: graceExpired ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-            borderColor: graceExpired ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)',
+            background: graceExpired ? 'rgb(var(--neg-rgb) / 0.08)' : 'rgb(var(--warning-rgb, 180 120 60) / 0.08)',
+            borderColor: graceExpired ? 'rgb(var(--neg-rgb) / 0.35)' : 'rgb(var(--warning-rgb, 180 120 60) / 0.35)',
           }}
         >
-          <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${graceExpired ? 'text-red-500' : 'text-amber-500'}`} />
+          <AlertTriangle
+            className="w-5 h-5 flex-shrink-0 mt-0.5"
+            style={{ color: graceExpired ? 'var(--neg)' : 'var(--warning)' }}
+          />
           <div className="flex-1">
-            <p className={`text-sm font-semibold ${graceExpired ? 'text-red-500' : 'text-amber-500'}`}>
+            <p
+              className="text-sm font-semibold"
+              style={{ color: graceExpired ? 'var(--neg)' : 'var(--warning)' }}
+            >
               {graceExpired ? 'MFA is now required for your role' : `MFA required — ${mfaEnforcementWarning.daysRemaining} day${mfaEnforcementWarning.daysRemaining === 1 ? '' : 's'} remaining`}
             </p>
             <p className="text-xs t-secondary mt-0.5">
@@ -162,10 +169,13 @@ export function MFASetupPage() {
           <div className="flex items-center gap-2 text-xs t-muted"><Loader2 size={14} className="animate-spin" /> Loading status...</div>
         ) : status?.enabled ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-              <Shield className="w-5 h-5 text-emerald-500" />
+            <div
+              className="flex items-center gap-3 p-3 rounded-md"
+              style={{ background: 'rgb(var(--accent-rgb) / 0.08)', border: '1px solid rgb(var(--accent-rgb) / 0.25)' }}
+            >
+              <Shield className="w-5 h-5 text-accent" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-emerald-500">MFA enabled</p>
+                <p className="text-sm font-medium text-accent">MFA enabled</p>
                 <p className="text-xs t-muted">Your account is protected with TOTP two-factor authentication.</p>
               </div>
               <Badge variant="success" size="sm">Active</Badge>
@@ -173,15 +183,15 @@ export function MFASetupPage() {
 
             {typeof status.backupCodesRemaining === 'number' && (
               <div
-                className="flex items-center justify-between gap-3 p-3 rounded-lg"
+                className="flex items-center justify-between gap-3 p-3 rounded-md"
                 style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
               >
                 <div>
                   <p className="text-sm t-primary">Recovery codes remaining</p>
                   <p className="text-xs t-muted">
-                    {status.backupCodesRemaining} of 8 unused
+                    <span className="font-mono tnum">{status.backupCodesRemaining}</span> of 8 unused
                     {status.backupCodesRemaining < 3 && (
-                      <span className="text-amber-500"> — consider regenerating soon</span>
+                      <span style={{ color: 'var(--warning)' }}> — consider regenerating soon</span>
                     )}
                   </p>
                 </div>
@@ -202,7 +212,7 @@ export function MFASetupPage() {
                 </Button>
               </div>
               {isAdminRole && (
-                <p className="text-caption text-amber-500 mt-2 flex items-start gap-1.5">
+                <p className="text-caption mt-2 flex items-start gap-1.5" style={{ color: 'var(--warning)' }}>
                   <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
                   <span>
                     Your role requires MFA. Disabling it may revoke your access once the enforcement grace period expires.
@@ -213,7 +223,10 @@ export function MFASetupPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}>
+            <div
+              className="flex items-center gap-3 p-3 rounded-md"
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)' }}
+            >
               <Shield className="w-5 h-5 t-muted" />
               <div className="flex-1">
                 <p className="text-sm t-primary">MFA not enabled</p>
@@ -221,7 +234,7 @@ export function MFASetupPage() {
               </div>
               <Badge variant="warning" size="sm">Disabled</Badge>
             </div>
-            {statusError && <p className="text-xs text-red-400">{statusError}</p>}
+            {statusError && <p className="text-xs text-neg">{statusError}</p>}
             {!showWizard && (
               <Button variant="primary" size="sm" onClick={() => setShowWizard(true)} title="Start MFA enrollment">
                 <Shield size={14} /> Enable MFA
@@ -260,7 +273,7 @@ export function MFASetupPage() {
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
-            className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
+            className="w-full px-3 py-2.5 rounded-md text-center font-mono text-lg tracking-widest tnum outline-none"
             style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
             value={regenCode}
             onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -269,7 +282,7 @@ export function MFASetupPage() {
             aria-label="Six-digit authenticator code"
             autoFocus
           />
-          {regenError && <p className="text-caption text-red-400 mt-2">{regenError}</p>}
+          {regenError && <p className="text-caption text-neg mt-2">{regenError}</p>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="ghost" size="sm" onClick={() => { setRegenOpen(false); setRegenCode(''); setRegenError(null); }}>Cancel</Button>
@@ -307,13 +320,19 @@ export function MFASetupPage() {
         dismissible={!disableLoading}
       >
         <Modal.Header
-          title={<><XCircle size={14} className="inline mr-2 text-red-500" />Disable two-factor authentication</>}
+          title={<><XCircle size={14} className="inline mr-2 text-neg" />Disable two-factor authentication</>}
         />
         <Modal.Body>
           {isAdminRole && (
-            <div className="flex items-start gap-2 p-2 rounded-lg mb-3" style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.30)' }}>
-              <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-caption text-amber-500">
+            <div
+              className="flex items-start gap-2 p-2 rounded-md mb-3"
+              style={{
+                background: 'rgb(var(--warning-rgb, 180 120 60) / 0.08)',
+                border: '1px solid rgb(var(--warning-rgb, 180 120 60) / 0.30)',
+              }}
+            >
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+              <p className="text-caption" style={{ color: 'var(--warning)' }}>
                 Your role <strong>{user?.role}</strong> requires MFA under the platform policy. Disabling it may lock you
                 out once the enforcement grace period expires.
               </p>
@@ -324,7 +343,7 @@ export function MFASetupPage() {
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
-            className="w-full px-3 py-2.5 rounded-lg text-center font-mono text-lg tracking-widest outline-none"
+            className="w-full px-3 py-2.5 rounded-md text-center font-mono text-lg tracking-widest tnum outline-none"
             style={{ background: 'var(--bg-input)', border: '1px solid var(--border-card)', color: 'var(--text-primary)' }}
             value={disableCode}
             onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -333,7 +352,7 @@ export function MFASetupPage() {
             aria-label="Six-digit authenticator code"
             autoFocus
           />
-          {disableError && <p className="text-caption text-red-400 mt-2">{disableError}</p>}
+          {disableError && <p className="text-caption text-neg mt-2">{disableError}</p>}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="ghost" size="sm" onClick={() => { setDisableOpen(false); setDisableCode(''); setDisableError(null); }}>Cancel</Button>

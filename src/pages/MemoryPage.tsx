@@ -3,10 +3,9 @@ import { api, ApiError } from "@/lib/api";
 import type { GraphEntity, GraphRelationship, GraphQueryResult } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { LoadingState } from "@/components/ui/state";
-import { HeroHeader } from "@/components/ui/hero-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { KnowledgeGraphViz } from "@/components/memory/KnowledgeGraphViz";
 import {
-  Database,
   Plus,
   Search,
   Link2,
@@ -181,25 +180,24 @@ export function MemoryPage() {
 
   return (
     <div className="space-y-6">
-      <HeroHeader
-        icon={Database}
+      <PageHeader
+        eyebrow="Memory · Knowledge Graph"
         title="Memory"
-        subtitle="Knowledge Graph & Semantic Retrieval"
-        accent="sky"
+        dek="Knowledge Graph & Semantic Retrieval"
       />
 
       {loadError && !loading && (
-        <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/20">
-          <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
-          <p className="text-xs text-red-400 flex-1">{loadError}</p>
-          <button onClick={fetchData} className="text-xs text-red-300 hover:text-red-200 underline">
+        <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+          <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+          <p className="text-xs flex-1" style={{ color: 'var(--neg)' }}>{loadError}</p>
+          <button onClick={fetchData} className="text-xs underline" style={{ color: 'var(--neg)' }}>
             Retry
           </button>
         </div>
       )}
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--bg-secondary)" }}>
+      <div className="flex gap-1 p-1 rounded-md" style={{ background: "var(--bg-secondary)" }}>
         {[
           { id: "graph" as const, label: "Graph" },
           { id: "entities" as const, label: "Entities" },
@@ -279,7 +277,7 @@ export function MemoryPage() {
                 setFormType("Organization");
                 setFormError(null);
               }}
-              className="px-3 py-2 rounded-md text-sm font-medium text-white flex items-center gap-1.5"
+              className="px-3 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-1.5"
               style={{ background: "var(--accent)" }}
               title="Create a new entity"
             >
@@ -291,7 +289,7 @@ export function MemoryPage() {
             {filteredEntities.map((ent) => (
               <div
                 key={ent.id}
-                className="flex items-center justify-between p-3 rounded-lg"
+                className="flex items-center justify-between p-3 rounded-md"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}
               >
                 <div className="flex-1 min-w-0">
@@ -317,7 +315,7 @@ export function MemoryPage() {
           {showForm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
               <div
-                className="w-full max-w-md rounded-xl p-6 space-y-4"
+                className="w-full max-w-md rounded-md p-6 space-y-4"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}
               >
                 <div className="flex items-center justify-between">
@@ -346,15 +344,15 @@ export function MemoryPage() {
                   ))}
                 </select>
                 {formError && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-red-500/10 border border-red-500/20">
-                    <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
-                    <p className="text-xs text-red-400">{formError}</p>
+                  <div className="flex items-center gap-2 p-2 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+                    <AlertTriangle size={12} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+                    <p className="text-xs" style={{ color: 'var(--neg)' }}>{formError}</p>
                   </div>
                 )}
                 <button
                   onClick={handleSaveEntity}
                   disabled={saving || !formName.trim()}
-                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-white flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center justify-center gap-2"
                   style={{ background: "var(--accent)", opacity: saving || !formName.trim() ? 0.6 : 1 }}
                 >
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
@@ -374,7 +372,7 @@ export function MemoryPage() {
               setShowRelForm(true);
               setRelFormError(null);
             }}
-            className="px-3 py-2 rounded-md text-sm font-medium text-white flex items-center gap-1.5"
+            className="px-3 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-1.5"
             style={{ background: "var(--accent)" }}
             title="Create a new relationship"
             disabled={entities.length < 2}
@@ -389,14 +387,14 @@ export function MemoryPage() {
             {relationships.map((rel) => (
               <div
                 key={rel.id}
-                className="flex items-center gap-3 p-3 rounded-lg"
+                className="flex items-center gap-3 p-3 rounded-md"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}
               >
                 <span className="text-sm t-primary truncate" title={rel.sourceName}>
                   {rel.sourceName || rel.sourceId}
                 </span>
                 <span
-                  className="text-xs px-2 py-0.5 rounded-full t-muted flex-shrink-0"
+                  className="text-xs px-2 py-0.5 rounded-sm t-muted flex-shrink-0"
                   style={{ background: "var(--bg-secondary)" }}
                 >
                   {rel.type}
@@ -414,7 +412,7 @@ export function MemoryPage() {
           {showRelForm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
               <div
-                className="w-full max-w-md rounded-xl p-6 space-y-4"
+                className="w-full max-w-md rounded-md p-6 space-y-4"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}
               >
                 <div className="flex items-center justify-between">
@@ -468,15 +466,15 @@ export function MemoryPage() {
                     ))}
                 </select>
                 {relFormError && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-red-500/10 border border-red-500/20">
-                    <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
-                    <p className="text-xs text-red-400">{relFormError}</p>
+                  <div className="flex items-center gap-2 p-2 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+                    <AlertTriangle size={12} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+                    <p className="text-xs" style={{ color: 'var(--neg)' }}>{relFormError}</p>
                   </div>
                 )}
                 <button
                   onClick={handleSaveRelationship}
                   disabled={relSaving || !relSource || !relTarget}
-                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-white flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center justify-center gap-2"
                   style={{ background: "var(--accent)", opacity: relSaving || !relSource || !relTarget ? 0.6 : 1 }}
                 >
                   {relSaving ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
@@ -490,7 +488,7 @@ export function MemoryPage() {
 
       {/* GraphRAG Search Tab */}
       {activeTab === "search" && (
-        <div className="rounded-xl p-6 space-y-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+        <div className="rounded-md p-6 space-y-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
           <div className="space-y-1">
             <h2 className="text-sm font-semibold t-primary flex items-center gap-2">
               <Sparkles size={14} style={{ color: "var(--accent)" }} /> Knowledge Graph Query
@@ -514,7 +512,7 @@ export function MemoryPage() {
             <button
               onClick={handleSearch}
               disabled={searching || !searchQuery.trim()}
-              className="px-4 py-2 rounded-md text-sm font-medium text-white flex items-center gap-2"
+              className="px-4 py-2 rounded-md text-sm font-medium text-[var(--text-on-accent)] flex items-center gap-2"
               style={{ background: "var(--accent)", opacity: searching || !searchQuery.trim() ? 0.6 : 1 }}
             >
               {searching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
@@ -523,9 +521,9 @@ export function MemoryPage() {
           </div>
 
           {searchError && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/20">
-              <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
-              <p className="text-xs text-red-400 flex-1">{searchError}</p>
+            <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+              <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+              <p className="text-xs flex-1" style={{ color: 'var(--neg)' }}>{searchError}</p>
             </div>
           )}
 

@@ -75,7 +75,7 @@ interface FlipCardContentProps {
 export function FlipCardFront({ children, className = '' }: FlipCardContentProps) {
   return (
     <div
-      className={`w-full h-full rounded-xl p-5 flex flex-col ${className}`}
+      className={`w-full h-full rounded-md p-5 flex flex-col ${className}`}
       style={{
         background: 'var(--bg-card-solid)',
         border: '1px solid var(--border-card)',
@@ -89,7 +89,7 @@ export function FlipCardFront({ children, className = '' }: FlipCardContentProps
 export function FlipCardBack({ children, className = '' }: FlipCardContentProps) {
   return (
     <div
-      className={`w-full h-full rounded-xl p-5 flex flex-col ${className}`}
+      className={`w-full h-full rounded-md p-5 flex flex-col ${className}`}
       style={{
         background: 'var(--bg-card-solid)',
         border: '1px solid var(--border-card)',

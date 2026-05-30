@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { EmptyState, ErrorState, FormError } from '@/components/ui/state';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError } from '@/lib/api';
 import type { Tenant, AuditEntry, SupportTicket, SupportTicketReply } from '@/lib/api';
@@ -247,13 +247,13 @@ export function SupportConsolePage() {
     { id: 'featureFlags', icon: <Settings size={16} />, title: 'Feature Flags', desc: 'Toggle platform features per tenant', to: '/feature-flags' },
   ];
 
-  const outcomeColor = (outcome: string) => outcome === 'success' ? 'text-emerald-400' : outcome === 'denied' ? 'text-red-400' : 'text-amber-400';
+  const outcomeColor = (outcome: string) => outcome === 'success' ? 'text-accent' : outcome === 'denied' ? 'text-neg' : 'text-[var(--warning)]';
   const activityIcon = (layer: string) => {
     switch ((layer || '').toLowerCase()) {
       case 'auth': case 'session': return <User size={12} className="text-accent" />;
-      case 'admin-tooling': case 'admin': return <Shield size={12} className="text-blue-400" />;
-      case 'iam': case 'rbac': return <Users size={12} className="text-emerald-400" />;
-      case 'config': case 'settings': return <Settings size={12} className="text-amber-400" />;
+      case 'admin-tooling': case 'admin': return <Shield size={12} className="text-[var(--info)]" />;
+      case 'iam': case 'rbac': return <Users size={12} className="text-accent" />;
+      case 'config': case 'settings': return <Settings size={12} className="text-[var(--warning)]" />;
       default: return <Activity size={12} className="t-muted" />;
     }
   };
@@ -269,11 +269,11 @@ export function SupportConsolePage() {
   if (error && tenants.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-3">
-        <AlertTriangle className="w-8 h-8 text-red-400" />
+        <AlertTriangle className="w-8 h-8 text-neg" />
         <p className="text-sm t-primary">{error}</p>
         <button
           onClick={loadTenants}
-          className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
+          className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
         >
           Retry
         </button>
@@ -283,30 +283,30 @@ export function SupportConsolePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <HeroHeader
-        icon={Shield}
+      <PageHeader
+        eyebrow="Support · Console"
         title="Support Console"
-        subtitle="Cross-tenant support tools & activity monitoring"
-        accent="sage"
+        dek="Cross-tenant support tools & activity monitoring"
+        live
       />
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
           <p className="text-label">Total Tenants</p>
-          <p className="text-xl font-bold t-primary">{tenants.length}</p>
+          <p className="text-xl font-bold t-primary font-mono tnum">{tenants.length}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Active</p>
-          <p className="text-xl font-bold t-primary">{tenants.filter(t => t.status === 'active').length}</p>
+          <p className="text-xl font-bold text-accent font-mono tnum">{tenants.filter(t => t.status === 'active').length}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Suspended</p>
-          <p className="text-xl font-bold text-amber-400">{tenants.filter(t => t.status === 'suspended').length}</p>
+          <p className="text-xl font-bold text-[var(--warning)] font-mono tnum">{tenants.filter(t => t.status === 'suspended').length}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Recent Events</p>
-          <p className="text-xl font-bold t-primary">{activities.length}</p>
+          <p className="text-xl font-bold t-primary font-mono tnum">{activities.length}</p>
         </Card>
       </div>
 
@@ -318,7 +318,7 @@ export function SupportConsolePage() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 t-muted" />
             <input
               aria-label="Search tenants by name, slug, or ID"
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+              className="w-full pl-9 pr-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
               placeholder="Search by tenant name, slug, or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -361,7 +361,7 @@ export function SupportConsolePage() {
                 id="ticket-status-filter"
                 value={ticketStatusFilter}
                 onChange={(e) => setTicketStatusFilter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
+                className="px-2.5 py-1.5 rounded-md border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
               >
                 <option value="">All statuses</option>
                 {TICKET_STATUSES.map((s) => (
@@ -466,7 +466,7 @@ export function SupportConsolePage() {
         ) : (
           <div className="space-y-1">
             {activities.map((a) => (
-              <div key={a.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]">
+              <div key={a.id} className="flex items-start gap-3 p-3 rounded-md hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]">
                 <div className="w-6 h-6 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mt-0.5 flex-shrink-0">
                   {activityIcon(a.layer)}
                 </div>
@@ -494,10 +494,10 @@ export function SupportConsolePage() {
             <button
               key={qa.id}
               onClick={() => navigate(qa.to)}
-              className="text-left card-glass p-4 rounded-2xl hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
+              className="text-left card-glass p-4 rounded-md hover:bg-[var(--bg-secondary)] transition-colors active:scale-[0.97]"
             >
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
+                <div className="w-8 h-8 rounded-sm bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
                   {qa.icon}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -514,7 +514,7 @@ export function SupportConsolePage() {
       {/* Tenant Detail Modal */}
       {selectedTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelectedTenant(null)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold t-primary">{selectedTenant.name}</h3>
               <button onClick={() => setSelectedTenant(null)} className="t-muted hover:t-primary" aria-label="Close">×</button>
@@ -532,19 +532,19 @@ export function SupportConsolePage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => { setActiveTab('activity'); }}
-                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
+                className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
               >
                 <Activity size={12} /> View activity
               </button>
               <button
                 onClick={() => navigate('/impersonate')}
-                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
+                className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
               >
                 <Eye size={12} /> Impersonate user
               </button>
               <button
                 onClick={() => navigate('/audit')}
-                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
+                className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors flex items-center gap-1 active:scale-[0.97]"
               >
                 <ExternalLink size={12} /> Full audit log
               </button>
@@ -692,7 +692,7 @@ function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModalProps)
             onChange={(e) => setSubject(e.target.value)}
             disabled={submitting}
             placeholder="One-line summary"
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+            className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -703,7 +703,7 @@ function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModalProps)
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               disabled={submitting}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+              className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
             >
               {TICKET_CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
@@ -717,7 +717,7 @@ function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModalProps)
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
               disabled={submitting}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+              className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
             >
               {TICKET_PRIORITIES.map((p) => (
                 <option key={p} value={p}>{p}</option>
@@ -735,7 +735,7 @@ function CreateTicketModal({ open, onClose, onCreated }: CreateTicketModalProps)
             onChange={(e) => setBody(e.target.value)}
             disabled={submitting}
             placeholder="What happened? Include steps, errors, and the impact."
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+            className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
           />
         </div>
         <FormError error={formError} />
@@ -804,7 +804,7 @@ function TicketDetailModal({
                     id="ticket-status-set"
                     value={ticket.status}
                     onChange={(e) => onStatusChange(e.target.value)}
-                    className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
+                    className="px-2 py-1 rounded-md border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
                   >
                     {TICKET_STATUSES.map((s) => (
                       <option key={s} value={s}>{ticketStatusLabel(s)}</option>
@@ -815,7 +815,7 @@ function TicketDetailModal({
                     id="ticket-priority-set"
                     value={ticket.priority}
                     onChange={(e) => onPriorityChange(e.target.value)}
-                    className="px-2 py-1 rounded-lg border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
+                    className="px-2 py-1 rounded-md border border-[var(--border-card)] text-xs bg-[var(--bg-secondary)] t-primary"
                   >
                     {TICKET_PRIORITIES.map((p) => (
                       <option key={p} value={p}>{p}</option>
@@ -864,7 +864,7 @@ function TicketDetailModal({
                   value={replyDraft}
                   onChange={(e) => onReplyChange(e.target.value)}
                   disabled={replySubmitting}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                 />
                 <div className="mt-2 flex justify-end">
                   <Button

@@ -105,9 +105,9 @@ export function ScimTokenManager(): JSX.Element {
   return (
     <div className="space-y-4">
       {/* Educational lede so admins know what SCIM is for + how to wire it. */}
-      <Card className="p-5" style={{ background: 'rgba(126, 179, 205, 0.06)', borderColor: 'rgba(126, 179, 205, 0.30)' }}>
+      <Card className="p-5">
         <div className="flex items-start gap-3">
-          <UploadCloud size={18} className="text-sky-400 mt-0.5 flex-shrink-0" />
+          <UploadCloud size={18} className="text-accent mt-0.5 flex-shrink-0" />
           <div className="space-y-2 text-body-sm">
             <p className="t-primary font-medium">Automatic user provisioning via SCIM 2.0</p>
             <p className="t-secondary">
@@ -143,7 +143,7 @@ export function ScimTokenManager(): JSX.Element {
                 value={newTokenName}
                 onChange={(e) => setNewTokenName(e.target.value)}
                 placeholder="e.g. Okta production, Azure AD"
-                className="w-full px-3 py-2 rounded-lg text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
+                className="w-full px-3 py-2 rounded-md text-body-sm bg-[var(--bg-input)] border border-[var(--border-card)] t-primary focus:border-accent focus:outline-none"
                 maxLength={80}
                 autoFocus
               />
@@ -163,9 +163,9 @@ export function ScimTokenManager(): JSX.Element {
 
       {/* One-shot reveal — the only place the clear token ever exists in the UI. */}
       {revealed && (
-        <Card className="p-5" style={{ background: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.40)' }}>
+        <Card className="p-5" style={{ background: 'rgb(var(--warning-rgb) / 0.08)', borderColor: 'rgb(var(--warning-rgb) / 0.35)' }}>
           <div className="flex items-start gap-3 mb-3">
-            <AlertTriangle size={18} className="text-amber-400 mt-0.5 flex-shrink-0" />
+            <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
             <div className="flex-1 min-w-0">
               <p className="text-body-sm font-semibold t-primary">Copy this token now — it will never be shown again</p>
               <p className="text-caption t-muted mt-0.5">Once you close this panel, Atheon cannot recover the secret. Anyone with this value can provision users on your tenant.</p>
@@ -221,9 +221,9 @@ export function ScimTokenManager(): JSX.Element {
                       <td className="px-4 py-3 t-muted">{t.last_used_at ? new Date(t.last_used_at).toLocaleString() : '—'}</td>
                       <td className="px-4 py-3">
                         {revoked ? (
-                          <span className="inline-flex items-center gap-1 text-caption text-red-400"><X size={11} /> Revoked</span>
+                          <span className="inline-flex items-center gap-1 text-caption text-neg"><X size={11} /> Revoked</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-caption text-emerald-500"><CheckCircle2 size={11} /> Active</span>
+                          <span className="inline-flex items-center gap-1 text-caption text-accent"><CheckCircle2 size={11} /> Active</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">

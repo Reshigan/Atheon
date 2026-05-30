@@ -386,7 +386,7 @@ function ObjectiveCard(props: {
                   <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--accent)]/15 text-[var(--accent)] font-semibold">P1</span>
                 )}
                 {obj.priority === 'p2' && (
-                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300 font-semibold">P2</span>
+                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--bg-secondary)] t-secondary font-semibold">P2</span>
                 )}
               </div>
               {obj.description && (
@@ -422,7 +422,7 @@ function ObjectiveCard(props: {
                     <Progress
                       value={krProgress(kr)}
                       size="md"
-                      color={kr.status === 'off_track' ? 'red' : kr.status === 'at_risk' ? 'amber' : kr.status === 'achieved' ? 'emerald' : 'blue'}
+                      color={kr.status === 'off_track' ? 'red' : kr.status === 'at_risk' ? 'amber' : kr.status === 'achieved' ? 'emerald' : 'emerald'}
                     />
                     <div className="flex items-center justify-between text-caption mt-1">
                       <span className="t-muted">
@@ -457,7 +457,7 @@ function ObjectiveCard(props: {
                     <Pencil size={12} /> <span className="ml-1">Edit</span>
                   </Button>
                   <Button variant="ghost" size="sm" onClick={onDelete}>
-                    <Trash2 size={12} /> <span className="ml-1 text-red-400">Delete</span>
+                    <Trash2 size={12} /> <span className="ml-1 text-neg">Delete</span>
                   </Button>
                 </div>
               </div>
@@ -475,7 +475,7 @@ function IconButton({ children, onClick, label, tone }: { children: React.ReactN
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       aria-label={label}
-      className={`p-1 rounded transition-all hover:bg-[var(--bg-tertiary)] active:scale-[0.92] ${tone === 'danger' ? 'text-red-400 hover:text-red-300' : 't-muted hover:t-primary'}`}
+      className={`p-1 rounded transition-all hover:bg-[var(--bg-tertiary)] active:scale-[0.92] ${tone === 'danger' ? 'text-neg' : 't-muted hover:t-primary'}`}
       style={{ transitionDuration: '120ms', transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }}
     >
       {children}
@@ -585,7 +585,7 @@ function ObjectiveFormModal({ quarter, objective, onClose, onSaved }: ObjectiveF
             />
           </Field>
         </div>
-        {err && <p className="text-sm text-red-400">{err}</p>}
+        {err && <p className="text-sm text-neg">{err}</p>}
       </form>
       </Modal.Body>
       <Modal.Footer>
@@ -675,7 +675,7 @@ function KRFormModal({ objective, kr, onClose, onSaved }: KRFormModalProps) {
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={selectCls()} />
           </Field>
         </div>
-        {err && <p className="text-sm text-red-400">{err}</p>}
+        {err && <p className="text-sm text-neg">{err}</p>}
       </form>
       </Modal.Body>
       <Modal.Footer>
@@ -693,7 +693,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   return (
     <label className="block">
       <span className="text-caption font-medium t-secondary block mb-1">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+        {label}{required && <span className="text-neg ml-0.5">*</span>}
       </span>
       {children}
     </label>

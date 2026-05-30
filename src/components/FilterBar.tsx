@@ -96,7 +96,7 @@ export function FilterBar({
             />
             <input
               aria-label={search.ariaLabel ?? 'Search'}
-              className="w-full pl-9 pr-8 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-body t-primary focus:outline-none focus:border-accent/40"
+              className="w-full pl-9 pr-8 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-body t-primary focus:outline-none focus:border-accent/40"
               placeholder={search.placeholder ?? 'Search…'}
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
@@ -176,7 +176,7 @@ function PillRow({
             type="button"
             onClick={() => section.onChange(toggle(section.selected, opt.value))}
             aria-pressed={active}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-caption font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-caption font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${
               active
                 ? 'bg-accent/20 text-accent border border-accent/30'
                 : 'bg-[var(--bg-secondary)] border border-[var(--border-card)] t-muted hover:border-gray-400'

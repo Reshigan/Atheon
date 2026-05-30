@@ -10,17 +10,17 @@ const DOT_META: Record<Implementation, { label: string; classes: string; descrip
   real: {
     label: 'Real',
     description: 'Real runtime logic: this sub-catalyst is backed by a dedicated domain handler.',
-    classes: 'bg-emerald-500',
+    classes: 'bg-accent',
   },
   generic: {
     label: 'Generic',
     description: 'Generic output: this sub-catalyst falls through to the default dispatcher.',
-    classes: 'bg-amber-500',
+    classes: 'bg-[var(--warning)]',
   },
   stub: {
     label: 'Stub',
     description: 'Stub: named in the catalog but has no runtime handler yet.',
-    classes: 'bg-gray-500',
+    classes: 'bg-[var(--info)]',
   },
 };
 

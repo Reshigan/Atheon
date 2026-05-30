@@ -48,7 +48,7 @@ export function AccessStatePage({ kind, requiredRoles }: AccessStatePageProps): 
       }}
     >
       <div
-        className="w-full max-w-md rounded-2xl p-7 sm:p-8 text-center"
+        className="w-full max-w-md rounded-md p-7 sm:p-8 text-center"
         style={{
           background: 'var(--bg-card-solid)',
           border: '1px solid var(--border-card)',
@@ -57,7 +57,7 @@ export function AccessStatePage({ kind, requiredRoles }: AccessStatePageProps): 
       >
         <div className="flex flex-col items-center">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border"
+            className="w-14 h-14 rounded-md flex items-center justify-center mb-5 border"
             style={{
               background: 'rgba(163, 177, 138, 0.10)',
               borderColor: 'rgba(163, 177, 138, 0.25)',

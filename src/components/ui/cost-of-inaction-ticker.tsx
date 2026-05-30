@@ -44,41 +44,41 @@ export function CostOfInactionTicker({ compact = false, data: externalData }: { 
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
-        <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
-        <span className="text-xs font-mono font-bold text-red-400">{formatCurrency(displayCost)}</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-[rgb(var(--neg-rgb)/0.10)] border border-[rgb(var(--neg-rgb)/0.20)]">
+        <AlertTriangle size={12} className="text-[var(--neg)] flex-shrink-0" />
+        <span className="text-xs font-mono font-bold text-[var(--neg)]">{formatCurrency(displayCost)}</span>
         <span className="text-caption t-muted">cost of inaction</span>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl p-4 bg-red-500/5 border border-red-500/15">
+    <div className="rounded-md p-4 bg-[rgb(var(--neg-rgb)/0.05)] border border-[rgb(var(--neg-rgb)/0.15)]">
       <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle size={14} className="text-red-400" />
+        <AlertTriangle size={14} className="text-[var(--neg)]" />
         <h4 className="text-xs font-semibold t-primary">Cost of Inaction</h4>
       </div>
 
       <div className="text-center mb-3">
-        <p className="text-3xl font-mono font-bold text-red-400 tabular-nums">
+        <p className="text-3xl font-mono font-bold text-[var(--neg)] tabular-nums">
           {formatCurrency(displayCost)}
         </p>
         <p className="text-caption t-muted mt-1">Accrued cost from unresolved issues</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
+        <div className="p-2 rounded bg-[var(--bg-secondary)]">
           <p className="text-sm font-bold t-primary">{formatCurrency(data.dailyCost)}</p>
           <p className="text-caption t-muted">Daily</p>
         </div>
-        <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
+        <div className="p-2 rounded bg-[var(--bg-secondary)]">
           <Clock size={10} className="inline mr-1 t-muted" />
           <span className="text-sm font-bold t-primary">{formatDays(data.avgDaysOpen)}</span>
           <p className="text-caption t-muted">Avg Open</p>
         </div>
-        <div className="p-2 rounded-lg bg-[var(--bg-secondary)]">
-          <TrendingUp size={10} className="inline mr-1 text-red-400" />
-          <span className="text-sm font-bold text-red-400">{formatCurrency(data.projectedMonthlyCost)}</span>
+        <div className="p-2 rounded bg-[var(--bg-secondary)]">
+          <TrendingUp size={10} className="inline mr-1 text-[var(--neg)]" />
+          <span className="text-sm font-bold text-[var(--neg)]">{formatCurrency(data.projectedMonthlyCost)}</span>
           <p className="text-caption t-muted">30-Day Proj.</p>
         </div>
       </div>

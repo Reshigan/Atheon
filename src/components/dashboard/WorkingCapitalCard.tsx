@@ -127,23 +127,23 @@ export function WorkingCapitalCard() {
         </div>
         <div className="h-2 rounded-full overflow-hidden flex" style={{ background: 'var(--bg-secondary)' }}>
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.currentPct}%`, background: '#10b981' }}
+               style={{ width: `${buckets.currentPct}%`, background: 'var(--accent)' }}
                title={`Current: ${buckets.currentPct.toFixed(0)}% (${fmtZAR(latest.arCurrentZar)})`} />
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.days30Pct}%`, background: '#7EB3CD' }}
+               style={{ width: `${buckets.days30Pct}%`, background: 'var(--info)' }}
                title={`30 days: ${buckets.days30Pct.toFixed(0)}% (${fmtZAR(latest.ar30Zar)})`} />
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.days60Pct}%`, background: '#fbbf24' }}
+               style={{ width: `${buckets.days60Pct}%`, background: 'var(--warning)' }}
                title={`60 days: ${buckets.days60Pct.toFixed(0)}% (${fmtZAR(latest.ar60Zar)})`} />
           <div className="h-full transition-[width] duration-[var(--dur-quick,200ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]"
-               style={{ width: `${buckets.days90PlusPct}%`, background: '#f87171' }}
+               style={{ width: `${buckets.days90PlusPct}%`, background: 'var(--neg)' }}
                title={`90+ days: ${buckets.days90PlusPct.toFixed(0)}% (${fmtZAR(latest.ar90PlusZar)})`} />
         </div>
         <div className="flex items-center gap-3 mt-2 text-caption">
-          <BucketLegend swatch="#10b981" label="Current" pct={buckets.currentPct} />
-          <BucketLegend swatch="#7EB3CD" label="1–30" pct={buckets.days30Pct} />
-          <BucketLegend swatch="#fbbf24" label="31–60" pct={buckets.days60Pct} />
-          <BucketLegend swatch="#f87171" label="60+" pct={buckets.days90PlusPct} />
+          <BucketLegend swatch="var(--accent)" label="Current" pct={buckets.currentPct} />
+          <BucketLegend swatch="var(--info)" label="1–30" pct={buckets.days30Pct} />
+          <BucketLegend swatch="var(--warning)" label="31–60" pct={buckets.days60Pct} />
+          <BucketLegend swatch="var(--neg)" label="60+" pct={buckets.days90PlusPct} />
           {buckets.days90PlusPct > 8 && (
             <StatusPill status="failed" label={`${buckets.days90PlusPct.toFixed(0)}% > 60d — action needed`} />
           )}
@@ -175,24 +175,25 @@ interface MetricProps {
 }
 
 const ACCENT_SPARK: Record<MetricProps['accent'], string> = {
-  emerald: '#10b981',
-  sky: '#7EB3CD',
-  sage: '#A3B18A',
-  bronze: '#CDA37E',
+  emerald: 'var(--accent)',
+  sky: 'var(--info)',
+  sage: 'var(--accent)',
+  bronze: 'var(--bronze)',
 };
 
 function Metric({ label, value, delta, deltaLabel, trend, invertTrend = false, spark, accent }: MetricProps) {
   const positive = invertTrend ? trend === 'down' : trend === 'up';
   const negative = invertTrend ? trend === 'up' : trend === 'down';
   const trendIcon = trend === 'up' ? <TrendingUp size={11} /> : trend === 'down' ? <TrendingDown size={11} /> : <Minus size={11} />;
-  const trendColor = positive ? 'text-emerald-500' : negative ? 'text-red-500' : 't-muted';
+  const trendColor = positive ? 'text-accent' : negative ? '' : 't-muted';
+  const trendStyle = negative ? { color: 'var(--neg)' } : undefined;
 
   return (
-    <div className="p-2.5 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
+    <div className="p-2.5 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)]">
       <div className="text-caption font-medium t-muted uppercase tracking-wider mb-1">{label}</div>
       <div className="text-body-md font-bold t-primary tabular-nums font-mono leading-tight">{value}</div>
       <div className="flex items-center justify-between mt-1.5">
-        <div className={`flex items-center gap-1 text-caption ${trendColor}`}>
+        <div className={`flex items-center gap-1 text-caption ${trendColor}`} style={trendStyle}>
           {trendIcon}
           <span className="tabular-nums font-mono">{delta === 0 ? deltaLabel : deltaLabel}</span>
         </div>

@@ -23,7 +23,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/state';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Numeric } from '@/components/ui/numeric';
 import { useToast } from '@/components/ui/toast';
@@ -107,11 +107,11 @@ const TILE_DEFS: Array<{
   accent: string;
   hoverBorder: string;
 }> = [
-  { key: 'pending_approval', label: 'Pending',   countKey: 'pending_approval_count', valueKey: 'pending_approval_value_zar', icon: Inbox,         accent: '#FBBF24', hoverBorder: 'hover:border-amber-500/40' },
-  { key: 'previewed',        label: 'Previewed', countKey: 'previewed_count',         valueKey: 'previewed_value_zar',         icon: FileSearch,    accent: '#7EB3CD', hoverBorder: 'hover:border-sky-500/40' },
-  { key: 'completed',        label: 'Completed', countKey: 'completed_count',         valueKey: 'completed_value_zar',         icon: CheckCircle2,  accent: '#34D399', hoverBorder: 'hover:border-emerald-500/40' },
-  { key: 'failed',           label: 'Failed',    countKey: 'failed_count',            valueKey: 'failed_value_zar',            icon: XCircle,       accent: '#F87171', hoverBorder: 'hover:border-red-500/40' },
-  { key: 'rejected',         label: 'Rejected',  countKey: 'rejected_count',          valueKey: 'rejected_value_zar',          icon: AlertOctagon,  accent: '#F97316', hoverBorder: 'hover:border-orange-500/40' },
+  { key: 'pending_approval', label: 'Pending',   countKey: 'pending_approval_count', valueKey: 'pending_approval_value_zar', icon: Inbox,         accent: 'var(--warning)', hoverBorder: 'hover:border-[var(--warning)]' },
+  { key: 'previewed',        label: 'Previewed', countKey: 'previewed_count',         valueKey: 'previewed_value_zar',         icon: FileSearch,    accent: 'var(--info)', hoverBorder: 'hover:border-[var(--info)]' },
+  { key: 'completed',        label: 'Completed', countKey: 'completed_count',         valueKey: 'completed_value_zar',         icon: CheckCircle2,  accent: 'var(--accent)', hoverBorder: 'hover:border-[var(--accent)]' },
+  { key: 'failed',           label: 'Failed',    countKey: 'failed_count',            valueKey: 'failed_value_zar',            icon: XCircle,       accent: 'var(--neg)', hoverBorder: 'hover:border-[var(--neg)]' },
+  { key: 'rejected',         label: 'Rejected',  countKey: 'rejected_count',          valueKey: 'rejected_value_zar',          icon: AlertOctagon,  accent: 'var(--warning)', hoverBorder: 'hover:border-[var(--warning)]' },
 ];
 
 // Plain-English definitions for each status. Surfaced by MetricSource on
@@ -394,7 +394,7 @@ export function ActionLayerPage(): JSX.Element {
             ? 'font-medium border'
             : 't-secondary hover:t-primary border border-transparent hover:bg-[var(--bg-secondary)]'
         } active:scale-[0.97]`}
-        style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : undefined}
+        style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgb(var(--accent-rgb) / 0.40)', color: 'var(--accent)' } : undefined}
         aria-pressed={active}
       >
         {label}{count !== null ? ` (${count})` : ''}
@@ -409,17 +409,16 @@ export function ActionLayerPage(): JSX.Element {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Inbox}
-          title="Operator Queue"
-          subtitle="Resolve transactional discrepancies requiring manual intervention"
-          accent="amber"
-        />
-        <Button variant="secondary" size="sm" onClick={() => void load()} disabled={refreshing}>
-          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Refresh
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Action Layer · Write-back"
+        title="Operator Queue"
+        dek="Resolve transactional discrepancies requiring manual intervention"
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => void load()} disabled={refreshing}>
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Refresh
+          </Button>
+        }
+      />
 
       {error && !loading && <ErrorState error={error} onRetry={() => void load()} />}
 
@@ -461,7 +460,7 @@ export function ActionLayerPage(): JSX.Element {
                       setFilter(isActiveFilter ? 'all' : tile.key);
                     }
                   }}
-                  className={`text-left p-4 rounded-2xl bg-[var(--bg-card-solid)] border transition-colors cursor-pointer ${tile.hoverBorder} ${
+                  className={`text-left p-4 rounded-md bg-[var(--bg-card-solid)] border transition-colors cursor-pointer ${tile.hoverBorder} ${
                     isActiveFilter ? 'border-accent' : 'border-[var(--border-card)]'
                   }`}
                   aria-pressed={isActiveFilter}
@@ -513,7 +512,7 @@ export function ActionLayerPage(): JSX.Element {
                   className={`group inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full text-body-sm border transition-colors ${
                     active ? 'font-medium' : 'border-transparent hover:bg-[var(--bg-secondary)]'
                   } active:scale-[0.97]`}
-                  style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgba(163, 177, 138, 0.40)', color: 'var(--accent)' } : { borderColor: 'var(--border-card)' }}
+                  style={active ? { background: 'var(--accent-subtle)', borderColor: 'rgb(var(--accent-rgb) / 0.40)', color: 'var(--accent)' } : { borderColor: 'var(--border-card)' }}
                 >
                   <button
                     type="button"
@@ -550,10 +549,10 @@ export function ActionLayerPage(): JSX.Element {
               dispatch queue: select N rows → Approve / Reject N. */}
           {selectedCount > 0 && (
             <div
-              className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl"
+              className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-md"
               style={{
                 background: 'var(--accent-subtle)',
-                border: '1px solid rgba(163, 177, 138, 0.40)',
+                border: '1px solid rgb(var(--accent-rgb) / 0.40)',
               }}
             >
               <div className="flex items-center gap-3">

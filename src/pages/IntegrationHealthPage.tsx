@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { api, ApiError } from '@/lib/api';
 import type { IntegrationHealthConnection } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -31,16 +31,16 @@ function statusVariant(status: string): 'success' | 'warning' | 'danger' | 'defa
 
 function statusIcon(status: string) {
   const v = statusVariant(status);
-  if (v === 'success') return <CheckCircle size={14} className="text-emerald-400" />;
-  if (v === 'warning') return <AlertTriangle size={14} className="text-amber-400" />;
-  if (v === 'danger') return <XCircle size={14} className="text-red-400" />;
+  if (v === 'success') return <CheckCircle size={14} style={{ color: 'var(--accent)' }} />;
+  if (v === 'warning') return <AlertTriangle size={14} style={{ color: 'var(--warning)' }} />;
+  if (v === 'danger') return <XCircle size={14} style={{ color: 'var(--neg)' }} />;
   return <Activity size={14} className="t-muted" />;
 }
 
 function freshnessColor(freshness: 'fresh' | 'stale' | 'cold'): string {
   if (freshness === 'fresh') return 'var(--accent)';
-  if (freshness === 'stale') return '#f59e0b';
-  return '#ef4444';
+  if (freshness === 'stale') return 'var(--warning)';
+  return 'var(--neg)';
 }
 
 function freshnessLabel(conn: IntegrationHealthConnection): string {
@@ -122,22 +122,21 @@ export function IntegrationHealthPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Wifi}
-          title="Integration Health"
-          subtitle="Per-connection sync status, circuit breakers & data freshness"
-          accent="sky"
-        />
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
-        >
-          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Integrations · Health"
+        title="Integration Health"
+        dek="Per-connection sync status, circuit breakers &amp; data freshness"
+        actions={
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-[var(--border-card)] t-secondary hover:t-primary hover:bg-[var(--bg-secondary)] transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97]"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">
@@ -146,11 +145,11 @@ export function IntegrationHealthPage() {
         </Card>
         <Card className="p-3">
           <p className="text-label">Healthy</p>
-          <p className="text-xl font-bold text-emerald-400">{summary.healthy}</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--accent)' }}>{summary.healthy}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Errored</p>
-          <p className="text-xl font-bold text-red-400">{summary.errored}</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--neg)' }}>{summary.errored}</p>
         </Card>
         <Card className="p-3">
           <p className="text-label">Records Synced</p>
@@ -201,7 +200,7 @@ export function IntegrationHealthPage() {
                           </div>
                           <div>
                             <span className="t-muted">Errors (30d)</span>
-                            <p className={c.errorsLast30d > 0 ? 'text-red-400' : 't-primary'}>{c.errorsLast30d}</p>
+                            <p style={{ color: c.errorsLast30d > 0 ? 'var(--neg)' : undefined }} className={c.errorsLast30d > 0 ? '' : 't-primary'}>{c.errorsLast30d}</p>
                           </div>
                         </div>
                       </div>
@@ -215,7 +214,7 @@ export function IntegrationHealthPage() {
           <TabPanel id="errors" activeTab={activeTab}>
             {erroredConnections.length === 0 ? (
               <Card className="p-8 text-center">
-                <CheckCircle size={24} className="mx-auto text-emerald-400 mb-2" />
+                <CheckCircle size={24} className="mx-auto mb-2" style={{ color: 'var(--accent)' }} />
                 <p className="text-sm t-muted">No errors in the last 30 days.</p>
               </Card>
             ) : (
@@ -224,7 +223,7 @@ export function IntegrationHealthPage() {
                   <Card key={c.id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <XCircle size={14} className="text-red-400 mt-0.5" />
+                        <XCircle size={14} className="mt-0.5" style={{ color: 'var(--neg)' }} />
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium t-primary">{c.name}</p>
@@ -265,9 +264,9 @@ export function IntegrationHealthPage() {
                         {freshnessLabel(c)}
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+                    <div className="h-2 rounded-md bg-[var(--bg-secondary)] overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
+                        className="h-full rounded-md transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)]"
                         style={{ width: `${pct}%`, background: freshnessColor(c.freshness) }}
                       />
                     </div>

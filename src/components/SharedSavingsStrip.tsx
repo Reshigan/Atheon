@@ -47,7 +47,7 @@ export function SharedSavingsStrip(): JSX.Element | null {
 
   return (
     <div
-      className="flex items-center justify-between gap-3 px-4 py-2 rounded-xl text-body-sm flex-wrap"
+      className="flex items-center justify-between gap-3 px-4 py-2 rounded-md text-body-sm flex-wrap"
       style={{
         background: 'rgba(163, 177, 138, 0.08)',
         border: '1px solid rgba(163, 177, 138, 0.30)',
@@ -68,7 +68,7 @@ export function SharedSavingsStrip(): JSX.Element | null {
             <>
               <span className="t-muted">•</span>
               <span className="t-secondary">
-                <strong className="text-emerald-500 font-semibold tabular-nums font-mono">{multiple.toFixed(1)}x</strong> return
+                <strong className="text-accent font-semibold tabular-nums font-mono">{multiple.toFixed(1)}x</strong> return
               </span>
             </>
           )}

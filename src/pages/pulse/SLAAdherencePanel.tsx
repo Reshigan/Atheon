@@ -93,13 +93,13 @@ export function SLAAdherencePanel() {
         <SummaryTile
           label="Avg adherence"
           value={`${data.summary.avgAdherencePct.toFixed(1)}%`}
-          icon={<TrendingUp size={14} className={data.summary.avgAdherencePct >= 95 ? 'text-emerald-500' : data.summary.avgAdherencePct >= 85 ? 'text-amber-400' : 'text-red-500'} />}
+          icon={<TrendingUp size={14} className={data.summary.avgAdherencePct >= 95 ? 'text-accent' : data.summary.avgAdherencePct >= 85 ? 'text-[var(--warning)]' : 'text-neg'} />}
           tone={data.summary.avgAdherencePct < 85 ? 'red' : 'neutral'}
         />
         <SummaryTile
           label="Breaching SLAs"
           value={String(data.summary.breachingSlas)}
-          icon={<AlertOctagon size={14} className={data.summary.breachingSlas > 0 ? 'text-red-500' : 't-muted'} />}
+          icon={<AlertOctagon size={14} className={data.summary.breachingSlas > 0 ? 'text-neg' : 't-muted'} />}
           tone={data.summary.breachingSlas > 0 ? 'red' : 'neutral'}
         />
       </div>
@@ -111,20 +111,20 @@ export function SLAAdherencePanel() {
             <span className="text-xs t-muted font-medium mr-1">Domain:</span>
             <button
               onClick={() => setDomainFilter('all')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] ${domainFilter === 'all' ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] ${domainFilter === 'all' ? 'bg-accent text-[var(--text-on-accent)]' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
             >All</button>
             {domains.map((d) => (
               <button
                 key={d}
                 onClick={() => setDomainFilter(d)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] capitalize ${domainFilter === d ? 'bg-accent text-white' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] capitalize ${domainFilter === d ? 'bg-accent text-[var(--text-on-accent)]' : 'bg-[var(--bg-secondary)] t-muted hover:t-primary'}`}
               >{d}</button>
             ))}
           </div>
         )}
         <button
           onClick={load}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,transform] duration-[var(--dur-press,160ms)] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
         >
           <RefreshCw size={12} /> Refresh
         </button>
@@ -141,7 +141,7 @@ export function SLAAdherencePanel() {
 function SLACard({ sla }: { sla: SLAItem }) {
   const delta = deltaTrend(sla.trend);
   const trendData = sla.trend.map((t) => t.adherencePct);
-  const accent = sla.status === 'green' ? '#10b981' : sla.status === 'amber' ? '#fbbf24' : '#f87171';
+  const accent = sla.status === 'green' ? 'var(--accent)' : sla.status === 'amber' ? 'var(--warning)' : 'var(--neg)';
   const adherenceLabel = sla.latest ? `${sla.latest.adherencePct.toFixed(1)}%` : '—';
   const avgVsTarget = sla.latest ? sla.latest.avgHours / sla.targetHours : 0;
 
@@ -180,8 +180,8 @@ function SLACard({ sla }: { sla: SLAItem }) {
 
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 text-caption">
-          {delta.dir === 'up' ? <TrendingUp size={12} className="text-emerald-500" /> : delta.dir === 'down' ? <TrendingDown size={12} className="text-red-500" /> : <Minus size={12} className="t-muted" />}
-          <span className={`tabular-nums font-mono ${delta.dir === 'up' ? 'text-emerald-500' : delta.dir === 'down' ? 'text-red-500' : 't-muted'}`}>
+          {delta.dir === 'up' ? <TrendingUp size={12} className="text-accent" /> : delta.dir === 'down' ? <TrendingDown size={12} className="text-neg" /> : <Minus size={12} className="t-muted" />}
+          <span className={`tabular-nums font-mono ${delta.dir === 'up' ? 'text-accent' : delta.dir === 'down' ? 'text-neg' : 't-muted'}`}>
             {delta.pct === 0 ? '0' : `${delta.pct > 0 ? '+' : ''}${delta.pct.toFixed(1)}pp`}
           </span>
           <span className="t-muted">30d</span>
@@ -201,10 +201,10 @@ function SummaryTile({ label, value, icon, tone = 'neutral' }: {
 }) {
   return (
     <div
-      className="p-2.5 rounded-lg border"
+      className="p-2.5 rounded-md border"
       style={{
-        background: tone === 'red' ? 'rgba(248,113,113,0.06)' : 'var(--bg-card-solid)',
-        borderColor: tone === 'red' ? 'rgba(248,113,113,0.30)' : 'var(--border-card)',
+        background: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.06)' : 'var(--bg-card-solid)',
+        borderColor: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.30)' : 'var(--border-card)',
       }}
     >
       <div className="flex items-center gap-1.5 mb-1">
@@ -223,8 +223,8 @@ function Tile({ label, value, sub, accent, tone = 'neutral', big = false }: {
     <div
       className="p-2 rounded-md border"
       style={{
-        background: tone === 'red' ? 'rgba(248,113,113,0.06)' : 'var(--bg-card-solid)',
-        borderColor: tone === 'red' ? 'rgba(248,113,113,0.30)' : 'var(--border-card)',
+        background: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.06)' : 'var(--bg-card-solid)',
+        borderColor: tone === 'red' ? 'rgb(var(--neg-rgb) / 0.30)' : 'var(--border-card)',
       }}
     >
       <div className="text-caption font-medium t-muted uppercase tracking-wider">{label}</div>

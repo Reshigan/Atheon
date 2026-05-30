@@ -6,9 +6,9 @@ import type { DashboardIntelligenceResponse } from "@/lib/api";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 const trendIcon = (trend: string) => {
-  if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />;
-  if (trend === "down" || trend === "declining") return <TrendingDown className="w-3.5 h-3.5 text-red-500" />;
-  return <Minus className="w-3.5 h-3.5 text-gray-400" />;
+  if (trend === "up" || trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-accent" />;
+  if (trend === "down" || trend === "declining") return <TrendingDown className="w-3.5 h-3.5" style={{ color: 'var(--neg)' }} />;
+  return <Minus className="w-3.5 h-3.5 t-muted" />;
 };
 
 interface IntelligencePanelProps {
@@ -17,10 +17,10 @@ interface IntelligencePanelProps {
 
 export function IntelligencePanel({ data }: IntelligencePanelProps) {
   return (
-    <DashCard className="!border-purple-500/20 !bg-purple-500/5">
+    <DashCard className="!border-[var(--border-card)] !bg-[var(--bg-card-solid)]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Lightbulb size={16} className="text-purple-400" />
+          <Lightbulb size={16} className="text-accent" />
           <h3 className="text-sm font-semibold t-primary">Atheon Intelligence</h3>
         </div>
         <span className="text-caption t-muted">{data.poweredBy}</span>
@@ -31,7 +31,7 @@ export function IntelligencePanel({ data }: IntelligencePanelProps) {
           <p className="text-xs font-medium t-primary mb-1.5">Key Metrics</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {data.keyMetrics.map((m, i) => (
-              <div key={i} className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)]">
+              <div key={i} className="p-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)]">
                 <p className="text-caption t-muted">{m.name}</p>
                 <p className="text-sm font-bold t-primary">{typeof m.value === 'number' ? m.value.toFixed(1) : m.value}</p>
                 <div className="flex items-center gap-1">
@@ -49,7 +49,7 @@ export function IntelligencePanel({ data }: IntelligencePanelProps) {
           <div className="space-y-1">
             {data.topRisks.map((r, i) => (
               <div key={i} className="flex items-center gap-2 text-xs">
-                <AlertTriangle size={10} className={r.severity === 'critical' ? 'text-red-400' : r.severity === 'high' ? 'text-amber-400' : 'text-gray-400'} />
+                <AlertTriangle size={10} className={r.severity === 'critical' ? '' : r.severity === 'high' ? '' : 't-muted'} style={r.severity === 'critical' ? { color: 'var(--neg)' } : r.severity === 'high' ? { color: 'var(--warning)' } : undefined} />
                 <span className="t-primary font-medium">{r.title}</span>
                 <StatusPill status={r.severity} size="sm" />
               </div>
@@ -63,7 +63,7 @@ export function IntelligencePanel({ data }: IntelligencePanelProps) {
           <ul className="space-y-1">
             {data.recommendedActions.map((a, i) => (
               <li key={i} className="text-xs t-secondary flex items-start gap-1.5">
-                <ArrowRight size={10} className="text-purple-400 mt-0.5 flex-shrink-0" />
+                <ArrowRight size={10} className="text-accent mt-0.5 flex-shrink-0" />
                 {a}
               </li>
             ))}

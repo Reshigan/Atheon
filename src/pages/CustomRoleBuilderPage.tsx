@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { LoadingState, EmptyState } from '@/components/ui/state';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
@@ -234,17 +234,16 @@ export function CustomRoleBuilderPage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <HeroHeader
-          icon={Shield}
-          title="Custom Role Builder"
-          subtitle="Compose custom roles from the permission taxonomy"
-          accent="sage"
-        />
-        <Button size="sm" onClick={startCreate}>
-          <Plus size={14} className="mr-1" /> New Role
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Access · Role Builder"
+        title="Custom Role Builder"
+        dek="Compose custom roles from the permission taxonomy"
+        actions={
+          <Button size="sm" onClick={startCreate}>
+            <Plus size={14} className="mr-1" /> New Role
+          </Button>
+        }
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
@@ -277,7 +276,7 @@ export function CustomRoleBuilderPage() {
             <Card key={role.id} className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mt-0.5">
+                  <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center mt-0.5">
                     <Shield size={14} className="text-accent" />
                   </div>
                   <div className="flex-1">
@@ -321,7 +320,7 @@ export function CustomRoleBuilderPage() {
                   <button
                     onClick={() => handleDelete(role)}
                     disabled={deletingId === role.id || role.userCount > 0}
-                    className="p-1.5 rounded-md hover:bg-red-500/10 t-muted hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
+                    className="p-1.5 rounded-md hover:bg-[rgb(var(--neg-rgb)/0.08)] t-muted hover:text-[var(--neg)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
                     title={role.userCount > 0 ? `${role.userCount} user(s) assigned — cannot delete` : 'Delete'}
                   >
                     {deletingId === role.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -335,8 +334,8 @@ export function CustomRoleBuilderPage() {
 
       {/* Create / Edit modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !saving && setShowForm(false)}>
-          <div className="bg-[var(--bg-modal)] rounded-xl border border-[var(--border-card)] p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-overlay,rgb(0_0_0/0.4))] p-4" onClick={() => !saving && setShowForm(false)}>
+          <div className="bg-[var(--bg-modal)] rounded-md border border-[var(--border-card)] p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold t-primary mb-4">
               {editingRole ? `Edit Role — ${editingRole.name}` : 'Create Custom Role'}
             </h3>
@@ -345,7 +344,7 @@ export function CustomRoleBuilderPage() {
                 <div>
                   <label className="block text-xs font-medium t-primary mb-1">Role Name</label>
                   <input
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                    className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                     value={form.name}
                     onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
                     placeholder="e.g., Department Lead"
@@ -354,7 +353,7 @@ export function CustomRoleBuilderPage() {
                 <div>
                   <label className="block text-xs font-medium t-primary mb-1">Inherits from</label>
                   <select
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                    className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                     value={form.inheritsFrom}
                     onChange={(e) => setForm(p => ({ ...p, inheritsFrom: e.target.value }))}
                   >
@@ -368,7 +367,7 @@ export function CustomRoleBuilderPage() {
               <div>
                 <label className="block text-xs font-medium t-primary mb-1">Description</label>
                 <textarea
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--border-card)] text-sm bg-[var(--bg-secondary)] t-primary"
                   rows={2}
                   value={form.description}
                   onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
@@ -385,7 +384,7 @@ export function CustomRoleBuilderPage() {
                     {inheritedPerms.size > 0 && <span> (incl. {inheritedPerms.size} inherited)</span>}
                   </span>
                 </div>
-                <div className="border border-[var(--border-card)] rounded-lg bg-[var(--bg-secondary)] p-3 space-y-3">
+                <div className="border border-[var(--border-card)] rounded-md bg-[var(--bg-secondary)] p-3 space-y-3">
                   {Object.entries(permissionGroups).map(([ns, perms]) => {
                     const togglable = perms.filter(p => !isInherited(p));
                     const allChecked = togglable.length > 0 && togglable.every(p => form.permissions.includes(p));
@@ -436,17 +435,17 @@ export function CustomRoleBuilderPage() {
               </div>
 
               {/* Preview */}
-              <div className="rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)] p-3">
+              <div className="rounded-md border border-[var(--border-card)] bg-[var(--bg-secondary)] p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle size={12} className="text-emerald-400" />
+                  <CheckCircle size={12} className="text-accent" />
                   <p className="text-xs font-medium t-primary">A user with this role can:</p>
                 </div>
                 <p className="text-xs t-muted break-words">{previewSummary}</p>
               </div>
 
               {editingRole && editingRole.userCount > 0 && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
-                  <AlertCircle size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 rounded-md border p-3" style={{ borderColor: 'var(--warning)', background: 'rgb(var(--warning-rgb,180 120 40)/0.08)' }}>
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
                   <p className="text-xs t-primary">
                     {editingRole.userCount} user(s) currently have this role. Changes will apply to them immediately.
                   </p>

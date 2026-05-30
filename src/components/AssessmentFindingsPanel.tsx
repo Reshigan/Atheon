@@ -60,10 +60,10 @@ const SEVERITY_LABEL: Record<AssessmentFindingSeverity, string> = {
 };
 
 const SEVERITY_BAR_COLOR: Record<AssessmentFindingSeverity, string> = {
-  critical: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-amber-400',
-  low: 'bg-teal-500',
+  critical: 'bg-neg',
+  high: 'bg-neg',
+  medium: 'bg-[var(--warning)]',
+  low: 'bg-[var(--info)]',
 };
 
 const SEVERITY_RANK: Record<AssessmentFindingSeverity, number> = {
@@ -215,7 +215,7 @@ export function AssessmentFindingsPanel({
             <button
               type="button"
               onClick={() => setCompanyFilter(null)}
-              className={`px-3 py-1 rounded-md text-xs ${!companyFilter ? 'bg-accent text-white' : 'border border-[var(--border-card)] t-primary'}`}
+              className={`px-3 py-1 rounded-md text-xs ${!companyFilter ? 'bg-accent text-[var(--text-on-accent)]' : 'border border-[var(--border-card)] t-primary'}`}
               data-testid="entity-tab-all"
             >
               All ({findings.length})
@@ -225,7 +225,7 @@ export function AssessmentFindingsPanel({
                 key={entry.company.id}
                 type="button"
                 onClick={() => setCompanyFilter(entry.company.id)}
-                className={`px-3 py-1 rounded-md text-xs ${companyFilter === entry.company.id ? 'bg-accent text-white' : 'border border-[var(--border-card)] t-primary'}`}
+                className={`px-3 py-1 rounded-md text-xs ${companyFilter === entry.company.id ? 'bg-accent text-[var(--text-on-accent)]' : 'border border-[var(--border-card)] t-primary'}`}
                 data-testid={`entity-tab-${entry.company.id}`}
               >
                 {entry.company.name} ({entry.findings.length})
@@ -244,7 +244,7 @@ export function AssessmentFindingsPanel({
               type="text"
               aria-label="Search findings, sub-catalysts, codes"
               placeholder="Search findings, sub-catalysts, codes..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary focus:outline-none focus:border-accent/40"
+              className="w-full pl-9 pr-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary focus:outline-none focus:border-accent/40"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               data-testid="findings-search"
@@ -252,7 +252,7 @@ export function AssessmentFindingsPanel({
           </div>
           {summary && (
             <select
-              className="px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
+              className="px-3 py-2 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-card)] text-sm t-primary"
               value={categoryFilter || ''}
               onChange={(e) => setCategoryFilter(e.target.value || null)}
               data-testid="findings-category-filter"

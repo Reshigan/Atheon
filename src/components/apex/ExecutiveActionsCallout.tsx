@@ -6,9 +6,8 @@
  * top-N urgent risks with mitigation CTAs. Pulls the risk register that's
  * already loaded on the page — no extra fetch.
  *
- * Hidden when there are no critical / high severity risks. Uses tenant-orange
- * (#F97316) — the new dedicated colour for "must-act-now" state, distinct from
- * danger-red (#F87171, which is for failed/rejected things).
+ * Hidden when there are no critical / high severity risks. Critical actions use
+ * var(--neg) for the must-act-now state; high severity uses var(--warning).
  */
 import type { Risk } from '@/lib/api';
 import { recommendForRisk, catalystDeployUrl } from '@/lib/catalyst-recommendation';
@@ -31,11 +30,8 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
 
   return (
     <section
-      className="rounded-lg border p-lg relative overflow-hidden"
-      style={{
-        borderColor: 'rgba(249, 115, 22, 0.30)',
-        background: 'rgba(249, 115, 22, 0.05)',
-      }}
+      className="rounded-md border p-lg relative overflow-hidden bg-[var(--bg-card-solid)]"
+      style={{ borderLeft: '3px solid var(--neg)' }}
       aria-labelledby="exec-actions-required"
     >
       <span
@@ -44,7 +40,7 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
           top: 4,
           right: 4,
           fontSize: 120,
-          color: '#F97316',
+          color: 'var(--neg)',
         }}
         aria-hidden="true"
       >
@@ -54,13 +50,13 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
         <div
           className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center border"
           style={{
-            background: 'rgba(249, 115, 22, 0.20)',
-            borderColor: 'rgba(249, 115, 22, 0.30)',
+            background: 'rgb(var(--neg-rgb) / 0.12)',
+            borderColor: 'rgb(var(--neg-rgb) / 0.30)',
           }}
         >
           <span
-            className="material-symbols-outlined"
-            style={{ color: '#F97316', fontVariationSettings: "'FILL' 1" }}
+            className="material-symbols-outlined text-neg"
+            style={{ fontVariationSettings: "'FILL' 1" }}
             aria-hidden="true"
           >
             priority_high
@@ -69,8 +65,7 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
         <div className="flex-1 min-w-0">
           <h2
             id="exec-actions-required"
-            className="text-headline-md font-bold mb-4"
-            style={{ color: '#F97316' }}
+            className="text-headline-md font-bold mb-4 text-neg"
           >
             Executive Actions Required
           </h2>
@@ -78,9 +73,9 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
             {urgent.map((r) => {
               const rec = recommendForRisk({ category: r.category, title: r.title });
               const isCritical = r.severity === 'critical';
-              const sevTone = isCritical ? '#F87171' : '#FBBF24';
-              const sevBg = isCritical ? 'rgba(248, 113, 113, 0.18)' : 'rgba(251, 191, 36, 0.18)';
-              const sevBorder = isCritical ? 'rgba(248, 113, 113, 0.30)' : 'rgba(251, 191, 36, 0.30)';
+              const sevTone = isCritical ? 'var(--neg)' : 'var(--warning)';
+              const sevBg = isCritical ? 'rgb(var(--neg-rgb) / 0.18)' : 'rgb(var(--warning-rgb) / 0.18)';
+              const sevBorder = isCritical ? 'rgb(var(--neg-rgb) / 0.30)' : 'rgb(var(--warning-rgb) / 0.30)';
               return (
                 <div
                   key={r.id}
@@ -125,8 +120,8 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
                     <button
                       type="button"
                       onClick={() => navigate(catalystDeployUrl(rec))}
-                      className="shrink-0 px-4 py-2 rounded text-body-sm font-medium transition-colors text-white hover:opacity-90 active:scale-[0.97]"
-                      style={{ background: '#F97316' }}
+                      className="shrink-0 px-4 py-2 rounded-md text-body-sm font-medium transition-colors text-[var(--text-on-accent)] hover:opacity-90 active:scale-[0.97]"
+                      style={{ background: 'var(--neg)' }}
                       title={`Open ${rec.catalyst} → ${rec.subCatalyst}`}
                     >
                       Mitigate Risk
@@ -135,10 +130,10 @@ export function ExecutiveActionsCallout({ risks, onTrace }: Props): JSX.Element 
                     <button
                       type="button"
                       onClick={() => onTrace?.(r.id)}
-                      className="shrink-0 px-4 py-2 rounded text-body-sm font-medium transition-colors border hover:opacity-90 active:scale-[0.97]"
+                      className="shrink-0 px-4 py-2 rounded-md text-body-sm font-medium transition-colors border hover:opacity-90 active:scale-[0.97]"
                       style={{
-                        borderColor: 'rgba(249, 115, 22, 0.50)',
-                        color: '#F97316',
+                        borderColor: 'rgb(var(--neg-rgb) / 0.50)',
+                        color: 'var(--neg)',
                         background: 'transparent',
                       }}
                     >

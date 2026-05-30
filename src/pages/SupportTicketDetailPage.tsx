@@ -191,7 +191,7 @@ export function SupportTicketDetailPage() {
                 rows={4}
                 placeholder="Add more context, screenshots links, or acknowledge the resolution..."
                 onChange={(e) => setReplyBody(e.target.value)}
-                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] resize-y"
+                className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] resize-y"
                 style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-card)' }}
                 data-testid="support-reply-textarea"
               />

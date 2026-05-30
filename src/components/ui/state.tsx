@@ -69,7 +69,7 @@ export function LoadingState({
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] p-5"
+            className="rounded-md border border-[var(--border-card)] bg-[var(--bg-card)] p-5"
           >
             <Skeleton width="60%" height={12} className="mb-2" />
             <Skeleton width="40%" height={28} className="mb-3" />
@@ -143,7 +143,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
         >
           <RefreshCw size={14} /> Try again
         </button>
@@ -216,14 +216,14 @@ export function EmptyState({
         action.href ? (
           <a
             href={action.href}
-            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
           >
             {action.label}
           </a>
         ) : (
           <button
             onClick={action.onClick}
-            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-body-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
           >
             {action.label}
           </button>

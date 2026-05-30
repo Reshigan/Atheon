@@ -80,10 +80,10 @@ export function VerifyEmailPage() {
       <div className="w-full max-w-md card-glass p-8 text-center space-y-6">
         <div className="flex justify-center">
           {state === 'loading' && <Loader2 className="w-12 h-12 animate-spin" style={{ color: 'var(--accent)' }} />}
-          {state === 'success' && <CheckCircle className="w-12 h-12 text-emerald-500" />}
-          {state === 'already_verified' && <CheckCircle className="w-12 h-12 text-emerald-500" />}
-          {state === 'error' && <XCircle className="w-12 h-12 text-red-500" />}
-          {state === 'expired' && <Mail className="w-12 h-12 text-amber-500" />}
+          {state === 'success' && <CheckCircle className="w-12 h-12 text-accent" />}
+          {state === 'already_verified' && <CheckCircle className="w-12 h-12 text-accent" />}
+          {state === 'error' && <XCircle className="w-12 h-12 text-neg" />}
+          {state === 'expired' && <Mail className="w-12 h-12" style={{ color: 'var(--warning)' }} />}
         </div>
 
         <h1 className="text-headline-xl font-bold t-primary tracking-tight leading-tight">
@@ -99,7 +99,7 @@ export function VerifyEmailPage() {
         {(state === 'success' || state === 'already_verified') && (
           <Link
             to="/login"
-            className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
+            className="inline-block px-6 py-2.5 rounded-md text-sm font-medium text-[var(--text-on-accent)] transition-colors"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             Go to Login
@@ -114,14 +114,14 @@ export function VerifyEmailPage() {
               placeholder="your@email.com"
               value={resendEmail}
               onChange={(e) => setResendEmail(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border text-sm"
+              className="w-full px-3 py-2 rounded-md border text-sm"
               style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-input)' }}
               aria-label="Email address for resend"
             />
             <button
               onClick={handleResend}
               disabled={resending || !resendEmail}
-              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+              className="w-full px-4 py-2.5 rounded-md text-sm font-medium text-[var(--text-on-accent)] transition-colors disabled:opacity-50"
               style={{ backgroundColor: 'var(--accent)' }}
             >
               {resending ? 'Sending...' : 'Resend Verification Email'}
@@ -130,7 +130,7 @@ export function VerifyEmailPage() {
         )}
 
         {resendSuccess && (
-          <p className="text-sm text-emerald-500">
+          <p className="text-sm text-accent">
             A new verification email has been sent. Check your inbox.
           </p>
         )}

@@ -103,18 +103,18 @@ export function AnomalyList({ anomalies }: AnomalyListProps) {
           const rec = recommendForAnomaly(a.metric);
           const dispatch = stateByIdx[i] || { status: 'idle' };
           return (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-card)]">
-              <AlertTriangle size={16} className={a.severity === 'high' ? 'text-red-400' : a.severity === 'medium' ? 'text-amber-400' : 'text-gray-400'} />
+            <div key={i} className="flex items-start gap-3 p-3 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)]">
+              <AlertTriangle size={16} className={a.severity === 'high' ? 'text-neg' : a.severity === 'medium' ? 'text-[var(--warning)]' : 't-muted'} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium t-primary">{a.metric}</p>
                 <p className="text-xs t-secondary mt-0.5">{a.hypothesis || `Anomaly detected in ${a.metric}`}</p>
                 {dispatch.status === 'dispatched' && dispatch.actionId && (
-                  <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+                  <p className="text-[11px] text-accent mt-1 flex items-center gap-1">
                     <CheckCircle2 size={11} /> Dispatched · action {dispatch.actionId.slice(0, 8)}
                     <button
                       type="button"
                       onClick={() => navigate('/catalysts?tab=approvals')}
-                      className="ml-1 inline-flex items-center gap-0.5 underline decoration-dotted hover:text-emerald-300"
+                      className="ml-1 inline-flex items-center gap-0.5 underline decoration-dotted hover:opacity-70"
                       data-testid={`view-approvals-${i}`}
                     >
                       View in Approvals <ExternalLink size={10} />
@@ -122,7 +122,7 @@ export function AnomalyList({ anomalies }: AnomalyListProps) {
                   </p>
                 )}
                 {dispatch.status === 'failed' && (
-                  <p className="text-[11px] text-red-400 mt-1">Dispatch failed: {dispatch.error}</p>
+                  <p className="text-[11px] text-neg mt-1">Dispatch failed: {dispatch.error}</p>
                 )}
               </div>
               <StatusPill status={a.severity} size="sm" />
@@ -172,10 +172,10 @@ export function AnomalyList({ anomalies }: AnomalyListProps) {
             if (e.target === e.currentTarget) setMfaPrompt(null);
           }}
         >
-          <div className="w-full max-w-md mx-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-card)] p-5 shadow-2xl">
+          <div className="w-full max-w-md mx-4 rounded-md bg-[var(--bg-card)] border border-[var(--border-card)] p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <KeyRound size={16} className="text-amber-400" />
+                <KeyRound size={16} style={{ color: 'var(--warning)' }} />
                 <h3 id="dispatch-mfa-title" className="text-sm font-semibold t-primary">Step-up verification</h3>
               </div>
               <button
@@ -205,10 +205,10 @@ export function AnomalyList({ anomalies }: AnomalyListProps) {
               }}
               placeholder="000000"
               aria-label="Authenticator code"
-              className="w-full rounded-lg bg-[var(--bg-base)] border border-[var(--border-card)] px-3 py-2 text-center text-lg tracking-[0.4em] font-mono t-primary focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+              className="w-full rounded-md bg-[var(--bg-base)] border border-[var(--border-card)] px-3 py-2 text-center text-lg tracking-[0.4em] font-mono t-primary focus:outline-none focus:ring-2 focus:ring-[var(--border-card)]"
               data-testid="dispatch-mfa-input"
             />
-            {mfaError && <p className="text-xs text-red-400 mt-2" role="alert">{mfaError}</p>}
+            {mfaError && <p className="text-xs text-neg mt-2" role="alert">{mfaError}</p>}
             <div className="flex items-center justify-end gap-2 mt-4">
               <Button variant="ghost" size="sm" onClick={() => setMfaPrompt(null)} disabled={mfaSubmitting}>
                 Cancel

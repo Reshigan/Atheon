@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { HeroHeader } from '@/components/ui/hero-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { LoadingState, ErrorState } from '@/components/ui/state';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
@@ -107,11 +107,10 @@ export default function ROIDashboardPage(): JSX.Element {
   return (
     <div className="p-6 space-y-6">
       <SharedSavingsStrip />
-      <HeroHeader
-        icon={TrendingUp}
+      <PageHeader
+        eyebrow="Value · ROI"
         title="ROI Dashboard"
-        subtitle="Financial Proof & Inference Calibration"
-        accent="sage"
+        dek="Financial Proof & Inference Calibration"
       />
 
       {/* Billing summary — Stitch financial-proof tile pattern */}
@@ -128,7 +127,7 @@ export default function ROIDashboardPage(): JSX.Element {
           };
           return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
               <div className="flex items-center justify-between">
                 <div className="text-caption uppercase tracking-wider t-muted">Periods invoiced</div>
                 <MetricSource source={{
@@ -142,7 +141,7 @@ export default function ROIDashboardPage(): JSX.Element {
               </div>
               <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{billing.periods_count}</p>
             </div>
-            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
               <div className="flex items-center justify-between">
                 <div className="text-caption uppercase tracking-wider t-muted">Total realised savings</div>
                 <MetricSource source={{
@@ -162,7 +161,7 @@ export default function ROIDashboardPage(): JSX.Element {
                 {formatCurrency(billing.total_realised_savings, billing.currency)}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
+            <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
               <div className="flex items-center justify-between">
                 <div className="text-caption uppercase tracking-wider t-muted">Atheon share</div>
                 <MetricSource source={{
@@ -177,7 +176,7 @@ export default function ROIDashboardPage(): JSX.Element {
                   ],
                 }} />
               </div>
-              <p className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono mt-1">
+              <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">
                 {formatCurrency(billing.total_atheon_revenue, billing.currency)}
               </p>
             </div>
@@ -189,7 +188,7 @@ export default function ROIDashboardPage(): JSX.Element {
       {/* Forecast accuracy */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Activity size={18} style={{ color: 'var(--sky)' }} />
+          <Activity size={18} style={{ color: 'var(--info)' }} />
           <h2 className="text-headline-md font-semibold t-primary">Forecast accuracy <span className="text-body-sm font-normal t-muted">(last {forecast?.lookback_days ?? 90} days)</span></h2>
         </div>
         {forecast && forecast.total_graded > 0 ? (() => {
@@ -201,7 +200,7 @@ export default function ROIDashboardPage(): JSX.Element {
           return (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-sky-500/40 transition-colors active:scale-[0.97]">
+              <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                 <div className="flex items-center justify-between">
                   <div className="text-caption uppercase tracking-wider t-muted">Graded forecasts</div>
                   <MetricSource source={{
@@ -215,7 +214,7 @@ export default function ROIDashboardPage(): JSX.Element {
                 </div>
                 <p className="text-headline-lg font-bold t-primary tabular-nums font-mono mt-1">{forecast.total_graded}</p>
               </div>
-              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-emerald-500/40 transition-colors active:scale-[0.97]">
+              <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                 <div className="flex items-center justify-between">
                   <div className="text-caption uppercase tracking-wider t-muted">Within band</div>
                   <MetricSource source={{
@@ -227,13 +226,13 @@ export default function ROIDashboardPage(): JSX.Element {
                     sample: forecast.total_graded,
                   }} />
                 </div>
-                <p className="text-headline-lg font-bold text-emerald-500 tabular-nums font-mono mt-1">
+                <p className="text-headline-lg font-bold text-accent tabular-nums font-mono mt-1">
                   {forecast.within_band_rate != null
                     ? `${(forecast.within_band_rate * 100).toFixed(1)}%`
                     : '—'}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-amber-500/40 transition-colors active:scale-[0.97]">
+              <div className="p-4 rounded-md bg-[var(--bg-card-solid)] border border-[var(--border-card)] hover:border-accent/40 transition-colors active:scale-[0.97]">
                 <div className="flex items-center justify-between">
                   <div className="text-caption uppercase tracking-wider t-muted">Median |error| %</div>
                   <MetricSource source={{
@@ -253,12 +252,12 @@ export default function ROIDashboardPage(): JSX.Element {
               </div>
             </div>
             <table className="w-full text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-left text-xs t-muted">
                 <tr><th className="py-1">Horizon</th><th>Graded</th><th>Within band</th><th>Median |error|</th></tr>
               </thead>
               <tbody>
                 {forecast.by_horizon.map((h) => (
-                  <tr key={h.horizon_days} className="border-t border-border/40">
+                  <tr key={h.horizon_days} className="border-t border-[var(--divider)]">
                     <td className="py-2">{h.horizon_days}d</td>
                     <td>{h.graded}</td>
                     <td>{h.within_band_rate != null ? `${(h.within_band_rate * 100).toFixed(1)}%` : '—'}</td>
@@ -269,18 +268,18 @@ export default function ROIDashboardPage(): JSX.Element {
             </table>
           </>
           );
-        })() : <div className="text-sm text-muted-foreground">No forecasts have elapsed yet.</div>}
+        })() : <div className="text-sm t-muted">No forecasts have elapsed yet.</div>}
       </Card>
 
       {/* Calibration */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-3">
-          <AlertCircle size={18} />
-          <h2 className="text-lg font-semibold">Inference calibration</h2>
+          <AlertCircle size={18} style={{ color: 'var(--warning)' }} />
+          <h2 className="text-headline-md font-semibold t-primary">Inference calibration</h2>
         </div>
         {calibration && calibration.gates.length > 0 ? (
           <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
+            <thead className="text-left text-xs t-muted">
               <tr>
                 <th className="py-1">Gate</th><th>TP</th><th>FP</th><th>TN</th><th>FN</th>
                 <th>FP rate</th><th>Rec</th>
@@ -288,7 +287,7 @@ export default function ROIDashboardPage(): JSX.Element {
             </thead>
             <tbody>
               {calibration.gates.map((g) => (
-                <tr key={g.gate} className="border-t border-border/40">
+                <tr key={g.gate} className="border-t border-[var(--divider)]">
                   <td className="py-2 font-mono text-xs">{g.gate}</td>
                   <td>{g.true_positives}</td>
                   <td>{g.false_positives}</td>
@@ -300,23 +299,23 @@ export default function ROIDashboardPage(): JSX.Element {
               ))}
             </tbody>
           </table>
-        ) : <div className="text-sm text-muted-foreground">No calibration data.</div>}
+        ) : <div className="text-sm t-muted">No calibration data.</div>}
       </Card>
 
       {/* DSAR */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-3">
-          <Shield size={18} />
-          <h2 className="text-lg font-semibold">DSAR (POPIA / GDPR) requests</h2>
+          <Shield size={18} style={{ color: 'var(--info)' }} />
+          <h2 className="text-headline-md font-semibold t-primary">DSAR (POPIA / GDPR) requests</h2>
         </div>
         {dsar && dsar.by_type_and_status.length > 0 ? (
           <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
+            <thead className="text-left text-xs t-muted">
               <tr><th className="py-1">Type</th><th>Status</th><th>Count</th></tr>
             </thead>
             <tbody>
               {dsar.by_type_and_status.map((r, i) => (
-                <tr key={i} className="border-t border-border/40">
+                <tr key={i} className="border-t border-[var(--divider)]">
                   <td className="py-2">{r.request_type}</td>
                   <td>{r.status}</td>
                   <td>{r.n}</td>
@@ -324,7 +323,7 @@ export default function ROIDashboardPage(): JSX.Element {
               ))}
             </tbody>
           </table>
-        ) : <div className="text-sm text-muted-foreground">No DSAR requests recorded.</div>}
+        ) : <div className="text-sm t-muted">No DSAR requests recorded.</div>}
       </Card>
     </div>
   );

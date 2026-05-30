@@ -52,14 +52,14 @@ export function PeerInsightsBadge({ findingCode, industry = 'general' }: Props):
 
   return (
     <div
-      className="rounded-md p-3 flex items-start gap-3"
+      className="rounded-sm p-3 flex items-start gap-3"
       style={{
-        background: 'rgba(125, 211, 252, 0.06)',
-        border: '1px solid rgba(125, 211, 252, 0.18)',
+        background: 'rgb(var(--accent-rgb) / 0.06)',
+        border: '1px solid rgb(var(--accent-rgb) / 0.18)',
       }}
       data-testid={`peer-insights-${findingCode}`}
     >
-      <Sparkles size={14} className="text-sky-500 flex-shrink-0 mt-[2px]" />
+      <Sparkles size={14} className="text-accent flex-shrink-0 mt-[2px]" />
       <div className="flex-1 text-xs">
         <div className="t-primary mb-1">
           <strong>Peer pattern.</strong>{' '}
