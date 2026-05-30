@@ -126,6 +126,24 @@ async function getCurrentStatus(env: AppBindings['Bindings']): Promise<LicenseSt
     try { status = JSON.parse(cached) as LicenseStatus; } catch { /* corrupt → treat as missing */ }
   }
 
+  // Helper: enforce the 7-day fail-closed override regardless of which
+  // code path produced the status. Previously this check only ran on the
+  // "cache < 1h fresh" branch — meaning a customer disconnected for >7d
+  // would phone-home, fail, and silently keep their cached `valid:true`
+  // forever. We now apply it any time a cached status is returned.
+  const applyStaleGuard = (s: LicenseStatus): LicenseStatus => {
+    const ageDays = (Date.now() - new Date(s.last_checked_at).getTime()) / (1000 * 60 * 60 * 24);
+    if (ageDays > STALE_DAYS_FAIL_CLOSED) {
+      return {
+        ...s,
+        valid: false,
+        status: 'unknown',
+        reason: `License has not been validated against Atheon cloud for ${ageDays.toFixed(0)} days; failing closed for safety. Restore network connectivity to ${env.ATHEON_LICENSE_CHECK_URL} to recover.`,
+      };
+    }
+    return s;
+  };
+
   // If cache is missing or > 1 hour old, refresh.
   const isStale = !status
     || (Date.now() - new Date(status.last_checked_at).getTime()) > CACHE_TTL_SECONDS * 1000;
@@ -136,8 +154,9 @@ async function getCurrentStatus(env: AppBindings['Bindings']): Promise<LicenseSt
       await env.CACHE.put(CACHE_KEY, JSON.stringify(fresh), { expirationTtl: CACHE_TTL_SECONDS });
       return fresh;
     }
-    // Phone-home failed — keep cached value if any, else default to "unknown" (allow).
-    if (status) return status;
+    // Phone-home failed — keep cached value if any (subject to stale
+    // guard), else default to "unknown" (allow once).
+    if (status) return applyStaleGuard(status);
     return {
       valid: true, // fail-OPEN on first-ever phone-home failure
       expires_at: null,
@@ -147,17 +166,7 @@ async function getCurrentStatus(env: AppBindings['Bindings']): Promise<LicenseSt
     };
   }
 
-  // Cache hit — but if last_checked_at is very old, fail-closed.
-  const ageDays = (Date.now() - new Date(status!.last_checked_at).getTime()) / (1000 * 60 * 60 * 24);
-  if (ageDays > STALE_DAYS_FAIL_CLOSED) {
-    return {
-      ...status!,
-      valid: false,
-      status: 'unknown',
-      reason: `License has not been validated against Atheon cloud for ${ageDays.toFixed(0)} days; failing closed for safety. Restore network connectivity to ${env.ATHEON_LICENSE_CHECK_URL} to recover.`,
-    };
-  }
-  return status!;
+  return applyStaleGuard(status!);
 }
 
 /**

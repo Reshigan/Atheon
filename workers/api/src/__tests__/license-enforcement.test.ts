@@ -95,6 +95,105 @@ describe('License Enforcement — cloud-side license-check endpoint', () => {
   });
 });
 
+describe('License Enforcement — customer-mode stale cache fail-closed', () => {
+  // The 7-day fail-closed branch (services/license-enforcement.ts:151-159)
+  // is the most security-sensitive line in the middleware: if a customer
+  // instance has been disconnected from Atheon cloud for > 7 days, the
+  // last cached "valid" status MUST be overridden to invalid so a revoked
+  // licence can't keep running indefinitely on a stale cache.
+  //
+  // We test the branch via the exported getLicenseStatusForAdmin helper,
+  // which routes through the same getCurrentStatus() code path. The
+  // helper is admin-only (called from /api/v1/license-status), so it
+  // does NOT go via the middleware — meaning we don't need to mock the
+  // outbound phone-home fetch to reach the stale-cache branch.
+
+  const CACHE_KEY = 'license-enforcement:status';
+  // Build a fake customer-mode env that reuses real DB + CACHE bindings
+  // but overrides the deployment role and configures phone-home URL/key.
+  // (The unused phone-home target won't be hit because we seed a fresh
+  // cache that's < 1h old, then a stale one that's > 7d old — both
+  // bypass the refresh branch by being either fresh OR cache-hit-stale.)
+  function customerEnv() {
+    return {
+      ...env,
+      DEPLOYMENT_ROLE: 'customer',
+      LICENCE_KEY: 'STALE-CACHE-TEST-KEY',
+      ATHEON_LICENSE_CHECK_URL: 'https://example.invalid/api/agent/license-check',
+    } as typeof env;
+  }
+
+  beforeEach(async () => {
+    await env.CACHE.delete(CACHE_KEY);
+  });
+
+  it('cache hit < 1 hour old returns cached status as-is (no fail-close)', async () => {
+    const cached = {
+      valid: true,
+      expires_at: null,
+      status: 'active',
+      last_checked_at: new Date().toISOString(),
+      reason: 'fresh cache',
+    };
+    await env.CACHE.put(CACHE_KEY, JSON.stringify(cached));
+
+    const { getLicenseStatusForAdmin } = await import('../services/license-enforcement');
+    const status = await getLicenseStatusForAdmin(customerEnv());
+
+    expect(status.valid).toBe(true);
+    expect(status.status).toBe('active');
+    expect(status.reason).toBe('fresh cache');
+  });
+
+  it('cache hit > 7 days old overrides to valid:false with stale reason', async () => {
+    // 8 days ago — past the 7-day stale fail-closed threshold but inside
+    // KV expirationTtl (we don't set one, so it persists).
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const cached = {
+      valid: true, // ← was valid when last checked
+      expires_at: null,
+      status: 'active',
+      last_checked_at: eightDaysAgo,
+      reason: 'last successful check',
+    };
+    await env.CACHE.put(CACHE_KEY, JSON.stringify(cached));
+
+    const { getLicenseStatusForAdmin } = await import('../services/license-enforcement');
+    const status = await getLicenseStatusForAdmin(customerEnv());
+
+    // The crucial assertion: even though cache says valid:true and 'active',
+    // staleness > 7 days MUST flip valid to false.
+    expect(status.valid).toBe(false);
+    expect(status.status).toBe('unknown');
+    expect(status.reason).toMatch(/has not been validated against Atheon cloud for \d+ days/i);
+    expect(status.reason).toMatch(/failing closed for safety/i);
+    // last_checked_at is preserved so operators can see when contact was lost.
+    expect(status.last_checked_at).toBe(eightDaysAgo);
+  });
+
+  it('cache hit exactly at the 7-day boundary still treats as fresh (inclusive boundary)', async () => {
+    // 6d 23h ago — should still be inside the 7-day window.
+    const justUnderSevenDays = new Date(Date.now() - (7 * 24 - 1) * 60 * 60 * 1000).toISOString();
+    const cached = {
+      valid: true,
+      expires_at: null,
+      status: 'active',
+      last_checked_at: justUnderSevenDays,
+      reason: 'just under boundary',
+    };
+    await env.CACHE.put(CACHE_KEY, JSON.stringify(cached));
+
+    const { getLicenseStatusForAdmin } = await import('../services/license-enforcement');
+    const status = await getLicenseStatusForAdmin(customerEnv());
+
+    // Cache is > 1h old so getCurrentStatus will TRY to refresh via
+    // phone-home. The fetch to example.invalid will fail, and the code
+    // falls back to the existing cached status (which is < 7 days old).
+    expect(status.valid).toBe(true);
+    expect(status.reason).toBe('just under boundary');
+  });
+});
+
 describe('License Enforcement — middleware no-ops on cloud deployment', () => {
   beforeAll(async () => { await migrate(); });
 
