@@ -116,6 +116,17 @@ serves a real PDF.
 - **E2E traceability requires same-origin.** Because of the CORS constraint
   above, the E2E spec must target the deployed frontend, not a local dev server
   pointed at prod.
+- **Staging environment is parked.** `wrangler.toml` still declares an
+  `[env.staging]` worker (`atheon-api-staging`) but the
+  `staging.atheon.vantax.co.za` DNS record + Cloudflare route are not
+  provisioned, so the `[env.staging].routes` binding intentionally isn't set.
+  The `staging-e2e.yml` workflow that depended on the missing host has been
+  retired — production E2E (`production-e2e.yml`, 02:30 UTC daily) is the
+  authoritative regression catch until staging is rebuilt. Standing staging
+  back up requires, at minimum: (1) add a `staging.atheon-api.vantax.co.za`
+  route to `[env.staging]`; (2) create the DNS record + Cloudflare zone
+  binding; (3) deploy a frontend target (Pages or Worker); (4) seed a staging
+  tenant and create the `E2E_STAGING_*` service-account secrets.
 
 ## Failure triage
 
