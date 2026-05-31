@@ -19,6 +19,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import {
   Target, Lock, Network, ShieldCheck, AlertTriangle, Loader2, RefreshCw,
 } from 'lucide-react';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import type { ProvenanceVerifyResult, FederatedPattern } from '@/lib/api';
@@ -96,11 +97,17 @@ export function TrustPerformancePage(): JSX.Element {
     }
   }
 
-  if (loading) {
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="p-8 flex items-center gap-3 t-muted">
-        <Loader2 className="w-5 h-5 animate-spin" /> Loading Trust & Performance…
-      </div>
+      <AsyncPageContent
+        status={status}
+        onRetry={() => void loadAll()}
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

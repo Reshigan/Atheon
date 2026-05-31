@@ -8,6 +8,7 @@ import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";
 import { PageHeader } from "@/components/ui/page-header";
@@ -635,11 +636,21 @@ export function ApexPage() {
     </div>
   );
 
-  if (loading) {
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
       <div className="space-y-6 animate-fadeIn">
         <div className="text-label">Apex · Executive Intelligence</div>
-        <LoadingState variant="cards" count={4} />
+        <AsyncPageContent
+          status={status}
+          error={null}
+          onRetry={() => void loadApexData({ showLoading: true })}
+          errorTitle="Couldn't load executive intelligence"
+          loadingVariant="cards"
+          loadingCount={4}
+        >
+          {null}
+        </AsyncPageContent>
       </div>
     );
   }

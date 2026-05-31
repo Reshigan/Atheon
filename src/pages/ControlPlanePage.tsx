@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { api, ApiError } from "@/lib/api";
 import type { ControlPlaneHealth, DeploymentItem } from "@/lib/api";
 import {
@@ -254,11 +255,17 @@ export function ControlPlanePage() {
     return { running, totalReplicas, avgUptime, avgHealth };
   }, [deployments]);
 
-  if (loading) {
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
+      <AsyncPageContent
+        status={status}
+        onRetry={() => void refresh()}
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

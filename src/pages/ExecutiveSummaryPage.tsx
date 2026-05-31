@@ -26,6 +26,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { ScoreRing } from '@/components/ui/score-ring';
 import { Sparkline } from '@/components/ui/sparkline';
 import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import type { ExecutiveSummaryResponse } from '@/lib/api';
 import {
   Loader2, AlertTriangle, AlertCircle, TrendingUp,
@@ -77,26 +78,19 @@ export function ExecutiveSummaryPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) {
+  const status = statusFrom({ loading, error: error && !data ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 gap-3">
-        <AlertTriangle className="w-8 h-8" style={{ color: 'var(--neg)' }} />
-        <p className="text-sm t-primary">{error}</p>
-        <button
-          onClick={() => load()}
-          className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
-        >
-          Retry
-        </button>
-      </div>
+      <AsyncPageContent
+        status={status}
+        error={error}
+        onRetry={() => void load()}
+        errorTitle="Couldn't load executive summary"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

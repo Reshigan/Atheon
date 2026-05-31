@@ -14,7 +14,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { api, ApiError } from '@/lib/api';
 import type { RevenueUsageResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import {
   DollarSign, TrendingUp, PieChart, Activity,
   Building2, CreditCard, RefreshCw, Users, Brain, AlertCircle,
@@ -69,14 +69,19 @@ export function RevenueUsagePage() {
   ];
 
   // Render-state contract (UI_POLISH_PRINCIPLES §6.1):
-  if (loading && !data) return <LoadingState variant="cards" count={4} />;
-  if (error && !data) {
+  const status = statusFrom({ loading: loading && !data, error: error && !data ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <ErrorState
-        title="Couldn't load revenue & usage"
+      <AsyncPageContent
+        status={status}
         error={error}
         onRetry={handleRefresh}
-      />
+        errorTitle="Couldn't load revenue & usage"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
   if (!data) return null;

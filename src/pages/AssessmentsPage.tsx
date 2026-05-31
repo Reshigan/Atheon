@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { ClipboardList } from 'lucide-react';
 import { EmptyState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { catalystDeployUrl } from '@/lib/catalyst-recommendation';
 import { formatDays } from '@/lib/utils';
 
@@ -149,20 +150,23 @@ function ListView({ assessments, loading, onView, onDelete }: {
   onView: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  if (loading) {
-    return <div className="space-y-3">{[1,2,3].map(i => (
-      <div key={i} className="h-16 rounded-md animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
-    ))}</div>;
-  }
-
-  if (assessments.length === 0) {
+  const status = statusFrom({ loading, error: null, isEmpty: assessments.length === 0 });
+  if (status !== 'success') {
     return (
-      <EmptyState
-        variant="hero"
-        icon={ClipboardList}
-        title="No assessments yet"
-        description="Run a pre-assessment against a prospect's ERP to generate a business case."
-      />
+      <AsyncPageContent
+        status={status}
+        errorTitle="Couldn't load assessments"
+        loadingVariant="list"
+        loadingCount={3}
+        emptyState={{
+          variant: 'hero',
+          icon: ClipboardList,
+          title: 'No assessments yet',
+          description: "Run a pre-assessment against a prospect's ERP to generate a business case.",
+        }}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

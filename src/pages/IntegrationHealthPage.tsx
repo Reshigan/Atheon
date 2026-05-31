@@ -15,7 +15,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { api, ApiError } from '@/lib/api';
 import type { IntegrationHealthConnection } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import {
   Wifi, CheckCircle, XCircle, AlertTriangle, Clock,
   RefreshCw, Zap, Activity,
@@ -106,15 +106,23 @@ export function IntegrationHealthPage() {
     { id: 'freshness', label: 'Data Freshness', icon: <Clock size={14} /> },
   ];
 
-  if (loading && connections.length === 0) return <LoadingState variant="list" count={3} />;
-
-  if (error && connections.length === 0) {
+  const status = statusFrom({
+    loading: loading && connections.length === 0,
+    error: error && connections.length === 0 ? error : null,
+    isEmpty: false,
+  });
+  if (status !== 'success') {
     return (
-      <ErrorState
-        title="Couldn't load integration health"
+      <AsyncPageContent
+        status={status}
         error={error}
         onRetry={handleRefresh}
-      />
+        errorTitle="Couldn't load integration health"
+        loadingVariant="list"
+        loadingCount={3}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

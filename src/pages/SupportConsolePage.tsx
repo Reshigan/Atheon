@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { EmptyState, ErrorState, FormError } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
 import { useToast } from '@/components/ui/toast';
@@ -258,26 +259,19 @@ export function SupportConsolePage() {
     }
   };
 
-  if (loading) {
+  const status = statusFrom({ loading, error: error && tenants.length === 0 ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
-
-  if (error && tenants.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 gap-3">
-        <AlertTriangle className="w-8 h-8 text-neg" />
-        <p className="text-sm t-primary">{error}</p>
-        <button
-          onClick={loadTenants}
-          className="px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors active:scale-[0.97]"
-        >
-          Retry
-        </button>
-      </div>
+      <AsyncPageContent
+        status={status}
+        error={error}
+        onRetry={() => void loadTenants()}
+        errorTitle="Couldn't load support console"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

@@ -20,7 +20,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { useAppStore } from '@/stores/appStore';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiError, setTenantOverride } from '@/lib/api';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import {
   Eye, Search, Clock, Loader2, AlertTriangle,
   User, LogOut,
@@ -194,14 +194,19 @@ export function ImpersonationPage() {
     return targetLevel < callerLevel && u.id !== currentUser?.id;
   };
 
-  if (loading) return <LoadingState variant="cards" count={4} />;
-  if (error && users.length === 0) {
+  const status = statusFrom({ loading, error: error && users.length === 0 ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <ErrorState
-        title="Couldn't load users"
+      <AsyncPageContent
+        status={status}
         error={error}
         onRetry={() => loadUsers()}
-      />
+        errorTitle="Couldn't load users"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

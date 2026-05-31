@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { PageHeader } from '@/components/ui/page-header';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import type {
   ManagedDeployment, CreateDeploymentRequest, CreateDeploymentResponse, AgentErrorLog
 } from '@/lib/api';
@@ -180,12 +181,17 @@ function OverviewView({ deployments, loading, statusColor, openDetail, openLogs 
   openDetail: (id: string) => void;
   openLogs: (id: string) => void;
 }) {
-  if (loading) {
-    return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {[1,2,3].map(i => (
-        <div key={i} className="h-48 rounded-md animate-pulse" style={{ background: 'var(--bg-secondary)' }} />
-      ))}
-    </div>;
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
+    return (
+      <AsyncPageContent
+        status={status}
+        loadingVariant="cards"
+        loadingCount={3}
+      >
+        {null}
+      </AsyncPageContent>
+    );
   }
 
   if (deployments.length === 0) {

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Portal } from "@/components/ui/portal";
 import { Card } from "@/components/ui/card";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -1006,7 +1007,21 @@ export function CatalystsPage() {
   ...(isAdmin ? [{ id: 'governance', label: 'Governance', icon: <Shield size={14} /> }] : []),
  ];
 
- if (loading) return <LoadingState variant="cards" count={6} />;
+ const status = statusFrom({ loading, error: null, isEmpty: false });
+ if (status !== 'success') {
+  return (
+   <AsyncPageContent
+    status={status}
+    error={null}
+    onRetry={() => window.location.reload()}
+    errorTitle="Couldn't load catalysts"
+    loadingVariant="cards"
+    loadingCount={6}
+   >
+    {null}
+   </AsyncPageContent>
+  );
+ }
 
  const renderActionCard = (action: ActionItem, showExceptionHighlight = false) => {
  const isException = action.status === 'exception';

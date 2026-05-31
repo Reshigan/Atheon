@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
-import { LoadingState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import { CompanyHealthPage } from './CompanyHealthPage';
@@ -182,7 +182,18 @@ function SuperadminPlatformHealth() {
     { id: 'alerts', label: 'System Alerts', icon: <AlertTriangle size={14} />, count: unacknowledgedAlerts.length },
   ];
 
-  if (loading) return <LoadingState variant="cards" count={4} />;
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
+    return (
+      <AsyncPageContent
+        status={status}
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">

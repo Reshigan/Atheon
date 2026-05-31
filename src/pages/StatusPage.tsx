@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { api, ApiError } from '@/lib/api';
 import type { StatusIncident } from '@/lib/api';
 import {
@@ -102,8 +102,23 @@ export default function StatusPage(): JSX.Element {
     return () => clearInterval(t);
   }, [load]);
 
-  if (loading && !data) return <div className="p-6 max-w-5xl mx-auto"><LoadingState variant="cards" count={4} /></div>;
-  if (error && !data) return <div className="p-6 max-w-5xl mx-auto"><ErrorState title="Couldn't load status" error={error} onRetry={() => void load()} /></div>;
+  const status = statusFrom({ loading: loading && !data, error: error && !data ? error : null, isEmpty: false });
+  if (status !== 'success') {
+    return (
+      <div className="p-6 max-w-5xl mx-auto">
+        <AsyncPageContent
+          status={status}
+          error={error}
+          onRetry={() => void load()}
+          errorTitle="Couldn't load status"
+          loadingVariant="cards"
+          loadingCount={4}
+        >
+          {null}
+        </AsyncPageContent>
+      </div>
+    );
+  }
 
   const overall = data?.status ?? 'operational';
   const tone = SEVERITY_TONE[overall] ?? SEVERITY_TONE.operational;

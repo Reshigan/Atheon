@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Portal } from "@/components/ui/portal";
 import { LoadingState, EmptyState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import type { Webhook } from "@/lib/api";
@@ -303,13 +304,21 @@ function WebhookDetail({ webhookId, initialData, onRevoke }: WebhookDetailProps)
     setTesting(false);
   };
 
-  if (loading || !webhook) {
+  const status = statusFrom({ loading: loading || !webhook, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="flex items-center justify-center py-10 t-muted">
-        <Loader2 size={16} className="animate-spin mr-2" /> Loading…
-      </div>
+      <AsyncPageContent
+        status={status}
+        errorTitle="Couldn't load webhook"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
+
+  if (!webhook) return null;
 
   return (
     <div className="space-y-5">

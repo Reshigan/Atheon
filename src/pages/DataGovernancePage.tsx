@@ -13,12 +13,13 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { api, ApiError } from '@/lib/api';
 import type { GovernanceResponse } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { useAppStore } from '@/stores/appStore';
 import {
-  Shield, Lock, FileText, Database, Loader2,
+  Shield, Lock, FileText, Database,
   AlertCircle, RefreshCw, Activity, CheckCircle, XCircle,
 } from 'lucide-react';
 
@@ -68,29 +69,19 @@ export function DataGovernancePage() {
     { id: 'encryption', label: 'Encryption', icon: <Lock size={14} /> },
   ];
 
-  if (loading && !data) {
+  const status = statusFrom({ loading: loading && !data, error: error && !data ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <Card className="p-6 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 mt-0.5" style={{ color: 'var(--neg)' }} />
-        <div className="flex-1">
-          <p className="text-sm font-medium t-primary">Failed to load data governance</p>
-          <p className="text-xs t-muted mt-1">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="mt-3 text-xs px-3 py-1.5 rounded-md border border-[var(--border-card)] t-secondary hover:t-primary"
-          >
-            Retry
-          </button>
-        </div>
-      </Card>
+      <AsyncPageContent
+        status={status}
+        error={error}
+        onRetry={handleRefresh}
+        errorTitle="Failed to load data governance"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

@@ -18,6 +18,7 @@ import { api, ApiError } from "@/lib/api";
 import type { ERPAdapter, ERPConnection, CanonicalEndpoint, CircuitBreakerState } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { FormError } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import {
   Plug, CheckCircle, XCircle, RefreshCw, Plus, Database,
   Activity, Loader2, X, AlertCircle, Code, Layers, Play,
@@ -641,11 +642,17 @@ export function IntegrationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) {
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
+      <AsyncPageContent
+        status={status}
+        errorTitle="Couldn't load integrations"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

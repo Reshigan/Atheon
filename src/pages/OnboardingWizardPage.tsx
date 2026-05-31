@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2, ArrowRight, Loader2, Rocket, Sparkles,
 } from "lucide-react";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import type { OnboardingStep } from "@/lib/api";
@@ -88,11 +89,17 @@ export function OnboardingWizardPage(): JSX.Element {
     }
   }
 
-  if (loading) {
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-accent animate-spin" />
-      </div>
+      <AsyncPageContent
+        status={status}
+        onRetry={() => void refresh()}
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
 

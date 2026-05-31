@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
 import { LoadingState, EmptyState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -395,7 +396,20 @@ export function CatalystRunDetailPage() {
     }
   };
 
-  if (loading) return <LoadingState variant="cards" count={4} />;
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
+    return (
+      <AsyncPageContent
+        status={status}
+        onRetry={() => void loadRun()}
+        errorTitle="Couldn't load catalyst run"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
+    );
+  }
 
   if (!run) {
     return (

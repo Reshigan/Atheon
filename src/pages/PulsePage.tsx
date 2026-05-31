@@ -11,6 +11,7 @@ import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
 import { LoadingState, ErrorState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { MetricSource, type MetricProvenance } from "@/components/ui/metric-source";
 
 import { api, ApiError } from "@/lib/api";
@@ -797,11 +798,21 @@ export function PulsePage() {
     />
   );
 
-  if (loading) {
+  const status = statusFrom({ loading, error: null, isEmpty: false });
+  if (status !== 'success') {
     return (
       <div className="space-y-6 animate-fadeIn">
         <div className="text-label">Pulse · Process Intelligence</div>
-        <LoadingState variant="cards" count={4} />
+        <AsyncPageContent
+          status={status}
+          error={null}
+          onRetry={() => window.location.reload()}
+          errorTitle="Couldn't load process intelligence"
+          loadingVariant="cards"
+          loadingCount={4}
+        >
+          {null}
+        </AsyncPageContent>
       </div>
     );
   }

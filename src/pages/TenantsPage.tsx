@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel, useTabState } from "@/components/ui/tabs";
-import { LoadingState } from "@/components/ui/state";
+import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { MaturityBadge } from "@/components/MaturityBadge";
 import { ImplementationDot } from "@/components/ImplementationDot";
 import { api } from "@/lib/api";
@@ -410,7 +410,14 @@ export function TenantsPage() {
  { id: 'infrastructure', label: 'Infrastructure', icon: <Server size={14} /> },
  ];
 
- if (loading) return <LoadingState variant="cards" count={4} />;
+ const status = statusFrom({ loading, error: null, isEmpty: false });
+ if (status !== 'success') {
+   return (
+     <AsyncPageContent status={status} loadingVariant="cards" loadingCount={4}>
+       {null}
+     </AsyncPageContent>
+   );
+ }
 
  return (
  <div className="space-y-6 animate-fadeIn">

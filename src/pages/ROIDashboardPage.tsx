@@ -21,7 +21,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
 import { TrendingUp, Shield, Activity, AlertCircle } from 'lucide-react';
@@ -89,17 +89,20 @@ export default function ROIDashboardPage(): JSX.Element {
   //   1. loading → LoadingState
   //   2. error + no data → ErrorState with retry
   //   3. otherwise → real content
-  if (loading) {
-    return <div className="p-6"><LoadingState variant="cards" count={4} /></div>;
-  }
-  if (error && !billing) {
+  const status = statusFrom({ loading, error: error && !billing ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
       <div className="p-6">
-        <ErrorState
-          title="Couldn't load ROI dashboard"
+        <AsyncPageContent
+          status={status}
           error={error}
-          onRetry={load}
-        />
+          onRetry={() => void load()}
+          errorTitle="Couldn't load ROI dashboard"
+          loadingVariant="cards"
+          loadingCount={4}
+        >
+          {null}
+        </AsyncPageContent>
       </div>
     );
   }

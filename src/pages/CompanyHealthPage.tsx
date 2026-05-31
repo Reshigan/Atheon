@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabPanel, useTabState } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/ui/page-header';
-import { LoadingState, ErrorState } from '@/components/ui/state';
+import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { api, ApiError } from '@/lib/api';
 import type { CompanyHealthDetail } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
@@ -68,14 +68,19 @@ export function CompanyHealthPage() {
     { id: 'entitlements', label: 'Entitlements', icon: <Shield size={14} /> },
   ];
 
-  if (loading && !data) return <LoadingState variant="cards" count={4} />;
-  if (error && !data) {
+  const status = statusFrom({ loading: loading && !data, error: error && !data ? error : null, isEmpty: false });
+  if (status !== 'success') {
     return (
-      <ErrorState
-        title="Couldn't load company health"
+      <AsyncPageContent
+        status={status}
         error={error}
         onRetry={handleRefresh}
-      />
+        errorTitle="Couldn't load company health"
+        loadingVariant="cards"
+        loadingCount={4}
+      >
+        {null}
+      </AsyncPageContent>
     );
   }
   if (!data) return null;
