@@ -7,7 +7,7 @@ import { ScoreRing } from "@/components/ui/score-ring";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
-import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
+import { ErrorState, EmptyState } from "@/components/ui/state";
 import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Numeric } from "@/components/ui/numeric";

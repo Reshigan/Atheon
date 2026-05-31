@@ -8,6 +8,8 @@ import { Loader2 } from "lucide-react";
 // want to wait on a chunk fetch for (Dashboard is the post-login landing).
 import { AppLayout } from "@/components/layout/AppLayout";
 import { BrandProvider } from "@/components/layout/BrandProvider";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { Dashboard } from "@/pages/Dashboard";
 import { LoginPage } from "@/pages/LoginPage";
 import { MarketingPage } from "@/pages/MarketingPage";
@@ -135,6 +137,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <BrandProvider>
+      <UpdatePrompt />
+      <InstallPrompt />
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/" element={<MarketingPage />} />

@@ -1,13 +1,19 @@
 {
   "name": "Atheon Intelligence Platform",
   "short_name": "Atheon",
-  "description": "Enterprise Intelligence SaaS Platform",
+  "description": "Enterprise Intelligence Platform — Executive, Process, and Autonomous layers.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0f14",
-  "theme_color": "#4A6B5A",
+  "orientation": "any",
+  "background_color": "#fbfaf7",
+  "theme_color": "#0a7d4f",
+  "categories": ["business", "productivity", "finance"],
+  "lang": "en",
   "icons": [
-    { "src": "/atheon-icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/atheon-icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/atheon-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/atheon-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/atheon-icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/atheon-icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

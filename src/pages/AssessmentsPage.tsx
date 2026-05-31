@@ -7,7 +7,6 @@ import { AssessmentFindingsPanel } from '@/components/AssessmentFindingsPanel';
 import { PageHeader } from '@/components/ui/page-header';
 import { MetricSource, type MetricProvenance } from '@/components/ui/metric-source';
 import { ClipboardList } from 'lucide-react';
-import { EmptyState } from '@/components/ui/state';
 import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import { catalystDeployUrl } from '@/lib/catalyst-recommendation';
 import { formatDays } from '@/lib/utils';

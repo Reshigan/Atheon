@@ -29,7 +29,7 @@ import { SharedSavingsStrip } from '@/components/SharedSavingsStrip';
 import { AsyncPageContent, statusFrom } from '@/components/ui/async';
 import type { ExecutiveSummaryResponse } from '@/lib/api';
 import {
-  Loader2, AlertTriangle, AlertCircle, TrendingUp,
+  AlertCircle, TrendingUp,
   TrendingDown, Minus, RefreshCw, ArrowRight, FileText, Calendar,
 } from 'lucide-react';
 
