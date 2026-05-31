@@ -364,7 +364,7 @@ seed.post('/seed-vantax', async (c) => {
          VALUES (?, ?, ?, 'SAP', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, `SAP-FI-${(100000 + i).toString()}`,
-        invNum, supplierIds[suppIdx], SA_SUPPLIERS[suppIdx].name,
+        invNum, null, SA_SUPPLIERS[suppIdx].name,
         invDate, dueDate, subtotal, vat, total,
         amountPaid, Math.round((total - amountPaid) * 100) / 100,
         status, status === 'paid' ? 'paid' : 'unpaid',
@@ -411,7 +411,7 @@ seed.post('/seed-vantax', async (c) => {
          VALUES (?, ?, ?, 'SAP-AR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         crypto.randomUUID(), tenantId, `SAP-AR-${(100000 + i).toString()}`,
-        invNum, supplierIds[suppIdx], SA_SUPPLIERS[suppIdx].name,
+        invNum, null, SA_SUPPLIERS[suppIdx].name,
         invDate, dueDate,
         Math.round(arTotal / 1.15 * 100) / 100,
         Math.round((arTotal - arTotal / 1.15) * 100) / 100,

@@ -43,14 +43,18 @@
  *    inside the per-test wall budget we seed ONCE in beforeAll and reuse
  *    the same tenant + clusters across all 216 executions.
  *
- * ── STATUS: SKIPPED IN CI ────────────────────────────────────────────────
- * The harness is authored and complete, but it cannot run yet because the
- * seed-vantax flushSeed (routes/seed-vantax.ts:186) trips a FOREIGN KEY
- * constraint when invoked under miniflare's test pool. The same warning
- * appears in smoke tests but does not block them — the failure mode is
- * test-env-specific. Once that upstream seeder issue is fixed, flip
- * describe.skip → describe and this suite drives 216 executions against
- * the real rule engine.
+ * ── HARNESS NOTES ────────────────────────────────────────────────────────
+ *  - The 216 execute calls run in beforeAll, not inside test 1, because
+ *    vitest-pool-workers' isolatedStorage is per-test by default — driving
+ *    state from inside the first `it` would leave the second `it` looking
+ *    at an empty sub_catalyst_runs table. With the loop in beforeAll, the
+ *    post-setup snapshot replays into every test in the describe.
+ *  - executeSubCatalyst rotates CF-Connecting-IP to bypass the 120-req/min
+ *    per-IP limiter; beforeAll bumps `tenant_rl:vantax` to bypass the
+ *    per-tenant limiter for the same reason.
+ *  - The seeder pre-creates sub_catalyst_runs for 4 of the 9 (cluster, sub)
+ *    pairs; beforeAll wipes that table (plus child analytics/insights)
+ *    before the loop so run_number sequences are an exact 1..24 per pair.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { env, SELF } from 'cloudflare:test';
@@ -185,6 +189,7 @@ interface ExecuteResponse {
   error?: string;
 }
 
+let executeCallSeq = 0;
 async function executeSubCatalyst(
   token: string,
   clusterId: string,
@@ -193,11 +198,16 @@ async function executeSubCatalyst(
   const url =
     `http://localhost/api/v1/catalysts/clusters/${clusterId}` +
     `/sub-catalysts/${encodeURIComponent(subName)}/execute`;
+  // Rotate CF-Connecting-IP per call so the per-IP rate limiter (120 req/min)
+  // doesn't bucket all 216 calls under 'unknown'.
+  executeCallSeq += 1;
+  const fakeIp = `10.0.${Math.floor(executeCallSeq / 100)}.${executeCallSeq % 100}`;
   const res = await SELF.fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      'CF-Connecting-IP': fakeIp,
     },
     body: JSON.stringify({}),
   });
@@ -207,8 +217,11 @@ async function executeSubCatalyst(
 
 let adminToken: string;
 let clusters: Record<'Finance' | 'Supply Chain' | 'Revenue', string>;
+let executeFailures: Array<{ period: string; sub: string; httpStatus: number; status?: string; error?: string }> = [];
+let executeOkCount = 0;
+const PERIODS = buildPeriods();
 
-describe.skip('Catalyst Engine — 24-period × 9 sub-catalyst year-over-year simulation', () => {
+describe('Catalyst Engine — 24-period × 9 sub-catalyst year-over-year simulation', () => {
   beforeAll(async () => {
     await migrate();
     await seedVantaxTenant();
@@ -216,29 +229,46 @@ describe.skip('Catalyst Engine — 24-period × 9 sub-catalyst year-over-year si
     adminToken = await login();
     await runVantaxSeeder(adminToken);
     clusters = await getClusters();
-  }, 120_000);
+    // The seeder pre-populates sub_catalyst_runs (and dependents) for 4 of
+    // the 9 (cluster, sub) combinations. Wipe those so the 216-call execute
+    // loop produces an exact 1..24 run_number sequence per combo.
+    const childTables = [
+      'sub_catalyst_run_items',
+      'catalyst_run_analytics',
+      'run_insights',
+      'field_transformations',
+    ];
+    for (const t of childTables) {
+      try {
+        await env.DB.prepare(`DELETE FROM ${t} WHERE tenant_id = ?`)
+          .bind(VANTAX_TENANT_ID).run();
+      } catch {
+        // Table may not exist in this schema version — skip.
+      }
+    }
+    await env.DB.prepare(
+      `DELETE FROM sub_catalyst_runs WHERE tenant_id = ?`
+    ).bind(VANTAX_TENANT_ID).run();
+    // Raise per-tenant rate limit so the 216-call simulation doesn't trip
+    // the default 120 req/min ceiling for the vantax tenant.
+    await env.CACHE.put(`tenant_rl:${VANTAX_TENANT_ID}`, '100000');
 
-  it('drives 24 monthly periods × 9 sub-catalysts and persists 216 sub_catalyst_runs', async () => {
-    const periods = buildPeriods();
-    expect(periods).toHaveLength(TOTAL_PERIODS);
-    expect(periods[0].label).toBe('2025-01');
-    expect(periods[TOTAL_PERIODS - 1].label).toBe('2026-12');
-    // Rollover sanity: month 12 → month 1 of next year happens at index 11→12.
-    expect(periods[11].label).toBe('2025-12');
-    expect(periods[12].label).toBe('2026-01');
+    executeFailures = [];
+    executeOkCount = 0;
+    executeCallSeq = 0;
 
-    const failures: Array<{ period: string; sub: string; httpStatus: number; status?: string; error?: string }> = [];
-    let okCount = 0;
-
-    for (const period of periods) {
+    // Drive the 24 × 9 = 216 execute calls here so both `it` blocks share
+    // the same persisted state. (vitest-pool-workers' isolatedStorage is
+    // per-test by default, so doing this inside the first `it` would mean
+    // the second `it` sees an empty sub_catalyst_runs table.)
+    for (const period of PERIODS) {
       for (const cluster of ['Finance', 'Supply Chain', 'Revenue'] as const) {
         const clusterId = clusters[cluster];
         for (const subName of SUB_CATALYSTS_BY_CLUSTER[cluster]) {
           const { httpStatus, body } = await executeSubCatalyst(adminToken, clusterId, subName);
 
-          // Hard requirement: no auth/server errors EVER.
           if (httpStatus !== 200) {
-            failures.push({
+            executeFailures.push({
               period: period.label,
               sub: subName,
               httpStatus,
@@ -247,14 +277,9 @@ describe.skip('Catalyst Engine — 24-period × 9 sub-catalyst year-over-year si
             });
             continue;
           }
-
-          // The execute handler is the catch-all "always return 200" path
-          // (see catalysts.ts L1814). The actual outcome lives in body.status.
-          // Acceptable statuses: 'completed', 'partial', 'pending', 'running'.
-          // 'failed' fails this test.
           const status = body.status;
           if (status === 'failed') {
-            failures.push({
+            executeFailures.push({
               period: period.label,
               sub: subName,
               httpStatus,
@@ -263,10 +288,8 @@ describe.skip('Catalyst Engine — 24-period × 9 sub-catalyst year-over-year si
             });
             continue;
           }
-
-          // A run id MUST be present — either run_id (recordRun) or id (result envelope).
           if (!body.run_id && !body.id) {
-            failures.push({
+            executeFailures.push({
               period: period.label,
               sub: subName,
               httpStatus,
@@ -275,20 +298,27 @@ describe.skip('Catalyst Engine — 24-period × 9 sub-catalyst year-over-year si
             });
             continue;
           }
-
-          okCount += 1;
+          executeOkCount += 1;
         }
       }
     }
+  }, 600_000);
+
+  it('drives 24 monthly periods × 9 sub-catalysts and persists 216 sub_catalyst_runs', async () => {
+    expect(PERIODS).toHaveLength(TOTAL_PERIODS);
+    expect(PERIODS[0].label).toBe('2025-01');
+    expect(PERIODS[TOTAL_PERIODS - 1].label).toBe('2026-12');
+    // Rollover sanity: month 12 → month 1 of next year happens at index 11→12.
+    expect(PERIODS[11].label).toBe('2025-12');
+    expect(PERIODS[12].label).toBe('2026-01');
 
     expect(
-      failures,
-      `Execute failures (showing first 5 of ${failures.length}):\n` +
-        JSON.stringify(failures.slice(0, 5), null, 2)
+      executeFailures,
+      `Execute failures (showing first 5 of ${executeFailures.length}):\n` +
+        JSON.stringify(executeFailures.slice(0, 5), null, 2)
     ).toEqual([]);
-    expect(okCount).toBe(EXPECTED_RUNS);
+    expect(executeOkCount).toBe(EXPECTED_RUNS);
 
-    // ── Persistence check: 216 rows in sub_catalyst_runs ─────────────────
     const runCountRow = await env.DB.prepare(
       `SELECT COUNT(*) as n FROM sub_catalyst_runs WHERE tenant_id = ?`
     ).bind(VANTAX_TENANT_ID).first<{ n: number }>();
