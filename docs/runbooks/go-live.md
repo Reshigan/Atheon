@@ -116,17 +116,29 @@ serves a real PDF.
 - **E2E traceability requires same-origin.** Because of the CORS constraint
   above, the E2E spec must target the deployed frontend, not a local dev server
   pointed at prod.
-- **Staging environment is parked.** `wrangler.toml` still declares an
-  `[env.staging]` worker (`atheon-api-staging`) but the
-  `staging.atheon.vantax.co.za` DNS record + Cloudflare route are not
-  provisioned, so the `[env.staging].routes` binding intentionally isn't set.
-  The `staging-e2e.yml` workflow that depended on the missing host has been
-  retired — production E2E (`production-e2e.yml`, 02:30 UTC daily) is the
-  authoritative regression catch until staging is rebuilt. Standing staging
-  back up requires, at minimum: (1) add a `staging.atheon-api.vantax.co.za`
-  route to `[env.staging]`; (2) create the DNS record + Cloudflare zone
-  binding; (3) deploy a frontend target (Pages or Worker); (4) seed a staging
-  tenant and create the `E2E_STAGING_*` service-account secrets.
+- **Staging environment is partially rebuilt.** `wrangler.toml` now declares
+  the `staging.atheon-api.vantax.co.za/*` route binding under
+  `[env.staging]`, and `staging-e2e.yml` is back in `.github/workflows/` as
+  a workflow_dispatch job gated on the `E2E_STAGING_*` secrets being present
+  (it self-skips with a clear summary message until they exist). Production
+  E2E (`production-e2e.yml`, 02:30 UTC daily) remains the authoritative
+  regression catch. The remaining manual steps to take staging fully green
+  are: (1) **DNS + zone binding** — create the
+  `staging.atheon-api.vantax.co.za` (API) and chosen frontend host
+  (e.g. `staging.atheon.vantax.co.za`) records on the `vantax.co.za`
+  Cloudflare zone; (2) **Real D1/KV IDs** — the `[env.staging].d1_databases`
+  and `[env.staging.kv_namespaces]` IDs are still the all-zero placeholders.
+  Run `wrangler d1 create atheon-db-staging` and
+  `wrangler kv:namespace create CACHE --env staging`, then paste the
+  returned IDs into `workers/api/wrangler.toml`; (3) **Frontend target** —
+  deploy a Pages or Worker for the chosen staging frontend host; (4) **Seed
+  staging tenant** — `POST /api/v1/admin/migrate` then
+  `POST /api/v1/admin/seed-vantax` against the staging API; (5) **GitHub
+  environment secrets** — in the `staging` environment, add
+  `E2E_STAGING_BASE_URL`, `E2E_STAGING_LOGIN_EMAIL`,
+  `E2E_STAGING_LOGIN_PASSWORD`, and optionally `E2E_STAGING_LOGIN_TOTP_SEED`.
+  Once those land, `workflow_dispatch` on `staging-e2e.yml` runs the
+  Playwright suite end-to-end.
 
 ## Failure triage
 

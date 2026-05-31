@@ -83,6 +83,13 @@ max_retries = 1
 #          wrangler secret put SETUP_SECRET --env staging
 [env.staging]
 name = "atheon-api-staging"
+# Route binding for the staging API. The DNS record and Cloudflare
+# zone binding for staging.atheon-api.vantax.co.za must exist before
+# `wrangler deploy --env staging` will succeed. Provisioning steps live
+# in docs/runbooks/go-live.md → "Standing staging back up".
+routes = [
+  { pattern = "staging.atheon-api.vantax.co.za/*", zone_name = "vantax.co.za" }
+]
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
