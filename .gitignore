@@ -34,12 +34,30 @@ workers/api/tsconfig.tsbuildinfo
 # Local test DB artefacts
 workers/api/schema.db
 workers/api/.wrangler/
+.wrangler/
 
 # Playwright outputs — local-only, never commit
 test-results/
 playwright-report/
 .playwright/
+.playwright-mcp/
 .superpowers/
+
+# Vitest coverage output — regenerated each run
+coverage/
 
 # Verification harness local state — globalSetup rebuilds this each run
 verification/.run-manifest.json
+
+# Local session handoff — written by SessionStart hook, never commit
+.remember/
+
+# Local screenshots / UI walks — keep on disk, never commit
+/*.png
+/*.jpeg
+/*.jpg
+/*.webp
+
+# Stray root-level wrangler config that shadows workers/api/wrangler.toml
+# (see docs/runbooks/go-live.md "stray wrangler.jsonc shadows ..." entry)
+/wrangler.jsonc
