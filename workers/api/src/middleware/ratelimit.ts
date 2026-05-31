@@ -124,6 +124,21 @@ export const billingRateLimiter = rateLimiter({
   keyPrefix: 'rl:billing',
 });
 
+// Hybrid-license phone-home endpoint rate limit. /api/agent/license-check
+// is intentionally unauthenticated (the customer instance phones home with
+// only its licence key in the query string) which makes it a tempting
+// surface for licence-key enumeration probes from a hostile network. The
+// legitimate cadence is exactly one request per hour per deployment;
+// 60 req/hour per source IP comfortably covers up to ~50 deployments
+// behind a single NAT plus retry traffic, while turning sustained probing
+// into a 429 within seconds. Cloudflare's own WAF already rate-limits
+// abusive bots; this is defence in depth at the application layer.
+export const licenseCheckRateLimiter = rateLimiter({
+  windowMs: 3600000, // 1 hour
+  maxRequests: 60,
+  keyPrefix: 'rl:license-check',
+});
+
 /**
  * Phase 6.2: Per-Tenant Rate Limiter
  * Reads tenant entitlements to enforce custom rate limits per tenant.

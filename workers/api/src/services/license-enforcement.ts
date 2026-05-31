@@ -45,6 +45,7 @@
  */
 import type { Context, Next } from 'hono';
 import type { AppBindings } from '../types';
+import { captureMessage } from './sentry';
 
 /** Cached license status — fits inside one KV value. */
 interface LicenseStatus {
@@ -79,8 +80,19 @@ const ENFORCEMENT_BYPASS = [
  * Phone home to the cloud's license-check endpoint. Returns null on
  * network failure (caller should treat as "use cached value, don't
  * change anything").
+ *
+ * Observability: network failures (DNS, timeout, TLS) are routed to
+ * Sentry as warnings — they're not user-facing errors (we fail-open
+ * against the cached value), but ops needs to see them because a
+ * sustained failure leads to the 7-day fail-closed branch firing
+ * and taking the customer offline. Cloud HTTP non-2xx responses are
+ * separately reported because they indicate a deliberate revocation
+ * or upstream outage that needs human triage.
  */
-async function phoneHome(env: AppBindings['Bindings']): Promise<LicenseStatus | null> {
+async function phoneHome(
+  env: AppBindings['Bindings'],
+  ctx?: ExecutionContext,
+): Promise<LicenseStatus | null> {
   if (!env.ATHEON_LICENSE_CHECK_URL || !env.LICENCE_KEY) return null;
   try {
     const url = `${env.ATHEON_LICENSE_CHECK_URL}?key=${encodeURIComponent(env.LICENCE_KEY)}`;
@@ -90,13 +102,31 @@ async function phoneHome(env: AppBindings['Bindings']): Promise<LicenseStatus | 
       signal: AbortSignal.timeout(PHONE_HOME_TIMEOUT_MS),
     });
     if (!resp.ok) {
+      const body = await resp.text().catch(() => 'no body');
+      if (env.SENTRY_DSN) {
+        captureMessage(
+          `license phone-home: cloud responded ${resp.status}`,
+          resp.status === 403 ? 'error' : 'warning',
+          {
+            dsn: env.SENTRY_DSN,
+            environment: env.ENVIRONMENT || 'production',
+            tags: {
+              component: 'license-enforcement',
+              deployment_role: env.DEPLOYMENT_ROLE || 'customer',
+              http_status: String(resp.status),
+            },
+            extra: { url: env.ATHEON_LICENSE_CHECK_URL, body: body.slice(0, 500) },
+            ctx,
+          },
+        );
+      }
       // Cloud said "no" — record the negative result so middleware blocks.
       return {
         valid: false,
         expires_at: null,
         status: resp.status === 403 ? 'revoked' : 'unknown',
         last_checked_at: new Date().toISOString(),
-        reason: `Cloud responded ${resp.status}: ${await resp.text().catch(() => 'no body')}`,
+        reason: `Cloud responded ${resp.status}: ${body}`,
       };
     }
     const body = await resp.json() as Partial<LicenseStatus>;
@@ -110,6 +140,26 @@ async function phoneHome(env: AppBindings['Bindings']): Promise<LicenseStatus | 
   } catch (err) {
     // Network failure — caller treats as "no update", fall back to cache.
     console.error('license-enforcement: phone-home failed', err);
+    if (env.SENTRY_DSN) {
+      captureMessage(
+        `license phone-home: network failure (${err instanceof Error ? err.name : 'unknown'})`,
+        'warning',
+        {
+          dsn: env.SENTRY_DSN,
+          environment: env.ENVIRONMENT || 'production',
+          tags: {
+            component: 'license-enforcement',
+            deployment_role: env.DEPLOYMENT_ROLE || 'customer',
+            error_type: err instanceof Error ? err.name : 'unknown',
+          },
+          extra: {
+            url: env.ATHEON_LICENSE_CHECK_URL,
+            message: err instanceof Error ? err.message : String(err),
+          },
+          ctx,
+        },
+      );
+    }
     return null;
   }
 }
@@ -118,7 +168,10 @@ async function phoneHome(env: AppBindings['Bindings']): Promise<LicenseStatus | 
  * Read the current license status from KV cache, refreshing via phone-home
  * if missing. Returns the canonical status the middleware should enforce.
  */
-async function getCurrentStatus(env: AppBindings['Bindings']): Promise<LicenseStatus> {
+async function getCurrentStatus(
+  env: AppBindings['Bindings'],
+  ctx?: ExecutionContext,
+): Promise<LicenseStatus> {
   // KV read
   const cached = await env.CACHE.get(CACHE_KEY);
   let status: LicenseStatus | null = null;
@@ -149,7 +202,7 @@ async function getCurrentStatus(env: AppBindings['Bindings']): Promise<LicenseSt
     || (Date.now() - new Date(status.last_checked_at).getTime()) > CACHE_TTL_SECONDS * 1000;
 
   if (isStale) {
-    const fresh = await phoneHome(env);
+    const fresh = await phoneHome(env, ctx);
     if (fresh) {
       await env.CACHE.put(CACHE_KEY, JSON.stringify(fresh), { expirationTtl: CACHE_TTL_SECONDS });
       return fresh;
@@ -195,7 +248,7 @@ export function licenseEnforcement() {
       return next();
     }
 
-    const status = await getCurrentStatus(c.env);
+    const status = await getCurrentStatus(c.env, c.executionCtx);
     if (!status.valid) {
       return c.json({
         error: 'license_invalid',
@@ -216,6 +269,7 @@ export function licenseEnforcement() {
  */
 export async function getLicenseStatusForAdmin(
   env: AppBindings['Bindings'],
+  ctx?: ExecutionContext,
 ): Promise<LicenseStatus> {
   if (env.DEPLOYMENT_ROLE !== 'customer') {
     return {
@@ -226,7 +280,7 @@ export async function getLicenseStatusForAdmin(
       reason: 'License enforcement skipped: this is a cloud instance (DEPLOYMENT_ROLE != customer)',
     };
   }
-  return getCurrentStatus(env);
+  return getCurrentStatus(env, ctx);
 }
 
 /**
@@ -236,11 +290,12 @@ export async function getLicenseStatusForAdmin(
  */
 export async function refreshLicenseNow(
   env: AppBindings['Bindings'],
+  ctx?: ExecutionContext,
 ): Promise<LicenseStatus | { error: string }> {
   if (env.DEPLOYMENT_ROLE !== 'customer') {
     return { error: 'License refresh only applies to customer deployments' };
   }
-  const fresh = await phoneHome(env);
+  const fresh = await phoneHome(env, ctx);
   if (!fresh) return { error: 'Phone-home failed (network error)' };
   await env.CACHE.put(CACHE_KEY, JSON.stringify(fresh), { expirationTtl: CACHE_TTL_SECONDS });
   return fresh;

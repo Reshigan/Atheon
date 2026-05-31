@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env, AppBindings } from './types';
-import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter, contactRateLimiter, dsarRateLimiter, dsarErasureRateLimiter, billingRateLimiter } from './middleware/ratelimit';
+import { apiRateLimiter, authRateLimiter, aiRateLimiter, demoAuthRateLimiter, contactRateLimiter, dsarRateLimiter, dsarErasureRateLimiter, billingRateLimiter, licenseCheckRateLimiter } from './middleware/ratelimit';
 import { hashPassword } from './middleware/auth';
 import { auditEnrichment, requestSizeLimiter, getValidatedJsonBody } from './middleware/validation';
 import { runMigrations, MIGRATION_VERSION } from './services/migrate';
@@ -192,6 +192,15 @@ app.use('/api/v1/billing/*', billingRateLimiter);
 
 app.use('/api/*', apiRateLimiter);
 
+// Hybrid-license phone-home — registered AFTER the general /api/* limiter
+// so its (stricter) headers overwrite the generic ones for this specific
+// path. Both limiters still run on every license-check request and each
+// enforces its own KV counter independently; whichever cap is hit first
+// returns 429. See middleware/ratelimit.ts:licenseCheckRateLimiter for
+// the rationale (60 req/hour per IP is enough for ~50 deployments behind
+// one NAT and turns sustained probing into a 429 within seconds).
+app.use('/api/agent/license-check', licenseCheckRateLimiter);
+
 // License enforcement — only fires when DEPLOYMENT_ROLE === 'customer'
 // (hybrid + on-premise deployments). On Atheon's own SaaS this is a no-op.
 // See services/license-enforcement.ts for the phone-home protocol.
@@ -200,11 +209,11 @@ app.use('/api/*', licenseEnforcement());
 // Customer-side license-status endpoints — read-only for ops dashboards
 // + a forced re-validate trigger for admins.
 app.get('/api/v1/license-status', async (c) => {
-  const status = await getLicenseStatusForAdmin(c.env);
+  const status = await getLicenseStatusForAdmin(c.env, c.executionCtx);
   return c.json(status);
 });
 app.post('/api/v1/license-status/refresh', async (c) => {
-  const result = await refreshLicenseNow(c.env);
+  const result = await refreshLicenseNow(c.env, c.executionCtx);
   return c.json(result);
 });
 

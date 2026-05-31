@@ -93,6 +93,21 @@ describe('License Enforcement — cloud-side license-check endpoint', () => {
     expect(body.valid).toBe(false);
     expect(body.reason).toMatch(/without \?key=/i);
   });
+
+  it('rate-limits /api/agent/license-check to 60 req/hour per IP', async () => {
+    // licenseCheckRateLimiter (middleware/ratelimit.ts) is registered on the
+    // exact path /api/agent/license-check ahead of the general /api/* limiter.
+    // We confirm wiring by reading the X-RateLimit-Limit response header on
+    // a single call: if the specific limiter fired we see 60, if the general
+    // one fired we'd see 120. (Driving 61 calls to hit the 429 would balloon
+    // the test wall-time; the header is a sufficient wiring smoke check.)
+    await seedDeployment({ id: 'dep-rl', status: 'active', licenceKey: 'KEY-RL-1', expiresAt: null });
+    const res = await SELF.fetch('http://localhost/api/agent/license-check?key=KEY-RL-1', {
+      headers: { 'CF-Connecting-IP': '203.0.113.99' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('X-RateLimit-Limit')).toBe('60');
+  });
 });
 
 describe('License Enforcement — customer-mode stale cache fail-closed', () => {
