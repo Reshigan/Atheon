@@ -3,6 +3,7 @@ import { api, ApiError } from "@/lib/api";
 import type { MindModels, MindStats, MindQueryResult } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageTabsLayout } from "@/components/ui/page-tabs-layout";
 import {
   Settings2,
   Play,
@@ -131,34 +132,27 @@ export function MindPage() {
   };
 
   const tabs = [
-    { id: "models" as const, label: "Model Tiers", icon: Settings2 },
-    { id: "playground" as const, label: "Prompt Playground", icon: Play },
-    { id: "stats" as const, label: "Usage & Stats", icon: BarChart3 },
+    { id: "models", label: "Model Tiers", icon: <Settings2 size={14} /> },
+    { id: "playground", label: "Prompt Playground", icon: <Play size={14} /> },
+    { id: "stats", label: "Usage & Stats", icon: <BarChart3 size={14} /> },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Mind · Reasoning Engine"
-        title="Mind"
-        dek="AI Model Governance & Configuration"
-      />
-
-      {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-md" style={{ background: "var(--bg-secondary)" }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${activeTab === tab.id ? "t-primary" : "t-muted hover:t-secondary"}`}
-            style={activeTab === tab.id ? { background: "var(--bg-card)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : undefined}
-          >
-            <tab.icon size={14} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+      <PageTabsLayout
+        variant="segmented"
+        ariaLabel="Mind sections"
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as typeof activeTab)}
+        header={
+          <PageHeader
+            eyebrow="Mind · Reasoning Engine"
+            title="Mind"
+            dek="AI Model Governance & Configuration"
+          />
+        }
+      >
       {/* Model Tiers */}
       {activeTab === "models" && (
         <div className="space-y-4">
@@ -351,6 +345,7 @@ export function MindPage() {
           )}
         </div>
       )}
+      </PageTabsLayout>
     </div>
   );
 }

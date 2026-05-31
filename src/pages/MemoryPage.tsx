@@ -4,6 +4,7 @@ import type { GraphEntity, GraphRelationship, GraphQueryResult } from "@/lib/api
 import { useToast } from "@/components/ui/toast";
 import { AsyncPageContent, statusFrom } from "@/components/ui/async";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageTabsLayout } from "@/components/ui/page-tabs-layout";
 import { KnowledgeGraphViz } from "@/components/memory/KnowledgeGraphViz";
 import {
   Plus,
@@ -189,43 +190,40 @@ export function MemoryPage() {
     );
   }
 
+  const tabs = [
+    { id: "graph", label: "Graph" },
+    { id: "entities", label: "Entities" },
+    { id: "relationships", label: "Relationships" },
+    { id: "search", label: "GraphRAG Search" },
+  ];
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Memory · Knowledge Graph"
-        title="Memory"
-        dek="Knowledge Graph & Semantic Retrieval"
-      />
-
-      {loadError && !loading && (
-        <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
-          <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
-          <p className="text-xs flex-1" style={{ color: 'var(--neg)' }}>{loadError}</p>
-          <button onClick={fetchData} className="text-xs underline" style={{ color: 'var(--neg)' }}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-md" style={{ background: "var(--bg-secondary)" }}>
-        {[
-          { id: "graph" as const, label: "Graph" },
-          { id: "entities" as const, label: "Entities" },
-          { id: "relationships" as const, label: "Relationships" },
-          { id: "search" as const, label: "GraphRAG Search" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-md text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-[var(--dur-press)] [transition-timing-function:var(--ease-out)] ${activeTab === tab.id ? "t-primary" : "t-muted hover:t-secondary"}`}
-            style={activeTab === tab.id ? { background: "var(--bg-card)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : undefined}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+      <PageTabsLayout
+        variant="segmented"
+        ariaLabel="Memory sections"
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as typeof activeTab)}
+        header={
+          <div className="space-y-4">
+            <PageHeader
+              eyebrow="Memory · Knowledge Graph"
+              title="Memory"
+              dek="Knowledge Graph & Semantic Retrieval"
+            />
+            {loadError && !loading && (
+              <div className="flex items-center gap-2 p-3 rounded-md border" style={{ background: 'rgb(var(--neg-rgb) / 0.08)', borderColor: 'rgb(var(--neg-rgb) / 0.25)' }}>
+                <AlertTriangle size={14} className="flex-shrink-0" style={{ color: 'var(--neg)' }} />
+                <p className="text-xs flex-1" style={{ color: 'var(--neg)' }}>{loadError}</p>
+                <button onClick={fetchData} className="text-xs underline" style={{ color: 'var(--neg)' }}>
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        }
+      >
       {/* Graph Tab — Stitch "Knowledge Graph" force-directed canvas */}
       {activeTab === "graph" && (
         <div className="space-y-3">
@@ -598,6 +596,7 @@ export function MemoryPage() {
           )}
         </div>
       )}
+      </PageTabsLayout>
     </div>
   );
 }
